@@ -8,18 +8,12 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   telemetry: { enabled: false },
   modules: ['@pinia/nuxt'],
-  imports: {
-    dirs: ['../composables', '../stores']
-  },
-  components: [
-    { path: '../components', pathPrefix: false }
-  ],
   devServer: {
     host: 'localhost',
     port: 5000
   },
   css: [
-    '../assets/styles/main.css',
+    '~/assets/styles/main.css',
     'ant-design-vue/dist/reset.css'
   ],
   vite: {
@@ -28,3 +22,4 @@ export default defineNuxtConfig({
     ],
   }
 })
+
