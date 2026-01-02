@@ -4,4 +4,9 @@
     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.auth-layout {
+    min-height: 100vh;
+    width: 100%;
+}
+</style>
