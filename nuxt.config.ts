@@ -2,9 +2,11 @@
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
+  ssr: false,
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
   telemetry: { enabled: false },
+  modules: ['@pinia/nuxt'],
   devServer: {
     host: 'localhost',
     port: 4000
