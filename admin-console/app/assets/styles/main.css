@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Configure dark mode to use class selector */
+@variant dark (&:where(.dark, .dark *));
+
 /* ============================================
    SPATIUM ADMIN CONSOLE - Design System
    ============================================ */

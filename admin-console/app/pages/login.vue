@@ -1,6 +1,5 @@
 <template>
-    <div
-        class="flex flex-col justify-center items-center min-h-screen bg-neutral-50 dark:bg-neutral-950 transition-colors duration-300">
+    <div class="flex flex-col justify-center items-center min-h-screen relative">
         <!-- Theme Toggle in top right -->
         <div class="absolute top-4 right-4">
             <ThemeToggle />

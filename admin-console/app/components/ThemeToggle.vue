@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-const { colorMode, toggleTheme, initTheme } = useTheme()
+const { colorMode, toggleTheme } = useTheme()
 
 const modeLabel = computed(() => {
     switch (colorMode.value) {
@@ -36,10 +36,6 @@ const modeLabel = computed(() => {
         case 'system': return 'Auto'
         default: return 'Auto'
     }
-})
-
-onMounted(() => {
-    initTheme()
 })
 </script>
 
