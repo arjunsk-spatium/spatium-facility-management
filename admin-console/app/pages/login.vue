@@ -1,5 +1,5 @@
 <template>
-    <div class="login-page">
+    <div class="flex justify-center items-center h-screen">
         <h1>Super Admin Login</h1>
         <!-- Login form will go here -->
     </div>
