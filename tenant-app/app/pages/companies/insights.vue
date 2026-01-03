@@ -35,7 +35,7 @@
             <div
                 class="bg-white dark:bg-[#141414] p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Revenue</div>
-                <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">${{
+                <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">₹{{
                     insights.revenue.toLocaleString() }}</div>
             </div>
         </div>

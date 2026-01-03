@@ -38,7 +38,7 @@
                 </a-statistic>
             </a-card>
             <a-card :bordered="false" class="shadow-sm">
-                <a-statistic title="Revenue" :value="9342" :precision="2" prefix="$" />
+                <a-statistic title="Revenue" :value="9342" :precision="2" prefix="₹" />
             </a-card>
         </div>
 
