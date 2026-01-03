@@ -1,7 +1,7 @@
 <template>
     <a-layout-sider v-model:collapsed="collapsed" collapsible :theme="isDark ? 'dark' : 'light'" width="260"
         class="custom-sidebar shadow-md z-10 transition-colors duration-300"
-        :style="{ background: isDark ? '#1a1a1a' : '#ffffff' }">
+        :style="{ background: isDark ? '#1a1a1a' : '#ffffff', position: 'sticky', top: 0, height: '100vh', overflow: 'hidden' }">
         <!-- Logo Section - Height matches navbar (64px) -->
         <div class="h-16 flex items-center px-6 border-b transition-colors duration-300"
             :style="{ background: isDark ? '#1a1a1a' : '#ffffff', borderColor: isDark ? '#333333' : '#e5e5e5' }">
@@ -191,11 +191,11 @@ const openKeys = ref<string[]>(['companies']);
 
 :deep(.ant-menu-dark .ant-menu-item-selected) {
     background-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent) !important;
-    color: var(--color-primary-400) !important;
+    color: #ffffff !important;
 }
 
 :deep(.ant-menu-dark .ant-menu-item-selected .anticon) {
-    color: var(--color-primary-400) !important;
+    color: #ffffff !important;
 }
 
 /* Submenu Popup */
