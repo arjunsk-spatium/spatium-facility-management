@@ -1,5 +1,5 @@
 <template>
-    <div class="max-w-3xl mx-auto space-y-6">
+    <div class="space-y-6">
         <div class="flex items-center space-x-4">
             <NuxtLink to="/companies">
                 <a-button type="text">
@@ -24,15 +24,15 @@
 
             <a-descriptions title="Company Information" bordered
                 :column="{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }">
-                <a-descriptions-item label="Name">{{ company.name }}</a-descriptions-item>
-                <a-descriptions-item label="Status">
-                    <a-tag :color="company.status === 'active' ? 'green' : 'red'">
-                        {{ company.status.toUpperCase() }}
-                    </a-tag>
-                </a-descriptions-item>
-                <a-descriptions-item label="Address" :span="2">{{ company.address }}</a-descriptions-item>
-                <a-descriptions-item label="Contact Email">{{ company.contactEmail || 'N/A' }}</a-descriptions-item>
-                <a-descriptions-item label="Contact Phone">{{ company.contactPhone || 'N/A' }}</a-descriptions-item>
+                <a-descriptions-item label="Company Name">{{ company.name }}</a-descriptions-item>
+                <a-descriptions-item label="Address">{{ company.address }}</a-descriptions-item>
+
+                <a-descriptions-item label="SPOC Name">{{ company.spoc_name }}</a-descriptions-item>
+                <a-descriptions-item label="SPOC Email">{{ company.spoc_email }}</a-descriptions-item>
+                <a-descriptions-item label="SPOC Phone">{{ company.spoc_phone }}</a-descriptions-item>
+
+                <a-descriptions-item label="GSTIN">{{ company.gstin || 'N/A' }}</a-descriptions-item>
+                <a-descriptions-item label="Facility">{{ company.facility || 'N/A' }}</a-descriptions-item>
             </a-descriptions>
         </a-card>
 
