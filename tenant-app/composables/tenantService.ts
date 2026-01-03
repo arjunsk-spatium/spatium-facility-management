@@ -33,7 +33,7 @@ export const useTenantService = () => {
   const getTenantById = async (id: string): Promise<Tenant | null> => {
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 500));
-    return MOCK_TENANTS[id] || MOCK_TENANTS['tenant-a'] || null; // Default to tenant-a
+    return MOCK_TENANTS[id] || null;
   };
 
   /**

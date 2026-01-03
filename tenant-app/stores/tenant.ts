@@ -26,7 +26,7 @@ export const useTenantStore = defineStore('tenant', {
   getters: {
     primaryColor: (state) => state.tenant?.colors.primary || '#3378ff',
     secondaryColor: (state) => state.tenant?.colors.secondary || '#64748b',
-    tenantName: (state) => state.tenant?.name || 'Spatium',
+    tenantName: (state) => state.tenant?.name || 'Spatium Hub',
     tenantLogo: (state) => state.tenant?.logoUrl || '',
   },
 });
