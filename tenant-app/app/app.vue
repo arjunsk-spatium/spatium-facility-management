@@ -1,17 +1,64 @@
 <template>
-  <div
-    class="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300">
-    <NuxtLayout>
-      <NuxtPage />
-    </NuxtLayout>
-  </div>
+  <a-config-provider :theme="themeConfig">
+    <div
+      class="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300">
+      <NuxtLayout>
+        <NuxtPage />
+      </NuxtLayout>
+    </div>
+  </a-config-provider>
 </template>
 
 <script setup lang="ts">
-// Initialize theme on app load
-const { initTheme } = useTheme()
+import { theme } from 'ant-design-vue';
+import { computed, onMounted, watch, ref } from 'vue';
+
+const { darkAlgorithm, defaultAlgorithm } = theme;
+const { colorMode, initTheme, isDark } = useTheme();
+const tenantStore = useTenantStore();
+
+// Local reactive ref for dark mode - ensures immediate reactivity
+const isDarkMode = ref(false);
+
+// Watch the colorMode and isDark from the composable to sync local state
+watch(
+  [colorMode, isDark],
+  () => {
+    isDarkMode.value = isDark.value;
+  },
+  { immediate: true }
+);
+
+// Ant Design Theme Config - uses local reactive ref
+const themeConfig = computed(() => ({
+  algorithm: isDarkMode.value ? darkAlgorithm : defaultAlgorithm,
+  token: {
+    colorPrimary: tenantStore.primaryColor,
+  },
+}));
+
+// Apply CSS Variables for Tailwind
+const updateCssVariables = () => {
+  if (import.meta.client) {
+    const root = document.documentElement;
+    root.style.setProperty('--color-primary-500', tenantStore.primaryColor);
+    root.style.setProperty('--color-primary-600', tenantStore.primaryColor);
+  }
+};
 
 onMounted(() => {
-  initTheme()
-})
+  initTheme();
+  // Force sync after init
+  isDarkMode.value = isDark.value;
+  updateCssVariables();
+});
+
+// Watch for theme changes and update CSS variables
+watch(isDark, (newVal) => {
+  isDarkMode.value = newVal;
+  updateCssVariables();
+});
+
+// Watch for tenant color changes
+watch(() => tenantStore.primaryColor, updateCssVariables);
 </script>

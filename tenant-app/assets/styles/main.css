@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@source "../../components";
+/* Force Rebuild */
 
 /* Configure dark mode to use class selector */
 @variant dark (&:where(.dark, .dark *));

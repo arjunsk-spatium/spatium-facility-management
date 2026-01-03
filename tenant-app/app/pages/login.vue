@@ -10,10 +10,7 @@
       <!-- Gradient Overlay -->
       <div class="absolute inset-0 bg-gradient-to-t from-neutral-900/90 via-neutral-900/40 to-transparent"></div>
 
-      <!-- Theme Toggle -->
-      <div class="absolute top-6 left-6 z-10">
-        <ThemeToggle />
-      </div>
+      <!-- Theme Toggle removed (handled by auth layout) -->
 
       <!-- Quote Section -->
       <div class="absolute bottom-12 left-12 right-12 z-10 text-white">

@@ -9,7 +9,13 @@ export default defineNuxtConfig({
   telemetry: { enabled: false },
   modules: ['@pinia/nuxt', '@nuxt/test-utils/module'],
   imports: {
-    dirs: ['../composables', '../stores']
+    dirs: ['../composables', '../stores'],
+    presets: [
+        {
+            from: 'ant-design-vue',
+            imports: ['message', 'notification']
+        }
+    ]
   },
   components: [
     { path: '../components', pathPrefix: false }
