@@ -2,7 +2,7 @@
     <div class="space-y-6">
         <!-- Page Header -->
         <div
-            class="flex justify-between items-center bg-white dark:bg-neutral-900 p-4 rounded-lg border border-gray-200 dark:border-neutral-800 shadow-sm transition-colors duration-300">
+            class="flex justify-between items-center p-4 rounded-lg shadow-sm transition-colors duration-300 page-header">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Companies</h1>
             <NuxtLink to="/companies/create">
                 <a-button type="primary" size="large">
@@ -119,3 +119,15 @@ onMounted(() => {
     store.fetchCompanies()
 })
 </script>
+
+<style scoped>
+.page-header {
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+}
+
+.dark .page-header {
+    background: #1f1f1f;
+    border-color: #333333;
+}
+</style>

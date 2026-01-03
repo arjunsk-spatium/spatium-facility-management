@@ -1,9 +1,10 @@
 <template>
     <a-layout-sider v-model:collapsed="collapsed" collapsible :theme="isDark ? 'dark' : 'light'" width="260"
-        class="custom-sidebar shadow-md z-10 transition-colors duration-300">
-        <!-- Logo Section -->
-        <div
-            class="h-20 flex items-center px-6 border-b border-gray-100 dark:border-gray-800 transition-colors duration-300">
+        class="custom-sidebar shadow-md z-10 transition-colors duration-300"
+        :style="{ background: isDark ? '#1a1a1a' : '#ffffff' }">
+        <!-- Logo Section - Height matches navbar (64px) -->
+        <div class="h-16 flex items-center px-6 border-b transition-colors duration-300"
+            :style="{ background: isDark ? '#1a1a1a' : '#ffffff', borderColor: isDark ? '#333333' : '#e5e5e5' }">
             <div class="flex items-center gap-3">
                 <!-- Tenant Logo -->
                 <img v-if="tenantStore.tenantLogo" :src="tenantStore.tenantLogo" :alt="tenantStore.tenantName"
@@ -28,7 +29,8 @@
         </div>
 
         <a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" :theme="isDark ? 'dark' : 'light'"
-            mode="inline" class="border-none px-3 pt-4 font-medium text-gray-600 dark:text-gray-300">
+            mode="inline" class="border-none px-3 pt-4 font-medium"
+            :style="{ background: isDark ? '#1a1a1a' : '#ffffff' }">
             <!-- ... existing menu items ... -->
             <a-menu-item key="dashboard" class="mb-1 rounded-md">
                 <template #icon>
@@ -119,7 +121,17 @@ import {
 
 const { colorMode } = useTheme();
 const tenantStore = useTenantStore();
-const isDark = computed(() => colorMode.value === 'dark');
+
+// Compute isDark considering system mode
+const isDark = computed(() => {
+    if (colorMode.value === 'dark') return true;
+    if (colorMode.value === 'light') return false;
+    // For system mode, check actual preference
+    if (import.meta.client) {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+});
 
 const collapsed = ref(false);
 const selectedKeys = ref<string[]>(['dashboard']);
@@ -127,7 +139,46 @@ const openKeys = ref<string[]>(['companies']);
 </script>
 
 <style scoped>
-/* Override Ant Design Menu Styles for the "Pill" look */
+/* ============================================
+   GRAY DARK THEME OVERRIDES
+   Use neutral grays instead of Ant Design's blue-tinted dark theme
+   ============================================ */
+
+/* Sidebar Container Background */
+:deep(.ant-layout-sider) {
+    background: #ffffff !important;
+}
+
+.dark :deep(.ant-layout-sider),
+:deep(.ant-layout-sider-dark) {
+    background: #1a1a1a !important;
+    /* Dark gray, not blue */
+}
+
+/* Menu Background */
+:deep(.ant-menu) {
+    background: transparent !important;
+}
+
+:deep(.ant-menu-dark) {
+    background: transparent !important;
+}
+
+/* Dark Mode Menu Items */
+:deep(.ant-menu-dark .ant-menu-item),
+:deep(.ant-menu-dark .ant-menu-submenu-title) {
+    color: #a3a3a3 !important;
+    /* neutral-400 */
+}
+
+:deep(.ant-menu-dark .ant-menu-item:hover),
+:deep(.ant-menu-dark .ant-menu-submenu-title:hover) {
+    background-color: #2a2a2a !important;
+    /* Slightly lighter gray */
+    color: #f5f5f5 !important;
+}
+
+/* Selected Item - Primary Color */
 :deep(.ant-menu-item-selected) {
     background-color: color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
     color: var(--color-primary-600) !important;
@@ -138,7 +189,6 @@ const openKeys = ref<string[]>(['companies']);
     color: var(--color-primary-600) !important;
 }
 
-/* Dark Mode Overrides - Target Ant Design's specific dark class */
 :deep(.ant-menu-dark .ant-menu-item-selected) {
     background-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent) !important;
     color: var(--color-primary-400) !important;
@@ -148,14 +198,34 @@ const openKeys = ref<string[]>(['companies']);
     color: var(--color-primary-400) !important;
 }
 
-:deep(.ant-menu-item::after) {
-    border-right: none !important;
-    /* Remove default right border */
+/* Submenu Popup */
+:deep(.ant-menu-dark .ant-menu-sub) {
+    background: #1a1a1a !important;
 }
 
+/* Remove default border */
+:deep(.ant-menu-item::after) {
+    border-right: none !important;
+}
+
+/* Pill-style corners */
 :deep(.ant-menu-submenu-title),
 :deep(.ant-menu-item) {
     border-radius: 6px;
     margin-bottom: 4px;
+}
+
+/* Collapse Trigger Button - Light mode */
+:deep(.ant-layout-sider-light .ant-layout-sider-trigger) {
+    background: #fafafa !important;
+    color: #525252 !important;
+    border-top: 1px solid #e5e5e5 !important;
+}
+
+/* Collapse Trigger Button - Dark mode (uses Ant Design's internal class) */
+:deep(.ant-layout-sider-dark .ant-layout-sider-trigger) {
+    background: #1a1a1a !important;
+    color: #a3a3a3 !important;
+    border-top: 1px solid #333333 !important;
 }
 </style>
