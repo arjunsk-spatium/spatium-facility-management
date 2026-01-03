@@ -42,9 +42,8 @@
             </a-card>
         </div>
 
-        <!-- Data Table -->
+        <!-- Search and Actions Header (Visible in both views) -->
         <a-card :bordered="false" class="shadow-sm">
-            <!-- Table Header with Search and Download -->
             <template #title>
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <span class="text-lg font-semibold">Company List</span>
@@ -55,23 +54,22 @@
                             <template #icon>
                                 <DownloadOutlined />
                             </template>
-                            Export
+                            <span class="hidden sm:inline">Export</span>
                         </a-button>
                     </div>
                 </div>
             </template>
 
-            <a-table :columns="columns" :data-source="filteredCompanies" :loading="loading"
-                :row-key="(record: any) => record.id" :pagination="paginationConfig" :scroll="{ x: 900 }">
+            <ResponsiveDataView :columns="columns" :data="filteredCompanies" :loading="loading"
+                :row-key="(record: any) => record.id" :pagination="paginationConfig">
+                <!-- Desktop Table Cells -->
                 <template #bodyCell="{ column, record }">
-                    <!-- Name column with link to view details -->
                     <template v-if="column.key === 'name'">
                         <NuxtLink :to="`/companies/${record.id}`"
                             class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium">
                             {{ record.name }}
                         </NuxtLink>
                     </template>
-                    <!-- Action column with Edit and Delete only -->
                     <template v-if="column.key === 'action'">
                         <a-space>
                             <NuxtLink :to="`/companies/${record.id}/edit`">
@@ -83,13 +81,72 @@
                         </a-space>
                     </template>
                 </template>
-            </a-table>
+
+                <!-- Mobile Card Content -->
+                <template #mobileCard="{ record: company }">
+                    <a-card :bordered="true" class="mb-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex flex-col gap-3">
+                            <!-- Header: Name -->
+                            <div class="flex justify-between items-start">
+                                <NuxtLink :to="`/companies/${company.id}`"
+                                    class="text-lg font-semibold text-primary-600 dark:text-primary-400">
+                                    {{ company.name }}
+                                </NuxtLink>
+                                <span
+                                    class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full dark:bg-green-900 dark:text-green-100">
+                                    Active
+                                </span>
+                            </div>
+
+                            <!-- Details -->
+                            <div class="grid grid-cols-1 gap-2 text-sm">
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Address</span>
+                                    <span class="text-neutral-900 dark:text-neutral-200">{{ company.address }}</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Facility</span>
+                                    <span class="text-neutral-900 dark:text-neutral-200">{{ company.facility || 'N/A'
+                                    }}</span>
+                                </div>
+                                <!-- SPOC Details Section -->
+                                <div class="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
+                                    <span
+                                        class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider block mb-1">Contact
+                                        Person (SPOC)</span>
+                                    <div
+                                        class="flex flex-col gap-1 pl-2 border-l-2 border-primary-200 dark:border-primary-800">
+                                        <span class="font-medium">{{ company.spoc_name }}</span>
+                                        <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_email
+                                        }}</span>
+                                        <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_phone
+                                        }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div
+                                class="flex justify-end gap-2 mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
+                                <NuxtLink :to="`/companies/${company.id}/edit`">
+                                    <a-button type="default" size="small">Edit</a-button>
+                                </NuxtLink>
+                                <a-popconfirm title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
+                                    <a-button type="default" danger size="small">Delete</a-button>
+                                </a-popconfirm>
+                            </div>
+                        </div>
+                    </a-card>
+                </template>
+            </ResponsiveDataView>
         </a-card>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useCompanyStore } from '../../../stores/company'
 import {
     PlusOutlined,
@@ -98,6 +155,7 @@ import {
     StopOutlined,
     DownloadOutlined
 } from '@ant-design/icons-vue'
+import ResponsiveDataView from '../../../components/ResponsiveDataView.vue'
 
 const store = useCompanyStore()
 const companies = computed(() => store.companies)
