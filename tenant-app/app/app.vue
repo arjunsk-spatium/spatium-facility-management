@@ -2,7 +2,8 @@
   <a-config-provider :theme="themeConfig">
     <div
       class="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300">
-      <NuxtLayout>
+      <AppLoader v-if="isLoading" />
+      <NuxtLayout v-else>
         <NuxtPage />
       </NuxtLayout>
     </div>
@@ -19,6 +20,8 @@ const tenantStore = useTenantStore();
 
 // Local reactive ref for dark mode - ensures immediate reactivity
 const isDarkMode = ref(false);
+
+const isLoading = computed(() => tenantStore.loading || !tenantStore.tenant);
 
 // Watch the colorMode and isDark from the composable to sync local state
 watch(
@@ -39,10 +42,13 @@ const themeConfig = computed(() => ({
 
 // Apply CSS Variables for Tailwind
 const updateCssVariables = () => {
-  if (import.meta.client) {
+  if (import.meta.client && tenantStore.tenant) {
     const root = document.documentElement;
-    root.style.setProperty('--color-primary-500', tenantStore.primaryColor);
-    root.style.setProperty('--color-primary-600', tenantStore.primaryColor);
+    const primary = tenantStore.primaryColor;
+
+    root.style.setProperty('--color-primary-500', primary);
+    root.style.setProperty('--color-primary-600', `color-mix(in srgb, ${primary}, black 10%)`);
+    root.style.setProperty('--color-primary-700', `color-mix(in srgb, ${primary}, black 20%)`);
   }
 };
 
