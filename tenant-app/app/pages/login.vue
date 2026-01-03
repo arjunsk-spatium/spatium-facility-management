@@ -38,8 +38,11 @@
       <div class="w-full max-w-md space-y-8">
         <!-- Logo & Header -->
         <div class="text-center">
-          <!-- Placeholder Logo -->
-          <div
+          <!-- Logo -->
+          <div v-if="tenantStore.tenantLogo" class="mx-auto mb-6 flex h-16 w-auto items-center justify-center">
+            <img :src="tenantStore.tenantLogo" :alt="tenantStore.tenantName" class="h-12 w-auto object-contain" />
+          </div>
+          <div v-else
             class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-xl bg-primary-600 text-white shadow-lg shadow-primary-500/30">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24"
               stroke="currentColor">
@@ -47,8 +50,9 @@
                 d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
+
           <h2 class="mt-2 text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
-            Spatium Hub
+            {{ tenantStore.tenantName }}
           </h2>
           <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
             Nice to see you again
@@ -109,6 +113,7 @@ interface Quote {
 
 const loading = ref(false)
 const isImageLoading = ref(true)
+const tenantStore = useTenantStore()
 
 // State
 const form = reactive({
