@@ -1,14 +1,24 @@
 <template>
   <a-layout :style="{ minHeight: '100vh', background: isDark ? '#121212' : '#f5f5f5' }">
-    <!-- Sidebar - Fixed position -->
+    <!-- Sidebar - Responsive (Drawer on mobile, Sider on desktop) -->
     <Sidebar />
 
-    <!-- Main content area - Scrollable -->
+    <!-- Main content area -->
     <a-layout class="main-content-layout" :style="{ background: isDark ? '#121212' : '#f5f5f5' }">
       <a-layout-header
-        class="app-header flex justify-end items-center px-6 border-b border-neutral-200 dark:border-neutral-700"
+        class="app-header flex justify-between items-center px-4 md:px-6 border-b border-neutral-200 dark:border-neutral-700"
         :style="{ background: isDark ? '#1a1a1a' : '#ffffff', lineHeight: '64px', position: 'sticky', top: 0, zIndex: 10 }">
-        <ThemeToggle />
+
+        <!-- Left Side: Hamburger (Mobile) & Title/Breadcrumbs placehoder -->
+        <div class="flex items-center gap-4">
+          <MenuOutlined v-if="isMobile" class="text-lg cursor-pointer hover:text-primary-500 transition-colors"
+            :class="isDark ? 'text-neutral-300' : 'text-neutral-600'" @click="toggleMobileSidebar" />
+        </div>
+
+        <!-- Right Side: Theme Toggle & User Profile -->
+        <div class="flex items-center gap-4">
+          <ThemeToggle />
+        </div>
       </a-layout-header>
 
       <!-- Scrollable content wrapper -->
@@ -30,8 +40,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { MenuOutlined } from '@ant-design/icons-vue';
+import { useSidebar } from '../composables/useSidebar';
+import { useTheme } from '../composables/useTheme';
 
+const { isMobile, toggleMobileSidebar } = useSidebar();
 const { colorMode } = useTheme();
+
 const isDark = computed(() => {
   if (colorMode.value === 'dark') return true;
   if (colorMode.value === 'light') return false;
