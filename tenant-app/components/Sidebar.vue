@@ -101,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useTenantStore } from '../stores/tenant';
 import { useTheme } from '../composables/useTheme';
 import {
@@ -131,8 +131,66 @@ const isDark = computed(() => {
 });
 
 const collapsed = ref(false);
-const selectedKeys = ref<string[]>(['dashboard']);
-const openKeys = ref<string[]>(['companies']);
+const route = useRoute();
+const selectedKeys = ref<string[]>([]);
+const openKeys = ref<string[]>([]);
+
+// Map routes to menu keys
+const updateMenuState = () => {
+    const path = route.path;
+
+    // Default to dashboard
+    if (path === '/' || path === '/dashboard') {
+        selectedKeys.value = ['dashboard'];
+        return;
+    }
+
+    // Companies
+    if (path.includes('/companies')) {
+        openKeys.value = ['companies'];
+        if (path.includes('/insights')) {
+            selectedKeys.value = ['companies-insights'];
+        } else if (path.includes('/create')) {
+            // Even though hidden, we might want to highlight parent or nothing?
+            // User hid 'Create Company', so maybe highlight 'All Companies' or nothing.
+            // Let's highlight nothing specifically but keep 'companies' open.
+            selectedKeys.value = [];
+        } else {
+            selectedKeys.value = ['companies-list'];
+        }
+        return;
+    }
+
+    // Helpdesk
+    if (path.includes('/helpdesk')) {
+        openKeys.value = ['helpdesk'];
+        if (path.includes('/tickets')) selectedKeys.value = ['tickets'];
+        return;
+    }
+
+    // Assets
+    if (path.includes('/assets')) {
+        openKeys.value = ['assets'];
+        if (path.includes('/list')) selectedKeys.value = ['asset-list'];
+        return;
+    }
+
+    // Procurement
+    if (path.includes('/procurement')) {
+        openKeys.value = ['procurement'];
+        if (path.includes('/orders')) selectedKeys.value = ['orders'];
+        return;
+    }
+
+    // Other top-level items
+    if (path.includes('/calendar')) selectedKeys.value = ['calendar'];
+    if (path.includes('/visitors')) selectedKeys.value = ['visitors'];
+    if (path.includes('/facilities')) selectedKeys.value = ['facilities'];
+    if (path.includes('/settings')) selectedKeys.value = ['settings'];
+};
+
+// Update on mount and route change
+watch(() => route.path, updateMenuState, { immediate: true });
 </script>
 
 <style scoped>

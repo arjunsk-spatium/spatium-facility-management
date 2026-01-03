@@ -101,7 +101,7 @@ const statusChartData = computed(() => ({
 const revenueChartData = computed(() => ({
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [{
-        label: 'Revenue ($)',
+        label: 'Revenue (₹)',
         borderColor: '#3378ff',
         backgroundColor: 'rgba(51, 120, 255, 0.2)',
         tension: 0.4,
