@@ -51,14 +51,11 @@
                     <BankOutlined class="text-lg" />
                 </template>
                 <template #title>Companies</template>
-                <a-menu-item key="companies-list">
-                    <NuxtLink to="/companies">All Companies</NuxtLink>
-                </a-menu-item>
-                <a-menu-item key="companies-create">
-                    <NuxtLink to="/companies/create">Create Company</NuxtLink>
-                </a-menu-item>
                 <a-menu-item key="companies-insights">
                     <NuxtLink to="/companies/insights">Insights</NuxtLink>
+                </a-menu-item>
+                <a-menu-item key="companies-list">
+                    <NuxtLink to="/companies">All Companies</NuxtLink>
                 </a-menu-item>
             </a-sub-menu>
 
