@@ -5,6 +5,17 @@ import { createTestingPinia } from '@pinia/testing'
 import { useCompanyStore } from '../../stores/company'
 
 describe('Company Details Page', () => {
+    const mockCompany = {
+        id: '1',
+        name: 'Tech Corp',
+        address: '123 Tech Street, Bangalore',
+        spoc_name: 'John Smith',
+        spoc_email: 'john.smith@techcorp.com',
+        spoc_phone: '+91 98765 43210',
+        gstin: '29ABCDE1234F1ZH',
+        facility: 'Facility 1'
+    }
+
     it('should render company details', async () => {
         const wrapper = await mountSuspended(CompanyDetailsPage, {
             route: {
@@ -15,7 +26,7 @@ describe('Company Details Page', () => {
                     createSpy: vi.fn,
                     initialState: {
                         company: {
-                            currentCompany: { id: '1', name: 'Detail Corp', address: 'Detail St', status: 'active' },
+                            currentCompany: mockCompany,
                             loading: false
                         }
                     }
@@ -23,8 +34,8 @@ describe('Company Details Page', () => {
             }
         })
         
-        expect(wrapper.text()).toContain('Detail Corp')
-        expect(wrapper.text()).toContain('Detail St')
+        expect(wrapper.text()).toContain('Tech Corp')
+        expect(wrapper.text()).toContain('123 Tech Street, Bangalore')
         // Check for edit link
         expect(wrapper.find('a[href="/companies/1/edit"]').exists()).toBe(true)
     })

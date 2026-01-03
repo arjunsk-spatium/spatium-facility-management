@@ -43,20 +43,37 @@
         </div>
 
         <!-- Data Table -->
-        <a-card :bordered="false" class="shadow-sm" title="Company List">
-            <a-table :columns="columns" :data-source="companies" :loading="loading" :row-key="record => record.id"
-                :pagination="{ pageSize: 5 }">
+        <a-card :bordered="false" class="shadow-sm">
+            <!-- Table Header with Search and Download -->
+            <template #title>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <span class="text-lg font-semibold">Company List</span>
+                    <div class="flex items-center gap-3">
+                        <a-input-search v-model:value="searchText" placeholder="Search companies..."
+                            style="width: 250px" allow-clear />
+                        <a-button @click="downloadExcel" :loading="downloading">
+                            <template #icon>
+                                <DownloadOutlined />
+                            </template>
+                            Export
+                        </a-button>
+                    </div>
+                </div>
+            </template>
+
+            <a-table :columns="columns" :data-source="filteredCompanies" :loading="loading"
+                :row-key="(record: any) => record.id" :pagination="paginationConfig" :scroll="{ x: 900 }">
                 <template #bodyCell="{ column, record }">
-                    <template v-if="column.key === 'status'">
-                        <a-tag :color="record.status === 'active' ? 'green' : 'red'">
-                            {{ record.status.toUpperCase() }}
-                        </a-tag>
+                    <!-- Name column with link to view details -->
+                    <template v-if="column.key === 'name'">
+                        <NuxtLink :to="`/companies/${record.id}`"
+                            class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium">
+                            {{ record.name }}
+                        </NuxtLink>
                     </template>
+                    <!-- Action column with Edit and Delete only -->
                     <template v-if="column.key === 'action'">
                         <a-space>
-                            <NuxtLink :to="`/companies/${record.id}`">
-                                <a-button type="link">View</a-button>
-                            </NuxtLink>
                             <NuxtLink :to="`/companies/${record.id}/edit`">
                                 <a-button type="link">Edit</a-button>
                             </NuxtLink>
@@ -72,25 +89,78 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useCompanyStore } from '../../../stores/company'
 import {
     PlusOutlined,
     BankOutlined,
     CheckCircleOutlined,
-    StopOutlined
+    StopOutlined,
+    DownloadOutlined
 } from '@ant-design/icons-vue'
 
 const store = useCompanyStore()
 const companies = computed(() => store.companies)
 const loading = computed(() => store.loading)
 
-// Mock stats for now - ideally fetch from store
+// Search functionality
+const searchText = ref('')
+const downloading = ref(false)
+
+// Filtered companies based on search
+const filteredCompanies = computed(() => {
+    if (!searchText.value) return companies.value
+    const search = searchText.value.toLowerCase()
+    return companies.value.filter(company =>
+        company.name.toLowerCase().includes(search) ||
+        company.spoc_name.toLowerCase().includes(search) ||
+        company.spoc_email.toLowerCase().includes(search) ||
+        company.spoc_phone.toLowerCase().includes(search) ||
+        (company.facility && company.facility.toLowerCase().includes(search))
+    )
+})
+
+// Stats for companies
 const stats = computed(() => ({
     total: companies.value.length,
-    active: companies.value.filter(c => c.status === 'active').length,
-    inactive: companies.value.filter(c => c.status === 'inactive').length
+    active: companies.value.length, // All companies are active
+    inactive: 0
 }))
+
+// Download as Excel
+const downloadExcel = async () => {
+    downloading.value = true
+    try {
+        // Dynamic imports for client-side only
+        const XLSX = await import('xlsx')
+
+        const data = filteredCompanies.value.map(company => ({
+            'Company Name': company.name,
+            'Address': company.address,
+            'SPOC Name': company.spoc_name,
+            'SPOC Email': company.spoc_email,
+            'SPOC Phone': company.spoc_phone,
+            'GSTIN': company.gstin || '',
+            'Facility': company.facility || ''
+        }))
+
+        const worksheet = XLSX.utils.json_to_sheet(data)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Companies')
+
+        // Generate filename with date-time
+        const now = new Date()
+        const dateTime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19)
+        const fileName = `companies-${dateTime}.xlsx`
+
+        // Use built-in download which handles browser compatibility better
+        XLSX.writeFile(workbook, fileName)
+    } catch (error) {
+        console.error('Error exporting to Excel:', error)
+    } finally {
+        downloading.value = false
+    }
+}
 
 const columns = [
     {
@@ -100,20 +170,38 @@ const columns = [
         sorter: (a: any, b: any) => a.name.localeCompare(b.name)
     },
     {
-        title: 'Address',
-        dataIndex: 'address',
-        key: 'address',
+        title: 'SPOC Name',
+        dataIndex: 'spoc_name',
+        key: 'spoc_name',
     },
     {
-        title: 'Status',
-        dataIndex: 'status',
-        key: 'status',
+        title: 'SPOC Email',
+        dataIndex: 'spoc_email',
+        key: 'spoc_email',
+    },
+    {
+        title: 'SPOC Phone',
+        dataIndex: 'spoc_phone',
+        key: 'spoc_phone',
+    },
+    {
+        title: 'Facility',
+        dataIndex: 'facility',
+        key: 'facility',
     },
     {
         title: 'Action',
         key: 'action',
     },
 ];
+
+// Pagination configuration
+const paginationConfig = computed(() => ({
+    pageSize: 10,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
+    showTotal: (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} companies`,
+}))
 
 onMounted(() => {
     store.fetchCompanies()
