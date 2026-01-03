@@ -61,4 +61,15 @@ watch(isDark, (newVal) => {
 
 // Watch for tenant color changes
 watch(() => tenantStore.primaryColor, updateCssVariables);
+
+// Dynamic Head (Title & Favicon)
+useHead({
+  title: computed(() => tenantStore.tenantName),
+  link: [
+    {
+      rel: 'icon',
+      href: computed(() => tenantStore.faviconUrl),
+    },
+  ],
+});
 </script>

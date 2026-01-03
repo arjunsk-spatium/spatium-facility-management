@@ -2,6 +2,7 @@ export interface Tenant {
   id: string;
   name: string;
   logoUrl: string;
+  faviconUrl?: string; // Optional favicon
   colors: {
     primary: string;
     secondary: string;
@@ -13,6 +14,7 @@ const MOCK_TENANTS: Record<string, Tenant> = {
     id: 'tenant-a',
     name: 'Acme Corp',
     logoUrl: 'https://placehold.co/200x50/3378ff/ffffff?text=Acme+Corp',
+    faviconUrl: 'https://placehold.co/32x32/3378ff/ffffff?text=A',
     colors: {
       primary: '#3378ff', // Blue
       secondary: '#64748b',
@@ -22,6 +24,7 @@ const MOCK_TENANTS: Record<string, Tenant> = {
     id: 'tenant-b',
     name: 'Globex',
     logoUrl: 'https://placehold.co/200x50/10b981/ffffff?text=Globex',
+    faviconUrl: 'https://placehold.co/32x32/10b981/ffffff?text=G',
     colors: {
       primary: '#10b981', // Green
       secondary: '#f59e0b',
