@@ -5,9 +5,14 @@ export const useUserService = () => {
     const getUserModules = async (): Promise<string[]> => {
         await delay(300)
         // Mock response
-        return ['dashboard', 'visitors', 
-                'companies',
-                'facilities', 'helpdesk', 'users', 'settings']
+        return [   
+            'dashboard', 
+            'companies',
+            'visitors', 
+            'facilities', 
+            'helpdesk', 
+            'users', 
+            'settings']
     }
 
     return {

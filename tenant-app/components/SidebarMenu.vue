@@ -37,63 +37,31 @@
                 <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
             </div>
 
-            <template v-else>
-                <!-- Dashboard -->
-                <a-menu-item v-if="userModules.includes('dashboard')" key="dashboard" class="mb-1 rounded-md">
-                    <template #icon>
-                        <BarChartOutlined class="text-lg" />
-                    </template>
-                    <NuxtLink to="/dashboard">Dashboard</NuxtLink>
-                </a-menu-item>
+            <!-- Dynamic Menu Items -->
+            <template v-for="key in userModules" :key="key">
+                <template v-if="moduleConfig[key]">
+                    <!-- Submenu -->
+                    <a-sub-menu v-if="moduleConfig[key].children" :key="key + '-submenu'">
+                        <template #icon>
+                            <component :is="moduleConfig[key].icon" class="text-lg" />
+                        </template>
+                        <template #title>{{ moduleConfig[key].label }}</template>
+                        <a-menu-item v-for="child in moduleConfig[key].children" :key="child.key">
+                            <NuxtLink v-if="child.route" :to="child.route">{{ child.label }}</NuxtLink>
+                            <span v-else>{{ child.label }}</span>
+                        </a-menu-item>
+                    </a-sub-menu>
 
-                <a-menu-item v-if="userModules.includes('visitors')" key="visitors" class="mb-1 rounded-md">
-                    <template #icon>
-                        <UsergroupAddOutlined class="text-lg" />
-                    </template>
-                    <span>Visitors</span>
-                </a-menu-item>
-
-                <a-sub-menu v-if="userModules.includes('companies')" key="companies">
-                    <template #icon>
-                        <BankOutlined class="text-lg" />
-                    </template>
-                    <template #title>Companies</template>
-                    <a-menu-item key="companies-insights">
-                        <NuxtLink to="/companies/insights">Insights</NuxtLink>
+                    <!-- Single Item -->
+                    <a-menu-item v-else :key="key + '-item'" class="mb-1 rounded-md">
+                        <template #icon>
+                            <component :is="moduleConfig[key].icon" class="text-lg" />
+                        </template>
+                        <NuxtLink v-if="moduleConfig[key].route" :to="moduleConfig[key].route">{{
+                            moduleConfig[key].label }}</NuxtLink>
+                        <span v-else>{{ moduleConfig[key].label }}</span>
                     </a-menu-item>
-                    <a-menu-item key="companies-list">
-                        <NuxtLink to="/companies">All Companies</NuxtLink>
-                    </a-menu-item>
-                </a-sub-menu>
-
-                <a-sub-menu v-if="userModules.includes('helpdesk')" key="helpdesk">
-                    <template #icon>
-                        <CustomerServiceOutlined class="text-lg" />
-                    </template>
-                    <template #title>Helpdesk</template>
-                    <a-menu-item key="tickets">Tickets</a-menu-item>
-                </a-sub-menu>
-
-                <a-menu-item v-if="userModules.includes('facilities')" key="facilities" class="mb-1 rounded-md">
-                    <template #icon>
-                        <HomeOutlined class="text-lg" />
-                    </template>
-                    <span>Facilities</span>
-                </a-menu-item>
-
-                <a-menu-item v-if="userModules.includes('users')" key="users" class="mb-1 rounded-md">
-                    <template #icon>
-                        <TeamOutlined class="text-lg" />
-                    </template>
-                    <span>User Module Management</span>
-                </a-menu-item>
-
-                <a-menu-item v-if="userModules.includes('settings')" key="settings" class="mb-1 rounded-md">
-                    <template #icon>
-                        <SettingOutlined class="text-lg" />
-                    </template>
-                    <NuxtLink to="/settings">Configuration</NuxtLink>
-                </a-menu-item>
+                </template>
             </template>
         </a-menu>
     </div>
@@ -136,6 +104,30 @@ const isDark = computed(() => {
     }
     return false;
 });
+
+// Module Configuration
+const moduleConfig: Record<string, any> = {
+    dashboard: { label: 'Dashboard', icon: BarChartOutlined, route: '/dashboard' },
+    visitors: { label: 'Visitors', icon: UsergroupAddOutlined, route: '' },
+    companies: {
+        label: 'Companies',
+        icon: BankOutlined,
+        children: [
+            { key: 'companies-insights', label: 'Insights', route: '/companies/insights' },
+            { key: 'companies-list', label: 'All Companies', route: '/companies' }
+        ]
+    },
+    helpdesk: {
+        label: 'Helpdesk',
+        icon: CustomerServiceOutlined,
+        children: [
+            { key: 'tickets', label: 'Tickets', route: '' }
+        ]
+    },
+    facilities: { label: 'Facilities', icon: HomeOutlined, route: '' },
+    users: { label: 'User Module Management', icon: TeamOutlined, route: '' },
+    settings: { label: 'Configuration', icon: SettingOutlined, route: '/settings' }
+};
 
 // Map routes to menu keys
 const updateMenuState = () => {
