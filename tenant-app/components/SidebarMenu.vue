@@ -150,13 +150,13 @@ const updateMenuState = () => {
 
     // Default to dashboard
     if (path === '/' || path === '/dashboard') {
-        selectedKeys.value = ['dashboard'];
+        selectedKeys.value = ['dashboard-item'];
         return;
     }
 
     // Companies
     if (path.includes('/companies')) {
-        openKeys.value = ['companies'];
+        openKeys.value = ['companies-submenu'];
         if (path.includes('/insights')) {
             selectedKeys.value = ['companies-insights'];
         } else if (path.includes('/create')) {
@@ -169,23 +169,32 @@ const updateMenuState = () => {
 
     // Helpdesk
     if (path.includes('/helpdesk')) {
-        openKeys.value = ['helpdesk'];
-        if (path.includes('/tickets')) selectedKeys.value = ['tickets'];
+        openKeys.value = ['helpdesk-submenu'];
+        if (path.includes('/tickets')) selectedKeys.value = ['helpdesk-tickets'];
+        else if (path.includes('/insights')) selectedKeys.value = ['helpdesk-insights'];
+        else selectedKeys.value = ['helpdesk-tickets'];
         return;
     }
 
     // User Manager
     if (path.includes('/users')) {
-        openKeys.value = ['users'];
-        if (path.includes('/list')) selectedKeys.value = ['users-list'];
+        selectedKeys.value = ['users-item'];
         return;
     }
 
     // Other top-level items
-    if (path.includes('/calendar')) selectedKeys.value = ['calendar'];
-    if (path.includes('/visitors')) selectedKeys.value = ['visitors'];
-    if (path.includes('/facilities')) selectedKeys.value = ['facilities'];
-    if (path.includes('/settings')) selectedKeys.value = ['settings'];
+    if (path.includes('/calendar')) selectedKeys.value = ['calendar-item'];
+    if (path.includes('/visitors')) {
+        openKeys.value = ['visitors-submenu'];
+        if (path.includes('/insights')) selectedKeys.value = ['visitors-insights'];
+        else selectedKeys.value = ['visitors-list'];
+    }
+    if (path.includes('/facilities')) {
+        openKeys.value = ['facilities-submenu'];
+        if (path.includes('/insights')) selectedKeys.value = ['facilities-insights'];
+        else selectedKeys.value = ['facilities-list'];
+    }
+    if (path.includes('/settings')) selectedKeys.value = ['settings-item'];
 };
 
 // Use modules from auth store

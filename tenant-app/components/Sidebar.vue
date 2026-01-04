@@ -16,13 +16,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { useSidebar } from '../composables/useSidebar';
 import { useTheme } from '../composables/useTheme';
 import SidebarMenu from './SidebarMenu.vue';
 
 const { isMobile, isOpen, collapsed, closeMobileSidebar } = useSidebar();
 const { colorMode } = useTheme();
+const route = useRoute();
+
+// Close mobile sidebar on route change
+watch(() => route.path, () => {
+    if (isMobile.value && isOpen.value) {
+        closeMobileSidebar();
+    }
+});
 
 // Compute isDark - shared logic
 const isDark = computed(() => {
