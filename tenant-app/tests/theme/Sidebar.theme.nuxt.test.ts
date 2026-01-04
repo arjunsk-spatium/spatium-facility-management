@@ -26,6 +26,9 @@ describe('Sidebar Theme Adaptation', () => {
           createTestingPinia({
             createSpy: vi.fn,
             initialState: {
+              auth: {
+                 modules: ['dashboard']
+              },
               tenant: {
                 tenant: {
                   id: 'test',
@@ -40,6 +43,10 @@ describe('Sidebar Theme Adaptation', () => {
       }
     })
 
+    // Wait for modules to load
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await wrapper.vm.$nextTick();
+
     // Sidebar should have dark theme prop passed to a-menu
     const menu = wrapper.find('.ant-menu')
     // The menu should have 'dark' theme class when in dark mode
@@ -53,6 +60,7 @@ describe('Sidebar Theme Adaptation', () => {
           createTestingPinia({
             createSpy: vi.fn,
             initialState: {
+              auth: { modules: [] },
               tenant: {
                 tenant: {
                   id: 'test',
@@ -77,6 +85,7 @@ describe('Sidebar Theme Adaptation', () => {
           createTestingPinia({
             createSpy: vi.fn,
             initialState: {
+              auth: { modules: [] },
               tenant: {
                 tenant: {
                   id: 'test',
@@ -103,6 +112,7 @@ describe('Sidebar Theme Adaptation', () => {
           createTestingPinia({
             createSpy: vi.fn,
             initialState: {
+              auth: { modules: [] },
               tenant: {
                 tenant: {
                   id: 'test',
@@ -122,13 +132,24 @@ describe('Sidebar Theme Adaptation', () => {
     expect(fallbackIcon.exists()).toBe(true)
   })
 
-  it('should render navigation menu items', async () => {
+  it('should render navigation menu items based on modules', async () => {
     const wrapper = await mountSuspended(Sidebar, {
       global: {
         plugins: [
           createTestingPinia({
             createSpy: vi.fn,
             initialState: {
+              auth: {
+                modules: [
+                  'dashboard',
+                  'visitors',
+                  'companies',
+                  'helpdesk',
+                  'facilities',
+                  'users',
+                  'settings'
+                ]
+              },
               tenant: {
                 tenant: null
               }
@@ -138,9 +159,22 @@ describe('Sidebar Theme Adaptation', () => {
       }
     })
 
+    // Wait for async fetch
+    await new Promise(resolve => setTimeout(resolve, 100)); // slightly longer wait for mock delay
+    await wrapper.vm.$nextTick();
+
     // Check for key menu items
-    expect(wrapper.text()).toContain('Dashboard')
-    expect(wrapper.text()).toContain('Companies')
-    expect(wrapper.text()).toContain('Configurations')
+    const text = wrapper.text();
+    expect(text).toContain('Dashboard')
+    expect(text).toContain('Companies')
+    expect(text).toContain('Visitors')
+    expect(text).toContain('Helpdesk')
+    expect(text).toContain('Facilities')
+    expect(text).toContain('User Module Management')
+    expect(text).toContain('Configuration')
+
+    // Ensure removed items are NOT present
+    expect(text).not.toContain('Assets')
+    expect(text).not.toContain('Procurement')
   })
 })

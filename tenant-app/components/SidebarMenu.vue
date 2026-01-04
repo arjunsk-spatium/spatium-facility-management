@@ -27,25 +27,33 @@
         </div>
 
         <!-- Scrollable Menu Section -->
-        <div class="flex-1 overflow-y-auto">
-            <a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" :theme="isDark ? 'dark' : 'light'"
-                mode="inline" class="border-none px-3 pt-4 font-medium bg-inherit" :inline-collapsed="collapsed">
+        <a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" :theme="isDark ? 'dark' : 'light'"
+            mode="inline" class="border-none px-3 pt-4 font-medium bg-inherit" :inline-collapsed="collapsed">
+
+            <!-- Loading State -->
+            <div v-if="isLoading" class="px-4 py-2 space-y-4">
+                <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
+                <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
+                <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
+            </div>
+
+            <template v-else>
                 <!-- Dashboard -->
-                <a-menu-item key="dashboard" class="mb-1 rounded-md">
+                <a-menu-item v-if="userModules.includes('dashboard')" key="dashboard" class="mb-1 rounded-md">
                     <template #icon>
                         <BarChartOutlined class="text-lg" />
                     </template>
                     <NuxtLink to="/dashboard">Dashboard</NuxtLink>
                 </a-menu-item>
 
-                <a-menu-item key="visitors" class="mb-1 rounded-md">
+                <a-menu-item v-if="userModules.includes('visitors')" key="visitors" class="mb-1 rounded-md">
                     <template #icon>
                         <UsergroupAddOutlined class="text-lg" />
                     </template>
                     <span>Visitors</span>
                 </a-menu-item>
 
-                <a-sub-menu key="companies">
+                <a-sub-menu v-if="userModules.includes('companies')" key="companies">
                     <template #icon>
                         <BankOutlined class="text-lg" />
                     </template>
@@ -58,7 +66,7 @@
                     </a-menu-item>
                 </a-sub-menu>
 
-                <a-sub-menu key="helpdesk">
+                <a-sub-menu v-if="userModules.includes('helpdesk')" key="helpdesk">
                     <template #icon>
                         <CustomerServiceOutlined class="text-lg" />
                     </template>
@@ -66,38 +74,30 @@
                     <a-menu-item key="tickets">Tickets</a-menu-item>
                 </a-sub-menu>
 
-                <a-menu-item key="facilities" class="mb-1 rounded-md">
+                <a-menu-item v-if="userModules.includes('facilities')" key="facilities" class="mb-1 rounded-md">
                     <template #icon>
                         <HomeOutlined class="text-lg" />
                     </template>
                     <span>Facilities</span>
                 </a-menu-item>
 
-                <a-sub-menu key="assets">
+                <a-menu-item v-if="userModules.includes('users')" key="users" class="mb-1 rounded-md">
                     <template #icon>
-                        <SafetyCertificateOutlined class="text-lg" />
+                        <TeamOutlined class="text-lg" />
                     </template>
-                    <template #title>Assets</template>
-                    <a-menu-item key="asset-list">All Assets</a-menu-item>
-                </a-sub-menu>
+                    <span>User Module Management</span>
+                </a-menu-item>
 
-                <a-sub-menu key="procurement">
-                    <template #icon>
-                        <ShoppingCartOutlined class="text-lg" />
-                    </template>
-                    <template #title>Procurement</template>
-                    <a-menu-item key="orders">Orders</a-menu-item>
-                </a-sub-menu>
-
-                <a-menu-item key="settings" class="mb-1 rounded-md">
+                <a-menu-item v-if="userModules.includes('settings')" key="settings" class="mb-1 rounded-md">
                     <template #icon>
                         <SettingOutlined class="text-lg" />
                     </template>
-                    <NuxtLink to="/settings">Configurations</NuxtLink>
+                    <NuxtLink to="/settings">Configuration</NuxtLink>
                 </a-menu-item>
-            </a-menu>
-        </div>
+            </template>
+        </a-menu>
     </div>
+
 </template>
 
 <script setup lang="ts">
@@ -113,7 +113,8 @@ import {
     CustomerServiceOutlined,
     HomeOutlined,
     SafetyCertificateOutlined,
-    ShoppingCartOutlined
+    ShoppingCartOutlined,
+    TeamOutlined
 } from '@ant-design/icons-vue';
 
 const props = defineProps<{
@@ -166,17 +167,10 @@ const updateMenuState = () => {
         return;
     }
 
-    // Assets
-    if (path.includes('/assets')) {
-        openKeys.value = ['assets'];
-        if (path.includes('/list')) selectedKeys.value = ['asset-list'];
-        return;
-    }
-
-    // Procurement
-    if (path.includes('/procurement')) {
-        openKeys.value = ['procurement'];
-        if (path.includes('/orders')) selectedKeys.value = ['orders'];
+    // User Manager
+    if (path.includes('/users')) {
+        openKeys.value = ['users'];
+        if (path.includes('/list')) selectedKeys.value = ['users-list'];
         return;
     }
 
@@ -186,6 +180,27 @@ const updateMenuState = () => {
     if (path.includes('/facilities')) selectedKeys.value = ['facilities'];
     if (path.includes('/settings')) selectedKeys.value = ['settings'];
 };
+
+// Use modules from auth store
+const authStore = useAuthStore();
+const isLoading = ref(true);
+
+// Watch store modules to update UI
+const userModules = computed(() => authStore.modules);
+
+onMounted(async () => {
+    // Fetch if empty
+    if (authStore.modules.length === 0) {
+        try {
+            await authStore.fetchModules();
+        } catch (error) {
+            console.error('Failed to fetch user modules', error);
+        }
+    }
+    // We can assume loading is handled by initial state or we can add isLoading state to store if needed.
+    // For now, we just wait for fetch.
+    isLoading.value = false;
+});
 
 // Update on mount and route change
 watch(() => route.path, updateMenuState, { immediate: true });
