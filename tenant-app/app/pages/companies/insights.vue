@@ -67,6 +67,10 @@ import BarChart from '../../components/charts/BarChart.vue'
 import LineChart from '../../components/charts/LineChart.vue'
 // Charts auto-registered in component files
 
+definePageMeta({
+    middleware: 'auth'
+})
+
 const store = useCompanyStore()
 const insights = computed(() => store.insights)
 const loading = computed(() => store.loading)

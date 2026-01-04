@@ -102,6 +102,8 @@ definePageMeta({
   layout: 'auth'
 })
 
+import { useAuthStore } from '../stores/auth';
+
 // Types
 interface Quote {
   text: string
@@ -150,14 +152,19 @@ const getRandomItem = <T>(arr: T[]): T => {
 
 const handleLogin = async () => {
   loading.value = true
-  // TODO: Integrate actual auth logic
+
+  // Simulate API call
   setTimeout(() => {
-    console.log('Logging in with:', form)
-    loading.value = false
-    // Navigate to dashboard if needed
-    // navigateTo('/')
-    alert('Log In button clicked. Implementation pending auth integration.')
-  }, 1000)
+    // Mock successful login
+    const mockUser = { email: form.email, name: 'Demo User' };
+    const mockToken = 'mock-jwt-token-123';
+
+    const authStore = useAuthStore();
+    authStore.login(mockUser, mockToken);
+
+    loading.value = false;
+    navigateTo('/dashboard');
+  }, 1000);
 }
 
 // Lifecycle

@@ -108,7 +108,14 @@ const isDark = computed(() => {
 // Module Configuration
 const moduleConfig: Record<string, any> = {
     dashboard: { label: 'Dashboard', icon: BarChartOutlined, route: '/dashboard' },
-    visitors: { label: 'Visitors', icon: UsergroupAddOutlined, route: '' },
+    visitors: {
+        label: 'Visitors',
+        icon: UsergroupAddOutlined,
+        children: [
+            { key: 'visitors-insights', label: 'Insights', route: '/visitors/insights' },
+            { key: 'visitors-list', label: 'All Visitors', route: '/visitors' }
+        ]
+    },
     companies: {
         label: 'Companies',
         icon: BankOutlined,
@@ -121,11 +128,19 @@ const moduleConfig: Record<string, any> = {
         label: 'Helpdesk',
         icon: CustomerServiceOutlined,
         children: [
-            { key: 'tickets', label: 'Tickets', route: '' }
+            { key: 'helpdesk-insights', label: 'Insights', route: '/helpdesk/insights' },
+            { key: 'helpdesk-tickets', label: 'Tickets', route: '/helpdesk' }
         ]
     },
-    facilities: { label: 'Facilities', icon: HomeOutlined, route: '' },
-    users: { label: 'User Module Management', icon: TeamOutlined, route: '' },
+    facilities: {
+        label: 'Facilities',
+        icon: HomeOutlined,
+        children: [
+            { key: 'facilities-insights', label: 'Insights', route: '/facilities/insights' },
+            { key: 'facilities-list', label: 'All Facilities', route: '/facilities' }
+        ]
+    },
+    users: { label: 'User Module Management', icon: TeamOutlined, route: '/users' },
     settings: { label: 'Configuration', icon: SettingOutlined, route: '/settings' }
 };
 

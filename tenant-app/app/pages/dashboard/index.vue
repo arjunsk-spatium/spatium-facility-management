@@ -1,6 +1,7 @@
 <template>
-  <div>
-    <h1>Dashboard</h1>
+  <div class="p-6">
+    <h1 class="text-2xl font-bold mb-4">Dashboard</h1>
+    <p>Welcome to the Spatium Facility Management Dashboard.</p>
   </div>
 </template>
 

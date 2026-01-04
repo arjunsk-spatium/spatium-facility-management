@@ -109,7 +109,7 @@
                                     <span
                                         class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Facility</span>
                                     <span class="text-neutral-900 dark:text-neutral-200">{{ company.facility || 'N/A'
-                                    }}</span>
+                                        }}</span>
                                 </div>
                                 <!-- SPOC Details Section -->
                                 <div class="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
@@ -120,9 +120,9 @@
                                         class="flex flex-col gap-1 pl-2 border-l-2 border-primary-200 dark:border-primary-800">
                                         <span class="font-medium">{{ company.spoc_name }}</span>
                                         <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_email
-                                        }}</span>
+                                            }}</span>
                                         <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_phone
-                                        }}</span>
+                                            }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -156,6 +156,10 @@ import {
     DownloadOutlined
 } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../components/ResponsiveDataView.vue'
+
+definePageMeta({
+    middleware: 'auth'
+})
 
 const store = useCompanyStore()
 const companies = computed(() => store.companies)
