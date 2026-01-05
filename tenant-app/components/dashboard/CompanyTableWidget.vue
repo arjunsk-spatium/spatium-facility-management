@@ -6,13 +6,13 @@
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b dark:border-gray-700">
+                    <tr class="text-left text-gray-500 border-b border-gray-100 dark:border-gray-700">
                         <th class="pb-2 font-medium">Name</th>
                         <th class="pb-2 font-medium">Status</th>
                         <th class="pb-2 font-medium">Added</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y dark:divide-gray-700">
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     <tr v-for="company in companies" :key="company.id">
                         <td class="py-2.5">{{ company.name }}</td>
                         <td class="py-2.5">
