@@ -29,18 +29,18 @@
                 <a-tab-pane key="closed" tab="Closed" />
             </a-tabs>
 
-            <div class="flex justify-between items-center mb-4 mt-2">
-                <div class="flex gap-4 items-center">
-                    <a-input-search v-model:value="searchText" placeholder="Search tickets..." style="width: 250px" />
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <a-input-search v-model:value="searchText" placeholder="Search tickets..." class="w-full md:w-64" />
 
-                    <a-select v-model:value="facilityFilter" placeholder="Filter by Facility" style="width: 200px"
+                    <a-select v-model:value="facilityFilter" placeholder="Filter by Facility" class="w-full md:w-48"
                         allow-clear>
                         <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">{{ fac.name
-                            }}</a-select-option>
+                        }}</a-select-option>
                     </a-select>
                 </div>
 
-                <a-button>
+                <a-button class="w-full md:w-auto">
                     <template #icon>
                         <ExportOutlined />
                     </template>
@@ -105,9 +105,9 @@
                             class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
                             <div class="flex items-center gap-2">
                                 <a-tag :color="getPriorityColor(record.priority)" class="!mr-0">{{ record.priority
-                                    }}</a-tag>
+                                }}</a-tag>
                                 <span class="text-xs text-gray-400">{{ new Date(record.createdAt).toLocaleDateString()
-                                    }}</span>
+                                }}</span>
                             </div>
                             <a-button type="link" size="small" class="!px-0"
                                 @click="navigateTo(`/helpdesk/${record.id}`)">

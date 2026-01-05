@@ -1470,3 +1470,41 @@
 .dark .ant-layout-content {
     background: #121212 !important;
 }
+
+/* Responsive Overrides for Ant Design Panels */
+@media (max-width: 768px) {
+    .ant-picker-dropdown .ant-picker-panel-container {
+        display: flex !important;
+        flex-direction: column !important;
+        width: auto !important;
+        overflow: hidden !important;
+    }
+
+    .ant-picker-dropdown .ant-picker-panels {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+
+    .ant-picker-dropdown .ant-picker-panel {
+        width: 100% !important;
+        border-bottom: 1px solid var(--color-neutral-200);
+    }
+
+    .dark .ant-picker-dropdown .ant-picker-panel {
+        border-bottom-color: var(--color-neutral-700);
+    }
+
+    .ant-picker-dropdown .ant-picker-panel:last-child {
+        border-bottom: none;
+    }
+
+    .ant-picker-dropdown .ant-picker-content {
+        width: 100% !important;
+    }
+
+    .ant-picker-dropdown .ant-picker-content th,
+    .ant-picker-dropdown .ant-picker-content td {
+        padding: 0 !important;
+    }
+}

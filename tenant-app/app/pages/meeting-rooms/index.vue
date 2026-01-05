@@ -29,17 +29,17 @@
 
         <a-card :bordered="false" class="shadow-sm">
 
-            <div class="flex justify-between items-center mb-4 mt-2">
-                <div class="flex gap-4 items-center">
-                    <a-input-search v-model:value="searchText" placeholder="Search rooms..." style="width: 250px" />
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <a-input-search v-model:value="searchText" placeholder="Search rooms..." class="w-full md:w-64" />
 
-                    <a-select v-model:value="facilityFilter" placeholder="Filter by Facility" style="width: 200px"
+                    <a-select v-model:value="facilityFilter" placeholder="Filter by Facility" class="w-full md:w-48"
                         allow-clear>
                         <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">{{ fac.name
-                        }}</a-select-option>
+                            }}</a-select-option>
                     </a-select>
 
-                    <a-select v-model:value="typeFilter" placeholder="Room Type" style="width: 180px" allow-clear>
+                    <a-select v-model:value="typeFilter" placeholder="Room Type" class="w-full md:w-44" allow-clear>
                         <a-select-option value="Meeting Room">Meeting Room</a-select-option>
                         <a-select-option value="Board Room">Board Room</a-select-option>
                         <a-select-option value="Discussion Room">Discussion Room</a-select-option>

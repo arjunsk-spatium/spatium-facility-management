@@ -24,20 +24,22 @@
         <a-card :bordered="false" class="shadow-sm">
 
             <!-- Filters -->
-            <div class="flex justify-between items-center mb-4 mt-2">
-                <div class="flex gap-4 items-center flex-wrap">
+            <!-- Filters -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                     <a-input-search v-model:value="searchText" placeholder="Search booking ID or user..."
-                        style="width: 250px" />
+                        class="w-full md:w-64" />
 
-                    <a-range-picker v-model:value="dateRange" />
+                    <a-range-picker v-model:value="dateRange" class="w-full md:w-auto" />
 
-                    <a-select v-model:value="statusFilter" placeholder="Filter Status" style="width: 150px" allow-clear>
+                    <a-select v-model:value="statusFilter" placeholder="Filter Status" class="w-full md:w-40"
+                        allow-clear>
                         <a-select-option value="Confirmed">Confirmed</a-select-option>
                         <a-select-option value="Completed">Completed</a-select-option>
                         <a-select-option value="Cancelled">Cancelled</a-select-option>
                     </a-select>
                 </div>
-                <a-button>
+                <a-button class="w-full md:w-auto">
                     <template #icon>
                         <ExportOutlined />
                     </template>
@@ -118,7 +120,7 @@
                             <div>
                                 <h4 class="font-bold text-base dark:text-white mb-0">{{ record.id }}</h4>
                                 <span class="text-xs text-gray-500">{{ new Date(record.startTime).toLocaleDateString()
-                                    }}</span>
+                                }}</span>
                             </div>
                             <BookingStatusBadge :status="record.status" />
                         </div>
@@ -136,10 +138,12 @@
                                 <span class="dark:text-white">
                                     {{ new Date(record.startTime).toLocaleTimeString([], {
                                         hour: '2-digit',
-                                    minute:'2-digit'}) }} -
+                                        minute: '2-digit'
+                                    }) }} -
                                     {{ new Date(record.endTime).toLocaleTimeString([], {
                                         hour: '2-digit',
-                                    minute:'2-digit'}) }}
+                                        minute: '2-digit'
+                                    }) }}
                                 </span>
                             </div>
                             <div class="flex justify-between">
