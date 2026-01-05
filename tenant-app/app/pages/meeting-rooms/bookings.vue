@@ -45,8 +45,7 @@
                 </a-button>
             </div>
 
-            <a-table :columns="columns" :data-source="filteredBookings" :loading="loading"
-                :pagination="{ pageSize: 10, showSizeChanger: true }" row-key="id">
+            <ResponsiveDataView :columns="columns" :data="filteredBookings" :loading="loading" row-key="id">
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'id'">
                         <span class="font-medium">{{ record.id }}</span>
@@ -109,7 +108,71 @@
                         </a-dropdown>
                     </template>
                 </template>
-            </a-table>
+
+                <!-- Mobile Card View -->
+                <template #mobileCard="{ record }">
+                    <a-card
+                        class="mb-4 shadow-sm !border-neutral-200 dark:!border-neutral-700 hover:shadow-md transition-shadow"
+                        :bordered="true" :bodyStyle="{ padding: '16px' }">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 class="font-bold text-base dark:text-white mb-0">{{ record.id }}</h4>
+                                <span class="text-xs text-gray-500">{{ new Date(record.startTime).toLocaleDateString()
+                                    }}</span>
+                            </div>
+                            <BookingStatusBadge :status="record.status" />
+                        </div>
+
+                        <div class="space-y-2 text-sm mb-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Room:</span>
+                                <span class="font-medium dark:text-white cursor-pointer"
+                                    @click="navigateTo(`/meeting-rooms/${record.roomId}`)">
+                                    {{ record.roomName }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Time:</span>
+                                <span class="dark:text-white">
+                                    {{ new Date(record.startTime).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                    minute:'2-digit'}) }} -
+                                    {{ new Date(record.endTime).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                    minute:'2-digit'}) }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Booked By:</span>
+                                <div class="text-right">
+                                    <div class="dark:text-white">{{ record.bookedBy }}</div>
+                                    <div class="text-xs text-gray-500">{{ record.companyName }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
+                            <div class="text-right">
+                                <div class="font-bold text-gray-900 dark:text-white">₹{{ record.amountCharged }}</div>
+                                <div class="text-xs text-gray-400">{{ record.creditsUsed }} Credits</div>
+                            </div>
+                            <a-dropdown>
+                                <template #overlay>
+                                    <a-menu>
+                                        <a-menu-item key="1" danger>Cancel</a-menu-item>
+                                        <a-menu-item key="2">View Invoice</a-menu-item>
+                                    </a-menu>
+                                </template>
+                                <a-button size="small">
+                                    Actions
+                                    <MoreOutlined />
+                                </a-button>
+                            </a-dropdown>
+                        </div>
+                    </a-card>
+                </template>
+            </ResponsiveDataView>
         </a-card>
     </div>
 </template>
@@ -125,6 +188,7 @@ import {
     MoreOutlined
 } from '@ant-design/icons-vue';
 import BookingStatusBadge from '../../../components/meeting-rooms/BookingStatusBadge.vue';
+import ResponsiveDataView from '../../../components/ResponsiveDataView.vue';
 import type { Dayjs } from 'dayjs';
 
 definePageMeta({

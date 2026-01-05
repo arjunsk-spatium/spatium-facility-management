@@ -48,8 +48,7 @@
                 </a-button>
             </div>
 
-            <a-table :columns="columns" :data-source="filteredTickets" :loading="loading"
-                :pagination="{ pageSize: 10, showSizeChanger: true }" row-key="id">
+            <ResponsiveDataView :columns="columns" :data="filteredTickets" :loading="loading" row-key="id">
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'id'">
                         <a @click="navigateTo(`/helpdesk/${record.id}`)" class="font-medium hover:underline">{{
@@ -80,7 +79,45 @@
                         </a-tooltip>
                     </template>
                 </template>
-            </a-table>
+
+                <!-- Mobile Card View -->
+                <template #mobileCard="{ record }">
+                    <a-card
+                        class="mb-4 shadow-sm !border-neutral-200 dark:!border-neutral-700 hover:shadow-md transition-shadow"
+                        :bordered="true" :bodyStyle="{ padding: '16px' }">
+                        <div class="flex justify-between items-start mb-3">
+                            <StatusBadge :status="record.status" />
+                            <span class="text-xs text-gray-500 font-mono">#{{ record.id }}</span>
+                        </div>
+
+                        <h4 class="font-bold text-base mb-1 dark:text-white cursor-pointer hover:text-primary-500"
+                            @click="navigateTo(`/helpdesk/${record.id}`)">
+                            {{ record.subCategory }}
+                        </h4>
+
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-3 flex flex-wrap gap-2">
+                            <span>{{ record.category }}</span>
+                            <span class="text-gray-300">•</span>
+                            <span>{{ record.facilityName }}</span>
+                        </div>
+
+                        <div
+                            class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
+                            <div class="flex items-center gap-2">
+                                <a-tag :color="getPriorityColor(record.priority)" class="!mr-0">{{ record.priority
+                                    }}</a-tag>
+                                <span class="text-xs text-gray-400">{{ new Date(record.createdAt).toLocaleDateString()
+                                    }}</span>
+                            </div>
+                            <a-button type="link" size="small" class="!px-0"
+                                @click="navigateTo(`/helpdesk/${record.id}`)">
+                                View Details
+                                <EyeOutlined />
+                            </a-button>
+                        </div>
+                    </a-card>
+                </template>
+            </ResponsiveDataView>
         </a-card>
     </div>
 </template>
@@ -97,6 +134,7 @@ import {
     EyeOutlined
 } from '@ant-design/icons-vue';
 import StatusBadge from '../../../components/helpdesk/StatusBadge.vue';
+import ResponsiveDataView from '../../../components/ResponsiveDataView.vue';
 
 definePageMeta({
     middleware: 'auth'
