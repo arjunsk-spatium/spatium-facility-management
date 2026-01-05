@@ -33,8 +33,8 @@
                 class="transition-all duration-300 hover:-translate-y-1">
                 <!-- Card Content (Same as before) -->
                 <template #cover>
-                    <div class="h-32 bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
-                        <HomeOutlined class="text-5xl text-white opacity-20" />
+                    <div class="h-32 bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center overflow-hidden">
+                        <img :src="buildingDrawing" alt="Facility Building" class="h-full w-full object-cover opacity-90 hover:scale-105 transition-transform duration-500" />
                     </div>
                 </template>
 
@@ -94,6 +94,7 @@ import {
     EditOutlined,
     EyeOutlined
 } from '@ant-design/icons-vue';
+import buildingDrawing from '../../../assets/images/building-drawing.png';
 
 definePageMeta({
     middleware: 'auth'
