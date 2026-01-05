@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6">
+    <div class="space-y-6">
         <!-- Header -->
         <div class="flex justify-between items-center mb-6">
             <div>
@@ -34,7 +34,8 @@
                 <!-- Card Content (Same as before) -->
                 <template #cover>
                     <div class="h-32 bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center overflow-hidden">
-                        <img :src="buildingDrawing" alt="Facility Building" class="h-full w-full object-cover opacity-90 hover:scale-105 transition-transform duration-500" />
+                        <img :src="buildingDrawing" alt="Facility Building"
+                            class="h-full w-full object-cover opacity-90 hover:scale-105 transition-transform duration-500" />
                     </div>
                 </template>
 
@@ -46,7 +47,8 @@
                                 {{ facility.location.city }}, {{ facility.location.country }}
                             </div>
 
-                            <div class="flex items-center justify-between pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
+                            <div
+                                class="flex items-center justify-between pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
                                 <div class="text-center">
                                     <div class="text-lg font-bold text-gray-700 dark:text-gray-200">
                                         {{ facility.hasTowers ? facility.towers.length : 1 }}

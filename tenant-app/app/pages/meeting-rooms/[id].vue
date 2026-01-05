@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6 max-w-5xl mx-auto" v-if="currentRoom">
+    <div class="space-y-6 max-w-5xl mx-auto" v-if="currentRoom">
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div class="flex items-center gap-4">
@@ -59,7 +59,7 @@
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-gray-500 font-medium">Hourly Rate</span>
                         <span class="text-2xl font-bold text-gray-900 dark:text-white">₹{{ currentRoom.pricePerHour
-                        }}</span>
+                            }}</span>
                     </div>
                     <div
                         class="flex justify-between items-center border-t border-blue-200 dark:border-blue-800 pt-2 mt-2">

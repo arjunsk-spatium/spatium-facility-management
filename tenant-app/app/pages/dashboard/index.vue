@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="space-y-6">
     <div class="mb-8">
       <h1 class="text-2xl font-bold mb-2">Dashboard</h1>
       <p class="text-gray-600 dark:text-gray-400">Overview of your facility management modules.</p>

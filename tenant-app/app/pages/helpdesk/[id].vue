@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6 max-w-5xl mx-auto" v-if="currentTicket">
+    <div class="space-y-6 max-w-5xl mx-auto" v-if="currentTicket">
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div class="flex items-center gap-4">

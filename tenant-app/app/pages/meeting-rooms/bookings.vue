@@ -1,5 +1,5 @@
 <template>
-    <div class="px-0 md:p-6">
+    <div class="space-y-6">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Room Bookings</h1>
@@ -119,7 +119,7 @@
                         <div>
                             <h4 class="font-bold text-base dark:text-white mb-0">{{ record.id }}</h4>
                             <span class="text-xs text-gray-500">{{ new Date(record.startTime).toLocaleDateString()
-                            }}</span>
+                                }}</span>
                         </div>
                         <BookingStatusBadge :status="record.status" />
                     </div>

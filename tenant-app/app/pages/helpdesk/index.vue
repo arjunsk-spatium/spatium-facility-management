@@ -1,5 +1,5 @@
 <template>
-    <div class="px-0 md:p-6">
+    <div class="space-y-6">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Helpdesk</h1>
@@ -36,7 +36,7 @@
                 <a-select v-model:value="facilityFilter" placeholder="Filter by Facility" class="w-full md:w-48"
                     allow-clear>
                     <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">{{ fac.name
-                    }}</a-select-option>
+                        }}</a-select-option>
                 </a-select>
             </div>
 
@@ -104,9 +104,9 @@
                     <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
                         <div class="flex items-center gap-2">
                             <a-tag :color="getPriorityColor(record.priority)" class="!mr-0">{{ record.priority
-                            }}</a-tag>
+                                }}</a-tag>
                             <span class="text-xs text-gray-400">{{ new Date(record.createdAt).toLocaleDateString()
-                            }}</span>
+                                }}</span>
                         </div>
                         <a-button type="link" size="small" class="!px-0" @click="navigateTo(`/helpdesk/${record.id}`)">
                             View Details

@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6 space-y-6">
+    <div class="space-y-6">
         <div class="flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Helpdesk Insights</h1>

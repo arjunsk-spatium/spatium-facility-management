@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6">
+    <div class="space-y-6">
         <div class="mb-6 flex items-center justify-between">
             <h1 class="text-2xl font-bold dark:text-white">Create Facility</h1>
             <a-button @click="navigateTo('/facilities')">Cancel</a-button>
