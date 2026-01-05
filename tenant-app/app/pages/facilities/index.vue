@@ -46,7 +46,7 @@
                                 {{ facility.location.city }}, {{ facility.location.country }}
                             </div>
 
-                            <div class="flex items-center justify-between pt-2 border-t dark:border-gray-700">
+                            <div class="flex items-center justify-between pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
                                 <div class="text-center">
                                     <div class="text-lg font-bold text-gray-700 dark:text-gray-200">
                                         {{ facility.hasTowers ? facility.towers.length : 1 }}

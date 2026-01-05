@@ -1293,6 +1293,26 @@
     color: #d4d4d4 !important;
 }
 
+/* Structure Modal - Floor cards fix */
+.dark .ant-modal .ant-card {
+    background: #262626 !important;
+    border-color: #404040 !important;
+}
+
+.dark .ant-modal .ant-card-head {
+    background: #262626 !important;
+    border-color: #404040 !important;
+}
+
+/* Force floor items in structure modal to use dark background */
+.dark .ant-modal .bg-white {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-modal .bg-gray-50 {
+    background-color: #262626 !important;
+}
+
 /* Table Components */
 .dark .ant-table {
     background: #1f1f1f !important;
