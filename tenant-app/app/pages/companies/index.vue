@@ -15,29 +15,30 @@
         </div>
 
         <!-- Insights Section -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <a-card :bordered="false" class="shadow-sm">
+        <!-- Insights Section -->
+        <div class="flex flex-wrap gap-4">
+            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
                 <a-statistic title="Total Companies" :value="stats.total" :value-style="{ color: '#3f8600' }">
                     <template #prefix>
                         <BankOutlined />
                     </template>
                 </a-statistic>
             </a-card>
-            <a-card :bordered="false" class="shadow-sm">
+            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
                 <a-statistic title="Active" :value="stats.active" :value-style="{ color: '#1677ff' }">
                     <template #prefix>
                         <CheckCircleOutlined />
                     </template>
                 </a-statistic>
             </a-card>
-            <a-card :bordered="false" class="shadow-sm">
+            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
                 <a-statistic title="Inactive" :value="stats.inactive" :value-style="{ color: '#cf1322' }">
                     <template #prefix>
                         <StopOutlined />
                     </template>
                 </a-statistic>
             </a-card>
-            <a-card :bordered="false" class="shadow-sm">
+            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
                 <a-statistic title="Revenue" :value="9342" :precision="2" prefix="₹" />
             </a-card>
         </div>
@@ -107,7 +108,7 @@
                                 <span
                                     class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Facility</span>
                                 <span class="text-neutral-900 dark:text-neutral-200">{{ company.facility || 'N/A'
-                                }}</span>
+                                    }}</span>
                             </div>
                             <!-- SPOC Details Section -->
                             <div class="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
@@ -118,9 +119,9 @@
                                     class="flex flex-col gap-1 pl-2 border-l-2 border-primary-200 dark:border-primary-800">
                                     <span class="font-medium">{{ company.spoc_name }}</span>
                                     <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_email
-                                    }}</span>
+                                        }}</span>
                                     <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_phone
-                                    }}</span>
+                                        }}</span>
                                 </div>
                             </div>
                         </div>
