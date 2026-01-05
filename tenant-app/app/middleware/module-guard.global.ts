@@ -10,7 +10,8 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         '/helpdesk': 'helpdesk',
         '/facilities': 'facilities',
         '/users': 'users',
-        '/settings': 'settings'
+        '/settings': 'settings',
+        '/meeting-rooms': 'meeting_rooms'
     };
 
     // Find matching restricted module

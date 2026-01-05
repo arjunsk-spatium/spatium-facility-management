@@ -82,7 +82,9 @@ import {
     HomeOutlined,
     SafetyCertificateOutlined,
     ShoppingCartOutlined,
-    TeamOutlined
+
+    TeamOutlined,
+    CalendarOutlined
 } from '@ant-design/icons-vue';
 
 const props = defineProps<{
@@ -140,6 +142,15 @@ const moduleConfig: Record<string, any> = {
             { key: 'facilities-list', label: 'All Facilities', route: '/facilities' }
         ]
     },
+    meeting_rooms: {
+        label: 'Meeting Rooms',
+        icon: CustomerServiceOutlined, // Using CustomerServiceOutlined as placeholder or find usage of Meeting Room icon
+        children: [
+            { key: 'meeting-rooms-insights', label: 'Insights', route: '/meeting-rooms/insights' },
+            { key: 'meeting-rooms-list', label: 'All Rooms', route: '/meeting-rooms' },
+            { key: 'meeting-rooms-bookings', label: 'Bookings', route: '/meeting-rooms/bookings' }
+        ]
+    },
     users: { label: 'User Module Management', icon: TeamOutlined, route: '/users' },
     settings: { label: 'Configuration', icon: SettingOutlined, route: '/settings' }
 };
@@ -193,6 +204,12 @@ const updateMenuState = () => {
         openKeys.value = ['facilities-submenu'];
         if (path.includes('/insights')) selectedKeys.value = ['facilities-insights'];
         else selectedKeys.value = ['facilities-list'];
+    }
+    if (path.includes('/meeting-rooms')) {
+        openKeys.value = ['meeting_rooms-submenu'];
+        if (path.includes('/bookings')) selectedKeys.value = ['meeting-rooms-bookings'];
+        else if (path.includes('/insights')) selectedKeys.value = ['meeting-rooms-insights'];
+        else selectedKeys.value = ['meeting-rooms-list'];
     }
     if (path.includes('/settings')) selectedKeys.value = ['settings-item'];
 };

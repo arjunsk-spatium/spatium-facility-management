@@ -12,7 +12,9 @@ export const useUserService = () => {
             'facilities', 
             'helpdesk', 
             'users', 
-            'settings']
+            'settings',
+            'meeting_rooms'
+        ]
     }
 
     return {
