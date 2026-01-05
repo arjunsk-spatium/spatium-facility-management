@@ -23,9 +23,9 @@
       </a-layout-header>
 
       <!-- Scrollable content wrapper -->
-      <a-layout-content class="content-scroll-area"
-        :style="{ padding: '24px 16px', background: isDark ? '#121212' : '#f5f5f5', overflowY: 'auto' }">
-        <div class="p-6 min-h-[360px] rounded-lg transition-colors duration-300"
+      <a-layout-content class="content-scroll-area p-0 md:p-6"
+        :style="{ background: isDark ? '#121212' : '#f5f5f5', overflowY: 'auto' }">
+        <div class="p-4 md:p-6 min-h-[360px] rounded-none md:rounded-lg transition-colors duration-300"
           :style="{ background: isDark ? '#1f1f1f' : '#ffffff' }">
           <slot />
         </div>

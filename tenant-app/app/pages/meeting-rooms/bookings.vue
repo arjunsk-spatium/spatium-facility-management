@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6">
+    <div class="px-0 md:p-6">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Room Bookings</h1>
@@ -21,163 +21,161 @@
             </div>
         </div>
 
-        <a-card :bordered="false" class="shadow-sm">
 
-            <!-- Filters -->
-            <!-- Filters -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                    <a-input-search v-model:value="searchText" placeholder="Search booking ID or user..."
-                        class="w-full md:w-64" />
 
-                    <a-range-picker v-model:value="dateRange" class="w-full md:w-auto" />
+        <!-- Filters -->
+        <!-- Filters -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                <a-input-search v-model:value="searchText" placeholder="Search booking ID or user..."
+                    class="w-full md:w-64" />
 
-                    <a-select v-model:value="statusFilter" placeholder="Filter Status" class="w-full md:w-40"
-                        allow-clear>
-                        <a-select-option value="Confirmed">Confirmed</a-select-option>
-                        <a-select-option value="Completed">Completed</a-select-option>
-                        <a-select-option value="Cancelled">Cancelled</a-select-option>
-                    </a-select>
-                </div>
-                <a-button class="w-full md:w-auto">
-                    <template #icon>
-                        <ExportOutlined />
-                    </template>
-                    Export
-                </a-button>
+                <a-range-picker v-model:value="dateRange" class="w-full md:w-auto" />
+
+                <a-select v-model:value="statusFilter" placeholder="Filter Status" class="w-full md:w-40" allow-clear>
+                    <a-select-option value="Confirmed">Confirmed</a-select-option>
+                    <a-select-option value="Completed">Completed</a-select-option>
+                    <a-select-option value="Cancelled">Cancelled</a-select-option>
+                </a-select>
             </div>
+            <a-button class="w-full md:w-auto">
+                <template #icon>
+                    <ExportOutlined />
+                </template>
+                Export
+            </a-button>
+        </div>
 
-            <ResponsiveDataView :columns="columns" :data="filteredBookings" :loading="loading" row-key="id">
-                <template #bodyCell="{ column, record }">
-                    <template v-if="column.key === 'id'">
-                        <span class="font-medium">{{ record.id }}</span>
-                    </template>
+        <ResponsiveDataView :columns="columns" :data="filteredBookings" :loading="loading" row-key="id">
+            <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'id'">
+                    <span class="font-medium">{{ record.id }}</span>
+                </template>
 
-                    <template v-if="column.key === 'room'">
-                        <a @click="navigateTo(`/meeting-rooms/${record.roomId}`)"
-                            class="hover:underline text-blue-600 dark:text-blue-400">
-                            {{ record.roomName }}
-                        </a>
-                    </template>
+                <template v-if="column.key === 'room'">
+                    <a @click="navigateTo(`/meeting-rooms/${record.roomId}`)"
+                        class="hover:underline text-blue-600 dark:text-blue-400">
+                        {{ record.roomName }}
+                    </a>
+                </template>
 
-                    <template v-if="column.key === 'status'">
-                        <BookingStatusBadge :status="record.status" />
-                    </template>
+                <template v-if="column.key === 'status'">
+                    <BookingStatusBadge :status="record.status" />
+                </template>
 
-                    <template v-if="column.key === 'time'">
+                <template v-if="column.key === 'time'">
+                    <div>
+                        <div class="font-medium">{{ new Date(record.startTime).toLocaleDateString() }}</div>
+                        <div class="text-xs text-gray-500">
+                            {{ new Date(record.startTime).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }) }} -
+                            {{ new Date(record.endTime).toLocaleTimeString([], {
+                                hour: '2-digit', minute: '2-digit'
+                            })
+                            }}
+                        </div>
+                    </div>
+                </template>
+
+                <template v-if="column.key === 'cost'">
+                    <div class="text-right">
+                        <div>₹{{ record.amountCharged }}</div>
+                        <div class="text-xs text-gray-400">{{ record.creditsUsed }} Credits</div>
+                    </div>
+                </template>
+
+                <template v-if="column.key === 'user'">
+                    <div>
+                        <div class="font-medium text-gray-900 dark:text-white">{{ record.bookedBy }}</div>
+                        <div class="text-xs text-gray-500">{{ record.companyName }}</div>
+                    </div>
+                </template>
+
+                <template v-if="column.key === 'actions'">
+                    <a-dropdown>
+                        <template #overlay>
+                            <a-menu>
+                                <a-menu-item key="1" danger>Cancel Booking</a-menu-item>
+                                <a-menu-item key="2">View Invoice</a-menu-item>
+                            </a-menu>
+                        </template>
+                        <a-button type="text" shape="circle">
+                            <template #icon>
+                                <MoreOutlined />
+                            </template>
+                        </a-button>
+                    </a-dropdown>
+                </template>
+            </template>
+
+            <!-- Mobile Card View -->
+            <template #mobileCard="{ record }">
+                <a-card
+                    class="mb-4 shadow-sm !border-neutral-200 dark:!border-neutral-700 hover:shadow-md transition-shadow"
+                    :bordered="true" :bodyStyle="{ padding: '16px' }">
+                    <div class="flex justify-between items-start mb-3">
                         <div>
-                            <div class="font-medium">{{ new Date(record.startTime).toLocaleDateString() }}</div>
-                            <div class="text-xs text-gray-500">
+                            <h4 class="font-bold text-base dark:text-white mb-0">{{ record.id }}</h4>
+                            <span class="text-xs text-gray-500">{{ new Date(record.startTime).toLocaleDateString()
+                            }}</span>
+                        </div>
+                        <BookingStatusBadge :status="record.status" />
+                    </div>
+
+                    <div class="space-y-2 text-sm mb-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Room:</span>
+                            <span class="font-medium dark:text-white cursor-pointer"
+                                @click="navigateTo(`/meeting-rooms/${record.roomId}`)">
+                                {{ record.roomName }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Time:</span>
+                            <span class="dark:text-white">
                                 {{ new Date(record.startTime).toLocaleTimeString([], {
                                     hour: '2-digit',
                                     minute: '2-digit'
                                 }) }} -
                                 {{ new Date(record.endTime).toLocaleTimeString([], {
-                                    hour: '2-digit', minute: '2-digit'
-                                })
-                                }}
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }) }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Booked By:</span>
+                            <div class="text-right">
+                                <div class="dark:text-white">{{ record.bookedBy }}</div>
+                                <div class="text-xs text-gray-500">{{ record.companyName }}</div>
                             </div>
                         </div>
-                    </template>
+                    </div>
 
-                    <template v-if="column.key === 'cost'">
+                    <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
                         <div class="text-right">
-                            <div>₹{{ record.amountCharged }}</div>
+                            <div class="font-bold text-gray-900 dark:text-white">₹{{ record.amountCharged }}</div>
                             <div class="text-xs text-gray-400">{{ record.creditsUsed }} Credits</div>
                         </div>
-                    </template>
-
-                    <template v-if="column.key === 'user'">
-                        <div>
-                            <div class="font-medium text-gray-900 dark:text-white">{{ record.bookedBy }}</div>
-                            <div class="text-xs text-gray-500">{{ record.companyName }}</div>
-                        </div>
-                    </template>
-
-                    <template v-if="column.key === 'actions'">
                         <a-dropdown>
                             <template #overlay>
                                 <a-menu>
-                                    <a-menu-item key="1" danger>Cancel Booking</a-menu-item>
+                                    <a-menu-item key="1" danger>Cancel</a-menu-item>
                                     <a-menu-item key="2">View Invoice</a-menu-item>
                                 </a-menu>
                             </template>
-                            <a-button type="text" shape="circle">
-                                <template #icon>
-                                    <MoreOutlined />
-                                </template>
+                            <a-button size="small">
+                                Actions
+                                <MoreOutlined />
                             </a-button>
                         </a-dropdown>
-                    </template>
-                </template>
+                    </div>
+                </a-card>
+            </template>
+        </ResponsiveDataView>
 
-                <!-- Mobile Card View -->
-                <template #mobileCard="{ record }">
-                    <a-card
-                        class="mb-4 shadow-sm !border-neutral-200 dark:!border-neutral-700 hover:shadow-md transition-shadow"
-                        :bordered="true" :bodyStyle="{ padding: '16px' }">
-                        <div class="flex justify-between items-start mb-3">
-                            <div>
-                                <h4 class="font-bold text-base dark:text-white mb-0">{{ record.id }}</h4>
-                                <span class="text-xs text-gray-500">{{ new Date(record.startTime).toLocaleDateString()
-                                }}</span>
-                            </div>
-                            <BookingStatusBadge :status="record.status" />
-                        </div>
-
-                        <div class="space-y-2 text-sm mb-3">
-                            <div class="flex justify-between">
-                                <span class="text-gray-500">Room:</span>
-                                <span class="font-medium dark:text-white cursor-pointer"
-                                    @click="navigateTo(`/meeting-rooms/${record.roomId}`)">
-                                    {{ record.roomName }}
-                                </span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-500">Time:</span>
-                                <span class="dark:text-white">
-                                    {{ new Date(record.startTime).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    }) }} -
-                                    {{ new Date(record.endTime).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    }) }}
-                                </span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-500">Booked By:</span>
-                                <div class="text-right">
-                                    <div class="dark:text-white">{{ record.bookedBy }}</div>
-                                    <div class="text-xs text-gray-500">{{ record.companyName }}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div
-                            class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
-                            <div class="text-right">
-                                <div class="font-bold text-gray-900 dark:text-white">₹{{ record.amountCharged }}</div>
-                                <div class="text-xs text-gray-400">{{ record.creditsUsed }} Credits</div>
-                            </div>
-                            <a-dropdown>
-                                <template #overlay>
-                                    <a-menu>
-                                        <a-menu-item key="1" danger>Cancel</a-menu-item>
-                                        <a-menu-item key="2">View Invoice</a-menu-item>
-                                    </a-menu>
-                                </template>
-                                <a-button size="small">
-                                    Actions
-                                    <MoreOutlined />
-                                </a-button>
-                            </a-dropdown>
-                        </div>
-                    </a-card>
-                </template>
-            </ResponsiveDataView>
-        </a-card>
     </div>
 </template>
 

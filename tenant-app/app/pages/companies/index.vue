@@ -43,105 +43,103 @@
         </div>
 
         <!-- Search and Actions Header (Visible in both views) -->
-        <a-card :bordered="false" class="shadow-sm">
-            <template #title>
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <span class="text-lg font-semibold">Company List</span>
-                    <div class="flex items-center gap-3">
-                        <a-input-search v-model:value="searchText" placeholder="Search companies..."
-                            style="width: 250px" allow-clear />
-                        <a-button @click="downloadExcel" :loading="downloading">
-                            <template #icon>
-                                <DownloadOutlined />
-                            </template>
-                            <span class="hidden sm:inline">Export</span>
-                        </a-button>
-                    </div>
-                </div>
+        <!-- Search and Actions Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 md:mb-4 md:px-0">
+            <span class="text-lg font-semibold">Company List</span>
+            <div class="flex items-center gap-3">
+                <a-input-search v-model:value="searchText" placeholder="Search companies..." style="width: 250px"
+                    allow-clear />
+                <a-button @click="downloadExcel" :loading="downloading">
+                    <template #icon>
+                        <DownloadOutlined />
+                    </template>
+                    <span class="hidden sm:inline">Export</span>
+                </a-button>
+            </div>
+        </div>
+
+        <ResponsiveDataView :columns="columns" :data="filteredCompanies" :loading="loading"
+            :row-key="(record: any) => record.id" :pagination="paginationConfig">
+            <!-- Desktop Table Cells -->
+            <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'name'">
+                    <NuxtLink :to="`/companies/${record.id}`"
+                        class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium">
+                        {{ record.name }}
+                    </NuxtLink>
+                </template>
+                <template v-if="column.key === 'action'">
+                    <a-space>
+                        <NuxtLink :to="`/companies/${record.id}/edit`">
+                            <a-button type="link">Edit</a-button>
+                        </NuxtLink>
+                        <a-popconfirm title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
+                            <a-button type="link" danger>Delete</a-button>
+                        </a-popconfirm>
+                    </a-space>
+                </template>
             </template>
 
-            <ResponsiveDataView :columns="columns" :data="filteredCompanies" :loading="loading"
-                :row-key="(record: any) => record.id" :pagination="paginationConfig">
-                <!-- Desktop Table Cells -->
-                <template #bodyCell="{ column, record }">
-                    <template v-if="column.key === 'name'">
-                        <NuxtLink :to="`/companies/${record.id}`"
-                            class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium">
-                            {{ record.name }}
-                        </NuxtLink>
-                    </template>
-                    <template v-if="column.key === 'action'">
-                        <a-space>
-                            <NuxtLink :to="`/companies/${record.id}/edit`">
-                                <a-button type="link">Edit</a-button>
+            <!-- Mobile Card Content -->
+            <template #mobileCard="{ record: company }">
+                <a-card :bordered="true" class="mb-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex flex-col gap-3">
+                        <!-- Header: Name -->
+                        <div class="flex justify-between items-start">
+                            <NuxtLink :to="`/companies/${company.id}`"
+                                class="text-lg font-semibold text-primary-600 dark:text-primary-400">
+                                {{ company.name }}
                             </NuxtLink>
-                            <a-popconfirm title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
-                                <a-button type="link" danger>Delete</a-button>
-                            </a-popconfirm>
-                        </a-space>
-                    </template>
-                </template>
+                            <span
+                                class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full dark:bg-green-900 dark:text-green-100">
+                                Active
+                            </span>
+                        </div>
 
-                <!-- Mobile Card Content -->
-                <template #mobileCard="{ record: company }">
-                    <a-card :bordered="true" class="mb-4 shadow-sm hover:shadow-md transition-shadow">
-                        <div class="flex flex-col gap-3">
-                            <!-- Header: Name -->
-                            <div class="flex justify-between items-start">
-                                <NuxtLink :to="`/companies/${company.id}`"
-                                    class="text-lg font-semibold text-primary-600 dark:text-primary-400">
-                                    {{ company.name }}
-                                </NuxtLink>
+                        <!-- Details -->
+                        <div class="grid grid-cols-1 gap-2 text-sm">
+                            <div class="flex flex-col">
                                 <span
-                                    class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full dark:bg-green-900 dark:text-green-100">
-                                    Active
-                                </span>
+                                    class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Address</span>
+                                <span class="text-neutral-900 dark:text-neutral-200">{{ company.address }}</span>
                             </div>
-
-                            <!-- Details -->
-                            <div class="grid grid-cols-1 gap-2 text-sm">
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Address</span>
-                                    <span class="text-neutral-900 dark:text-neutral-200">{{ company.address }}</span>
-                                </div>
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Facility</span>
-                                    <span class="text-neutral-900 dark:text-neutral-200">{{ company.facility || 'N/A'
-                                        }}</span>
-                                </div>
-                                <!-- SPOC Details Section -->
-                                <div class="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
-                                    <span
-                                        class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider block mb-1">Contact
-                                        Person (SPOC)</span>
-                                    <div
-                                        class="flex flex-col gap-1 pl-2 border-l-2 border-primary-200 dark:border-primary-800">
-                                        <span class="font-medium">{{ company.spoc_name }}</span>
-                                        <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_email
-                                            }}</span>
-                                        <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_phone
-                                            }}</span>
-                                    </div>
-                                </div>
+                            <div class="flex flex-col">
+                                <span
+                                    class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Facility</span>
+                                <span class="text-neutral-900 dark:text-neutral-200">{{ company.facility || 'N/A'
+                                }}</span>
                             </div>
-
-                            <!-- Actions -->
-                            <div
-                                class="flex justify-end gap-2 mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
-                                <NuxtLink :to="`/companies/${company.id}/edit`">
-                                    <a-button type="default" size="small">Edit</a-button>
-                                </NuxtLink>
-                                <a-popconfirm title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
-                                    <a-button type="default" danger size="small">Delete</a-button>
-                                </a-popconfirm>
+                            <!-- SPOC Details Section -->
+                            <div class="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
+                                <span
+                                    class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider block mb-1">Contact
+                                    Person (SPOC)</span>
+                                <div
+                                    class="flex flex-col gap-1 pl-2 border-l-2 border-primary-200 dark:border-primary-800">
+                                    <span class="font-medium">{{ company.spoc_name }}</span>
+                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_email
+                                    }}</span>
+                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_phone
+                                    }}</span>
+                                </div>
                             </div>
                         </div>
-                    </a-card>
-                </template>
-            </ResponsiveDataView>
-        </a-card>
+
+                        <!-- Actions -->
+                        <div
+                            class="flex justify-end gap-2 mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
+                            <NuxtLink :to="`/companies/${company.id}/edit`">
+                                <a-button type="default" size="small">Edit</a-button>
+                            </NuxtLink>
+                            <a-popconfirm title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
+                                <a-button type="default" danger size="small">Delete</a-button>
+                            </a-popconfirm>
+                        </div>
+                    </div>
+                </a-card>
+            </template>
+        </ResponsiveDataView>
+
     </div>
 </template>
 
