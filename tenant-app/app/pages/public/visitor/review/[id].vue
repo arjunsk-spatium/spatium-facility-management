@@ -1,14 +1,8 @@
 <template>
     <div v-if="visitor" class="max-w-md mx-auto min-h-screen bg-gray-50 flex flex-col font-sans">
         <!-- Header -->
-        <div class="bg-white px-4 py-4 flex items-center justify-between border-b border-gray-100 sticky top-0 z-10">
-            <button class="text-gray-500 font-medium flex items-center text-sm" @click="router.back()">
-                <LeftOutlined class="mr-1 text-xs" /> Back
-            </button>
+        <div class="bg-white px-4 py-4 flex items-center justify-center border-b border-gray-100 sticky top-0 z-10">
             <h1 class="font-bold text-lg text-gray-900">Review Request</h1>
-            <div class="w-8 flex justify-end">
-                <MoreOutlined class="text-xl text-gray-400" />
-            </div>
         </div>
 
         <div class="flex-1 p-4 pb-24 overflow-y-auto space-y-4">
@@ -84,8 +78,8 @@
                 <CloseOutlined class="text-sm" /> Reject
             </button>
             <button @click="handleAction('approve')" :disabled="processing"
-                class="flex-1 h-12 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30">
-                <CheckOutlined class="text-sm" /> Approve
+                class="flex-1 h-12 rounded-xl bg-blue-600 !text-white font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30">
+                <CheckOutlined class="text-sm !text-white" /> Approve
             </button>
         </div>
     </div>
@@ -100,11 +94,14 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { 
-    LeftOutlined, MoreOutlined, SafetyCertificateFilled, 
     MailOutlined, PhoneOutlined, CalendarFilled, 
     FileTextFilled, CloseOutlined, CheckOutlined, LoadingOutlined 
 } from '@ant-design/icons-vue'
 import { useVisitorService, type Visitor } from '../../../../../composables/visitorService'
+
+definePageMeta({
+    layout: 'public'
+})
 
 const route = useRoute()
 const router = useRouter()

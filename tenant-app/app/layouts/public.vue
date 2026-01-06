@@ -2,15 +2,14 @@
     <div class="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
         <!-- Header -->
         <header class="bg-white px-6 py-4 flex justify-between items-center border-b border-gray-100">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+            <div class="flex items-center gap-3">
+                <img v-if="tenantStore.tenantLogo" :src="tenantStore.tenantLogo" alt="Logo" class="h-8 w-auto object-contain" />
+                <div v-else class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
                     <cube-icon class="w-5 h-5" />
                 </div>
-                <span class="font-bold text-lg">Innovation Corp</span>
+                <span class="font-bold text-lg">{{ tenantStore.tenantName }}</span>
             </div>
-            <div class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
-                 <global-outlined />
-            </div>
+
         </header>
 
         <!-- Main Content -->
@@ -26,8 +25,9 @@
 </template>
 
 <script setup lang="ts">
-import { GlobalOutlined } from '@ant-design/icons-vue'
 import { h } from 'vue'
+
+const tenantStore = useTenantStore()
 
 // Custom Cube Icon component for the logo
 const CubeIcon = {

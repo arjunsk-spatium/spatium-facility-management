@@ -12,15 +12,16 @@
         <div v-if="step === 1" class="space-y-8 animate-fade-in pt-12">
              <div class="text-center space-y-2">
                 <h1 class="text-2xl font-bold text-gray-900">Welcome Visitor</h1>
-                <p class="text-gray-500 text-sm">Enter your mobile number to receive a verification code for secure access.</p>
+                <p class="text-gray-500 text-sm">Enter your mobile number to receive a verification code.</p>
             </div>
 
             <div class="space-y-2">
                 <label class="block text-sm font-bold text-gray-700">Phone Number</label>
                 <div class="flex h-14 rounded-xl border border-blue-500 ring-2 ring-blue-100 overflow-hidden bg-white">
-                    <div class="w-24 border-r border-gray-100 flex items-center justify-center bg-gray-50 px-2 cursor-pointer hover:bg-gray-100">
-                         <span class="mr-2 text-xl">🇺🇸</span>
-                         <span class="font-medium text-gray-700">+1</span>
+                    <div class="w-24 border-r border-gray-100 flex items-center justify-center bg-gray-50 px-2 cursor-pointer hover:bg-gray-100 transition-colors"
+                        @click="showCountryModal = true">
+                         <span class="mr-2 text-xl">{{ selectedCountry.flag }}</span>
+                         <span class="font-medium text-gray-700">{{ selectedCountry.dialCode }}</span>
                          <DownOutlined class="ml-2 text-xs text-gray-400" />
                     </div>
                     <input type="tel" v-model="formState.phone" placeholder="(555) 000-0000" 
@@ -83,7 +84,7 @@
         <!-- Step 3: Visitor Details Form -->
         <div v-else-if="step === 3" class="space-y-6 animate-fade-in pt-12">
              <div class="text-center space-y-2 mb-6">
-                <h1 class="text-2xl font-bold text-gray-900">Welcome to Innovation Corp</h1>
+                <h1 class="text-2xl font-bold text-gray-900">Welcome to {{ store.tenantName }}</h1>
                 <p class="text-gray-500 text-sm">Please enter your details to obtain your visitor badge.</p>
             </div>
 
@@ -191,6 +192,31 @@
                  </button>
             </div>
         </a-modal>
+
+        <!-- Country Selection Modal -->
+        <a-modal v-model:open="showCountryModal" :footer="null" title="Select Country" centered :width="400" wrap-class-name="public-light-modal">
+            <div class="p-2">
+                <input v-model="countrySearch" type="text" placeholder="Search country..." 
+                    class="w-full px-4 h-10 rounded-lg border border-gray-200 !bg-white !text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none mb-4 transition-all" 
+                    autofocus
+                />
+                <div class="h-64 overflow-y-auto space-y-1">
+                    <div v-for="country in filteredCountries" :key="country.code" 
+                        class="flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                        @click="selectCountry(country)">
+                        <span class="text-2xl mr-3">{{ country.flag }}</span>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900">{{ country.name }}</div>
+                            <div class="text-xs text-gray-500">{{ country.dialCode }}</div>
+                        </div>
+                        <CheckCircleFilled v-if="selectedCountry.code === country.code" class="text-blue-500" />
+                    </div>
+                    <div v-if="filteredCountries.length === 0" class="text-center text-gray-400 py-8">
+                        No countries found
+                    </div>
+                </div>
+            </div>
+        </a-modal>
     </div>
 </template>
 
@@ -220,7 +246,43 @@ const loading = ref(false)
 const otpDigits = ref(['', '', '', ''])
 const otpInputs = ref<HTMLInputElement[]>([])
 const showCamera = ref(false)
+const showCountryModal = ref(false)
+const countrySearch = ref('')
 const profilePhoto = ref<string | null>(null)
+
+const countries = [
+    { name: 'India', code: 'IN', dialCode: '+91', flag: '🇮🇳' },
+    { name: 'United States', code: 'US', dialCode: '+1', flag: '🇺🇸' },
+    { name: 'United Kingdom', code: 'GB', dialCode: '+44', flag: '🇬🇧' },
+    { name: 'Canada', code: 'CA', dialCode: '+1', flag: '🇨🇦' },
+    { name: 'Australia', code: 'AU', dialCode: '+61', flag: '🇦🇺' },
+    { name: 'United Arab Emirates', code: 'AE', dialCode: '+971', flag: '🇦🇪' },
+    { name: 'Singapore', code: 'SG', dialCode: '+65', flag: '🇸🇬' },
+    { name: 'Germany', code: 'DE', dialCode: '+49', flag: '🇩🇪' },
+    { name: 'France', code: 'FR', dialCode: '+33', flag: '🇫🇷' },
+    { name: 'Japan', code: 'JP', dialCode: '+81', flag: '🇯🇵' },
+    { name: 'China', code: 'CN', dialCode: '+86', flag: '🇨🇳' },
+    { name: 'Brazil', code: 'BR', dialCode: '+55', flag: '🇧🇷' },
+    { name: 'Mexico', code: 'MX', dialCode: '+52', flag: '🇲🇽' },
+    { name: 'Saudi Arabia', code: 'SA', dialCode: '+966', flag: '🇸🇦' },
+]
+
+const selectedCountry = ref(countries[0]) // Default India
+
+const filteredCountries = computed(() => {
+    const search = countrySearch.value.toLowerCase()
+    return countries.filter(c => 
+        c.name.toLowerCase().includes(search) || 
+        c.dialCode.includes(search)
+    )
+})
+
+const selectCountry = (country: any) => {
+    selectedCountry.value = country
+    showCountryModal.value = false
+    countrySearch.value = ''
+}
+
 
 const formState = reactive({
     phone: '',
@@ -275,7 +337,8 @@ const verifyOtpCode = async () => {
     if (code.length < 4) return
     
     loading.value = true
-    const isValid = await verifyOtp(formState.phone, code) // Mocking 1234
+    const fullPhone = `${selectedCountry.value.dialCode}${formState.phone}`
+    const isValid = await verifyOtp(fullPhone, code) // Mocking 1234
     loading.value = false
     
     if (isValid) {
@@ -289,7 +352,7 @@ const handleFinish = async () => {
     loading.value = true
     try {
         await store.registerWalkIn({
-            phone: formState.phone,
+            phone: `${selectedCountry.value.dialCode}${formState.phone}`,
             name: formState.name,
             email: formState.email,
             company: formState.company,
@@ -342,5 +405,22 @@ input::-webkit-calendar-picker-indicator {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<style>
+/* Global override for the country modal in public pages */
+.public-light-modal .ant-modal-content,
+.public-light-modal .ant-modal-header {
+    background-color: #ffffff !important;
+}
+.public-light-modal .ant-modal-title {
+    color: #111827 !important; /* gray-900 */
+}
+.public-light-modal .ant-modal-close-x {
+    color: #4b5563 !important; /* gray-600 */
+}
+.public-light-modal .ant-modal-body {
+    padding: 16px !important;
 }
 </style>
