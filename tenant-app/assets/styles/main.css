@@ -1515,3 +1515,29 @@
         padding-right: 16px !important;
     }
 }
+
+/* ============================================
+   GLOBAL FIXES
+   ============================================ */
+
+/* Fix Ant Design Button Icon Alignment */
+.ant-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+}
+
+/* Ensure icons are centered vertically */
+.ant-btn .anticon {
+    display: inline-flex !important;
+    align-items: center !important;
+    line-height: 0 !important;
+}
+
+/* Remove default margin if gap is used */
+.ant-btn>.anticon+span,
+.ant-btn>span+.anticon {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
