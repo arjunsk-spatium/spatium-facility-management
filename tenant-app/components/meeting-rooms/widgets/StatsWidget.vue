@@ -21,7 +21,7 @@
                     }}</h3>
                 </div>
                 <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-full text-green-500">
-                    <DollarOutlined class="text-xl" />
+                    <span class="text-xl font-bold px-1">₹</span>
                 </div>
             </div>
             <p class="text-xs text-gray-400 mt-2">Gross revenue</p>
@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { CalendarOutlined, DollarOutlined, PieChartOutlined, BarChartOutlined } from '@ant-design/icons-vue';
+import { CalendarOutlined, PieChartOutlined, BarChartOutlined } from '@ant-design/icons-vue';
 import type { RoomStats } from '../../../composables/meetingRoomService';
 
 defineProps<{
