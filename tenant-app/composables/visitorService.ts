@@ -177,6 +177,20 @@ export const useVisitorService = () => {
         updateVisitorStatus,
         getStats,
         getTrends,
-        getPurposeStats
+        getPurposeStats,
+        searchHosts: async (query: string) => {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const hosts = [
+                        { id: '1', name: 'Sarah Jenkins', role: 'Product Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
+                        { id: '2', name: 'David Lee', role: 'HR Director', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David' },
+                        { id: '3', name: 'Emily Chen', role: 'Operations Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily' },
+                        { id: '4', name: 'John Doe', role: 'Facility Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John' }
+                    ]
+                    if (!query) resolve(hosts)
+                    resolve(hosts.filter(h => h.name.toLowerCase().includes(query.toLowerCase())))
+                }, 400)
+            })
+        }
     }
 }
