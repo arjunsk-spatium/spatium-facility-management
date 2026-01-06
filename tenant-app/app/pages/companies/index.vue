@@ -9,7 +9,7 @@
                     <template #icon>
                         <PlusOutlined />
                     </template>
-                    Create Company
+                    Create <hide class="hidden sm:inline">Company</hide>
                 </a-button>
             </NuxtLink>
         </div>

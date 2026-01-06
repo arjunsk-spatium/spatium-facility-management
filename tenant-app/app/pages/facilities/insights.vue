@@ -1,6 +1,6 @@
 <template>
     <div class="space-y-6">
-        <div class="mb-8 flex justify-between items-center">
+        <div class="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold mb-2 dark:text-white">Facilities Insights</h1>
                 <p class="text-gray-600 dark:text-gray-400">Real-time analytics and performance metrics.</p>

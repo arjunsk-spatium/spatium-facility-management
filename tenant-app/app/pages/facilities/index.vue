@@ -10,7 +10,7 @@
                 <template #icon>
                     <PlusOutlined />
                 </template>
-                Add Facility
+                Add <hide class="hidden sm:inline">Facility</hide>
             </a-button>
         </div>
 

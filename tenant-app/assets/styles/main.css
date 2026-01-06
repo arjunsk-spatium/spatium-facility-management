@@ -129,6 +129,10 @@
         color: var(--color-neutral-100);
     }
 
+    h1 {
+        margin: 0 !important;
+    }
+
     /* Focus styles */
     :focus-visible {
         outline: 2px solid var(--color-primary-500);

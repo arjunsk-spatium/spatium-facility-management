@@ -9,7 +9,7 @@
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
         </div>
 
-        <div v-else-if="insights" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-else-if="insights" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Total Companies -->
             <div
                 class="bg-white dark:bg-[#141414] p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">

@@ -1,17 +1,17 @@
 <template>
     <div class="space-y-6">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Meeting Rooms Insights</h1>
                 <p class="text-gray-600 dark:text-gray-400">Overview of room utilization and booking trends.</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <a-range-picker v-model:value="dateRange" />
                 <a-button type="primary">
                     <template #icon>
                         <DownloadOutlined />
                     </template>
-                    Export Report
+                    Export <hide class="hidden sm:inline">Report</hide>
                 </a-button>
             </div>
         </div>
