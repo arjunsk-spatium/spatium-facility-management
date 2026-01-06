@@ -1507,4 +1507,11 @@
     .ant-picker-dropdown .ant-picker-content td {
         padding: 0 !important;
     }
+
+    /* Override Header Padding to match app spacing (px-4) */
+    .ant-layout .ant-layout-header {
+        padding-inline: 16px !important;
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
 }
