@@ -14,7 +14,7 @@
 
         <!-- Main Content -->
         <main class="flex-1 flex flex-col items-center p-4 md:p-8 overflow-y-auto">
-            <div class="w-full max-w-md mx-auto flex-1 flex flex-col justify-center">
+            <div class="w-full max-w-md mx-auto flex-1 flex flex-col">
                 <slot />
             </div>
         </main>

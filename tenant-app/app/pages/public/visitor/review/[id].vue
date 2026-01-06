@@ -139,9 +139,16 @@ const handleAction = async (action: 'approve' | 'reject') => {
     try {
         const newStatus = action === 'approve' ? 'approved' : 'rejected'
         await updateVisitorStatus(visitor.value.id, newStatus)
-        message.success(`Request ${action}d`)
-        // In real flow, maybe redirect to a list or show success state
-        router.back()
+        // Redirect to success page
+        await router.push({
+            path: '/public/visitor/review/action-complete',
+            query: {
+                status: action === 'approve' ? 'approved' : 'rejected',
+                name: visitor.value.name,
+                company: visitor.value.company,
+                photo: visitor.value.photoUrl
+            }
+        })
     } catch (e) {
         message.error('Action failed')
     } finally {

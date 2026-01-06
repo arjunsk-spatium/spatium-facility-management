@@ -1,30 +1,28 @@
 <template>
-    <div class="space-y-8 animate-fade-in text-center">
-        <!-- Floating Back Button -->
-        <div class="absolute top-4 left-4">
-             <NuxtLink to="/public/visitor">
-                <button class="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors">
-                    <ArrowLeftOutlined />
-                </button>
+    <div class="w-full animate-fade-in text-center space-y-6">
+        <!-- Back Link -->
+        <div class="w-full flex justify-start mb-6">
+             <NuxtLink to="/public/visitor" class="inline-flex items-center text-gray-900 hover:text-gray-600 font-bold transition-colors">
+                 <LeftOutlined class="mr-1 text-xs" /> Back
              </NuxtLink>
         </div>
 
-        <div class="pt-8">
-            <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-                <MailFilled class="text-4xl" />
+        <div class="pt-6">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100">
+                <MailFilled class="text-3xl" />
             </div>
 
-            <h1 class="text-3xl font-bold text-gray-900 mb-3">Have an invite?</h1>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Have an invite?</h1>
             <p class="text-gray-500 max-w-xs mx-auto text-sm leading-relaxed">
-                Enter the 6-digit visitor pass code provided by your host in your invitation email or SMS.
+                Enter the 6-digit visitor pass code provided by your host.
             </p>
         </div>
 
-        <div class="py-4">
+        <div class="py-6">
              <div class="flex justify-center gap-2 sm:gap-4">
-                 <input v-for="i in 6" :key="i" type="text" maxlength="1" 
-                    class="w-10 h-14 sm:w-16 sm:h-20 rounded-xl sm:rounded-2xl border border-gray-200 text-center text-2xl sm:text-4xl font-bold outline-none ring-4 ring-transparent focus:border-blue-500 focus:ring-blue-100 transition-all caret-blue-500 shadow-sm"
-                    :class="otpDigits[i-1] ? 'border-blue-500 bg-blue-50/10' : 'bg-white'"
+                 <input v-for="i in 6" :key="i" type="tel" inputmode="numeric" maxlength="1" 
+                    class="w-11 h-14 sm:w-14 sm:h-16 rounded-xl border border-gray-200 text-center text-2xl font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all caret-blue-500 bg-white text-gray-900 shadow-sm"
+                    :class="otpDigits[i-1] ? 'border-blue-500 bg-blue-50/10' : ''"
                     :value="otpDigits[i-1]"
                     @input="e => handleInput(e, i-1)"
                     @keydown.delete="e => handleBackspace(e, i-1)"
@@ -34,19 +32,20 @@
         </div>
 
         <div>
-            <a-button type="link" class="text-blue-600 font-semibold" @click="message.info('Code resent to your email')">
+            <button class="text-blue-600 font-bold text-sm hover:underline" @click="message.info('Code resent to your email')">
                 Resend Code
-            </a-button>
+            </button>
         </div>
 
         <div class="pt-8 w-full max-w-xs mx-auto">
-             <a-button type="primary" block size="large" 
-                class="h-14 text-lg font-bold rounded-2xl shadow-xl shadow-blue-600/20 flex items-center justify-center gap-2" 
-                :loading="loading" 
-                @click="verify" 
-                :disabled="otpDigits.join('').length < 6">
-                Check In <ArrowRightOutlined />
-            </a-button>
+             <button 
+                class="w-full h-12 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                :class="otpDigits.join('').length < 6 ? 'bg-gray-200 text-gray-500' : 'bg-blue-600 !text-white hover:bg-blue-700'"
+                :disabled="otpDigits.join('').length < 6 || loading"
+                @click="verify">
+                <span v-if="loading"><LoadingOutlined class="!text-white" /></span>
+                <span v-else class="!text-white">Check In <ArrowRightOutlined class="ml-1 !text-white" /></span>
+            </button>
             <div class="mt-6 text-xs text-gray-400">
                 Don't have a code? <NuxtLink to="/public/visitor/register" class="text-gray-500 underline decoration-gray-300">Search for host manually</NuxtLink>
             </div>
@@ -58,7 +57,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { MailFilled, ArrowLeftOutlined, ArrowRightOutlined } from '@ant-design/icons-vue'
+import { MailFilled, LeftOutlined, ArrowRightOutlined, LoadingOutlined } from '@ant-design/icons-vue'
 
 
 definePageMeta({

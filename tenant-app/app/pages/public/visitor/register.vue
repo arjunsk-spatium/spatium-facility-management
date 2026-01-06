@@ -1,15 +1,21 @@
 <template>
     <div class="w-full flex-1 flex flex-col relative min-h-[400px]">
-        <!-- Back Button (visible except Step 1/Success) -->
-        <!-- Back Button (visible except Step 1/Success) -->
-        <div v-if="step > 1 && step < 5" class="absolute top-0 left-0 z-10 w-full">
-            <button @click="step--" class="flex items-center text-gray-800 hover:text-gray-900 font-bold text-base bg-transparent p-2 -ml-2">
-                <ArrowLeftOutlined class="mr-2" /> Back
+        <!-- Back Button for Step 1 - navigates to visitor index -->
+        <div v-if="step === 1" class="w-full flex justify-start mb-4">
+            <NuxtLink to="/public/visitor" class="inline-flex items-center text-gray-900 hover:text-gray-600 font-bold text-base transition-colors">
+                <LeftOutlined class="mr-1 text-xs" /> Back
+            </NuxtLink>
+        </div>
+
+        <!-- Back Button for Steps 2-4 - goes to previous step -->
+        <div v-else-if="step > 1 && step < 5" class="w-full flex justify-start mb-4">
+            <button @click="step--" class="inline-flex items-center text-gray-900 hover:text-gray-600 font-bold text-base transition-colors">
+                <LeftOutlined class="mr-1 text-xs" /> Back
             </button>
         </div>
 
         <!-- Step 1: Phone Number -->
-        <div v-if="step === 1" class="space-y-8 animate-fade-in pt-12">
+        <div v-if="step === 1" class="space-y-8 animate-fade-in">
              <div class="text-center space-y-2">
                 <h1 class="text-2xl font-bold text-gray-900">Welcome Visitor</h1>
                 <p class="text-gray-500 text-sm">Enter your mobile number to receive a verification code.</p>
@@ -73,7 +79,7 @@
             </p>
 
             <button 
-                class="w-full h-12 rounded-xl bg-green-500 !text-white font-bold text-lg hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20 flex items-center justify-center gap-2"
+                class="w-full h-12 rounded-xl bg-blue-600 !text-white font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
                 :disabled="loading"
                 @click="verifyOtpCode">
                 <span v-if="loading"><LoadingOutlined class="!text-white" /></span>
@@ -225,7 +231,7 @@ import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { 
-    ArrowLeftOutlined, DownOutlined, CloseCircleFilled, LockFilled, 
+    LeftOutlined, DownOutlined, CloseCircleFilled, LockFilled, 
     CheckCircleFilled, CameraFilled, PlusOutlined, UserOutlined, 
     MailOutlined, BankOutlined, LoadingOutlined 
 } from '@ant-design/icons-vue'
