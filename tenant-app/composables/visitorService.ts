@@ -157,6 +157,18 @@ export const useVisitorService = () => {
         })
     }
 
+    const getPurposeStats = async () => {
+        return new Promise((resolve) => {
+            setTimeout(() => resolve([
+                { purpose: 'Meeting', count: 45, color: '#3b82f6' },
+                { purpose: 'Interview', count: 15, color: '#10b981' },
+                { purpose: 'Delivery', count: 25, color: '#f59e0b' },
+                { purpose: 'Site Visit', count: 10, color: '#8b5cf6' },
+                { purpose: 'Other', count: 5, color: '#6b7280' },
+            ]), 400)
+        })
+    }
+
     return {
         getVisitors,
         registerWalkIn,
@@ -164,6 +176,7 @@ export const useVisitorService = () => {
         getVisitorByPasscode,
         updateVisitorStatus,
         getStats,
-        getTrends
+        getTrends,
+        getPurposeStats
     }
 }

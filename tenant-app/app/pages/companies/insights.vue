@@ -46,14 +46,14 @@
                 class="bg-white dark:bg-[#141414] p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Company Status Distribution</h3>
                 <div class="h-64">
-                    <BarChart v-if="!loading" :chart-data="statusChartData" :chart-options="chartOptions" />
+                    <BarChart v-if="!loading" :chart-data="statusChartData" :options="chartOptions" />
                 </div>
             </div>
             <div
                 class="bg-white dark:bg-[#141414] p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Revenue Trend (Mock)</h3>
                 <div class="h-64">
-                    <LineChart v-if="!loading" :chart-data="revenueChartData" :chart-options="chartOptions" />
+                    <LineChart v-if="!loading" :chart-data="revenueChartData" :options="chartOptions" />
                 </div>
             </div>
         </div>
@@ -63,9 +63,8 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
 import { useCompanyStore } from '../../../stores/company'
-import BarChart from '../../components/charts/BarChart.vue'
-import LineChart from '../../components/charts/LineChart.vue'
-// Charts auto-registered in component files
+import BarChart from '../../../components/common/charts/BarChart.vue'
+import LineChart from '../../../components/common/charts/LineChart.vue'
 
 definePageMeta({
     middleware: 'auth'

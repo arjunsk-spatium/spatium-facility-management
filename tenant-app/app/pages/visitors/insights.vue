@@ -21,8 +21,11 @@
 
         <!-- Chart -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-3">
+            <div class="lg:col-span-2">
                 <VisitorChartWidget :data="trends" />
+            </div>
+            <div class="lg:col-span-1">
+                <VisitorPurposeWidget :data="purposeStats" />
             </div>
         </div>
     </div>
@@ -35,16 +38,18 @@ import { DownloadOutlined } from '@ant-design/icons-vue'
 
 import VisitorStatsWidget from '../../components/visitors/widgets/VisitorStatsWidget.vue'
 import VisitorChartWidget from '../../components/visitors/widgets/VisitorChartWidget.vue'
+import VisitorPurposeWidget from '../../components/visitors/widgets/VisitorPurposeWidget.vue'
 
 definePageMeta({
     middleware: 'auth'
 })
 
 const store = useVisitorStore()
-const { stats, trends } = storeToRefs(store)
+const { stats, trends, purposeStats } = storeToRefs(store)
 
 onMounted(() => {
     store.fetchStats()
     store.fetchTrends()
+    store.fetchPurposeStats()
 })
 </script>

@@ -7,31 +7,19 @@
             </a-select>
         </template>
 
-        <div class="space-y-4 pt-4">
-            <!-- Simple CSS Line Chart Mockup -->
-            <div class="flex items-end justify-between h-48 gap-3 px-2">
-                <div v-for="(item, index) in data" :key="index" class="flex flex-col items-center flex-1 group">
-                    <div class="w-full bg-purple-100 dark:bg-purple-900/30 rounded-t relative hover:bg-purple-200 dark:hover:bg-purple-800/40 transition-colors"
-                        :style="{ height: `${(item.value / maxValue) * 100}%` }">
-
-                        <div
-                            class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
-                            {{ item.value }} Bookings
-                        </div>
-                    </div>
-                    <span class="text-xs text-gray-500 mt-2">{{ item.label }}</span>
-                </div>
-            </div>
+        <div class="h-64 pt-4">
+            <BarChart v-if="chartData" :chart-data="chartData" :options="chartOptions" />
         </div>
     </a-card>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import BarChart from '../../common/charts/BarChart.vue';
 
 const timeRange = ref('year');
 
-const data = [
+const mockData = [
     { label: 'May', value: 20 },
     { label: 'Jun', value: 35 },
     { label: 'Jul', value: 30 },
@@ -40,5 +28,26 @@ const data = [
     { label: 'Oct', value: 60 }
 ];
 
-const maxValue = computed(() => Math.max(...data.map(d => d.value)) * 1.2);
+const chartData = computed(() => ({
+    labels: mockData.map(d => d.label),
+    datasets: [{
+        label: 'Bookings',
+        data: mockData.map(d => d.value),
+        backgroundColor: '#a855f7',
+        borderRadius: 4,
+        barThickness: 32
+    }]
+}));
+
+const chartOptions = {
+    plugins: {
+        legend: { display: false }
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+        }
+    }
+};
 </script>

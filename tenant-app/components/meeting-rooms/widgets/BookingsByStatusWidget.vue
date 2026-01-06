@@ -1,19 +1,11 @@
 <template>
     <a-card title="Bookings by Status" :bordered="false" class="shadow-sm h-full">
-        <div class="flex items-center justify-center p-4">
-            <!-- Simple CSS Donut Chart Mockup -->
-            <div
-                class="relative w-40 h-40 rounded-full bg-blue-100 dark:bg-gray-700 flex items-center justify-center border-8 border-green-500">
-                <div
-                    class="absolute inset-0 rounded-full border-8 border-gray-400 border-l-transparent border-t-transparent -rotate-45">
-                </div>
-                <div class="absolute inset-0 rounded-full border-8 border-red-500 border-r-transparent border-b-transparent rotate-90"
-                    style="clip-path: polygon(0 0, 100% 0, 100% 20%, 0 20%);"></div>
-
-                <div class="text-center z-10">
-                    <div class="text-2xl font-bold dark:text-white">145</div>
-                    <div class="text-xs text-gray-500">Total</div>
-                </div>
+        <div class="flex items-center justify-center p-4 relative h-48">
+            <DoughnutChart v-if="chartData" :chart-data="chartData" :options="chartOptions" />
+            <!-- Center Text -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div class="text-2xl font-bold dark:text-white">145</div>
+                <div class="text-xs text-gray-500">Total</div>
             </div>
         </div>
 
@@ -42,3 +34,25 @@
         </div>
     </a-card>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import DoughnutChart from '../../common/charts/DoughnutChart.vue';
+
+const chartData = computed(() => ({
+    labels: ['Confirmed', 'Completed', 'Cancelled'],
+    datasets: [{
+        data: [85, 45, 15],
+        backgroundColor: ['#22c55e', '#9ca3af', '#ef4444'],
+        borderWidth: 0,
+        cutout: '75%'
+    }]
+}));
+
+const chartOptions = {
+    plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false }
+    }
+};
+</script>

@@ -6,6 +6,7 @@ export const useVisitorStore = defineStore('visitor', {
         visitors: [] as Visitor[],
         stats: null as VisitorStats | null,
         trends: [] as any[],
+        purposeStats: [] as any[],
         loading: false,
         error: null as string | null,
         currentVisitor: null as Visitor | null
@@ -37,6 +38,14 @@ export const useVisitorStore = defineStore('visitor', {
                 this.trends = await getTrends()
             } catch (err) {
                 console.error('Failed to fetch trends')
+            }
+        },
+        async fetchPurposeStats() {
+            try {
+                const { getPurposeStats } = useVisitorService()
+                this.purposeStats = (await getPurposeStats()) as any[]
+            } catch (err) {
+                console.error('Failed to fetch purpose stats')
             }
         },
         async updateStatus(id: string, status: Visitor['status']) {

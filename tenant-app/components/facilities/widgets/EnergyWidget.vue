@@ -14,26 +14,8 @@
         </template>
 
         <div class="space-y-4">
-            <div class="flex items-end gap-2 h-32 pt-4">
-                <div v-for="(val, index) in data" :key="index"
-                    class="flex-1 bg-blue-100 dark:bg-blue-900/30 rounded-t relative group transition-all hover:bg-blue-200 dark:hover:bg-blue-800/40"
-                    :style="{ height: `${val}%` }">
-
-                    <div
-                        class="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {{ val }} kWh
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex justify-between text-xs text-gray-500 pt-2 border-t border-gray-100 dark:border-gray-700">
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span>Sat</span>
-                <span>Sun</span>
+            <div class="h-48 pt-4">
+                <BarChart v-if="chartData" :chart-data="chartData" :options="chartOptions" />
             </div>
 
             <div class="flex items-center justify-between mt-2">
@@ -51,9 +33,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { ThunderboltOutlined } from '@ant-design/icons-vue';
+import BarChart from '../../common/charts/BarChart.vue';
 
 const timeRange = ref('week');
-const data = [30, 45, 60, 40, 75, 50, 65]; // Mock percentage data for bars
+const mockData = [30, 45, 60, 40, 75, 50, 65];
+
+const chartData = computed(() => ({
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+        label: 'Energy (kWh)',
+        data: mockData,
+        backgroundColor: '#eab308',
+        borderRadius: 4,
+        barThickness: 24
+    }]
+}));
+
+const chartOptions = {
+    plugins: {
+        legend: { display: false }
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            ticks: { display: false },
+            grid: { display: false }
+        },
+        x: {
+            grid: { display: false }
+        }
+    }
+};
 </script>
