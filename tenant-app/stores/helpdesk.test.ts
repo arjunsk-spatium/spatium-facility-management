@@ -1,0 +1,123 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import { useHelpdeskStore } from './helpdesk'
+
+// Mock the helpdeskService
+vi.mock('../composables/helpdeskService', () => ({
+    useHelpdeskService: () => ({
+        getTickets: vi.fn().mockResolvedValue([
+            { id: 'TKT-001', category: 'IT', status: 'Open', priority: 'High' },
+            { id: 'TKT-002', category: 'Maintenance', status: 'In Progress', priority: 'Medium' },
+            { id: 'TKT-003', category: 'IT', status: 'Resolved', priority: 'Low' }
+        ]),
+        getTicketById: vi.fn().mockImplementation((id) => Promise.resolve(
+            id === 'TKT-001' ? { id: 'TKT-001', category: 'IT', status: 'Open' } : null
+        )),
+        getStats: vi.fn().mockResolvedValue({ total: 100, open: 20, resolved: 80 })
+    })
+}))
+
+describe('Helpdesk Store', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia())
+    })
+
+    describe('Initial State', () => {
+        it('should have empty tickets array initially', () => {
+            const store = useHelpdeskStore()
+            expect(store.tickets).toEqual([])
+        })
+
+        it('should have null currentTicket initially', () => {
+            const store = useHelpdeskStore()
+            expect(store.currentTicket).toBeNull()
+        })
+
+        it('should have null stats initially', () => {
+            const store = useHelpdeskStore()
+            expect(store.stats).toBeNull()
+        })
+    })
+
+    describe('Getters', () => {
+        it('getTicketById should return correct ticket', () => {
+            const store = useHelpdeskStore()
+            store.tickets = [
+                { id: 'TKT-001', status: 'Open' },
+                { id: 'TKT-002', status: 'Closed' }
+            ] as any[]
+            expect(store.getTicketById('TKT-001')?.status).toBe('Open')
+        })
+
+        it('openTickets should filter open tickets', () => {
+            const store = useHelpdeskStore()
+            store.tickets = [
+                { id: '1', status: 'Open' },
+                { id: '2', status: 'In Progress' },
+                { id: '3', status: 'Open' }
+            ] as any[]
+            expect(store.openTickets.length).toBe(2)
+        })
+
+        it('inProgressTickets should filter in-progress tickets', () => {
+            const store = useHelpdeskStore()
+            store.tickets = [
+                { id: '1', status: 'Open' },
+                { id: '2', status: 'In Progress' }
+            ] as any[]
+            expect(store.inProgressTickets.length).toBe(1)
+        })
+
+        it('activeTicketsCount should count open and in-progress tickets', () => {
+            const store = useHelpdeskStore()
+            store.tickets = [
+                { id: '1', status: 'Open' },
+                { id: '2', status: 'In Progress' },
+                { id: '3', status: 'Resolved' }
+            ] as any[]
+            expect(store.activeTicketsCount).toBe(2)
+        })
+    })
+
+    describe('Actions', () => {
+        it('fetchTickets should populate tickets', async () => {
+            const store = useHelpdeskStore()
+            await store.fetchTickets()
+            
+            expect(store.tickets.length).toBe(3)
+            expect(store.init).toBe(true)
+        })
+
+        it('fetchTickets should not refetch if initialized', async () => {
+            const store = useHelpdeskStore()
+            await store.fetchTickets()
+            store.tickets = [{ id: 'existing' }] as any[]
+            
+            await store.fetchTickets()
+            expect(store.tickets[0].id).toBe('existing')
+        })
+
+        it('fetchTicketById should set currentTicket for valid id', async () => {
+            const store = useHelpdeskStore()
+            await store.fetchTicketById('TKT-001')
+            
+            expect(store.currentTicket).not.toBeNull()
+            expect(store.currentTicket?.id).toBe('TKT-001')
+        })
+
+        it('fetchTicketById should set error for invalid id', async () => {
+            const store = useHelpdeskStore()
+            await store.fetchTicketById('INVALID')
+            
+            expect(store.error).toBe('Ticket not found')
+        })
+
+        it('fetchStats should populate stats', async () => {
+            const store = useHelpdeskStore()
+            await store.fetchStats()
+            
+            expect(store.stats).not.toBeNull()
+            expect(store.stats?.total).toBe(100)
+        })
+    })
+})
