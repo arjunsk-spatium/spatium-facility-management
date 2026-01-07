@@ -12,8 +12,8 @@ describe('Company List Page', () => {
                     initialState: {
                         company: {
                             companies: [
-                                { id: '1', name: 'Test Corp A', address: 'Addr A', status: 'active' },
-                                { id: '2', name: 'Test Corp B', address: 'Addr B', status: 'inactive' }
+                                { id: '1', name: 'Test Corp A', spoc_name: 'John Doe', spoc_email: 'john@test.com', spoc_phone: '123', status: 'active' },
+                                { id: '2', name: 'Test Corp B', spoc_name: 'Jane Doe', spoc_email: 'jane@test.com', spoc_phone: '456', status: 'inactive' }
                             ],
                             loading: false
                         }
@@ -24,7 +24,6 @@ describe('Company List Page', () => {
         
         expect(wrapper.text()).toContain('Test Corp A')
         expect(wrapper.text()).toContain('Test Corp B')
-        expect(wrapper.text()).toContain('Addr A')
     })
 
     it('should show "Create Company" button', async () => {
