@@ -7,6 +7,8 @@ export interface Visitor {
     email: string
     phone: string
     company: string
+    companyId?: number
+    facilityId?: number
     photoUrl?: string
     visitPurpose?: string
     hostName?: string
@@ -31,6 +33,8 @@ const MOCK_VISITORS: Visitor[] = [
         email: 'john@example.com',
         phone: '+1234567890',
         company: 'Tech Corp',
+        companyId: 1,
+        facilityId: 1,
         visitPurpose: 'Meeting',
         hostName: 'Alice Smith',
         status: 'checked-in',
@@ -43,6 +47,8 @@ const MOCK_VISITORS: Visitor[] = [
         email: 'jane@example.com',
         phone: '+0987654321',
         company: 'Biz Solutions',
+        companyId: 2,
+        facilityId: 1,
         visitPurpose: 'Interview',
         hostName: 'Bob Jones',
         status: 'pending',
@@ -54,10 +60,39 @@ const MOCK_VISITORS: Visitor[] = [
         email: 'mike@example.com',
         phone: '+1122334455',
         company: 'Delivery Inc',
+        companyId: 3,
+        facilityId: 2,
         visitPurpose: 'Delivery',
         hostName: 'Reception',
         status: 'approved',
         visitDate: dayjs().add(1, 'day').toISOString()
+    },
+    {
+        id: '4',
+        name: 'Sarah Williams',
+        email: 'sarah@example.com',
+        phone: '+5544332211',
+        company: 'Tech Corp',
+        companyId: 1,
+        facilityId: 2,
+        visitPurpose: 'Site Visit',
+        hostName: 'Mark Brown',
+        status: 'pending',
+        visitDate: dayjs().toISOString()
+    },
+    {
+        id: '5',
+        name: 'David Lee',
+        email: 'david@example.com',
+        phone: '+6677889900',
+        company: 'Biz Solutions',
+        companyId: 2,
+        facilityId: 3,
+        visitPurpose: 'Meeting',
+        hostName: 'Lisa White',
+        status: 'checked-in',
+        checkInTime: dayjs().subtract(1, 'hour').toISOString(),
+        visitDate: dayjs().toISOString()
     }
 ]
 
