@@ -37,31 +37,28 @@
                 <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
             </div>
 
-            <!-- Dynamic Menu Items -->
-            <template v-for="key in userModules" :key="key">
-                <template v-if="moduleConfig[key]">
-                    <!-- Submenu -->
-                    <a-sub-menu v-if="moduleConfig[key].children" :key="key + '-submenu'">
-                        <template #icon>
-                            <component :is="moduleConfig[key].icon" class="text-lg" />
-                        </template>
-                        <template #title>{{ moduleConfig[key].label }}</template>
-                        <a-menu-item v-for="child in moduleConfig[key].children" :key="child.key">
-                            <NuxtLink v-if="child.route" :to="child.route">{{ child.label }}</NuxtLink>
-                            <span v-else>{{ child.label }}</span>
-                        </a-menu-item>
-                    </a-sub-menu>
-
-                    <!-- Single Item -->
-                    <a-menu-item v-else :key="key + '-item'" class="mb-1 rounded-md">
-                        <template #icon>
-                            <component :is="moduleConfig[key].icon" class="text-lg" />
-                        </template>
-                        <NuxtLink v-if="moduleConfig[key].route" :to="moduleConfig[key].route">{{
-                            moduleConfig[key].label }}</NuxtLink>
-                        <span v-else>{{ moduleConfig[key].label }}</span>
+            <!-- Dynamic Menu Items from API -->
+            <template v-for="module in filteredModules" :key="module.key">
+                <!-- Submenu -->
+                <a-sub-menu v-if="module.children && module.children.length > 0" :key="module.key + '-submenu'">
+                    <template #icon>
+                        <component :is="getIconComponent(module.icon)" class="text-lg" />
+                    </template>
+                    <template #title>{{ module.label }}</template>
+                    <a-menu-item v-for="child in module.children" :key="child.key">
+                        <NuxtLink v-if="child.route" :to="child.route">{{ child.label }}</NuxtLink>
+                        <span v-else>{{ child.label }}</span>
                     </a-menu-item>
-                </template>
+                </a-sub-menu>
+
+                <!-- Single Item -->
+                <a-menu-item v-else :key="module.key + '-item'" class="mb-1 rounded-md">
+                    <template #icon>
+                        <component :is="getIconComponent(module.icon)" class="text-lg" />
+                    </template>
+                    <NuxtLink v-if="module.route" :to="module.route">{{ module.label }}</NuxtLink>
+                    <span v-else>{{ module.label }}</span>
+                </a-menu-item>
             </template>
         </a-menu>
     </div>
@@ -73,6 +70,7 @@ import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useTenantStore } from '../stores/tenant';
 import { useTheme } from '../composables/useTheme';
+import { useUserService, type Module } from '../composables/userService';
 import {
     BankOutlined,
     SettingOutlined,
@@ -82,9 +80,9 @@ import {
     HomeOutlined,
     SafetyCertificateOutlined,
     ShoppingCartOutlined,
-
     TeamOutlined,
-    CalendarOutlined
+    CalendarOutlined,
+    AppstoreOutlined
 } from '@ant-design/icons-vue';
 
 const props = defineProps<{
@@ -94,8 +92,32 @@ const props = defineProps<{
 const { colorMode } = useTheme();
 const tenantStore = useTenantStore();
 const route = useRoute();
+const { getTenantModules } = useUserService();
+
 const selectedKeys = ref<string[]>([]);
 const openKeys = ref<string[]>([]);
+const isLoading = ref(true);
+const allModules = ref<Module[]>([]);
+
+// Icon mapping - maps string icon names to actual components
+const iconMap: Record<string, any> = {
+    'BarChartOutlined': BarChartOutlined,
+    'UsergroupAddOutlined': UsergroupAddOutlined,
+    'BankOutlined': BankOutlined,
+    'CustomerServiceOutlined': CustomerServiceOutlined,
+    'HomeOutlined': HomeOutlined,
+    'CalendarOutlined': CalendarOutlined,
+    'TeamOutlined': TeamOutlined,
+    'SettingOutlined': SettingOutlined,
+    'SafetyCertificateOutlined': SafetyCertificateOutlined,
+    'ShoppingCartOutlined': ShoppingCartOutlined,
+    'AppstoreOutlined': AppstoreOutlined
+};
+
+const getIconComponent = (iconName?: string) => {
+    if (!iconName) return BarChartOutlined;
+    return iconMap[iconName] || BarChartOutlined;
+};
 
 // Compute isDark considering system mode
 const isDark = computed(() => {
@@ -107,53 +129,14 @@ const isDark = computed(() => {
     return false;
 });
 
-// Module Configuration
-const moduleConfig: Record<string, any> = {
-    dashboard: { label: 'Dashboard', icon: BarChartOutlined, route: '/dashboard' },
-    visitors: {
-        label: 'Visitors',
-        icon: UsergroupAddOutlined,
-        children: [
-            { key: 'visitors-insights', label: 'Insights', route: '/visitors/insights' },
-            { key: 'visitors-list', label: 'All Visitors', route: '/visitors' }
-        ]
-    },
-    companies: {
-        label: 'Companies',
-        icon: BankOutlined,
-        children: [
-            { key: 'companies-insights', label: 'Insights', route: '/companies/insights' },
-            { key: 'companies-list', label: 'All Companies', route: '/companies' }
-        ]
-    },
-    helpdesk: {
-        label: 'Helpdesk',
-        icon: CustomerServiceOutlined,
-        children: [
-            { key: 'helpdesk-insights', label: 'Insights', route: '/helpdesk/insights' },
-            { key: 'helpdesk-tickets', label: 'Tickets', route: '/helpdesk' }
-        ]
-    },
-    facilities: {
-        label: 'Facilities',
-        icon: HomeOutlined,
-        children: [
-            { key: 'facilities-insights', label: 'Insights', route: '/facilities/insights' },
-            { key: 'facilities-list', label: 'All Facilities', route: '/facilities' }
-        ]
-    },
-    meeting_rooms: {
-        label: 'Meeting Rooms',
-        icon: CustomerServiceOutlined, // Using CustomerServiceOutlined as placeholder or find usage of Meeting Room icon
-        children: [
-            { key: 'meeting-rooms-insights', label: 'Insights', route: '/meeting-rooms/insights' },
-            { key: 'meeting-rooms-list', label: 'All Rooms', route: '/meeting-rooms' },
-            { key: 'meeting-rooms-bookings', label: 'Bookings', route: '/meeting-rooms/bookings' }
-        ]
-    },
-    users: { label: 'User Module Management', icon: TeamOutlined, route: '/users' },
-    configure: { label: 'Configure', icon: SettingOutlined, route: '/configure' }
-};
+// Use modules from auth store to filter which modules user has access to
+const authStore = useAuthStore();
+const userModuleKeys = computed(() => authStore.modules);
+
+// Filter modules based on user's access
+const filteredModules = computed(() => {
+    return allModules.value.filter(m => userModuleKeys.value.includes(m.key));
+});
 
 // Map routes to menu keys
 const updateMenuState = () => {
@@ -214,32 +197,21 @@ const updateMenuState = () => {
     if (path.includes('/configure')) selectedKeys.value = ['configure-item'];
 };
 
-// Use modules from auth store
-const authStore = useAuthStore();
-const isLoading = ref(true);
-
-// Watch store modules to update UI
-// Always include 'configure' since it's an admin feature
-const userModules = computed(() => {
-    const modules = [...authStore.modules]
-    if (!modules.includes('configure')) {
-        modules.push('configure')
-    }
-    return modules
-});
-
 onMounted(async () => {
-    // Fetch if empty
-    if (authStore.modules.length === 0) {
-        try {
+    isLoading.value = true;
+    try {
+        // Fetch modules configuration from "API"
+        allModules.value = await getTenantModules();
+
+        // Fetch user's module access if not already loaded
+        if (authStore.modules.length === 0) {
             await authStore.fetchModules();
-        } catch (error) {
-            console.error('Failed to fetch user modules', error);
         }
+    } catch (error) {
+        console.error('Failed to fetch modules', error);
+    } finally {
+        isLoading.value = false;
     }
-    // We can assume loading is handled by initial state or we can add isLoading state to store if needed.
-    // For now, we just wait for fetch.
-    isLoading.value = false;
 });
 
 // Update on mount and route change
@@ -247,8 +219,6 @@ watch(() => route.path, updateMenuState, { immediate: true });
 </script>
 
 <style scoped>
-/* Copied styles from Sidebar.vue specifically for menu items */
-
 /* Menu Background - inherit to be transparent over parent */
 :deep(.ant-menu) {
     background: transparent !important;
