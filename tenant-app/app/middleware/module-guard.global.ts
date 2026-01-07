@@ -4,14 +4,15 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const authStore = useAuthStore();
     
     // Modules map path to module key
+    // Note: /configure is not listed here because it's accessible to all authenticated users
     const moduleMap: Record<string, string> = {
         '/companies': 'companies',
         '/visitors': 'visitors',
         '/helpdesk': 'helpdesk',
         '/facilities': 'facilities',
         '/users': 'users',
-        '/settings': 'settings',
-        '/meeting-rooms': 'meeting_rooms'
+        '/meeting-rooms': 'meeting_rooms',
+        '/configure': 'configure'
     };
 
     // Find matching restricted module

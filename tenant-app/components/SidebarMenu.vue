@@ -152,7 +152,7 @@ const moduleConfig: Record<string, any> = {
         ]
     },
     users: { label: 'User Module Management', icon: TeamOutlined, route: '/users' },
-    settings: { label: 'Configuration', icon: SettingOutlined, route: '/settings' }
+    configure: { label: 'Configure', icon: SettingOutlined, route: '/configure' }
 };
 
 // Map routes to menu keys
@@ -211,7 +211,7 @@ const updateMenuState = () => {
         else if (path.includes('/insights')) selectedKeys.value = ['meeting-rooms-insights'];
         else selectedKeys.value = ['meeting-rooms-list'];
     }
-    if (path.includes('/settings')) selectedKeys.value = ['settings-item'];
+    if (path.includes('/configure')) selectedKeys.value = ['configure-item'];
 };
 
 // Use modules from auth store
@@ -219,7 +219,14 @@ const authStore = useAuthStore();
 const isLoading = ref(true);
 
 // Watch store modules to update UI
-const userModules = computed(() => authStore.modules);
+// Always include 'configure' since it's an admin feature
+const userModules = computed(() => {
+    const modules = [...authStore.modules]
+    if (!modules.includes('configure')) {
+        modules.push('configure')
+    }
+    return modules
+});
 
 onMounted(async () => {
     // Fetch if empty
