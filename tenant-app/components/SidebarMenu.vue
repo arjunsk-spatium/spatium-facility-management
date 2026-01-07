@@ -27,40 +27,42 @@
         </div>
 
         <!-- Scrollable Menu Section -->
-        <a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" :theme="isDark ? 'dark' : 'light'"
-            mode="inline" class="border-none px-3 pt-4 font-medium bg-inherit" :inline-collapsed="collapsed">
+        <div class="flex-1 overflow-y-auto overflow-x-hidden">
+            <a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" :theme="isDark ? 'dark' : 'light'"
+                mode="inline" class="border-none px-3 pt-4 font-medium bg-inherit" :inline-collapsed="collapsed">
 
-            <!-- Loading State -->
-            <div v-if="isLoading" class="px-4 py-2 space-y-4">
-                <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
-                <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
-                <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
-            </div>
+                <!-- Loading State -->
+                <div v-if="isLoading" class="px-4 py-2 space-y-4">
+                    <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
+                    <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
+                    <div class="h-8 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
+                </div>
 
-            <!-- Dynamic Menu Items from API -->
-            <template v-for="module in filteredModules" :key="module.key">
-                <!-- Submenu -->
-                <a-sub-menu v-if="module.children && module.children.length > 0" :key="module.key + '-submenu'">
-                    <template #icon>
-                        <component :is="getIconComponent(module.icon)" class="text-lg" />
-                    </template>
-                    <template #title>{{ module.label }}</template>
-                    <a-menu-item v-for="child in module.children" :key="child.key">
-                        <NuxtLink v-if="child.route" :to="child.route">{{ child.label }}</NuxtLink>
-                        <span v-else>{{ child.label }}</span>
+                <!-- Dynamic Menu Items from API -->
+                <template v-for="module in filteredModules" :key="module.key">
+                    <!-- Submenu -->
+                    <a-sub-menu v-if="module.children && module.children.length > 0" :key="module.key + '-submenu'">
+                        <template #icon>
+                            <component :is="getIconComponent(module.icon)" class="text-lg" />
+                        </template>
+                        <template #title>{{ module.label }}</template>
+                        <a-menu-item v-for="child in module.children" :key="child.key">
+                            <NuxtLink v-if="child.route" :to="child.route">{{ child.label }}</NuxtLink>
+                            <span v-else>{{ child.label }}</span>
+                        </a-menu-item>
+                    </a-sub-menu>
+
+                    <!-- Single Item -->
+                    <a-menu-item v-else :key="module.key + '-item'" class="mb-1 rounded-md">
+                        <template #icon>
+                            <component :is="getIconComponent(module.icon)" class="text-lg" />
+                        </template>
+                        <NuxtLink v-if="module.route" :to="module.route">{{ module.label }}</NuxtLink>
+                        <span v-else>{{ module.label }}</span>
                     </a-menu-item>
-                </a-sub-menu>
-
-                <!-- Single Item -->
-                <a-menu-item v-else :key="module.key + '-item'" class="mb-1 rounded-md">
-                    <template #icon>
-                        <component :is="getIconComponent(module.icon)" class="text-lg" />
-                    </template>
-                    <NuxtLink v-if="module.route" :to="module.route">{{ module.label }}</NuxtLink>
-                    <span v-else>{{ module.label }}</span>
-                </a-menu-item>
-            </template>
-        </a-menu>
+                </template>
+            </a-menu>
+        </div>
     </div>
 
 </template>
@@ -82,7 +84,8 @@ import {
     ShoppingCartOutlined,
     TeamOutlined,
     CalendarOutlined,
-    AppstoreOutlined
+    AppstoreOutlined,
+    DashboardOutlined
 } from '@ant-design/icons-vue';
 
 const props = defineProps<{
@@ -111,7 +114,8 @@ const iconMap: Record<string, any> = {
     'SettingOutlined': SettingOutlined,
     'SafetyCertificateOutlined': SafetyCertificateOutlined,
     'ShoppingCartOutlined': ShoppingCartOutlined,
-    'AppstoreOutlined': AppstoreOutlined
+    'AppstoreOutlined': AppstoreOutlined,
+    'DashboardOutlined': DashboardOutlined
 };
 
 const getIconComponent = (iconName?: string) => {
@@ -195,6 +199,21 @@ const updateMenuState = () => {
         else selectedKeys.value = ['meeting-rooms-list'];
     }
     if (path.includes('/configure')) selectedKeys.value = ['configure-item'];
+
+    // SPOC Routes
+    if (path.startsWith('/spoc')) {
+        if (path === '/spoc' || path === '/spoc/') {
+            selectedKeys.value = ['spoc_dashboard-item'];
+        } else if (path.includes('/spoc/visitors')) {
+            openKeys.value = ['spoc_visitors-submenu'];
+            if (path.includes('/insights')) selectedKeys.value = ['spoc-visitors-insights'];
+            else if (path.includes('/invite')) selectedKeys.value = ['spoc-visitors-invite'];
+            else selectedKeys.value = ['spoc-visitors-list'];
+        } else if (path.includes('/spoc/employees')) {
+            selectedKeys.value = ['spoc_employees-item'];
+        }
+        return;
+    }
 };
 
 onMounted(async () => {

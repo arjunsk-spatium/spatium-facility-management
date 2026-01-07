@@ -77,7 +77,20 @@ export const useUserService = () => {
             ]
         },
         { key: 'users', label: 'User Management', icon: 'TeamOutlined', route: '/users' },
-        { key: 'configure', label: 'Configure', icon: 'SettingOutlined', route: '/configure' }
+        { key: 'configure', label: 'Configure', icon: 'SettingOutlined', route: '/configure' },
+        // SPOC Modules - for company SPOCs
+        { key: 'spoc_dashboard', label: 'Company Dashboard', icon: 'DashboardOutlined', route: '/spoc' },
+        {
+            key: 'spoc_visitors',
+            label: 'Visitors',
+            icon: 'UsergroupAddOutlined',
+            children: [
+                { key: 'spoc-visitors-insights', label: 'Insights', route: '/spoc/visitors/insights' },
+                { key: 'spoc-visitors-list', label: 'Visitor List', route: '/spoc/visitors' },
+                { key: 'spoc-visitors-invite', label: 'Invite Visitor', route: '/spoc/visitors/invite' }
+            ]
+        },
+        { key: 'spoc_employees', label: 'Employees', icon: 'TeamOutlined', route: '/spoc/employees' }
     ]
 
     // Mock users data
@@ -88,7 +101,7 @@ export const useUserService = () => {
             email: 'john.doe@example.com',
             phone: '+91 98765 43210',
             role: 'Admin',
-            modules: ['dashboard', 'companies', 'visitors', 'facilities', 'helpdesk', 'meeting_rooms', 'configure', 'users']
+            modules: ['dashboard', 'companies', 'visitors', 'facilities', 'helpdesk', 'meeting_rooms', 'configure', 'users', 'spoc_dashboard', 'spoc_visitors', 'spoc_employees']
         },
         {
             id: 2,
