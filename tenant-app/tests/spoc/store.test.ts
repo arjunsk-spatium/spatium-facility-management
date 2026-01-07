@@ -1,0 +1,204 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import { useSpocStore } from '../../stores/spoc'
+
+describe('SPOC Store', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia())
+    })
+
+    describe('Initial State', () => {
+        it('should have empty visitors array initially', () => {
+            const store = useSpocStore()
+            expect(store.visitors).toEqual([])
+        })
+
+        it('should have empty employees array initially', () => {
+            const store = useSpocStore()
+            expect(store.employees).toEqual([])
+        })
+
+        it('should have null stats initially', () => {
+            const store = useSpocStore()
+            expect(store.stats).toBeNull()
+        })
+
+        it('should have loading false initially', () => {
+            const store = useSpocStore()
+            expect(store.loading).toBe(false)
+        })
+
+        it('should have null error initially', () => {
+            const store = useSpocStore()
+            expect(store.error).toBeNull()
+        })
+    })
+
+    describe('fetchStats', () => {
+        it('should fetch and populate stats', async () => {
+            const store = useSpocStore()
+            await store.fetchStats()
+            
+            expect(store.stats).not.toBeNull()
+            expect(store.stats?.totalVisitors).toBeDefined()
+            expect(store.stats?.pendingApprovals).toBeDefined()
+            expect(store.stats?.checkedInToday).toBeDefined()
+            expect(store.stats?.totalEmployees).toBeDefined()
+        })
+
+        it('should set loading to false after fetch', async () => {
+            const store = useSpocStore()
+            await store.fetchStats()
+            
+            expect(store.loading).toBe(false)
+        })
+    })
+
+    describe('fetchVisitors', () => {
+        it('should fetch and populate visitors', async () => {
+            const store = useSpocStore()
+            await store.fetchVisitors()
+            
+            expect(store.visitors.length).toBeGreaterThan(0)
+        })
+
+        it('should have required visitor properties', async () => {
+            const store = useSpocStore()
+            await store.fetchVisitors()
+            
+            const visitor = store.visitors[0]
+            expect(visitor.id).toBeDefined()
+            expect(visitor.name).toBeDefined()
+            expect(visitor.phone).toBeDefined()
+            expect(visitor.visitDate).toBeDefined()
+            expect(visitor.purpose).toBeDefined()
+            expect(visitor.status).toBeDefined()
+        })
+    })
+
+    describe('fetchEmployees', () => {
+        it('should fetch and populate employees', async () => {
+            const store = useSpocStore()
+            await store.fetchEmployees()
+            
+            expect(store.employees.length).toBeGreaterThan(0)
+        })
+
+        it('should have required employee properties', async () => {
+            const store = useSpocStore()
+            await store.fetchEmployees()
+            
+            const employee = store.employees[0]
+            expect(employee.id).toBeDefined()
+            expect(employee.name).toBeDefined()
+            expect(employee.email).toBeDefined()
+        })
+    })
+
+    describe('inviteVisitor', () => {
+        it('should add a new visitor to the list', async () => {
+            const store = useSpocStore()
+            const initialLength = store.visitors.length
+            
+            await store.inviteVisitor({
+                name: 'Test Visitor',
+                phone: '+91 12345 67890',
+                purpose: 'Business Meeting'
+            })
+            
+            expect(store.visitors.length).toBe(initialLength + 1)
+        })
+
+        it('should generate a passcode for new visitor', async () => {
+            const store = useSpocStore()
+            
+            const visitor = await store.inviteVisitor({
+                name: 'Test Visitor',
+                phone: '+91 12345 67890',
+                purpose: 'Business Meeting'
+            })
+            
+            expect(visitor.passcode).toBeDefined()
+            expect(visitor.passcode?.length).toBe(6)
+        })
+
+        it('should set status to pending for new visitor', async () => {
+            const store = useSpocStore()
+            
+            const visitor = await store.inviteVisitor({
+                name: 'Test Visitor',
+                phone: '+91 12345 67890',
+                purpose: 'Meeting'
+            })
+            
+            expect(visitor.status).toBe('pending')
+        })
+    })
+
+    describe('addEmployee', () => {
+        it('should add a new employee to the list', async () => {
+            const store = useSpocStore()
+            const initialLength = store.employees.length
+            
+            await store.addEmployee({
+                name: 'New Employee',
+                email: 'new@company.com'
+            })
+            
+            expect(store.employees.length).toBe(initialLength + 1)
+        })
+
+        it('should return the created employee', async () => {
+            const store = useSpocStore()
+            
+            const employee = await store.addEmployee({
+                name: 'New Employee',
+                email: 'new@company.com',
+                department: 'Engineering'
+            })
+            
+            expect(employee.name).toBe('New Employee')
+            expect(employee.email).toBe('new@company.com')
+            expect(employee.department).toBe('Engineering')
+        })
+    })
+
+    describe('deleteEmployee', () => {
+        it('should remove employee from the list', async () => {
+            const store = useSpocStore()
+            
+            // First add an employee
+            const employee = await store.addEmployee({
+                name: 'To Delete',
+                email: 'delete@company.com'
+            })
+            
+            const lengthBefore = store.employees.length
+            
+            // Then delete
+            await store.deleteEmployee(employee.id)
+            
+            expect(store.employees.length).toBe(lengthBefore - 1)
+            expect(store.employees.find(e => e.id === employee.id)).toBeUndefined()
+        })
+
+        it('should return true when employee is deleted', async () => {
+            const store = useSpocStore()
+            
+            const employee = await store.addEmployee({
+                name: 'To Delete',
+                email: 'delete@company.com'
+            })
+            
+            const result = await store.deleteEmployee(employee.id)
+            expect(result).toBe(true)
+        })
+
+        it('should return false when employee not found', async () => {
+            const store = useSpocStore()
+            
+            const result = await store.deleteEmployee('nonexistent-id')
+            expect(result).toBe(false)
+        })
+    })
+})

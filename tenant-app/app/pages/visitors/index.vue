@@ -10,8 +10,7 @@
                 <template #icon>
                     <ExportOutlined />
                 </template>
-                <span class="hidden sm:inline">Export Log</span>
-                <span class="sm:hidden">Export</span>
+                Export <hide class="hidden sm:inline">Log</hide>
             </a-button>
         </div>
 

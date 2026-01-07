@@ -10,8 +10,7 @@
                 <template #icon>
                     <PlusOutlined />
                 </template>
-                <span>Add</span>
-                <hidden class="hidden md:inline">Employee</hidden>
+                Add <hide class="hidden md:inline">Employee</hide>
             </a-button>
         </div>
 

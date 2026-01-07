@@ -20,8 +20,7 @@
                         <template #icon>
                             <PlusOutlined />
                         </template>
-                        <span class="hidden sm:inline">Invite Visitor</span>
-                        <span class="sm:hidden">Invite</span>
+                        Invite <hide class="hidden sm:inline">Visitor</hide>
                     </a-button>
                 </NuxtLink>
             </div>
