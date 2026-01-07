@@ -1,7 +1,7 @@
 <template>
     <div class="space-y-6">
         <!-- Page Header -->
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div class="flex flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Employees</h1>
                 <p class="text-gray-600 dark:text-gray-400">Manage your company's employees.</p>
@@ -10,8 +10,8 @@
                 <template #icon>
                     <PlusOutlined />
                 </template>
-                <span class="hidden sm:inline">Add Employee</span>
-                <span class="sm:hidden">Add</span>
+                <span>Add</span>
+                <hidden class="hidden md:inline">Employee</hidden>
             </a-button>
         </div>
 
@@ -21,104 +21,70 @@
                 class="flex-1 sm:max-w-xs" />
         </div>
 
-        <!-- Employee Table/Cards -->
-        <div
-            class="bg-white dark:bg-neutral-800 rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
-            <!-- Desktop Table -->
-            <div class="hidden sm:block overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50 dark:bg-neutral-900">
-                        <tr>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                                Employee</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                                Department</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                                Designation</th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                                Contact</th>
-                            <th
-                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                                Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-neutral-700">
-                        <tr v-for="employee in filteredEmployees" :key="employee.id"
-                            class="hover:bg-gray-50 dark:hover:bg-neutral-700/50">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-medium">
-                                        {{ getInitials(employee.name) }}
-                                    </div>
-                                    <div>
-                                        <p class="font-medium text-gray-900 dark:text-white">{{ employee.name }}</p>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ employee.email }}</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ employee.department || '-'
-                            }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ employee.designation ||
-                                '-' }}
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ employee.phone || '-' }}
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <a-button type="text" danger size="small" @click="handleDelete(employee.id)">
-                                    <DeleteOutlined />
-                                </a-button>
-                            </td>
-                        </tr>
-                        <tr v-if="filteredEmployees.length === 0">
-                            <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                                <TeamOutlined class="text-4xl mb-2 text-gray-300 dark:text-gray-600" />
-                                <p>No employees found</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <!-- Employee Table/Cards using ResponsiveDataView -->
+        <ResponsiveDataView :columns="columns" :data="filteredEmployees" :loading="loading" row-key="id">
+            <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'employee'">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-medium">
+                            {{ getInitials(record.name) }}
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">{{ record.name }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.email }}</p>
+                        </div>
+                    </div>
+                </template>
 
-            <!-- Mobile Cards -->
-            <div class="sm:hidden divide-y divide-gray-100 dark:divide-neutral-700">
-                <div v-for="employee in filteredEmployees" :key="employee.id" class="p-4">
-                    <div class="flex justify-between items-start mb-2">
+                <template v-if="column.key === 'actions'">
+                    <a-popconfirm title="Are you sure delete this employee?" ok-text="Yes" cancel-text="No"
+                        @confirm="handleDelete(record.id)">
+                        <a-button type="text" danger size="small">
+                            <DeleteOutlined />
+                        </a-button>
+                    </a-popconfirm>
+                </template>
+            </template>
+
+            <!-- Mobile Card View -->
+            <template #mobileCard="{ record }">
+                <a-card
+                    class="mb-4 shadow-sm !border-neutral-200 dark:!border-neutral-700 hover:shadow-md transition-shadow"
+                    :bordered="true" :bodyStyle="{ padding: '16px' }">
+                    <div class="flex justify-between items-start mb-3">
                         <div class="flex items-center gap-3">
                             <div
                                 class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-medium">
-                                {{ getInitials(employee.name) }}
+                                {{ getInitials(record.name) }}
                             </div>
                             <div>
-                                <p class="font-medium text-gray-900 dark:text-white">{{ employee.name }}</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ employee.designation }}</p>
+                                <p class="font-bold text-base dark:text-white">{{ record.name }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.designation ||
+                                    record.email }}</p>
                             </div>
                         </div>
-                        <a-button type="text" danger size="small" @click="handleDelete(employee.id)">
-                            <DeleteOutlined />
-                        </a-button>
+                        <a-popconfirm title="Are you sure delete this employee?" ok-text="Yes" cancel-text="No"
+                            @confirm="handleDelete(record.id)">
+                            <a-button type="text" danger size="small">
+                                <DeleteOutlined />
+                            </a-button>
+                        </a-popconfirm>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 text-sm pl-13">
+
+                    <div class="grid grid-cols-2 gap-2 text-sm pt-3 border-t border-gray-100 dark:border-gray-800">
                         <div>
                             <p class="text-gray-400 dark:text-gray-500 text-xs">Department</p>
-                            <p class="text-gray-600 dark:text-gray-300">{{ employee.department || '-' }}</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ record.department || '-' }}</p>
                         </div>
                         <div>
                             <p class="text-gray-400 dark:text-gray-500 text-xs">Phone</p>
-                            <p class="text-gray-600 dark:text-gray-300">{{ employee.phone || '-' }}</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ record.phone || '-' }}</p>
                         </div>
                     </div>
-                </div>
-                <div v-if="filteredEmployees.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
-                    <TeamOutlined class="text-4xl mb-2 text-gray-300 dark:text-gray-600" />
-                    <p>No employees found</p>
-                </div>
-            </div>
-        </div>
+                </a-card>
+            </template>
+        </ResponsiveDataView>
 
         <!-- Add Employee Modal -->
         <a-modal v-model:open="showAddModal" title="Add Employee" centered @ok="handleAddEmployee"
@@ -154,8 +120,9 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
-import { message, Modal } from 'ant-design-vue'
-import { PlusOutlined, DeleteOutlined, TeamOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
 
 definePageMeta({
     middleware: 'auth'
@@ -174,6 +141,15 @@ const newEmployee = reactive({
     department: null as string | null,
     designation: ''
 })
+
+// Table columns
+const columns = [
+    { title: 'Employee', key: 'employee', dataIndex: 'name' },
+    { title: 'Department', dataIndex: 'department', key: 'department' },
+    { title: 'Designation', dataIndex: 'designation', key: 'designation' },
+    { title: 'Phone', dataIndex: 'phone', key: 'phone' },
+    { title: '', key: 'actions', width: 50 }
+]
 
 const filteredEmployees = computed(() => {
     if (!searchQuery.value) return employees.value
@@ -218,22 +194,13 @@ const handleAddEmployee = async () => {
     }
 }
 
-const handleDelete = (id: string) => {
-    Modal.confirm({
-        title: 'Delete Employee',
-        content: 'Are you sure you want to delete this employee?',
-        okText: 'Delete',
-        okType: 'danger',
-        cancelText: 'Cancel',
-        async onOk() {
-            try {
-                await store.deleteEmployee(id)
-                message.success('Employee deleted')
-            } catch (err) {
-                message.error('Failed to delete employee')
-            }
-        }
-    })
+const handleDelete = async (id: string) => {
+    try {
+        await store.deleteEmployee(id)
+        message.success('Employee deleted')
+    } catch (err) {
+        message.error('Failed to delete employee')
+    }
 }
 
 onMounted(() => {
