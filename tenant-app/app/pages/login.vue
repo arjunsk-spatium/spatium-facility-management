@@ -171,6 +171,12 @@ const handleLogin = async () => {
 onMounted(() => {
   currentImage.value = getRandomItem(images)
   currentQuote.value = getRandomItem(quotes)
+  
+  // If already logged in, redirect to dashboard
+  const authStore = useAuthStore();
+  if (authStore.isAuthenticated) {
+    navigateTo('/dashboard');
+  }
 })
 </script>
 
