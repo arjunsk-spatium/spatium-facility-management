@@ -18,7 +18,7 @@
                     </template>
                     Insights
                 </a-button>
-                <a-button type="primary">
+                <a-button type="primary" @click="navigateTo('/meeting-rooms/create')">
                     <template #icon>
                         <PlusOutlined />
                     </template>

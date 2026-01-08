@@ -37,12 +37,17 @@
                 </template>
 
                 <template v-if="column.key === 'actions'">
-                    <a-popconfirm title="Are you sure delete this employee?" ok-text="Yes" cancel-text="No"
-                        @confirm="handleDelete(record.id)">
-                        <a-button type="text" danger size="small">
-                            <DeleteOutlined />
+                    <div class="flex items-center gap-1">
+                        <a-button type="text" size="small" @click="handleEdit(record)">
+                            <EditOutlined />
                         </a-button>
-                    </a-popconfirm>
+                        <a-popconfirm title="Are you sure delete this employee?" ok-text="Yes" cancel-text="No"
+                            @confirm="handleDelete(record.id)">
+                            <a-button type="text" danger size="small">
+                                <DeleteOutlined />
+                            </a-button>
+                        </a-popconfirm>
+                    </div>
                 </template>
             </template>
 
@@ -63,12 +68,17 @@
                                     record.email }}</p>
                             </div>
                         </div>
-                        <a-popconfirm title="Are you sure delete this employee?" ok-text="Yes" cancel-text="No"
-                            @confirm="handleDelete(record.id)">
-                            <a-button type="text" danger size="small">
-                                <DeleteOutlined />
+                        <div class="flex items-center gap-1">
+                            <a-button type="text" size="small" @click="handleEdit(record)">
+                                <EditOutlined />
                             </a-button>
-                        </a-popconfirm>
+                            <a-popconfirm title="Are you sure delete this employee?" ok-text="Yes" cancel-text="No"
+                                @confirm="handleDelete(record.id)">
+                                <a-button type="text" danger size="small">
+                                    <DeleteOutlined />
+                                </a-button>
+                            </a-popconfirm>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 text-sm pt-3 border-t border-gray-100 dark:border-gray-800">
@@ -85,9 +95,9 @@
             </template>
         </ResponsiveDataView>
 
-        <!-- Add Employee Modal -->
-        <a-modal v-model:open="showAddModal" title="Add Employee" centered @ok="handleAddEmployee"
-            :confirm-loading="loading">
+        <!-- Add/Edit Employee Modal -->
+        <a-modal v-model:open="showAddModal" :title="editingEmployee ? 'Edit Employee' : 'Add Employee'" centered
+            @ok="handleSaveEmployee" :confirm-loading="loading">
             <a-form :model="newEmployee" layout="vertical">
                 <a-form-item label="Name" required>
                     <a-input v-model:value="newEmployee.name" placeholder="Employee name" />
@@ -120,7 +130,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { message } from 'ant-design-vue'
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
 
 definePageMeta({
@@ -132,6 +142,7 @@ const { employees, loading } = storeToRefs(store)
 
 const searchQuery = ref('')
 const showAddModal = ref(false)
+const editingEmployee = ref<any>(null)
 
 const newEmployee = reactive({
     name: '',
@@ -166,22 +177,34 @@ const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
-const handleAddEmployee = async () => {
+const handleSaveEmployee = async () => {
     if (!newEmployee.name || !newEmployee.email) {
         message.error('Name and email are required')
         return
     }
 
     try {
-        await store.addEmployee({
-            name: newEmployee.name,
-            email: newEmployee.email,
-            phone: newEmployee.phone || undefined,
-            department: newEmployee.department || undefined,
-            designation: newEmployee.designation || undefined
-        })
-        message.success('Employee added successfully')
+        if (editingEmployee.value) {
+            await store.updateEmployee(editingEmployee.value.id, {
+                name: newEmployee.name,
+                email: newEmployee.email,
+                phone: newEmployee.phone || undefined,
+                department: newEmployee.department || undefined,
+                designation: newEmployee.designation || undefined
+            })
+            message.success('Employee updated successfully')
+        } else {
+            await store.addEmployee({
+                name: newEmployee.name,
+                email: newEmployee.email,
+                phone: newEmployee.phone || undefined,
+                department: newEmployee.department || undefined,
+                designation: newEmployee.designation || undefined
+            })
+            message.success('Employee added successfully')
+        }
         showAddModal.value = false
+        editingEmployee.value = null
         // Reset form
         newEmployee.name = ''
         newEmployee.email = ''
@@ -189,8 +212,18 @@ const handleAddEmployee = async () => {
         newEmployee.department = null
         newEmployee.designation = ''
     } catch (err) {
-        message.error('Failed to add employee')
+        message.error(editingEmployee.value ? 'Failed to update employee' : 'Failed to add employee')
     }
+}
+
+const handleEdit = (employee: any) => {
+    editingEmployee.value = employee
+    newEmployee.name = employee.name
+    newEmployee.email = employee.email
+    newEmployee.phone = employee.phone || ''
+    newEmployee.department = employee.department || null
+    newEmployee.designation = employee.designation || ''
+    showAddModal.value = true
 }
 
 const handleDelete = async (id: string) => {

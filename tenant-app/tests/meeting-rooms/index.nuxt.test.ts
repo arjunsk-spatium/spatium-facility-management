@@ -69,4 +69,39 @@ describe('Meeting Rooms Page', () => {
         
         expect(wrapper.html()).toContain('Insights')
     })
+
+    describe('Room Creation Modal', () => {
+        it('should have Add Room button', async () => {
+            const wrapper = await mountSuspended(MeetingRoomsPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            meetingRoom: { rooms: [], loading: false },
+                            facility: { facilities: [] }
+                        }
+                    })]
+                }
+            })
+            
+            expect(wrapper.html()).toContain('Add Room')
+        })
+
+        it('should have showCreateModal state', async () => {
+            const wrapper = await mountSuspended(MeetingRoomsPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            meetingRoom: { rooms: [], loading: false },
+                            facility: { facilities: [] }
+                        }
+                    })]
+                }
+            })
+            
+            const vm = wrapper.vm as any
+            expect(vm.showCreateModal).toBe(false)
+        })
+    })
 })

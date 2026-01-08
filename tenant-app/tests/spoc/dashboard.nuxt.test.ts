@@ -130,4 +130,68 @@ describe('SPOC Dashboard Page', () => {
         expect(wrapper.html()).toContain('View All')
         expect(wrapper.html()).toContain('/spoc/visitors')
     })
+
+    describe('Quick Actions', () => {
+        it('should render Quick Actions section', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            expect(wrapper.text()).toContain('Quick Actions')
+        })
+
+        it('should have Pre-register Visitor action', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            expect(wrapper.text()).toContain('Pre-register Visitor')
+        })
+
+        it('should have View Employees action', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            expect(wrapper.text()).toContain('View Employees')
+            expect(wrapper.html()).toContain('/spoc/employees')
+        })
+
+        it('should have Pending Approvals action with count', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            expect(wrapper.text()).toContain('Pending Approvals')
+            expect(wrapper.text()).toContain('5 waiting') // mockStats.pendingApprovals
+        })
+    })
 })

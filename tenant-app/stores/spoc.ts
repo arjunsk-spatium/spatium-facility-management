@@ -216,6 +216,24 @@ export const useSpocStore = defineStore('spoc', {
             } finally {
                 this.loading = false
             }
+        },
+
+        async updateEmployee(id: string, data: Partial<SpocEmployee>) {
+            this.loading = true
+            try {
+                await new Promise(resolve => setTimeout(resolve, 300))
+                const index = this.employees.findIndex(e => e.id === id)
+                if (index > -1) {
+                    this.employees[index] = { ...this.employees[index], ...data }
+                    return this.employees[index]
+                }
+                throw new Error('Employee not found')
+            } catch (err) {
+                this.error = 'Failed to update employee'
+                throw err
+            } finally {
+                this.loading = false
+            }
         }
     }
 })

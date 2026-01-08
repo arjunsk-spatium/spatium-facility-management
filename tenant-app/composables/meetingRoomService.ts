@@ -138,6 +138,24 @@ export const useMeetingRoomService = () => {
             };
         },
 
+        createRoom: async (room: Omit<MeetingRoom, 'id'>): Promise<MeetingRoom> => {
+            await delay(500);
+            const newRoom: MeetingRoom = {
+                ...room,
+                id: `MR-${String(MOCK_ROOMS.length + 1).padStart(3, '0')}`
+            };
+            MOCK_ROOMS.push(newRoom);
+            return newRoom;
+        },
+
+        updateRoom: async (id: string, room: Partial<MeetingRoom>): Promise<MeetingRoom | undefined> => {
+            await delay(400);
+            const index = MOCK_ROOMS.findIndex(r => r.id === id);
+            if (index === -1) return undefined;
+            MOCK_ROOMS[index] = { ...MOCK_ROOMS[index], ...room };
+            return MOCK_ROOMS[index];
+        },
+
         // Analytics Mocks
         getBookingsByStatus: async () => {
             await delay(300);

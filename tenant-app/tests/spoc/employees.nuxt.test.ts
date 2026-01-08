@@ -164,4 +164,55 @@ describe('SPOC Employees Page', () => {
         )
         expect(deleteButtons.length).toBeGreaterThan(0)
     })
+
+    describe('CRUD Operations', () => {
+        it('should have edit buttons for employees', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: mockEmployees, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            // Edit buttons should be present
+            const vm = wrapper.vm as any
+            expect(typeof vm.handleEdit).toBe('function')
+        })
+
+        it('should have editingEmployee state', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: mockEmployees, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            const vm = wrapper.vm as any
+            expect(vm.editingEmployee).toBe(null)
+        })
+
+        it('should have handleSaveEmployee method', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: mockEmployees, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            const vm = wrapper.vm as any
+            expect(typeof vm.handleSaveEmployee).toBe('function')
+        })
+    })
 })

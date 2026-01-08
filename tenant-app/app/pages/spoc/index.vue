@@ -83,6 +83,26 @@
             </div>
         </div>
 
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-neutral-800 rounded-xl border border-gray-100 dark:border-neutral-700 p-4 sm:p-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <QuickActionCard title="Pre-register Visitor" description="Send invite link" to="/spoc/visitors/invite"
+                    :icon="UserAddOutlined" icon-bg-class="bg-blue-50 dark:bg-blue-900/30"
+                    icon-class="text-blue-600 dark:text-blue-400" />
+                <QuickActionCard title="View Employees" description="Manage team" to="/spoc/employees"
+                    :icon="TeamOutlined" icon-bg-class="bg-purple-50 dark:bg-purple-900/30"
+                    icon-class="text-purple-600 dark:text-purple-400" />
+                <QuickActionCard title="Visitor Report" description="Download data" to="/spoc/visitors"
+                    :icon="DownloadOutlined" icon-bg-class="bg-green-50 dark:bg-green-900/30"
+                    icon-class="text-green-600 dark:text-green-400" />
+                <QuickActionCard title="Pending Approvals" :description="`${stats?.pendingApprovals || 0} waiting`"
+                    to="/spoc/visitors?status=pending" :icon="ClockCircleOutlined"
+                    icon-bg-class="bg-yellow-50 dark:bg-yellow-900/30"
+                    icon-class="text-yellow-600 dark:text-yellow-400" />
+            </div>
+        </div>
+
         <!-- Recent Visitors -->
         <div
             class="bg-white dark:bg-neutral-800 rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
@@ -153,8 +173,11 @@ import {
     UsergroupAddOutlined,
     ClockCircleOutlined,
     CheckCircleOutlined,
-    TeamOutlined
+    TeamOutlined,
+    UserAddOutlined,
+    DownloadOutlined
 } from '@ant-design/icons-vue'
+import QuickActionCard from '../../../components/common/QuickActionCard.vue'
 
 definePageMeta({
     middleware: 'auth'

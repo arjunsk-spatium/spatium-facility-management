@@ -23,10 +23,30 @@
 
 
         <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
-            <a-tab-pane key="all" tab="All Tickets" />
-            <a-tab-pane key="open" tab="Open" />
-            <a-tab-pane key="active" tab="Active" />
-            <a-tab-pane key="closed" tab="Closed" />
+            <a-tab-pane key="all">
+                <template #tab>
+                    All <a-badge :count="ticketCounts.all" :number-style="{ backgroundColor: '#6b7280' }"
+                        :offset="[6, 0]" />
+                </template>
+            </a-tab-pane>
+            <a-tab-pane key="open">
+                <template #tab>
+                    Open <a-badge :count="ticketCounts.open" :number-style="{ backgroundColor: '#3b82f6' }"
+                        :offset="[6, 0]" />
+                </template>
+            </a-tab-pane>
+            <a-tab-pane key="active">
+                <template #tab>
+                    Active <a-badge :count="ticketCounts.active" :number-style="{ backgroundColor: '#f59e0b' }"
+                        :offset="[6, 0]" />
+                </template>
+            </a-tab-pane>
+            <a-tab-pane key="closed">
+                <template #tab>
+                    Closed <a-badge :count="ticketCounts.closed" :number-style="{ backgroundColor: '#10b981' }"
+                        :offset="[6, 0]" />
+                </template>
+            </a-tab-pane>
         </a-tabs>
 
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -55,21 +75,21 @@
                         record.id }}</a>
                 </template>
 
-                <template v-if="column.key === 'status'">
+                <template v-else-if="column.key === 'status'">
                     <StatusBadge :status="record.status" />
                 </template>
 
-                <template v-if="column.key === 'priority'">
+                <template v-else-if="column.key === 'priority'">
                     <a-tag :color="getPriorityColor(record.priority)">{{ record.priority }}</a-tag>
                 </template>
 
-                <template v-if="column.key === 'createdAt'">
+                <template v-else-if="column.key === 'createdAt'">
                     {{ new Date(record.createdAt).toLocaleDateString() }}
                     <span class="text-xs text-gray-500 block">{{ new Date(record.createdAt).toLocaleTimeString([],
                         { hour: '2-digit', minute: '2-digit' }) }}</span>
                 </template>
 
-                <template v-if="column.key === 'actions'">
+                <template v-else-if="column.key === 'actions'">
                     <a-tooltip title="View Details">
                         <a-button type="text" shape="circle" @click="navigateTo(`/helpdesk/${record.id}`)">
                             <template #icon>
@@ -149,7 +169,6 @@ const activeTab = ref('all');
 const searchText = ref('');
 const facilityFilter = ref<string | undefined>(undefined);
 
-// Columns
 const columns = [
     { title: 'Ticket ID', dataIndex: 'id', key: 'id', width: 140 },
     { title: 'Category', dataIndex: 'category', key: 'category' },
@@ -161,6 +180,15 @@ const columns = [
     { title: 'Created', dataIndex: 'createdAt', key: 'createdAt', width: 150 },
     { title: '', key: 'actions', width: 50 }
 ];
+
+// Ticket counts per status for tab badges
+const ticketCounts = computed(() => {
+    const all = tickets.value.length;
+    const open = tickets.value.filter(t => t.status === 'Open').length;
+    const active = tickets.value.filter(t => ['In Progress'].includes(t.status)).length;
+    const closed = tickets.value.filter(t => ['Resolved', 'Closed'].includes(t.status)).length;
+    return { all, open, active, closed };
+});
 
 // Methods
 const handleTabChange = () => {
