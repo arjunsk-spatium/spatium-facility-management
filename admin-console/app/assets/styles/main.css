@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../../components";
 
 /* Configure dark mode to use class selector */
 @variant dark (&:where(.dark, .dark *));
@@ -1268,4 +1269,806 @@
         transform: translateY(-2px);
         box-shadow: var(--shadow-elevated);
     }
+}
+
+/* ============================================
+   ANT DESIGN DARK THEME OVERRIDES
+   ============================================ */
+
+/* Card Component */
+.dark .ant-card {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-card-head {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+    color: #ffffff !important;
+}
+
+.dark .ant-card-head-title {
+    color: #ffffff !important;
+}
+
+.dark .ant-card-body {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-card-actions {
+    background-color: #1a1a1a !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-card-actions>li {
+    border-color: #303030 !important;
+}
+
+/* Statistic Component */
+.dark .ant-statistic-title {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-statistic-content {
+    color: #ffffff !important;
+}
+
+/* Table Component */
+.dark .ant-table {
+    background-color: #1f1f1f !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-table-thead>tr>th {
+    background-color: #141414 !important;
+    color: #a3a3a3 !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-table-tbody>tr>td {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-table-tbody>tr:hover>td {
+    background-color: #2a2a2a !important;
+}
+
+.dark .ant-table-placeholder {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-empty-description {
+    color: #737373 !important;
+}
+
+/* Input Component */
+.dark .ant-input {
+    background-color: #141414 !important;
+    border-color: #303030 !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-input:hover {
+    border-color: #434343 !important;
+}
+
+.dark .ant-input:focus {
+    border-color: #1677ff !important;
+}
+
+.dark .ant-input::placeholder {
+    color: #737373 !important;
+}
+
+.dark .ant-input-affix-wrapper {
+    background-color: #141414 !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-input-affix-wrapper:hover {
+    border-color: #434343 !important;
+}
+
+.dark .ant-input-group-addon {
+    background-color: #1a1a1a !important;
+    border-color: #303030 !important;
+    color: #a3a3a3 !important;
+}
+
+/* Select Component */
+.dark .ant-select-selector {
+    background-color: #141414 !important;
+    border-color: #303030 !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-select:hover .ant-select-selector {
+    border-color: #434343 !important;
+}
+
+.dark .ant-select-dropdown {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-select-item {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-select-item-option-active {
+    background-color: #2a2a2a !important;
+}
+
+.dark .ant-select-item-option-selected {
+    background-color: #111d2c !important;
+}
+
+/* Button Component */
+.dark .ant-btn-default {
+    background-color: #1f1f1f !important;
+    border-color: #434343 !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-btn-default:hover {
+    background-color: #2a2a2a !important;
+    border-color: #1677ff !important;
+    color: #1677ff !important;
+}
+
+.dark .ant-btn-text {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-btn-text:hover {
+    background-color: #2a2a2a !important;
+}
+
+.dark .ant-btn-link {
+    color: #1677ff !important;
+}
+
+/* Menu Component */
+.dark .ant-menu {
+    background-color: transparent !important;
+}
+
+.dark .ant-menu-item {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-menu-item:hover {
+    color: #ffffff !important;
+}
+
+.dark .ant-menu-item-selected {
+    background-color: #111d2c !important;
+    color: #1677ff !important;
+}
+
+.dark .ant-menu-submenu-title {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-menu-submenu-title:hover {
+    color: #ffffff !important;
+}
+
+.dark .ant-menu-sub {
+    background-color: #0a0a0a !important;
+}
+
+/* Form Component */
+.dark .ant-form-item-label>label {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-form-item-explain-error {
+    color: #ff4d4f !important;
+}
+
+/* Descriptions Component */
+.dark .ant-descriptions {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-descriptions-header {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-descriptions-title {
+    color: #ffffff !important;
+}
+
+.dark .ant-descriptions-view {
+    border-color: #303030 !important;
+}
+
+.dark .ant-descriptions-row {
+    border-color: #303030 !important;
+}
+
+.dark .ant-descriptions-item-label {
+    background-color: #141414 !important;
+    color: #a3a3a3 !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-descriptions-item-content {
+    background-color: #1f1f1f !important;
+    color: #e5e5e5 !important;
+    border-color: #303030 !important;
+}
+
+/* Tag Component */
+.dark .ant-tag {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-tag-green {
+    background-color: #162312 !important;
+    border-color: #274916 !important;
+    color: #49aa19 !important;
+}
+
+.dark .ant-tag-orange {
+    background-color: #2b1d11 !important;
+    border-color: #593815 !important;
+    color: #d87a16 !important;
+}
+
+.dark .ant-tag-red {
+    background-color: #2a1215 !important;
+    border-color: #58181c !important;
+    color: #d32029 !important;
+}
+
+.dark .ant-tag-blue {
+    background-color: #111d2c !important;
+    border-color: #15395b !important;
+    color: #1677ff !important;
+}
+
+/* Steps Component */
+.dark .ant-steps-item-title {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-steps-item-process .ant-steps-item-title {
+    color: #ffffff !important;
+}
+
+.dark .ant-steps-item-finish .ant-steps-item-title {
+    color: #1677ff !important;
+}
+
+/* Switch Component */
+.dark .ant-switch {
+    background-color: #434343 !important;
+}
+
+.dark .ant-switch-checked {
+    background-color: #1677ff !important;
+}
+
+/* Checkbox Component */
+.dark .ant-checkbox-inner {
+    background-color: #141414 !important;
+    border-color: #434343 !important;
+}
+
+.dark .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #1677ff !important;
+    border-color: #1677ff !important;
+}
+
+/* Divider Component */
+.dark .ant-divider {
+    border-color: #303030 !important;
+}
+
+.dark .ant-divider-inner-text {
+    color: #a3a3a3 !important;
+}
+
+/* Pagination Component */
+.dark .ant-pagination-item {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-pagination-item a {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-pagination-item-active {
+    border-color: #1677ff !important;
+}
+
+.dark .ant-pagination-item-active a {
+    color: #1677ff !important;
+}
+
+.dark .ant-pagination-prev button,
+.dark .ant-pagination-next button {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+    color: #e5e5e5 !important;
+}
+
+/* List Component */
+.dark .ant-list-item {
+    border-color: #303030 !important;
+}
+
+.dark .ant-list-item-meta-title {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-list-item-meta-description {
+    color: #737373 !important;
+}
+
+/* Avatar Component */
+.dark .ant-avatar {
+    background-color: #434343 !important;
+}
+
+/* Popconfirm/Popover Component */
+.dark .ant-popover-inner {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-popover-title {
+    color: #ffffff !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-popover-inner-content {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-popover-arrow::before {
+    background-color: #1f1f1f !important;
+}
+
+/* Tooltip Component */
+.dark .ant-tooltip-inner {
+    background-color: #1f1f1f !important;
+}
+
+/* Spin Component */
+.dark .ant-spin-text {
+    color: #1677ff !important;
+}
+
+/* Input Number Component */
+.dark .ant-input-number {
+    background-color: #141414 !important;
+    border-color: #303030 !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-input-number:hover {
+    border-color: #434343 !important;
+}
+
+.dark .ant-input-number:focus,
+.dark .ant-input-number-focused {
+    border-color: #1677ff !important;
+}
+
+.dark .ant-input-number-input {
+    background-color: #141414 !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-input-number-handler-wrap {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-input-number-handler {
+    border-color: #303030 !important;
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-input-number-handler:hover {
+    color: #1677ff !important;
+}
+
+/* Textarea Component */
+.dark .ant-input[type="textarea"],
+.dark textarea.ant-input {
+    background-color: #141414 !important;
+    border-color: #303030 !important;
+    color: #e5e5e5 !important;
+}
+
+/* Steps Component - Wait/Inactive States */
+.dark .ant-steps-item-wait .ant-steps-item-title {
+    color: #737373 !important;
+}
+
+.dark .ant-steps-item-wait .ant-steps-item-icon {
+    background-color: #1f1f1f !important;
+    border-color: #434343 !important;
+}
+
+.dark .ant-steps-item-wait .ant-steps-item-icon .ant-steps-icon {
+    color: #737373 !important;
+}
+
+.dark .ant-steps-item-wait .ant-steps-item-description {
+    color: #525252 !important;
+}
+
+.dark .ant-steps-item-tail::after {
+    background-color: #303030 !important;
+}
+
+/* Lists - Make sure all text is visible */
+.dark .ant-list-item-meta-title a {
+    color: #1677ff !important;
+}
+
+.dark .ant-list-item-action>li {
+    color: #a3a3a3 !important;
+}
+
+/* General Text Dark Mode Helpers */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+    color: #ffffff !important;
+}
+
+.dark p {
+    color: #d4d4d4 !important;
+}
+
+.dark .text-gray-600 {
+    color: #a3a3a3 !important;
+}
+
+.dark .text-gray-500 {
+    color: #737373 !important;
+}
+
+.dark .text-gray-400 {
+    color: #a3a3a3 !important;
+}
+
+.dark .text-neutral-500 {
+    color: #737373 !important;
+}
+
+.dark .text-neutral-600 {
+    color: #a3a3a3 !important;
+}
+
+/* Section Title Labels */
+.dark .text-lg.font-semibold,
+.dark span.text-lg {
+    color: #e5e5e5 !important;
+}
+
+/* Drawer Component */
+.dark .ant-drawer-header {
+    background-color: #141414 !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-drawer-title {
+    color: #ffffff !important;
+}
+
+.dark .ant-drawer-close {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-drawer-body {
+    background-color: #141414 !important;
+}
+
+/* Radio Component */
+.dark .ant-radio-wrapper {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-radio-inner {
+    background-color: #141414 !important;
+    border-color: #434343 !important;
+}
+
+.dark .ant-radio-checked .ant-radio-inner {
+    border-color: #1677ff !important;
+}
+
+/* Radio Group Button */
+.dark .ant-radio-button-wrapper {
+    background-color: #1f1f1f !important;
+    border-color: #434343 !important;
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-radio-button-wrapper:hover {
+    color: #1677ff !important;
+}
+
+.dark .ant-radio-button-wrapper-checked {
+    background-color: #111d2c !important;
+    border-color: #1677ff !important;
+    color: #1677ff !important;
+}
+
+/* Tab Component */
+.dark .ant-tabs-tab {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-tabs-tab:hover {
+    color: #ffffff !important;
+}
+
+.dark .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #1677ff !important;
+}
+
+.dark .ant-tabs-ink-bar {
+    background-color: #1677ff !important;
+}
+
+.dark .ant-tabs-nav::before {
+    border-color: #303030 !important;
+}
+
+/* Modal Component */
+.dark .ant-modal-content {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-modal-header {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-modal-title {
+    color: #ffffff !important;
+}
+
+.dark .ant-modal-close {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-modal-body {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-modal-footer {
+    border-color: #303030 !important;
+}
+
+/* Alert Component */
+.dark .ant-alert {
+    border-color: #303030 !important;
+}
+
+.dark .ant-alert-info {
+    background-color: #111d2c !important;
+}
+
+.dark .ant-alert-success {
+    background-color: #162312 !important;
+}
+
+.dark .ant-alert-warning {
+    background-color: #2b1d11 !important;
+}
+
+.dark .ant-alert-error {
+    background-color: #2a1215 !important;
+}
+
+.dark .ant-alert-message {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-alert-description {
+    color: #a3a3a3 !important;
+}
+
+/* Collapse/Accordion Component */
+.dark .ant-collapse {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-collapse-header {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-collapse-content {
+    background-color: #141414 !important;
+    border-color: #303030 !important;
+    color: #e5e5e5 !important;
+}
+
+/* Date Picker Component */
+.dark .ant-picker {
+    background-color: #141414 !important;
+    border-color: #303030 !important;
+}
+
+.dark .ant-picker-input>input {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-picker-suffix {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-picker-dropdown {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-picker-panel-container {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-picker-header {
+    border-color: #303030 !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-picker-header button {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-picker-content th {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-picker-cell {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner {
+    background-color: #1677ff !important;
+}
+
+/* Dropdown Menu */
+.dark .ant-dropdown-menu {
+    background-color: #1f1f1f !important;
+}
+
+.dark .ant-dropdown-menu-item {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-dropdown-menu-item:hover {
+    background-color: #2a2a2a !important;
+}
+
+/* Message Component */
+.dark .ant-message-notice-content {
+    background-color: #1f1f1f !important;
+    color: #e5e5e5 !important;
+}
+
+/* Progress Component */
+.dark .ant-progress-text {
+    color: #e5e5e5 !important;
+}
+
+/* Breadcrumb Component */
+.dark .ant-breadcrumb-link,
+.dark .ant-breadcrumb-separator {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-breadcrumb-link a {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-breadcrumb-link a:hover {
+    color: #1677ff !important;
+}
+
+/* Segmented Component */
+.dark .ant-segmented {
+    background-color: #141414 !important;
+}
+
+.dark .ant-segmented-item {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-segmented-item-selected {
+    background-color: #1f1f1f !important;
+    color: #ffffff !important;
+}
+
+/* Timeline Component */
+.dark .ant-timeline-item-content {
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-timeline-item-tail {
+    border-color: #303030 !important;
+}
+
+/* Dashed Button Component */
+.dark .ant-btn-dashed {
+    background-color: #1f1f1f !important;
+    border-color: #434343 !important;
+    border-style: dashed !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-btn-dashed:hover {
+    background-color: #2a2a2a !important;
+    border-color: #1677ff !important;
+    color: #1677ff !important;
+}
+
+/* Disabled Button States */
+.dark .ant-btn-default:disabled,
+.dark .ant-btn-default[disabled] {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+    color: #525252 !important;
+}
+
+.dark .ant-btn-primary:disabled,
+.dark .ant-btn-primary[disabled] {
+    background-color: #1a3a5c !important;
+    border-color: #1a3a5c !important;
+    color: #4a7eba !important;
+}
+
+.dark .ant-btn-dashed:disabled,
+.dark .ant-btn-dashed[disabled] {
+    background-color: #1f1f1f !important;
+    border-color: #303030 !important;
+    color: #525252 !important;
+}
+
+/* Ghost Button */
+.dark .ant-btn-background-ghost {
+    background-color: transparent !important;
+    border-color: #434343 !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-btn-background-ghost:hover {
+    border-color: #1677ff !important;
+    color: #1677ff !important;
+}
+
+/* Danger Button */
+.dark .ant-btn-dangerous {
+    color: #ff4d4f !important;
+    border-color: #ff4d4f !important;
+}
+
+.dark .ant-btn-dangerous:hover {
+    color: #ff7875 !important;
+    border-color: #ff7875 !important;
+}
+
+.dark .ant-btn-dangerous.ant-btn-primary {
+    background-color: #ff4d4f !important;
+    border-color: #ff4d4f !important;
+    color: #ffffff !important;
+}
+
+.dark .ant-btn-dangerous.ant-btn-primary:hover {
+    background-color: #ff7875 !important;
+    border-color: #ff7875 !important;
 }
