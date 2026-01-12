@@ -19,9 +19,10 @@
             <a-spin size="large" />
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
             <a-card v-for="plan in plans" :key="plan.id" :bordered="false"
-                class="shadow-sm hover:shadow-lg transition-shadow">
+                class="shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col"
+                :bodyStyle="{ flex: 1, display: 'flex', flexDirection: 'column' }">
                 <template #title>
                     <div class="flex items-center justify-between">
                         <span class="font-semibold">{{ plan.name }}</span>
@@ -31,21 +32,21 @@
                     </div>
                 </template>
 
-                <div class="space-y-4">
-                    <p class="text-gray-500 text-sm">{{ plan.description }}</p>
+                <div class="space-y-4 flex-1 flex flex-col">
+                    <p class="text-gray-500 text-sm min-h-[40px]">{{ plan.description }}</p>
 
                     <div class="text-center py-4 border-y border-gray-100 dark:border-gray-800">
                         <div v-if="plan.price > 0" class="text-3xl font-bold text-primary-600">
                             ₹{{ plan.price }}
                             <span class="text-sm font-normal text-gray-500">/{{ plan.billingCycle === 'monthly' ? 'mo' :
                                 'yr'
-                                }}</span>
+                            }}</span>
                         </div>
                         <div v-else class="text-2xl font-bold text-primary-600">Custom Pricing</div>
                         <div class="text-sm text-gray-500 mt-1">Up to {{ plan.maxUsers }} users</div>
                     </div>
 
-                    <div>
+                    <div class="min-h-[60px]">
                         <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Modules</div>
                         <div class="flex flex-wrap gap-1">
                             <a-tag v-for="mod in plan.modules" :key="mod" size="small">{{ mod }}</a-tag>
@@ -53,7 +54,7 @@
                         </div>
                     </div>
 
-                    <div>
+                    <div class="flex-1 min-h-[100px]">
                         <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Features</div>
                         <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                             <li v-for="feature in plan.features.slice(0, 3)" :key="feature"

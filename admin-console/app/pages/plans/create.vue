@@ -48,11 +48,13 @@
 
                 <a-form-item label="Select Modules" name="modules">
                     <a-checkbox-group v-model:value="form.modules" class="w-full">
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <a-checkbox v-for="mod in availableModules" :key="mod.id" :value="mod.id"
-                                class="!ml-0 p-3 border rounded-lg hover:border-primary-300 transition-colors">
-                                {{ mod.name }}
-                            </a-checkbox>
+                        <div class="flex flex-wrap gap-3">
+                            <div v-for="mod in availableModules" :key="mod.id"
+                                class="px-4 py-2 border rounded-full hover:border-primary-300 transition-colors bg-white dark:bg-neutral-800 dark:border-neutral-600 dark:hover:border-primary-500">
+                                <a-checkbox :value="mod.id" class="!ml-0">
+                                    <span class="ml-2">{{ mod.name }}</span>
+                                </a-checkbox>
+                            </div>
                         </div>
                     </a-checkbox-group>
                 </a-form-item>
