@@ -5,6 +5,7 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "test:e2e": "playwright test",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
@@ -29,7 +30,7 @@
     "@pinia/testing": "^1.0.3",
     "@vue/test-utils": "^2.4.6",
     "happy-dom": "^20.0.11",
-    "playright": "^0.0.22",
+    "@playwright/test": "^1.49.0",
     "sass-embedded": "^1.97.1",
     "vitest": "^3.2.4"
   }
