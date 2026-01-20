@@ -1577,14 +1577,23 @@
 /* Pagination Component */
 .dark .ant-pagination-item {
     background-color: #1f1f1f !important;
-    border-color: #303030 !important;
+    border-color: #434343 !important;
 }
 
 .dark .ant-pagination-item a {
     color: #e5e5e5 !important;
 }
 
+.dark .ant-pagination-item:hover {
+    border-color: #1677ff !important;
+}
+
+.dark .ant-pagination-item:hover a {
+    color: #1677ff !important;
+}
+
 .dark .ant-pagination-item-active {
+    background-color: transparent !important;
     border-color: #1677ff !important;
 }
 
@@ -1592,10 +1601,42 @@
     color: #1677ff !important;
 }
 
+.dark .ant-pagination-prev,
+.dark .ant-pagination-next {
+    background-color: #1f1f1f !important;
+    border: 1px solid #434343 !important;
+    border-radius: 6px !important;
+}
+
 .dark .ant-pagination-prev button,
 .dark .ant-pagination-next button {
+    background-color: transparent !important;
+    border: none !important;
+    color: #e5e5e5 !important;
+}
+
+.dark .ant-pagination-prev:hover,
+.dark .ant-pagination-next:hover {
+    border-color: #1677ff !important;
+}
+
+.dark .ant-pagination-prev:hover button,
+.dark .ant-pagination-next:hover button {
+    color: #1677ff !important;
+}
+
+.dark .ant-pagination-disabled button,
+.dark .ant-pagination-disabled:hover button {
+    color: #525252 !important;
+}
+
+.dark .ant-pagination-total-text {
+    color: #a3a3a3 !important;
+}
+
+.dark .ant-pagination-options .ant-select-selector {
     background-color: #1f1f1f !important;
-    border-color: #303030 !important;
+    border-color: #434343 !important;
     color: #e5e5e5 !important;
 }
 
@@ -2168,4 +2209,21 @@
 /* Checkbox inner alignment */
 .ant-checkbox {
     margin-right: 6px !important;
+}
+
+/* Button Icon Alignment - ensure icon and text are on same line */
+.ant-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+}
+
+.ant-btn>.anticon {
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.ant-btn.ant-btn-block {
+    display: flex !important;
 }
