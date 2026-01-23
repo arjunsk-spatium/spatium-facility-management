@@ -37,6 +37,7 @@ const themeConfig = computed(() => ({
   algorithm: isDarkMode.value ? darkAlgorithm : defaultAlgorithm,
   token: {
     colorPrimary: tenantStore.primaryColor,
+    fontFamily: "'Fira Sans', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
 }));
 
