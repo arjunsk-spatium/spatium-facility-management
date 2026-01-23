@@ -75,6 +75,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue';
 import {
     PlusOutlined,
     EditOutlined,
@@ -112,7 +113,27 @@ const columns = [
     },
 ];
 
-const { data: users, pending, refresh } = await getUsers();
+// Use lazy: true to avoid blocking navigation if the API hangs
+const { data: users, status, refresh, error } = useAsyncData('users', async () => {
+    try {
+        const response = await getUsers();
+        return response || [];
+    } catch (e: any) {
+        throw e;
+    }
+}, {
+    lazy: true,
+    server: false // Since we have ssr: false in nuxt config anyway, but good to be explicit for client-side fetches
+});
+
+const pending = computed(() => status.value === 'pending');
+
+// Watch for errors and show toast message
+watch(error, (newError) => {
+    if (newError) {
+        message.error(newError.message || 'Failed to load users');
+    }
+});
 
 const handleDelete = async (id: string) => {
     try {

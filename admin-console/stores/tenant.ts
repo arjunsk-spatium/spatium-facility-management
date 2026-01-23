@@ -48,10 +48,8 @@ export const useTenantStore = defineStore('tenant', {
             try {
                 const { getTenantById } = useTenantService()
                 this.currentTenant = await getTenantById(id)
-                console.log('fetchTenant result:', this.currentTenant);
             } catch (err) {
                 this.error = 'Failed to fetch tenant'
-                console.error('fetchTenant error:', err);
             } finally {
                 this.loading = false
             }

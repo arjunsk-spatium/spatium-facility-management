@@ -85,7 +85,7 @@ export const useTenantService = () => {
             const response = await request<any>(`/api/platform/tenants/tenants/${id}/`, {
                 method: 'GET',
             });
-            console.log('getTenantById response:', response);
+
             // Handle structure: { success: true, data: { ... } } or just { ... }
             if (response && response.success && response.data) {
                 return response.data;
