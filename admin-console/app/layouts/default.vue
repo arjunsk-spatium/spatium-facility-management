@@ -22,9 +22,10 @@
                     </span>
                 </div>
 
-                <!-- Right Side: Theme Toggle -->
+                <!-- Right Side: Theme Toggle & User Profile -->
                 <div class="flex items-center gap-4">
                     <ThemeToggle />
+                    <UserProfile />
                 </div>
             </a-layout-header>
 
@@ -51,6 +52,7 @@ import { MenuOutlined } from '@ant-design/icons-vue';
 import { useSidebar } from '../composables/useSidebar';
 import Sidebar from '../components/Sidebar.vue';
 import ThemeToggle from '../components/ThemeToggle.vue';
+import UserProfile from '../components/UI/UserProfile.vue';
 
 const { isMobile, collapsed, toggleMobileSidebar } = useSidebar();
 const { colorMode } = useTheme();

@@ -76,8 +76,8 @@
                     <a-tag :color="getStatusColor(record.status)">{{ record.status }}</a-tag>
                 </template>
                 <template v-if="column.key === 'modules'">
-                    <a-tooltip :title="record.modules.join(', ')">
-                        <span>{{ record.modules.length }} modules</span>
+                    <a-tooltip :title="(record.modules || []).join(', ')">
+                        <span>{{ (record.modules || []).length }} modules</span>
                     </a-tooltip>
                 </template>
                 <template v-if="column.key === 'action'">
@@ -127,7 +127,8 @@
                                 <span
                                     class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Modules</span>
                                 <div class="flex flex-wrap gap-1 mt-1">
-                                    <a-tag v-for="mod in tenant.modules" :key="mod" size="small">{{ mod }}</a-tag>
+                                    <a-tag v-for="mod in (tenant.modules || [])" :key="mod" size="small">{{ mod
+                                    }}</a-tag>
                                 </div>
                             </div>
                         </div>
@@ -179,8 +180,8 @@ const filteredTenants = computed(() => {
     return tenants.value.filter(tenant =>
         tenant.name.toLowerCase().includes(search) ||
         tenant.domain.toLowerCase().includes(search) ||
-        tenant.adminEmail.toLowerCase().includes(search) ||
-        tenant.planName.toLowerCase().includes(search)
+        (tenant.adminEmail?.toLowerCase() || '').includes(search) ||
+        (tenant.planName?.toLowerCase() || '').includes(search)
     )
 })
 
@@ -256,9 +257,9 @@ const exportData = async () => {
             'Name': t.name,
             'Domain': t.domain,
             'Admin Email': t.adminEmail,
-            'Plan': t.planName,
+            'Plan': t.planName || '',
             'Status': t.status,
-            'Modules': t.modules.join(', '),
+            'Modules': (t.modules || []).join(', '),
             'Users': t.userCount,
             'Created': t.createdAt
         }))
