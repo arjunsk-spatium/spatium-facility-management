@@ -43,9 +43,11 @@ export const useApi = () => {
 
         const mergedOptions = { ...defaults, ...options, headers: { ...defaults.headers, ...options.headers } };
 
-        // $fetch returns the data directly (Promise<T>)
-        // We catch errors here to mimic the structure if needed, or better yet, let the caller handle try/catch
-        return $fetch<T>(url, mergedOptions);
+        try {
+            return await $fetch<T>(url, mergedOptions);
+        } catch (error) {
+            throw error;
+        }
     };
 
     return {
