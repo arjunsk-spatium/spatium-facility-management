@@ -1,13 +1,12 @@
 <template>
-    <a-layout :style="{ minHeight: '100vh', background: isDark ? '#121212' : '#f5f5f5' }">
+    <a-layout :style="{ minHeight: '100vh', background: isDark ? '#121212' : '#f5f5f5' }" has-sider>
         <!-- Sidebar - Responsive (Drawer on mobile, Sider on desktop) -->
         <Sidebar />
 
         <!-- Main content area -->
         <a-layout class="main-content-layout" :style="{
             background: isDark ? '#121212' : '#f5f5f5',
-            marginLeft: isMobile ? 0 : (collapsed ? '80px' : '240px'),
-            transition: 'margin-left 0.2s ease'
+            transition: 'all 0.2s ease'
         }">
             <a-layout-header
                 class="app-header flex justify-between items-center px-4 md:px-6 border-b border-neutral-200 dark:border-neutral-700"
