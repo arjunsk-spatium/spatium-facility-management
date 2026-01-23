@@ -73,46 +73,56 @@
                         Sign in with your admin credentials to access the console.
                     </p>
 
-                    <form @submit.prevent="handleLogin" class="login-form">
-                        <!-- Email Field -->
-                        <div class="form-group">
-                            <label class="form-label">
-                                <span class="required">*</span>Email
-                            </label>
-                            <input v-model="form.email" type="email" placeholder="admin@spatiumoffices.com"
-                                class="form-input" required />
-                        </div>
-
-                        <!-- Password Field -->
-                        <div class="form-group">
-                            <label class="form-label">
-                                <span class="required">*</span>Password
-                            </label>
-                            <div class="password-input-wrapper">
-                                <input v-model="form.password" :type="showPassword ? 'text' : 'password'"
-                                    placeholder="Enter your password" class="form-input" required />
-                                <button type="button" @click="showPassword = !showPassword" class="password-toggle">
-                                    <svg v-if="showPassword" class="w-5 h-5" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                    </svg>
-                                    <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                </button>
+                    <div class="transition-all duration-300">
+                        <!-- Step 1: Email -->
+                        <form v-if="step === 'email'" @submit.prevent="handleEmailSubmit" class="login-form">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <span class="required">*</span>Email
+                                </label>
+                                <input v-model="form.email" type="email" placeholder="admin@spatiumoffices.com"
+                                    class="form-input" required autofocus />
                             </div>
-                        </div>
 
-                        <!-- Submit Button -->
-                        <button type="submit" class="submit-button" :disabled="isLoading">
-                            <span v-if="isLoading" class="loading-spinner"></span>
-                            <span v-else>Sign In</span>
-                        </button>
-                    </form>
+                            <button type="submit" class="submit-button" :disabled="isLoading">
+                                <span v-if="isLoading" class="loading-spinner"></span>
+                                <span v-else>Next</span>
+                            </button>
+                        </form>
+
+                        <!-- Step 2: OTP -->
+                        <form v-else @submit.prevent="handleLogin" class="login-form">
+                            <div class="form-group">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="form-label mb-0">
+                                        <span class="required">*</span>One-Time Password
+                                    </label>
+                                    <button type="button" @click="goBack"
+                                        class="text-xs text-primary-500 hover:text-primary-600 font-medium">
+                                        Change Email
+                                    </button>
+                                </div>
+                                <div class="text-xs text-neutral-500 mb-2">
+                                    Code sent to <span class="font-medium text-neutral-900 dark:text-neutral-200">{{
+                                        form.email }}</span>
+                                </div>
+                                <input v-model="form.otp" type="text" placeholder="Enter 6-digit code"
+                                    class="form-input text-center tracking-widest text-lg font-mono" required autofocus
+                                    maxlength="6" />
+                            </div>
+
+                            <button type="submit" class="submit-button" :disabled="isLoading">
+                                <span v-if="isLoading" class="loading-spinner"></span>
+                                <span v-else>Sign In</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div v-if="errorMessage"
+                        class="mt-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm text-center">
+                        {{ errorMessage }}
+                    </div>
 
                     <!-- Help Text -->
                     <p class="help-text">
@@ -131,14 +141,18 @@ definePageMeta({
 
 // Theme
 const { colorMode, isDark, toggleTheme } = useTheme()
+const authStore = useAuthStore()
+const router = useRouter()
 
 // Form state
+const step = ref<'email' | 'otp'>('email')
 const form = reactive({
     email: '',
-    password: ''
+    otp: ''
 })
-const showPassword = ref(false)
+const showPassword = ref(false) // Not used directly in OTP flow but kept if needed
 const isLoading = ref(false)
+const errorMessage = ref('')
 
 // Quotes collection
 const quotes = [
@@ -176,23 +190,43 @@ const refreshQuote = () => {
     currentImageIndex.value = Math.floor(Math.random() * images.length)
 }
 
-// Login handler
-const handleLogin = async () => {
+// Handlers
+const handleEmailSubmit = async () => {
+    if (!form.email) return
     isLoading.value = true
+    errorMessage.value = ''
     try {
-        // TODO: Implement actual login logic
-        console.log('Login attempt:', form.email)
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        // Navigate to dashboard after successful login
-        navigateTo('/dashboard')
-    } catch (error) {
-        console.error('Login failed:', error)
+        await authStore.requestOtp(form.email)
+        step.value = 'otp'
+    } catch (error: any) {
+        console.error('Error sending OTP:', error)
+        errorMessage.value = error?.data?.message || 'Failed to send OTP. Please try again.'
     } finally {
         isLoading.value = false
     }
 }
-</script>
 
+const handleLogin = async () => {
+    if (!form.otp) return
+    isLoading.value = true
+    errorMessage.value = ''
+    try {
+        await authStore.login(form.email, form.otp)
+        router.push('/dashboard')
+    } catch (error: any) {
+        console.error('Login failed:', error)
+        errorMessage.value = error?.data?.message || 'Invalid OTP. Please try again.'
+    } finally {
+        isLoading.value = false
+    }
+}
+
+const goBack = () => {
+    step.value = 'email'
+    form.otp = ''
+    errorMessage.value = ''
+}
+</script>
 <style scoped>
 .login-container {
     display: flex;

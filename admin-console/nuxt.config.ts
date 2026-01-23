@@ -8,6 +8,15 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   telemetry: { enabled: false },
   modules: ['@pinia/nuxt'],
+  runtimeConfig: {
+    public: {
+      apiBaseUrl: '',
+      adminConsoleAppId: ''
+    }
+  },
+  imports: {
+    dirs: ['../composables', '../stores']
+  },
   devServer: {
     host: 'localhost',
     port: 5000

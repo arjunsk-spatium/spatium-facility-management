@@ -29,14 +29,51 @@ export const useAuthStore = defineStore('auth', {
     hasModule: (state) => (module: string) => state.modules.includes(module),
   },
   actions: {
-    login(user: Record<string, any>, token: string) {
-      this.user = user;
-      this.token = token;
-      
-      // Persist to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('auth_user', JSON.stringify(user));
-        localStorage.setItem('auth_token', token);
+    async requestOtp(email: string) {
+        const config = useRuntimeConfig();
+        const form = new FormData();
+        form.append('email', email);
+
+        try {
+            await $fetch(`${config.public.apiBaseUrl}/api/auth/otp/request/`, {
+                method: 'POST',
+                body: form
+            });
+            return true;
+        } catch (error) {
+            console.error('OTP Request failed', error);
+            throw error;
+        }
+    },
+
+    async login(email: string, otp: string, appId: string) {
+      const config = useRuntimeConfig();
+      const form = new FormData();
+      form.append('email', email);
+      form.append('otp', otp);
+      form.append('app_id', appId);
+
+      try {
+        const response: any = await $fetch(`${config.public.apiBaseUrl}/api/auth/login/`, {
+            method: 'POST',
+            body: form
+        });
+
+        if (response.success && response.data) {
+           this.user = response.data.user;
+           this.token = response.data.access;
+           
+           // Persist to localStorage
+           if (typeof window !== 'undefined') {
+             localStorage.setItem('auth_user', JSON.stringify(this.user));
+             localStorage.setItem('auth_token', this.token || '');
+           }
+        } else {
+             throw new Error(response.message || 'Login failed');
+        }
+      } catch (error) {
+        console.error('Login failed', error);
+        throw error;
       }
     },
     logout() {

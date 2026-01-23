@@ -8,13 +8,20 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   telemetry: { enabled: false },
   modules: ['@pinia/nuxt', '@nuxt/test-utils/module'],
+  runtimeConfig: {
+    public: {
+      apiBaseUrl: '',
+      tenantAdminAppId: '',
+      tenantClientAppId: ''
+    }
+  },
   imports: {
     dirs: ['../composables', '../stores'],
     presets: [
-        {
-            from: 'ant-design-vue',
-            imports: ['message', 'notification']
-        }
+      {
+        from: 'ant-design-vue',
+        imports: ['message', 'notification']
+      }
     ]
   },
   components: [
