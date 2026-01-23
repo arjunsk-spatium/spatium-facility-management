@@ -15,7 +15,7 @@
             <a-spin size="large" />
         </div>
 
-        <a-card v-else :bordered="false" class="shadow-sm">
+        <a-card v-else>
             <CompanyForm :initial-values="currentCompany" submit-text="Save Changes" :loading="loading"
                 @submit="handleUpdate" @cancel="handleCancel" />
         </a-card>

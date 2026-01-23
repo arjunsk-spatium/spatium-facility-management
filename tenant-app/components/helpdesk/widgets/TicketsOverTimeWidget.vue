@@ -1,5 +1,5 @@
 <template>
-    <a-card title="Tickets Over Time" :bordered="false" class="shadow-sm h-full">
+    <a-card title="Tickets Over Time" >
         <template #extra>
             <a-select v-model:value="timeRange" size="small" class="w-24">
                 <a-select-option value="month">Month</a-select-option>

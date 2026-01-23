@@ -1,6 +1,6 @@
 <template>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-shadow">
+        <a-card >
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-xs uppercase font-semibold">Total Bookings</p>
@@ -13,7 +13,7 @@
             <p class="text-xs text-gray-400 mt-2">All time</p>
         </a-card>
 
-        <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-shadow">
+        <a-card >
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-xs uppercase font-semibold">Total Revenue</p>
@@ -27,7 +27,7 @@
             <p class="text-xs text-gray-400 mt-2">Gross revenue</p>
         </a-card>
 
-        <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-shadow">
+        <a-card >
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-xs uppercase font-semibold">Utilization</p>
@@ -41,7 +41,7 @@
             <p class="text-xs text-gray-400 mt-2">Room occupancy</p>
         </a-card>
 
-        <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-shadow">
+        <a-card >
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-xs uppercase font-semibold">Avg. Daily Bookings</p>

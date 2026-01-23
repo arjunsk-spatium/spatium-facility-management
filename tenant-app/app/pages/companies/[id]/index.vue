@@ -15,7 +15,7 @@
             <a-spin size="large" />
         </div>
 
-        <a-card v-else-if="company" :bordered="false" class="shadow-sm">
+        <a-card v-else-if="company">
             <template #extra>
                 <NuxtLink :to="`/companies/${company.id}/edit`">
                     <a-button type="primary">Edit Company</a-button>

@@ -1,5 +1,5 @@
 <template>
-    <a-card title="Bookings Trend" :bordered="false" class="shadow-sm h-full">
+    <a-card title="Bookings Trend" >
         <template #extra>
             <a-select v-model:value="timeRange" size="small" class="w-24">
                 <a-select-option value="month">Month</a-select-option>

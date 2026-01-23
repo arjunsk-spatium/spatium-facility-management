@@ -31,7 +31,7 @@
                     <div class="space-y-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Basic Info -->
-                            <a-card title="Location Details" :bordered="false" class="bg-gray-50 dark:bg-gray-800">
+                            <a-card title="Location Details" >
                                 <div class="space-y-2">
                                     <p><span class="text-gray-500">Address:</span> {{ facility.location.address }}</p>
                                     <p><span class="text-gray-500">City:</span> {{ facility.location.city }}, {{
@@ -41,7 +41,7 @@
                             </a-card>
 
                             <!-- Stats -->
-                            <a-card title="Overview" :bordered="false" class="bg-gray-50 dark:bg-gray-800">
+                            <a-card title="Overview" >
                                 <template #extra>
                                     <a-button type="link" @click="openManageStructureModal">
                                         <EditOutlined /> Edit
@@ -159,8 +159,7 @@
                 </div>
 
                 <div class="space-y-4 max-h-[60vh] overflow-y-auto">
-                    <a-card v-for="(tower, tIndex) in tempStructure.towers" :key="tIndex" size="small" :bordered="false"
-                        class="border-l-4 border-l-green-500 bg-gray-50 dark:bg-gray-800">
+                    <a-card v-for="(tower, tIndex) in tempStructure.towers" :key="tIndex" size="small">
                         <template #title>
                             <div class="flex items-center gap-2">
                                 <span class="font-bold cursor-text dark:text-white" contenteditable="true"

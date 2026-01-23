@@ -32,7 +32,7 @@
 
             <!-- Mobile Card View -->
             <template #mobileCard="{ record }">
-                <a-card size="small" class="shadow-sm">
+                <a-card size="small">
                     <div class="flex justify-between items-start">
                         <div class="flex-1">
                             <!-- Primary field (name or first column) -->

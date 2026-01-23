@@ -3,7 +3,7 @@
         <div
             class="flex items-center gap-3 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 px-2 py-1.5 rounded-lg transition-colors">
             <!-- Avatar -->
-            <a-avatar class="bg-primary-600 text-white shadow-sm flex-shrink-0">
+            <a-avatar class="shadow-sm flex-shrink-0" :style="avatarStyle">
                 {{ userInitial }}
             </a-avatar>
 
@@ -45,8 +45,15 @@ import { DownOutlined, LogoutOutlined } from '@ant-design/icons-vue';
 import { navigateTo } from '#app';
 
 const authStore = useAuthStore();
+const tenantStore = useTenantStore();
 
 const userEmail = computed(() => authStore.user?.email || 'User');
+
+// Whitelabeled avatar style using tenant's primary color (solid fill, white initial)
+const avatarStyle = computed(() => ({
+    backgroundColor: tenantStore.primaryColor || '#3378ff',
+    color: 'white'
+}));
 const displayUser = computed(() => authStore.user?.name || userEmail.value.split('@')[0]);
 
 const userInitial = computed(() => {

@@ -30,6 +30,17 @@ const MOCK_TENANTS: Record<string, Tenant> = {
       secondary: '#f59e0b',
     },
   },
+
+  'tenant-c': {
+    id: 'tenant-c',
+    name: 'cvent',
+    logoUrl: 'https://curehht.org/wp-content/uploads/2022/04/cvent-logo-HI-Res.png',
+    faviconUrl: 'https://www.cvent.com/themes/custom/themekit/images/favicon/favicon.ico',
+    colors: {
+      primary: '#0499E4', // Blue
+      secondary: '#f59e0b',
+    },
+  },
 };
 
 export const useTenantService = () => {
@@ -47,7 +58,7 @@ export const useTenantService = () => {
     // In real app, parse window.location.hostname
     // For now, let's hardcode or check query param if needed
     // Simple mock: return 'tenant-a' by default
-    return 'tenant-b';
+    return 'tenant-c';
   };
 
   return {

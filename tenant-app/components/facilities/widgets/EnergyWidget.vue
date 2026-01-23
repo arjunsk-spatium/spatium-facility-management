@@ -1,5 +1,5 @@
 <template>
-    <a-card class="shadow-sm hover:shadow-md transition-shadow h-full" :bordered="false">
+    <a-card>
         <template #title>
             <div class="flex items-center gap-2">
                 <ThunderboltOutlined class="text-yellow-500" />

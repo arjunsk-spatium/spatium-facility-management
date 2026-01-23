@@ -8,7 +8,7 @@
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Tenants Card -->
-            <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-shadow">
+            <a-card>
                 <a-statistic title="Total Tenants" :value="stats.total" :value-style="{ color: '#1677ff' }">
                     <template #prefix>
                         <TeamOutlined />
@@ -21,7 +21,7 @@
             </a-card>
 
             <!-- Active Plans Card -->
-            <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-shadow">
+            <a-card>
                 <a-statistic title="Active Plans" :value="planStats.total" :value-style="{ color: '#52c41a' }">
                     <template #prefix>
                         <CreditCardOutlined />
@@ -33,7 +33,7 @@
             </a-card>
 
             <!-- Total Modules Card -->
-            <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-shadow">
+            <a-card>
                 <a-statistic title="Available Modules" :value="moduleStats.total" :value-style="{ color: '#722ed1' }">
                     <template #prefix>
                         <AppstoreOutlined />
@@ -45,7 +45,7 @@
             </a-card>
 
             <!-- Revenue Card -->
-            <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-shadow">
+            <a-card>
                 <a-statistic title="Monthly Revenue" :value="12450" :precision="2" prefix="₹"
                     :value-style="{ color: '#eb2f96' }" />
                 <div class="mt-2 text-xs text-gray-500">
@@ -59,7 +59,7 @@
         <!-- Recent Activity Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Recent Tenants -->
-            <a-card :bordered="false" class="shadow-sm">
+            <a-card>
                 <template #title>
                     <div class="flex items-center gap-2">
                         <TeamOutlined class="text-blue-500" />
@@ -95,7 +95,7 @@
             </a-card>
 
             <!-- Quick Actions -->
-            <a-card :bordered="false" class="shadow-sm">
+            <a-card>
                 <template #title>
                     <div class="flex items-center gap-2">
                         <ThunderboltOutlined class="text-yellow-500" />

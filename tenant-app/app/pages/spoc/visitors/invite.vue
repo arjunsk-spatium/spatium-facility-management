@@ -17,8 +17,8 @@
         </div>
 
         <!-- Invite Form -->
-        <div
-            class="bg-white dark:bg-neutral-800 rounded-xl border border-gray-100 dark:border-neutral-700 p-4 sm:p-6 max-w-2xl">
+        <div class="w-full flex justify-center">
+            <a-card class="w-full sm:max-w-4xl" :bodyStyle="{ padding: '16px 24px' }">
             <a-form :model="formState" layout="vertical" @finish="handleSubmit">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <a-form-item label="Visitor Name" name="name"
@@ -86,8 +86,8 @@
                     </a-button>
                 </div>
             </a-form>
+            </a-card>
         </div>
-
         <!-- Success Modal -->
         <a-modal v-model:open="showSuccess" title="Invitation Sent!" centered :footer="null">
             <div class="text-center py-4">

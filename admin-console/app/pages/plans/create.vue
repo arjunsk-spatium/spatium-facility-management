@@ -4,7 +4,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Create Plan</h1>
         </div>
 
-        <a-card :bordered="false" class="shadow-sm">
+        <a-card>
             <a-form :model="form" layout="vertical" @finish="handleSubmit" class="max-w-2xl">
                 <!-- Plan Name -->
                 <a-form-item label="Plan Name" name="name"

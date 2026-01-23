@@ -1,5 +1,5 @@
 <template>
-    <a-card title="Top Categories" :bordered="false" class="shadow-sm h-full">
+    <a-card title="Top Categories" >
         <a-list item-layout="horizontal" :data-source="data">
             <template #renderItem="{ item }">
                 <a-list-item class="!px-0">

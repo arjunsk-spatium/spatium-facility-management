@@ -23,18 +23,24 @@
         <!-- Main Content with Collapsible Sidebar -->
         <div class="flex flex-col md:flex-row gap-4">
             <!-- Collapsible Vertical Tabs Sidebar (hidden on mobile) -->
-            <div :class="[
-                'hidden md:flex flex-col bg-white dark:bg-[#141414] rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 transition-all duration-300',
-                sidebarCollapsed ? 'w-14' : 'w-56'
-            ]">
+            <a-card :class="[
+                'hidden md:flex flex-col transition-all duration-300',
+                sidebarCollapsed ? 'w-15' : 'w-56'
+            ]" :bodyStyle="{ padding: '0px', display: 'flex', flexDirection: 'column', height: '100%' }">
                 <!-- Tab Items -->
                 <nav class="flex-1 p-2">
-                    <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key" :class="[
-                        'w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors duration-200 mb-1',
-                        activeTab === tab.key
-                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    ]">
+                    <button 
+                        v-for="tab in tabs" 
+                        :key="tab.key" 
+                        @click="activeTab = tab.key" 
+                        :class="[
+                            'w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors duration-200 mb-1 cursor-pointer',
+                            activeTab === tab.key
+                                ? ''
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ]"
+                        :style="activeTab === tab.key ? activeTabStyle : {}"
+                    >
                         <component :is="tab.icon" class="text-lg flex-shrink-0" />
                         <span v-if="!sidebarCollapsed" class="font-medium truncate">{{ tab.label }}</span>
                     </button>
@@ -49,21 +55,20 @@
                         <span v-if="!sidebarCollapsed" class="text-sm">Collapse</span>
                     </button>
                 </div>
-            </div>
+            </a-card>
 
             <!-- Content Area -->
-            <div
-                class="flex-1 bg-white dark:bg-[#141414] rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 md:p-6">
+            <a-card class="flex-1" :bodyStyle="{ padding: '16px 24px' }">
                 <LocationTab v-if="activeTab === 'location'" />
                 <HelpdeskTab v-if="activeTab === 'helpdesk'" />
                 <RoomMetaTab v-if="activeTab === 'roomMeta'" />
-            </div>
+            </a-card>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import {
     EnvironmentOutlined,
     CustomerServiceOutlined,
@@ -80,6 +85,8 @@ definePageMeta({
     middleware: 'auth'
 })
 
+const tenantStore = useTenantStore()
+const { isDark } = useTheme()
 const sidebarCollapsed = ref(false)
 const activeTab = ref('location')
 
@@ -88,4 +95,17 @@ const tabs = [
     { key: 'helpdesk', label: 'Helpdesk', icon: CustomerServiceOutlined },
     { key: 'roomMeta', label: 'Room Meta', icon: AppstoreOutlined }
 ]
+
+// Whitelabeled active tab style using tenant's primary color
+const activeTabStyle = computed(() => {
+    const primaryColor = tenantStore.primaryColor || '#3378ff'
+    return {
+        backgroundColor: isDark.value 
+            ? `color-mix(in srgb, ${primaryColor} 20%, transparent)`
+            : `color-mix(in srgb, ${primaryColor} 10%, transparent)`,
+        color: isDark.value 
+            ? `color-mix(in srgb, ${primaryColor} 60%, white)`
+            : primaryColor
+    }
+})
 </script>

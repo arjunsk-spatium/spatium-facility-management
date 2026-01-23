@@ -29,8 +29,7 @@
 
         <!-- Grid Layout -->
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-            <a-card v-for="facility in facilityStore.facilities" :key="facility.id" hoverable
-                class="transition-all duration-300 hover:-translate-y-1">
+            <a-card v-for="facility in facilityStore.facilities" :key="facility.id">
                 <!-- Card Content (Same as before) -->
                 <template #cover>
                     <div class="h-32 bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center overflow-hidden">

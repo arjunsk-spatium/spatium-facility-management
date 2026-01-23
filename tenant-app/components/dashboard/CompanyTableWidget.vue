@@ -1,5 +1,5 @@
 <template>
-    <a-card class="shadow-sm hover:shadow-md transition-shadow h-full" title="Recent Companies">
+    <a-card title="Recent Companies">
         <template #extra>
             <NuxtLink to="/companies" class="text-xs text-primary-600">View All</NuxtLink>
         </template>

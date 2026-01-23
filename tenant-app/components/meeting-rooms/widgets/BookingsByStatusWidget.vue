@@ -1,5 +1,5 @@
 <template>
-    <a-card title="Bookings by Status" :bordered="false" class="shadow-sm h-full">
+    <a-card title="Bookings by Status" >
         <div class="flex items-center justify-center p-4 relative h-48">
             <DoughnutChart v-if="chartData" :chart-data="chartData" :options="chartOptions" />
             <!-- Center Text -->

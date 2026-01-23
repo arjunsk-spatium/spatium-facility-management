@@ -16,7 +16,7 @@
         <template v-else-if="tenant">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Main Info Card -->
-                <a-card :bordered="false" class="shadow-sm lg:col-span-2">
+                <a-card class="lg:col-span-2">
                     <template #title>
                         <div class="flex items-center justify-between">
                             <span>{{ tenant.name }}</span>
@@ -44,7 +44,7 @@
                 </a-card>
 
                 <!-- Modules Card -->
-                <a-card :bordered="false" class="shadow-sm">
+                <a-card>
                     <template #title>Enabled Modules</template>
                     <div class="space-y-2">
                         <div v-for="mod in tenant.modules" :key="mod"

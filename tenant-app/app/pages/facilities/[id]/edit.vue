@@ -14,7 +14,7 @@
                 <h1 class="text-2xl font-bold dark:text-white">Edit Facility</h1>
             </div>
         </div>
-
+        <div class="flex justify-center">
         <!-- Loading State -->
         <AppLoader v-if="loading" message="Loading Facility..." />
 
@@ -24,7 +24,8 @@
         </div>
 
         <!-- Edit Form -->
-        <div v-else class="bg-white dark:bg-[#1a1a1a] p-6 rounded-lg shadow-sm max-w-4xl">
+     
+        <a-card v-else class="max-w-4xl lg:w-full">
             <a-form layout="vertical">
                 <!-- Basic Info Section -->
                 <div class="mb-8">
@@ -104,8 +105,8 @@
                     </a-button>
                 </div>
             </a-form>
-        </div>
-
+        </a-card>
+    </div>
         <!-- Manage Structure Modal -->
         <a-modal v-model:open="isManageStructureModalOpen" title="Manage Structure" width="800px" :footer="null">
             <div class="space-y-6">
@@ -118,8 +119,7 @@
                 </div>
 
                 <div class="space-y-4 max-h-[60vh] overflow-y-auto">
-                    <a-card v-for="(tower, tIndex) in formData.towers" :key="tIndex" size="small" :bordered="false"
-                        class="border-l-4 border-l-green-500 bg-gray-50 dark:bg-gray-800">
+                    <a-card v-for="(tower, tIndex) in formData.towers" :key="tIndex" size="small" >
                         <template #title>
                             <div class="flex items-center gap-2">
                                 <a-input v-model:value="tower.name" class="font-bold max-w-[200px]" :bordered="false" />

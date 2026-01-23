@@ -41,7 +41,7 @@
                 </div>
 
                 <!-- Amenities -->
-                <a-card title="Amenities" :bordered="false" class="shadow-sm">
+                <a-card title="Amenities" >
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div v-for="amenity in currentRoom.amenities" :key="amenity"
                             class="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
@@ -55,8 +55,8 @@
             <!-- Sidebar -->
             <div class="space-y-6">
                 <!-- Pricing Card -->
-                <a-card :bordered="false" class="shadow-sm bg-blue-50 dark:bg-blue-900/10">
-                    <div class="flex justify-between items-center mb-2">
+                <a-card class="mb-6!">
+                    <div class="flex justify-between items-center">
                         <span class="text-gray-500 font-medium">Hourly Rate</span>
                         <span class="text-2xl font-bold text-gray-900 dark:text-white">₹{{ currentRoom.pricePerHour
                             }}</span>
@@ -72,7 +72,7 @@
                 </a-card>
 
                 <!-- Details Card -->
-                <a-card title="Configuration" :bordered="false" class="shadow-sm">
+                <a-card title="Configuration" >
                     <div class="space-y-4">
                         <div>
                             <span class="block text-xs text-gray-500 uppercase">Room Type</span>
