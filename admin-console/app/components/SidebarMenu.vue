@@ -37,6 +37,14 @@
             </a-menu-item>
         </a-sub-menu>
 
+        <!-- Users -->
+        <a-menu-item key="users">
+            <template #icon>
+                <UserOutlined />
+            </template>
+            <NuxtLink to="/users">Users</NuxtLink>
+        </a-menu-item>
+
         <!-- Modules -->
         <a-menu-item key="modules">
             <template #icon>
@@ -63,7 +71,8 @@ import {
     TeamOutlined,
     CreditCardOutlined,
     AppstoreOutlined,
-    SettingOutlined
+    SettingOutlined,
+    UserOutlined
 } from '@ant-design/icons-vue'
 import { useSidebar } from '../composables/useSidebar'
 
@@ -87,6 +96,7 @@ const getMenuKey = (path: string) => {
     if (path === '/plans') return 'plans-list'
     if (path === '/plans/create') return 'plans-create'
     if (path.startsWith('/plans/')) return 'plans-list'
+    if (path === '/users' || path.startsWith('/users/')) return 'users'
     if (path === '/modules') return 'modules'
     if (path === '/settings') return 'settings'
     return 'dashboard'
