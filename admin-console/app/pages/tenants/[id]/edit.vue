@@ -13,7 +13,7 @@
             <a-spin size="large" />
         </div>
 
-        <a-card v-else-if="tenant" :bordered="false" class="shadow-sm">
+        <a-card v-else-if="tenant">
             <a-form :model="form" layout="vertical" @finish="handleSubmit" class="max-w-xl">
                 <a-form-item label="Tenant Name" name="name"
                     :rules="[{ required: true, message: 'Please enter tenant name' }]">

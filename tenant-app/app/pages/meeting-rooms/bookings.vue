@@ -112,9 +112,7 @@
 
             <!-- Mobile Card View -->
             <template #mobileCard="{ record }">
-                <a-card
-                    class="mb-4 shadow-sm !border-neutral-200 dark:!border-neutral-700 hover:shadow-md transition-shadow"
-                    :bordered="true" :bodyStyle="{ padding: '16px' }">
+                <a-card :bodyStyle="{ padding: '16px' }">
                     <div class="flex justify-between items-start mb-3">
                         <div>
                             <h4 class="font-bold text-base dark:text-white mb-0">{{ record.id }}</h4>

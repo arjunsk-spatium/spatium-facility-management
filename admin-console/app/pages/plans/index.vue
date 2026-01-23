@@ -20,8 +20,8 @@
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-            <a-card v-for="plan in plans" :key="plan.id" :bordered="false"
-                class="shadow-sm hover:shadow-lg transition-shadow h-full flex flex-col"
+            <a-card v-for="plan in plans" :key="plan.id" 
+                class="h-full flex flex-col"
                 :bodyStyle="{ flex: 1, display: 'flex', flexDirection: 'column' }">
                 <template #title>
                     <div class="flex items-center justify-between">

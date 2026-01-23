@@ -1,5 +1,5 @@
 <template>
-    <a-card title="Top Companies by Bookings" :bordered="false" class="shadow-sm h-full">
+    <a-card title="Top Companies by Bookings" >
         <a-list item-layout="horizontal" :data-source="data">
             <template #renderItem="{ item, index }">
                 <a-list-item class="!px-0">

@@ -1,19 +1,13 @@
 <template>
     <div class="space-y-6">
         <div class="flex items-center gap-4 mb-6">
-            <a-button @click="navigateTo('/meeting-rooms')">
-                <template #icon>
-                    <ArrowLeftOutlined />
-                </template>
-                Back
-            </a-button>
             <div>
                 <h1 class="text-2xl font-bold dark:text-white">Add New Room</h1>
                 <p class="text-gray-600 dark:text-gray-400">Create a new meeting room configuration.</p>
             </div>
         </div>
-
-        <a-card class="shadow-sm !border-neutral-200 dark:!border-neutral-700">
+        <div class="flex justify-center">
+        <a-card class="w-full sm:max-w-4xl" :bodyStyle="{ padding: '16px 24px' }">
             <a-form :model="formState" :rules="rules" layout="vertical" @finish="handleSubmit" ref="formRef">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <a-form-item label="Room Name" name="name" class="col-span-2 md:col-span-1">
@@ -87,6 +81,7 @@
                 </div>
             </a-form>
         </a-card>
+    </div>
     </div>
 </template>
 

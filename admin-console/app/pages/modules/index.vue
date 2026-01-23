@@ -11,8 +11,7 @@
 
         <!-- Modules Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <a-card v-for="mod in modules" :key="mod.id" :bordered="false"
-                class="shadow-sm hover:shadow-md transition-shadow">
+            <a-card v-for="mod in modules" :key="mod.id">
                 <div class="text-center">
                     <div
                         class="w-16 h-16 mx-auto mb-4 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
@@ -31,7 +30,7 @@
         </div>
 
         <!-- Module Stats -->
-        <a-card :bordered="false" class="shadow-sm">
+        <a-card>
             <template #title>Module Usage</template>
             <a-table :columns="statsColumns" :data-source="moduleStats" :pagination="false" />
         </a-card>

@@ -1,5 +1,5 @@
 <template>
-    <a-card class="shadow-sm" title="Weekly Visitor Traffic">
+    <a-card title="Weekly Visitor Traffic">
         <div class="h-80 mt-4">
             <BarChart v-if="chartData" :chart-data="chartData" :options="chartOptions" />
             <div v-else class="flex items-center justify-center h-full text-gray-500">No data available</div>

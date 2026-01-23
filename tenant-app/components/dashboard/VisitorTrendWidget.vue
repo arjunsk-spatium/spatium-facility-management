@@ -1,5 +1,5 @@
 <template>
-    <a-card class="shadow-sm hover:shadow-md transition-shadow h-full" title="Visitor Traffic (Last 7 Days)">
+    <a-card title="Visitor Traffic (Last 7 Days)">
         <div v-if="loading" class="flex justify-center items-center h-40">
             <a-spin />
         </div>

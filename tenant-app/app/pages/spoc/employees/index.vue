@@ -26,7 +26,8 @@
                 <template v-if="column.key === 'employee'">
                     <div class="flex items-center gap-3">
                         <div
-                            class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-medium">
+                            class="w-10 h-10 rounded-full flex items-center justify-center font-medium"
+                            :style="avatarStyle">
                             {{ getInitials(record.name) }}
                         </div>
                         <div>
@@ -53,13 +54,12 @@
 
             <!-- Mobile Card View -->
             <template #mobileCard="{ record }">
-                <a-card
-                    class="mb-4 shadow-sm !border-neutral-200 dark:!border-neutral-700 hover:shadow-md transition-shadow"
-                    :bordered="true" :bodyStyle="{ padding: '16px' }">
+                <a-card :bodyStyle="{ padding: '16px' }">
                     <div class="flex justify-between items-start mb-3">
                         <div class="flex items-center gap-3">
                             <div
-                                class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-medium">
+                                class="w-10 h-10 rounded-full flex items-center justify-center font-medium"
+                                :style="avatarStyle">
                                 {{ getInitials(record.name) }}
                             </div>
                             <div>
@@ -137,8 +137,23 @@ definePageMeta({
     middleware: 'auth'
 })
 
+const tenantStore = useTenantStore()
+const { isDark } = useTheme()
 const store = useSpocStore()
 const { employees, loading } = storeToRefs(store)
+
+// Whitelabeled avatar style using tenant's primary color
+const avatarStyle = computed(() => {
+    const primaryColor = tenantStore.primaryColor || '#3378ff'
+    return {
+        backgroundColor: isDark.value
+            ? `color-mix(in srgb, ${primaryColor} 20%, transparent)`
+            : `color-mix(in srgb, ${primaryColor} 10%, transparent)`,
+        color: isDark.value
+            ? `color-mix(in srgb, ${primaryColor} 60%, white)`
+            : primaryColor
+    }
+})
 
 const searchQuery = ref('')
 const showAddModal = ref(false)

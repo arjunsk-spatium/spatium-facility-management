@@ -16,28 +16,28 @@
 
         <!-- Stats Section -->
         <div class="flex flex-wrap gap-4">
-            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
+            <a-card class="flex-grow min-w-[160px]">
                 <a-statistic title="Total Tenants" :value="stats.total" :value-style="{ color: '#1677ff' }">
                     <template #prefix>
                         <TeamOutlined />
                     </template>
                 </a-statistic>
             </a-card>
-            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
+            <a-card class="flex-grow min-w-[160px]">
                 <a-statistic title="Active" :value="stats.active" :value-style="{ color: '#52c41a' }">
                     <template #prefix>
                         <CheckCircleOutlined />
                     </template>
                 </a-statistic>
             </a-card>
-            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
+            <a-card class="flex-grow min-w-[160px]">
                 <a-statistic title="Trial" :value="stats.trial" :value-style="{ color: '#faad14' }">
                     <template #prefix>
                         <ClockCircleOutlined />
                     </template>
                 </a-statistic>
             </a-card>
-            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
+                <a-card class="flex-grow min-w-[160px]">
                 <a-statistic title="Suspended" :value="stats.suspended" :value-style="{ color: '#ff4d4f' }">
                     <template #prefix>
                         <StopOutlined />
@@ -95,7 +95,7 @@
 
             <!-- Mobile Card Content -->
             <template #mobileCard="{ record: tenant }">
-                <a-card :bordered="true" class="mb-4 shadow-sm hover:shadow-md transition-shadow">
+                <a-card class="mb-4">
                     <div class="flex flex-col gap-3">
                         <!-- Header: Name + Status -->
                         <div class="flex justify-between items-start">

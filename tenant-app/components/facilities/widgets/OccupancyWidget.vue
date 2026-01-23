@@ -1,5 +1,5 @@
 <template>
-    <a-card class="shadow-sm hover:shadow-md transition-shadow h-full cursor-pointer group" :bordered="false"
+    <a-card 
         @click="navigateTo('/facilities')">
         <template #title>
             <div class="flex items-center gap-2">

@@ -11,7 +11,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- General Settings -->
-            <a-card :bordered="false" class="shadow-sm lg:col-span-2">
+            <a-card class="lg:col-span-2">
                 <template #title>
                     <div class="flex items-center gap-2">
                         <SettingOutlined />
@@ -47,7 +47,7 @@
             </a-card>
 
             <!-- Quick Actions -->
-            <a-card :bordered="false" class="shadow-sm">
+            <a-card>
                 <template #title>
                     <div class="flex items-center gap-2">
                         <ThunderboltOutlined />
@@ -73,7 +73,7 @@
         </div>
 
         <!-- Notifications Settings -->
-        <a-card :bordered="false" class="shadow-sm">
+        <a-card>
             <template #title>
                 <div class="flex items-center gap-2">
                     <BellOutlined />

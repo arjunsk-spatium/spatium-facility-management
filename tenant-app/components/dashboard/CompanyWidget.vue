@@ -1,5 +1,5 @@
 <template>
-    <a-card class="shadow-sm hover:shadow-md transition-shadow">
+    <a-card>
         <template #title>
             <div class="flex items-center gap-2">
                 <BankOutlined class="text-blue-500" />

@@ -1,5 +1,5 @@
 <template>
-    <a-card class="shadow-sm hover:shadow-md transition-shadow h-full" title="Facility Alerts">
+    <a-card title="Facility Alerts">
         <div class="space-y-3">
             <div v-for="alert in alerts" :key="alert.id"
                 class="flex items-start gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer">

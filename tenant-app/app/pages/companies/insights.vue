@@ -11,51 +11,49 @@
 
         <div v-else-if="insights" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Total Companies -->
-            <div
-                class="bg-white dark:bg-[#141414] p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
+            <a-card>
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Companies</div>
                 <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ insights.totalCompanies }}</div>
-            </div>
+            </a-card>
 
             <!-- Active Companies -->
-            <div
-                class="bg-white dark:bg-[#141414] p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
+            <a-card>
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Active Companies</div>
                 <div class="text-3xl font-bold text-green-600 dark:text-green-500">{{ insights.activeCompanies }}</div>
-            </div>
+            </a-card>
 
             <!-- Inactive Companies -->
-            <div
-                class="bg-white dark:bg-[#141414] p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
+            <a-card>
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Inactive Companies</div>
                 <div class="text-3xl font-bold text-gray-600 dark:text-gray-400">{{ insights.inactiveCompanies }}</div>
-            </div>
+            </a-card>
 
             <!-- Revenue -->
-            <div
-                class="bg-white dark:bg-[#141414] p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
+            <a-card>
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Revenue</div>
                 <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">₹{{
                     insights.revenue.toLocaleString() }}</div>
-            </div>
+            </a-card>
         </div>
 
         <!-- Charts Section -->
         <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div
-                class="bg-white dark:bg-[#141414] p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Company Status Distribution</h3>
+            <a-card>
+                <template #title>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Company Status Distribution</h3>
+                </template>
                 <div class="h-64">
                     <BarChart v-if="!loading" :chart-data="statusChartData" :options="chartOptions" />
                 </div>
-            </div>
-            <div
-                class="bg-white dark:bg-[#141414] p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Revenue Trend (Mock)</h3>
+            </a-card>
+            <a-card>
+                <template #title>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Revenue Trend (Mock)</h3>
+                </template>
                 <div class="h-64">
                     <LineChart v-if="!loading" :chart-data="revenueChartData" :options="chartOptions" />
                 </div>
-            </div>
+            </a-card>
         </div>
     </div>
 </template>

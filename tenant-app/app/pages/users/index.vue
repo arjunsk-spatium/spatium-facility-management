@@ -31,7 +31,7 @@
 
             <!-- User Cards -->
             <div v-for="user in filteredUsers" :key="user.id" class="user-card">
-                <a-card class="shadow-sm hover:shadow-md transition-shadow">
+                <a-card>
                     <!-- User Header -->
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                         <!-- User Info -->

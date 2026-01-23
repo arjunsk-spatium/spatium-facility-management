@@ -164,15 +164,26 @@
         outline-offset: 2px;
     }
 
-    /* Selection styles */
+    /* Selection styles (whitelabeled: --color-primary-500/600 set from tenant in app.vue) */
     ::selection {
-        background-color: var(--color-primary-200);
-        color: var(--color-primary-900);
+        background-color: var(--color-primary-500);
+        color: var(--selection-text-color, #fff);
+    }
+
+    /* For compatibility with older Firefox versions */
+    ::-moz-selection {
+        background-color: var(--color-primary-500);
+        color: var(--selection-text-color, #fff);
     }
 
     .dark ::selection {
-        background-color: var(--color-primary-800);
-        color: var(--color-primary-100);
+        background-color: var(--color-primary-600);
+        color: var(--selection-text-color, #fff);
+    }
+
+    .dark ::-moz-selection {
+        background-color: var(--color-primary-600);
+        color: var(--selection-text-color, #fff);
     }
 
     /* Scrollbar styling */

@@ -2,10 +2,10 @@
     <div class="space-y-6">
         <!-- Page Header -->
         <div
-            class="flex justify-between items-center p-4 rounded-lg shadow-sm transition-colors duration-300 page-header">
+            class="flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Companies</h1>
             <NuxtLink to="/companies/create">
-                <a-button type="primary" size="large">
+                <a-button type="primary" size="medium">
                     <template #icon>
                         <PlusOutlined />
                     </template>
@@ -17,28 +17,28 @@
         <!-- Insights Section -->
         <!-- Insights Section -->
         <div class="flex flex-wrap gap-4">
-            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
+            <a-card class="flex-grow min-w-[160px]">
                 <a-statistic title="Total Companies" :value="stats.total" :value-style="{ color: '#3f8600' }">
                     <template #prefix>
                         <BankOutlined />
                     </template>
                 </a-statistic>
             </a-card>
-            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
+            <a-card class="flex-grow min-w-[160px]">
                 <a-statistic title="Active" :value="stats.active" :value-style="{ color: '#1677ff' }">
                     <template #prefix>
                         <CheckCircleOutlined />
                     </template>
                 </a-statistic>
             </a-card>
-            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
+            <a-card class="flex-grow min-w-[160px]">
                 <a-statistic title="Inactive" :value="stats.inactive" :value-style="{ color: '#cf1322' }">
                     <template #prefix>
                         <StopOutlined />
                     </template>
                 </a-statistic>
             </a-card>
-            <a-card :bordered="false" class="shadow-sm flex-grow min-w-[160px]">
+            <a-card class="flex-grow min-w-[160px]">
                 <a-statistic title="Revenue" :value="9342" :precision="2" prefix="₹" />
             </a-card>
         </div>
@@ -83,7 +83,7 @@
 
             <!-- Mobile Card Content -->
             <template #mobileCard="{ record: company }">
-                <a-card :bordered="true" class="mb-4 shadow-sm hover:shadow-md transition-shadow">
+                <a-card class="mb-4">
                     <div class="flex flex-col gap-3">
                         <!-- Header: Name -->
                         <div class="flex justify-between items-start">

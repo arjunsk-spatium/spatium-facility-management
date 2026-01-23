@@ -43,14 +43,14 @@
             <!-- Main Content -->
             <div class="lg:col-span-2 space-y-6">
                 <!-- Description -->
-                <a-card title="Issue Description" :bordered="false" class="shadow-sm">
+                <a-card title="Issue Description" >
                     <div class="text-gray-700 dark:text-gray-300 whitespace-pre-line text-base">
                         {{ currentTicket.description }}
                     </div>
                 </a-card>
 
                 <!-- Remarks -->
-                <a-card title="Remarks & History" :bordered="false" class="shadow-sm">
+                <a-card title="Remarks & History" >
                     <a-timeline>
                         <!-- Most recent logs would typically be mapped here -->
                         <a-timeline-item v-for="remark in currentTicket.remarks" :key="remark.id">
@@ -81,7 +81,7 @@
             <!-- Sidebar -->
             <div class="space-y-6">
                 <!-- Details Card -->
-                <a-card title="Details" :bordered="false" class="shadow-sm">
+                <a-card title="Details" >
                     <div class="space-y-4">
                         <div>
                             <span class="block text-xs text-gray-500 uppercase">Category</span>
@@ -118,7 +118,7 @@
                 </a-card>
 
                 <!-- Attachments (Placeholder) -->
-                <a-card title="Attachments" :bordered="false" class="shadow-sm">
+                <a-card title="Attachments" >
                     <a-empty description="No attachments" :image="false" />
                 </a-card>
             </div>

@@ -31,7 +31,7 @@
 
         <!-- Mobile Card View -->
         <template #mobileCard="{ record }">
-            <a-card class="mb-4 shadow-sm rounded-lg" :bodyStyle="{ padding: '16px' }">
+            <a-card :bodyStyle="{ padding: '16px' }">
                 <div class="flex justify-between items-start mb-3">
                     <div>
                         <div class="font-bold text-base">{{ record.name }}</div>

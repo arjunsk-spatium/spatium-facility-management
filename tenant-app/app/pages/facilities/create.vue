@@ -4,8 +4,8 @@
             <h1 class="text-2xl font-bold dark:text-white">Create Facility</h1>
             <a-button @click="navigateTo('/facilities')">Cancel</a-button>
         </div>
-
-        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-lg shadow-sm">
+        <div class="flex justify-center">
+        <a-card class="w-full sm:max-w-4xl" :bodyStyle="{ padding: '16px 24px' }">
             <a-steps :current="currentStep" class="mb-8">
                 <a-step title="Basic Info" description="Location & Details" />
                 <a-step title="Structure" description="Towers & Floors" />
@@ -137,7 +137,8 @@
                 <a-button v-if="currentStep < 1" type="primary" @click="currentStep++">Next</a-button>
                 <a-button v-else type="primary" @click="handleSubmit">Submit Facility</a-button>
             </div>
-        </div>
+        </a-card>
+    </div>
     </div>
 </template>
 

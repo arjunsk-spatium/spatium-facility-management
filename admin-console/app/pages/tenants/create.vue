@@ -4,7 +4,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Create Tenant</h1>
         </div>
 
-        <a-card :bordered="false" class="shadow-sm">
+        <a-card>
             <a-steps :current="currentStep" class="!mb-10">
                 <a-step title="Basic Info" />
                 <a-step title="Select Plan" />

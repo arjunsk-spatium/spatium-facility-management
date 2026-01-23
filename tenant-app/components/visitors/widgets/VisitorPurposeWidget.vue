@@ -1,5 +1,5 @@
 <template>
-    <a-card class="shadow-sm h-full" title="Visit Purposes">
+    <a-card title="Visit Purposes">
         <div class="h-64 mt-4 flex items-center justify-center">
             <DoughnutChart v-if="chartData" :chart-data="chartData" />
             <div v-else class="flex items-center justify-center h-full text-gray-500">No data available</div>
