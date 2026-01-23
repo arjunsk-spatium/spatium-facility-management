@@ -59,34 +59,64 @@
         <div
           class="bg-surface dark:bg-neutral-900 shadow-card p-8 rounded-2xl border border-neutral-200 dark:border-neutral-800">
           <h3 class="mb-6 text-sm text-neutral-500 dark:text-neutral-400">
-            Sign in with your email and password
+            Sign in with your email and code
           </h3>
 
-          <form class="space-y-6" @submit.prevent="handleLogin">
+          <div class="transition-all duration-300">
+            <!-- Step 1: Email -->
+            <form v-if="step === 'email'" @submit.prevent="handleEmailSubmit" class="space-y-6">
+              <!-- Email Input -->
+              <div>
+                <label for="email" class="label">Email</label>
+                <input id="email" v-model="form.email" type="email" required class="input"
+                  placeholder="name@company.com" autofocus />
+              </div>
 
-            <!-- Email Input -->
-            <div>
-              <label for="email" class="label">Email</label>
-              <input id="email" v-model="form.email" type="email" required class="input"
-                placeholder="name@company.com" />
-            </div>
+              <!-- Submit Button -->
+              <div>
+                <button type="submit" class="btn btn-primary w-full shadow-lg shadow-primary-500/20 !text-white"
+                  :disabled="loading">
+                  <span v-if="loading">Processing...</span>
+                  <span v-else>Next</span>
+                </button>
+              </div>
+            </form>
 
-            <!-- Password Input -->
-            <div>
-              <label for="password" class="label">Password</label>
-              <input id="password" v-model="form.password" type="password" required class="input"
-                placeholder="••••••••" />
-            </div>
+            <!-- Step 2: OTP -->
+            <form v-else @submit.prevent="handleLogin" class="space-y-6">
+              <!-- OTP Input -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label for="otp" class="label mb-0">One-Time Password</label>
+                  <button type="button" @click="goBack"
+                    class="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                    Change Email
+                  </button>
+                </div>
+                <div class="text-xs text-neutral-500 mb-2">
+                  Code sent to <span class="font-medium text-neutral-900 dark:text-neutral-200">{{ form.email }}</span>
+                </div>
+                <input id="otp" v-model="form.otp" type="text" required
+                  class="input text-center tracking-widest text-lg font-mono" placeholder="Enter 6-digit code"
+                  maxlength="6" autofocus />
+              </div>
 
-            <!-- Submit Button -->
-            <div>
-              <button type="submit" class="btn btn-primary w-full shadow-lg shadow-primary-500/20 !text-white"
-                :disabled="loading">
-                <span v-if="loading">Signing in...</span>
-                <span v-else>Log In</span>
-              </button>
-            </div>
-          </form>
+              <!-- Submit Button -->
+              <div>
+                <button type="submit" class="btn btn-primary w-full shadow-lg shadow-primary-500/20 !text-white"
+                  :disabled="loading">
+                  <span v-if="loading">Signing in...</span>
+                  <span v-else>Log In</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Error Message -->
+          <div v-if="errorMsg"
+            class="mt-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm text-center">
+            {{ errorMsg }}
+          </div>
 
           <p class="mt-6 text-center text-xs text-neutral-500 dark:text-neutral-500">
             Having trouble signing in? Contact your Spatium administrator.
@@ -113,11 +143,15 @@ interface Quote {
 const loading = ref(false)
 const isImageLoading = ref(true)
 const tenantStore = useTenantStore()
+const authStore = useAuthStore()
+const config = useRuntimeConfig()
+const errorMsg = ref('')
 
 // State
+const step = ref<'email' | 'otp'>('email')
 const form = reactive({
   email: '',
-  password: ''
+  otp: ''
 })
 
 // Data
@@ -150,28 +184,48 @@ const getRandomItem = <T>(arr: T[]): T => {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-const handleLogin = async () => {
+const handleEmailSubmit = async () => {
+  if (!form.email) return
   loading.value = true
+  errorMsg.value = ''
+  try {
+    await authStore.requestOtp(form.email)
+    step.value = 'otp'
+  } catch (error: any) {
+    console.error('Error sending OTP:', error)
+    errorMsg.value = error?.data?.message || 'Failed to send OTP. Please try again.'
+  } finally {
+    loading.value = false
+  }
+}
 
-  // Simulate API call
-  setTimeout(() => {
-    // Mock successful login
-    const mockUser = { email: form.email, name: 'Demo User' };
-    const mockToken = 'mock-jwt-token-123';
+const handleLogin = async () => {
+  if (!form.otp) return
+  loading.value = true
+  errorMsg.value = ''
 
-    const authStore = useAuthStore();
-    authStore.login(mockUser, mockToken);
+  try {
+    await authStore.login(form.email, form.otp, config.public.tenantClientAppId)
+    navigateTo('/dashboard')
+  } catch (error: any) {
+    console.error('Login failed', error)
+    errorMsg.value = error?.data?.message || 'Login failed. Please check your credentials.'
+  } finally {
+    loading.value = false
+  }
+}
 
-    loading.value = false;
-    navigateTo('/dashboard');
-  }, 1000);
+const goBack = () => {
+  step.value = 'email'
+  form.otp = ''
+  errorMsg.value = ''
 }
 
 // Lifecycle
 onMounted(() => {
   currentImage.value = getRandomItem(images)
   currentQuote.value = getRandomItem(quotes)
-  
+
   // If already logged in, redirect to dashboard
   const authStore = useAuthStore();
   if (authStore.isAuthenticated) {
