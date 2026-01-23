@@ -1,18 +1,28 @@
-// Tenant Service - Mock data for now
+
+// Tenant Service
 export interface Tenant {
     id: string
     name: string
     domain: string
-    adminEmail: string
-    planId: string
-    planName: string
-    status: 'active' | 'trial' | 'suspended' | 'inactive'
-    modules: string[]
-    createdAt: string
-    userCount: number
+    adminEmail?: string
+    planId?: string
+    planName?: string
+    status?: 'active' | 'trial' | 'suspended' | 'inactive'
+    modules?: string[]
+    createdAt?: string
+    userCount?: number
+    onboarded_at?: string
+    updated_at?: string
 }
 
-// Mock data
+export interface SubscriptionPayload {
+    tenant: string;
+    plan: string;
+    start_date: string;
+    end_date: string;
+}
+
+// Mock data for display purposes until real APIs are ready
 const mockTenants: Tenant[] = [
     {
         id: '1',
@@ -22,104 +32,85 @@ const mockTenants: Tenant[] = [
         planId: 'pro',
         planName: 'Pro Plan',
         status: 'active',
-        modules: ['visitors', 'helpdesk', 'meeting-rooms'],
+        modules: ['visitors', 'helpdesk'],
         createdAt: '2024-01-15',
         userCount: 45
     },
-    {
-        id: '2',
-        name: 'TechStart Inc',
-        domain: 'techstart.spatium.app',
-        adminEmail: 'admin@techstart.io',
-        planId: 'starter',
-        planName: 'Starter Plan',
-        status: 'trial',
-        modules: ['visitors'],
-        createdAt: '2024-02-20',
-        userCount: 12
-    },
-    {
-        id: '3',
-        name: 'Global Enterprises',
-        domain: 'global.spatium.app',
-        adminEmail: 'admin@global-ent.com',
-        planId: 'enterprise',
-        planName: 'Enterprise Plan',
-        status: 'active',
-        modules: ['visitors', 'helpdesk', 'meeting-rooms', 'companies', 'facilities'],
-        createdAt: '2023-11-01',
-        userCount: 250
-    },
-    {
-        id: '4',
-        name: 'Startup Hub',
-        domain: 'startuphub.spatium.app',
-        adminEmail: 'admin@startuphub.co',
-        planId: 'starter',
-        planName: 'Starter Plan',
-        status: 'suspended',
-        modules: ['visitors', 'helpdesk'],
-        createdAt: '2024-01-05',
-        userCount: 8
-    },
-    {
-        id: '5',
-        name: 'Innovation Labs',
-        domain: 'innovlabs.spatium.app',
-        adminEmail: 'admin@innovlabs.tech',
-        planId: 'pro',
-        planName: 'Pro Plan',
-        status: 'active',
-        modules: ['visitors', 'helpdesk', 'meeting-rooms', 'companies'],
-        createdAt: '2024-03-10',
-        userCount: 78
-    }
+    // ... active mock data
 ]
 
 export const useTenantService = () => {
-    const getTenants = async (): Promise<Tenant[]> => {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500))
-        return [...mockTenants]
+    const { request } = useApi();
+
+    // Real API Calls for Wizard
+    const createTenant = async (data: { name: string; domain: string }) => {
+        const formData = new FormData();
+        formData.append('name', data.name);
+        formData.append('domain', data.domain);
+
+        return request<Tenant>('/api/platform/tenants/tenants/', {
+            method: 'POST',
+            body: formData,
+        });
+    };
+
+    const updateTenant = async (id: string, data: { name: string; domain: string }) => {
+        const formData = new FormData();
+        formData.append('name', data.name);
+        formData.append('domain', data.domain);
+
+        return request<Tenant>(`/api/platform/tenants/tenants/${id}/`, {
+            method: 'PATCH',
+            body: formData,
+        });
+    };
+
+    const assignPlan = async (payload: SubscriptionPayload) => {
+        // useApi already sets headers, so if payload is JSON, useFetch defaults to application/json
+        return request('/api/platform/tenants/subscriptions/', {
+            method: 'POST',
+            body: payload,
+        });
+    };
+
+    // Mocks / Placeholders for other actions to prevent errors
+    const getTenants = async () => {
+        return request<any>('/api/platform/tenants/tenants/', {
+            method: 'GET',
+        });
     }
 
     const getTenantById = async (id: string): Promise<Tenant | null> => {
-        await new Promise(resolve => setTimeout(resolve, 300))
-        return mockTenants.find(t => t.id === id) || null
-    }
-
-    const createTenant = async (data: Omit<Tenant, 'id' | 'createdAt'>): Promise<Tenant> => {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        const newTenant: Tenant = {
-            ...data,
-            id: String(Date.now()),
-            createdAt: new Date().toISOString().split('T')[0]
+        try {
+            const response = await request<any>(`/api/platform/tenants/tenants/${id}/`, {
+                method: 'GET',
+            });
+            console.log('getTenantById response:', response);
+            // Handle structure: { success: true, data: { ... } } or just { ... }
+            if (response && response.success && response.data) {
+                return response.data;
+            }
+            return response as Tenant;
+        } catch (error) {
+            console.error('Failed to get tenant by id:', error);
+            return null;
         }
-        mockTenants.push(newTenant)
-        return newTenant
-    }
-
-    const updateTenant = async (id: string, data: Partial<Omit<Tenant, 'id'>>): Promise<Tenant | null> => {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        const index = mockTenants.findIndex(t => t.id === id)
-        if (index !== -1) {
-            mockTenants[index] = { ...mockTenants[index], ...data }
-            return mockTenants[index]
-        }
-        return null
     }
 
     const deleteTenant = async (id: string): Promise<boolean> => {
-        await new Promise(resolve => setTimeout(resolve, 300))
-        const index = mockTenants.findIndex(t => t.id === id)
-        if (index !== -1) {
-            mockTenants.splice(index, 1)
-            return true
+        try {
+            await request(`/api/platform/tenants/tenants/${id}/`, {
+                method: 'DELETE',
+            });
+            return true;
+        } catch (error) {
+            console.error('Failed to delete tenant:', error);
+            return false;
         }
-        return false
     }
 
     const getStats = async () => {
+        // TODO: Replace with real API
         await new Promise(resolve => setTimeout(resolve, 200))
         return {
             total: mockTenants.length,
@@ -130,10 +121,11 @@ export const useTenantService = () => {
     }
 
     return {
-        getTenants,
-        getTenantById,
         createTenant,
         updateTenant,
+        assignPlan,
+        getTenants,
+        getTenantById,
         deleteTenant,
         getStats
     }

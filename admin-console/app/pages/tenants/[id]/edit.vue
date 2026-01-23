@@ -24,10 +24,7 @@
                     <a-input v-model:value="form.domain" size="large" disabled />
                 </a-form-item>
 
-                <a-form-item label="Admin Email" name="adminEmail"
-                    :rules="[{ required: true, type: 'email', message: 'Please enter valid email' }]">
-                    <a-input v-model:value="form.adminEmail" size="large" />
-                </a-form-item>
+
 
                 <a-form-item label="Status" name="status">
                     <a-select v-model:value="form.status" size="large">
@@ -66,7 +63,6 @@ const loading = computed(() => store.loading)
 const form = ref({
     name: '',
     domain: '',
-    adminEmail: '',
     status: 'active' as 'active' | 'trial' | 'suspended' | 'inactive'
 })
 
@@ -75,23 +71,28 @@ watch(tenant, (t) => {
         form.value = {
             name: t.name,
             domain: t.domain,
-            adminEmail: t.adminEmail,
             status: t.status
         }
     }
 }, { immediate: true })
 
 const handleCancel = () => {
-    router.push(`/tenants/${route.params.id}`)
+    router.back()
 }
 
 const handleSubmit = async () => {
     try {
         await store.updateTenantAction(route.params.id as string, form.value)
         message.success('Tenant updated successfully')
-        router.push(`/tenants/${route.params.id}`)
-    } catch {
-        message.error('Failed to update tenant')
+        router.back()
+    } catch (error: any) {
+        console.error(error)
+        const errorData = error.data || error.response?._data
+        if (errorData?.message) {
+            message.error(errorData.message)
+        } else {
+            message.error('Failed to update tenant')
+        }
     }
 }
 
