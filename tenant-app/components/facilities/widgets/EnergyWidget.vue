@@ -14,8 +14,9 @@
         </template>
 
         <div class="space-y-4">
-            <div class="h-48 pt-4">
-                <BarChart v-if="chartData" :chart-data="chartData" :options="chartOptions" />
+            <div class="h-48 pt-4 overflow-hidden">
+                <div ref="chartContainer" v-if="chartData" class="w-full h-full"></div>
+                <div v-else class="flex items-center justify-center h-full text-gray-500">No data available</div>
             </div>
 
             <div class="flex items-center justify-between mt-2">
@@ -33,37 +34,90 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
 import { ThunderboltOutlined } from '@ant-design/icons-vue';
-import BarChart from '../../common/charts/BarChart.vue';
+import { Column } from '@antv/g2plot';
 
 const timeRange = ref('week');
-const mockData = [30, 45, 60, 40, 75, 50, 65];
+const chartContainer = ref<HTMLDivElement | null>(null);
+let chartInstance: Column | null = null;
 
-const chartData = computed(() => ({
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [{
-        label: 'Energy (kWh)',
-        data: mockData,
-        backgroundColor: '#eab308',
-        borderRadius: 4,
-        barThickness: 24
-    }]
-}));
+const energyData = [
+    { day: 'Mon', energy: 30 },
+    { day: 'Tue', energy: 45 },
+    { day: 'Wed', energy: 60 },
+    { day: 'Thu', energy: 40 },
+    { day: 'Fri', energy: 75 },
+    { day: 'Sat', energy: 50 },
+    { day: 'Sun', energy: 65 }
+];
 
-const chartOptions = {
-    plugins: {
-        legend: { display: false }
-    },
-    scales: {
-        y: {
-            beginAtZero: true,
-            ticks: { display: false },
-            grid: { display: false }
-        },
-        x: {
-            grid: { display: false }
-        }
+const chartData = computed(() => energyData);
+
+const createChart = async () => {
+    await nextTick();
+    if (!chartContainer.value || !chartData.value) return;
+
+    if (chartInstance) {
+        chartInstance.destroy();
     }
+
+    chartInstance = new Column(chartContainer.value, {
+        data: chartData.value,
+        xField: 'day',
+        yField: 'energy',
+        autoFit: true,
+        padding: [10, 10, 30, 30],
+        columnStyle: {
+            radius: [4, 4, 0, 0],
+        },
+        columnWidthRatio: 0.4,
+        color: '#eab308',
+        xAxis: {
+            label: {
+                style: {
+                    fill: '#666',
+                    fontSize: 12,
+                },
+            },
+            line: null,
+            tickLine: null,
+        },
+        yAxis: {
+            label: false,
+            grid: null,
+            line: null,
+        },
+        tooltip: {
+            formatter: (datum: any) => {
+                return { name: datum.day, value: `${datum.energy} kWh` };
+            },
+        },
+        animation: {
+            appear: {
+                animation: 'scale-in-y',
+                duration: 1500,
+            },
+        },
+    });
+
+    chartInstance.render();
 };
+
+watch(chartData, async () => {
+    if (chartData.value) {
+        await createChart();
+    }
+}, { immediate: true });
+
+onMounted(async () => {
+    await createChart();
+});
+
+onBeforeUnmount(() => {
+    if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+    }
+});
 </script>

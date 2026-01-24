@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, onBeforeUnmount } from 'vue';
+import { computed, onMounted, ref, watch, onBeforeUnmount, nextTick } from 'vue';
 import { Line } from '@antv/g2plot';
 import { useVisitorStore } from '../../stores/visitor';
 import { storeToRefs } from 'pinia';
@@ -26,7 +26,8 @@ const chartData = computed(() => {
     return trends.value;
 });
 
-const createChart = () => {
+const createChart = async () => {
+    await nextTick();
     if (!chartContainer.value || !chartData.value) return;
 
     // Destroy existing chart if any
@@ -82,18 +83,14 @@ const createChart = () => {
     chartInstance.render();
 };
 
-watch([chartData, loading], () => {
+watch([chartData, loading], async () => {
     if (!loading.value && chartData.value) {
-        createChart();
+        await createChart();
     }
-}, { immediate: false });
+}, { immediate: true });
 
-onMounted(() => {
+onMounted(async () => {
     store.fetchTrends();
-    // Create chart after data is loaded
-    if (!loading.value && chartData.value) {
-        createChart();
-    }
 });
 
 onBeforeUnmount(() => {

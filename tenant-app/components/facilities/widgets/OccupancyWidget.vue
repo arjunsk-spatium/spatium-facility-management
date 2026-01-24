@@ -1,6 +1,5 @@
 <template>
-    <a-card 
-        @click="navigateTo('/facilities')">
+    <a-card @click="navigateTo('/facilities')">
         <template #title>
             <div class="flex items-center gap-2">
                 <PieChartOutlined class="text-blue-500" />
@@ -11,12 +10,8 @@
         </template>
 
         <div class="flex items-center justify-between">
-            <div class="w-1/2 flex justify-center h-32 relative">
-                <DoughnutChart v-if="chartData" :chart-data="chartData" :options="chartOptions" />
-                <!-- Center Text -->
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span class="text-xl font-bold dark:text-white">85%</span>
-                </div>
+            <div class="w-1/2 flex justify-center h-32 overflow-hidden">
+                <div ref="chartContainer" v-if="chartData" class="w-full h-full"></div>
             </div>
 
             <div class="w-1/2 space-y-4">
@@ -40,24 +35,85 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
 import { PieChartOutlined, ArrowRightOutlined } from '@ant-design/icons-vue';
-import DoughnutChart from '../../common/charts/DoughnutChart.vue';
+import { Pie } from '@antv/g2plot';
 
-const chartData = computed(() => ({
-    labels: ['Occupied', 'Available'],
-    datasets: [{
-        data: [85, 15],
-        backgroundColor: ['#3b82f6', '#f3f4f6'],
-        borderWidth: 0,
-        cutout: '75%'
-    }]
-}));
+const chartContainer = ref<HTMLDivElement | null>(null);
+let chartInstance: Pie | null = null;
 
-const chartOptions = {
-    plugins: {
-        legend: { display: false },
-        tooltip: { enabled: false }
+const occupancyData = [
+    { type: 'Occupied', value: 85, color: '#3b82f6' },
+    { type: 'Available', value: 15, color: '#f3f4f6' }
+];
+
+const chartData = computed(() => occupancyData);
+
+const createChart = async () => {
+    await nextTick();
+    if (!chartContainer.value || !chartData.value) return;
+
+    if (chartInstance) {
+        chartInstance.destroy();
     }
+
+    const colorMap: Record<string, string> = {};
+    occupancyData.forEach(d => {
+        colorMap[d.type] = d.color;
+    });
+
+    chartInstance = new Pie(chartContainer.value, {
+        data: chartData.value,
+        angleField: 'value',
+        colorField: 'type',
+        radius: 0.9,
+        innerRadius: 0.75,
+        autoFit: true,
+        padding: [5, 5, 5, 5],
+        color: (data: any) => colorMap[data.type] || '#666',
+        label: false,
+        legend: false,
+        statistic: {
+            title: false,
+            content: {
+                style: {
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    color: '#333',
+                },
+                content: '85%',
+            },
+        },
+        tooltip: {
+            formatter: (datum: any) => {
+                return { name: datum.type, value: `${datum.value}%` };
+            },
+        },
+        animation: {
+            appear: {
+                animation: 'scale-in',
+                duration: 1500,
+            },
+        },
+    });
+
+    chartInstance.render();
 };
+
+watch(chartData, async () => {
+    if (chartData.value) {
+        await createChart();
+    }
+}, { immediate: true });
+
+onMounted(async () => {
+    await createChart();
+});
+
+onBeforeUnmount(() => {
+    if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+    }
+});
 </script>
