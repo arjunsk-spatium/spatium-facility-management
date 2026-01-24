@@ -44,9 +44,34 @@
         <!-- Visitor Table/Cards using ResponsiveDataView -->
         <ResponsiveDataView :columns="columns" :data="filteredVisitors" :loading="loading" row-key="id">
             <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'visitor'">
+                <template v-if="column.key === 'photo'">
+                    <a-avatar 
+                        v-if="record.photoUrl" 
+                        :src="record.photoUrl" 
+                        :size="40" 
+                        shape="square"
+                        class="cursor-pointer"
+                        @click="openDetailsModal(record)"
+                    />
+                    <a-avatar 
+                        v-else 
+                        :size="40" 
+                        shape="square"
+                        class="bg-gradient-to-br from-blue-500 to-blue-600 cursor-pointer"
+                        @click="openDetailsModal(record)"
+                    >
+                        <span class="text-white font-bold">{{ getInitials(record.name) }}</span>
+                    </a-avatar>
+                </template>
+                
+                <template v-else-if="column.key === 'visitor'">
                     <div>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ record.name }}</p>
+                        <a 
+                            @click="openDetailsModal(record)" 
+                            class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                        >
+                            {{ record.name }}
+                        </a>
                         <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone }}</p>
                     </div>
                 </template>
@@ -70,14 +95,43 @@
             <!-- Mobile Card View -->
             <template #mobileCard="{ record }">
                 <a-card :bodyStyle="{ padding: '16px' }">
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <p class="font-bold text-base dark:text-white">{{ record.name }}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone }}</p>
+                    <div class="flex gap-3 items-start mb-3">
+                        <!-- Profile Picture -->
+                        <a-avatar 
+                            v-if="record.photoUrl" 
+                            :src="record.photoUrl" 
+                            :size="48" 
+                            shape="square"
+                            class="cursor-pointer flex-shrink-0"
+                            @click="openDetailsModal(record)"
+                        />
+                        <a-avatar 
+                            v-else 
+                            :size="48" 
+                            shape="square"
+                            class="bg-gradient-to-br from-blue-500 to-blue-600 cursor-pointer flex-shrink-0"
+                            @click="openDetailsModal(record)"
+                        >
+                            <span class="text-white font-bold">{{ getInitials(record.name) }}</span>
+                        </a-avatar>
+                        
+                        <!-- Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1 min-w-0">
+                                    <a 
+                                        @click="openDetailsModal(record)" 
+                                        class="font-bold text-base text-blue-600 dark:text-blue-400 hover:underline cursor-pointer block truncate"
+                                    >
+                                        {{ record.name }}
+                                    </a>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone }}</p>
+                                </div>
+                                <span :class="getStatusClass(record.status)" class="px-2 py-1 text-xs font-medium rounded-full ml-2 flex-shrink-0">
+                                    {{ getStatusLabel(record.status) }}
+                                </span>
+                            </div>
                         </div>
-                        <span :class="getStatusClass(record.status)" class="px-2 py-1 text-xs font-medium rounded-full">
-                            {{ getStatusLabel(record.status) }}
-                        </span>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 text-sm mb-3">
@@ -102,6 +156,8 @@
                 </a-card>
             </template>
         </ResponsiveDataView>
+
+        <VisitorDetailsModal v-model:open="showDetailsModal" :visitor="selectedVisitor" />
     </div>
 </template>
 
@@ -110,6 +166,8 @@ import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { PlusOutlined, BarChartOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
+import VisitorDetailsModal from '../../../../components/visitors/VisitorDetailsModal.vue'
+import type { Visitor } from '../../../../composables/visitorService'
 
 definePageMeta({
     middleware: 'auth'
@@ -120,9 +178,12 @@ const { visitors, loading } = storeToRefs(store)
 
 const selectedStatus = ref<string | null>(null)
 const searchQuery = ref('')
+const showDetailsModal = ref(false)
+const selectedVisitor = ref<Visitor | null>(null)
 
 // Table columns
 const columns = [
+    { title: '', key: 'photo', width: 60 },
     { title: 'Visitor', key: 'visitor', dataIndex: 'name' },
     { title: 'Date & Time', key: 'datetime', dataIndex: 'visitDate', width: 150 },
     { title: 'Purpose', dataIndex: 'purpose', key: 'purpose' },
@@ -130,6 +191,26 @@ const columns = [
     { title: 'Status', key: 'status', dataIndex: 'status', width: 120 },
     { title: 'Passcode', key: 'passcode', dataIndex: 'passcode', width: 100 }
 ]
+
+const openDetailsModal = (visitor: Visitor) => {
+    selectedVisitor.value = visitor
+    showDetailsModal.value = true
+}
+
+const getInitials = (name: string) => {
+    if (!name) return '?';
+    const parts = name.trim().split(' ').filter(p => p.length > 0);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) {
+        const firstPart = parts[0];
+        return firstPart ? firstPart.substring(0, 2).toUpperCase() : '?';
+    }
+    const firstPart = parts[0];
+    const lastPart = parts[parts.length - 1];
+    const firstInitial = firstPart?.[0] || '';
+    const lastInitial = lastPart?.[0] || '';
+    return (firstInitial + lastInitial).toUpperCase() || '?';
+}
 
 const filteredVisitors = computed(() => {
     let result = visitors.value
