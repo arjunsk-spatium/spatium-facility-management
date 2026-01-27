@@ -19,5 +19,11 @@
     "vue": "^3.5.26",
     "vue-router": "^4.6.4",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@nuxt/test-utils": "^3.23.0",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^20.3.9",
+    "vitest": "^3.2.4"
   }
 }

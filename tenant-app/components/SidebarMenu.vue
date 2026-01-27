@@ -72,7 +72,8 @@ import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useTenantStore } from '../stores/tenant';
 import { useTheme } from '../composables/useTheme';
-import { useUserService, type Module } from '../composables/userService';
+import { useUserService } from '../composables/userService';
+import { useModuleRegistry, type Module } from '../composables/useModuleRegistry';
 import {
     BankOutlined,
     SettingOutlined,
@@ -143,84 +144,103 @@ const filteredModules = computed(() => {
 });
 
 // Map routes to menu keys
+// Find valid module for current route
+const findActiveModule = (modules: Module[], currentPath: string): { selected: string | null, open: string | null } => {
+    let bestMatch = {
+        module: null as Module | null | any, // explicit any to avoid complex type checks in loop
+        parent: null as Module | null,
+        length: 0
+    };
+
+    const traverse = (list: Module[], parent: Module | null = null) => {
+        for (const module of list) {
+            // Check direct match
+            if (module.route && currentPath.startsWith(module.route)) {
+                if (module.route.length > bestMatch.length) {
+                    bestMatch = { module, parent, length: module.route.length };
+                }
+            }
+
+            // Traverse children
+            if (module.children) {
+                traverse(module.children as any, module);
+            }
+        }
+    };
+
+    traverse(modules);
+
+    if (bestMatch.module) {
+        return {
+            selected: bestMatch.module.key,
+            open: bestMatch.parent ? bestMatch.parent.key : null
+        };
+    }
+
+    return { selected: null, open: null };
+};
+
+// Map routes to menu keys
 const updateMenuState = () => {
     const path = route.path;
 
     // Default to dashboard
     if (path === '/' || path === '/dashboard') {
-        selectedKeys.value = ['dashboard-item'];
+        selectedKeys.value = ['dashboard'];
         return;
     }
 
-    // Companies
-    if (path.includes('/companies')) {
-        openKeys.value = ['companies-submenu'];
-        if (path.includes('/insights')) {
-            selectedKeys.value = ['companies-insights'];
-        } else if (path.includes('/create')) {
-            selectedKeys.value = [];
-        } else {
-            selectedKeys.value = ['companies-list'];
+    const { selected, open } = findActiveModule(filteredModules.value, path);
+
+    if (selected) {
+        selectedKeys.value = [selected];
+    }
+
+    if (open) {
+        openKeys.value = [open];
+    }
+};
+
+// Hydrate API modules with Registry data (Icons, Routes, etc.)
+const { getAllModules } = useModuleRegistry();
+const registryModules = getAllModules();
+
+const hydrateModules = (apiModules: Module[]): Module[] => {
+    return apiModules.map(apiMod => {
+        const registryMod = registryModules.find(r => r.key === apiMod.key);
+        if (!registryMod) return apiMod;
+
+        const hydrated: Module = {
+            ...registryMod,
+            ...apiMod,
+            icon: apiMod.icon || registryMod.icon,
+            route: apiMod.route || registryMod.route,
+            label: apiMod.label || registryMod.label
+        };
+
+        if (apiMod.children && apiMod.children.length > 0) {
+            hydrated.children = apiMod.children.map(child => {
+                const regChild = registryMod.children?.find(c => c.key === child.key);
+                if (!regChild) return child;
+                return {
+                    ...regChild,
+                    ...child,
+                    route: child.route || regChild.route,
+                    label: child.label || regChild.label
+                };
+            });
         }
-        return;
-    }
 
-    // Helpdesk
-    if (path.includes('/helpdesk')) {
-        openKeys.value = ['helpdesk-submenu'];
-        if (path.includes('/tickets')) selectedKeys.value = ['helpdesk-tickets'];
-        else if (path.includes('/insights')) selectedKeys.value = ['helpdesk-insights'];
-        else selectedKeys.value = ['helpdesk-tickets'];
-        return;
-    }
-
-    // User Manager
-    if (path.includes('/users')) {
-        selectedKeys.value = ['users-item'];
-        return;
-    }
-
-    // Other top-level items
-    if (path.includes('/calendar')) selectedKeys.value = ['calendar-item'];
-    if (path.includes('/visitors')) {
-        openKeys.value = ['visitors-submenu'];
-        if (path.includes('/insights')) selectedKeys.value = ['visitors-insights'];
-        else selectedKeys.value = ['visitors-list'];
-    }
-    if (path.includes('/facilities')) {
-        openKeys.value = ['facilities-submenu'];
-        if (path.includes('/insights')) selectedKeys.value = ['facilities-insights'];
-        else selectedKeys.value = ['facilities-list'];
-    }
-    if (path.includes('/meeting-rooms')) {
-        openKeys.value = ['meeting_rooms-submenu'];
-        if (path.includes('/bookings')) selectedKeys.value = ['meeting-rooms-bookings'];
-        else if (path.includes('/insights')) selectedKeys.value = ['meeting-rooms-insights'];
-        else selectedKeys.value = ['meeting-rooms-list'];
-    }
-    if (path.includes('/configure')) selectedKeys.value = ['configure-item'];
-
-    // SPOC Routes
-    if (path.startsWith('/spoc')) {
-        if (path === '/spoc' || path === '/spoc/') {
-            selectedKeys.value = ['spoc_dashboard-item'];
-        } else if (path.includes('/spoc/visitors')) {
-            openKeys.value = ['spoc_visitors-submenu'];
-            if (path.includes('/insights')) selectedKeys.value = ['spoc-visitors-insights'];
-            else if (path.includes('/invite')) selectedKeys.value = ['spoc-visitors-invite'];
-            else selectedKeys.value = ['spoc-visitors-list'];
-        } else if (path.includes('/spoc/employees')) {
-            selectedKeys.value = ['spoc_employees-item'];
-        }
-        return;
-    }
+        return hydrated;
+    });
 };
 
 onMounted(async () => {
     isLoading.value = true;
     try {
         // Fetch modules configuration from "API"
-        allModules.value = await getTenantModules();
+        const modulesFromApi = await getTenantModules();
+        allModules.value = hydrateModules(modulesFromApi);
 
         // Fetch user's module access if not already loaded
         if (authStore.modules.length === 0) {

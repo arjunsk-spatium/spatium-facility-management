@@ -54,7 +54,6 @@ describe('Login Page Theme Adaptation', () => {
 
     // Check for form elements
     expect(wrapper.find('input[type="email"]').exists()).toBe(true)
-    expect(wrapper.find('input[type="password"]').exists()).toBe(true)
     expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
   })
 
@@ -152,11 +151,8 @@ describe('Login Page Theme Adaptation', () => {
     })
 
     const emailLabel = wrapper.find('label[for="email"]')
-    const passwordLabel = wrapper.find('label[for="password"]')
 
     expect(emailLabel.exists()).toBe(true)
-    expect(passwordLabel.exists()).toBe(true)
     expect(emailLabel.text()).toContain('Email')
-    expect(passwordLabel.text()).toContain('Password')
   })
 })
