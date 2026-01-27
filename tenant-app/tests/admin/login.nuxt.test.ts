@@ -1,18 +1,17 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import Login from '../app/pages/login.vue'
+import Login from '../../app/pages/admin/login.vue'
 import { createTestingPinia } from '@pinia/testing'
-import { useTenantStore } from '../stores/tenant'
 
 // Mock the layout since we only want to test the page content
-vi.mock('../layouts/auth.vue', () => ({
+vi.mock('../../layouts/auth.vue', () => ({
     default: {
         template: '<div><slot /></div>'
     }
 }))
 
-describe('Login Page', () => {
-    it('should render tenant name and logo from store', async () => {
+describe('Admin Login Page', () => {
+    it('should render tenant name and Admin Access text', async () => {
         const wraper = await mountSuspended(Login, {
             global: {
                 plugins: [createTestingPinia({
@@ -33,7 +32,7 @@ describe('Login Page', () => {
 
         // Verify tenant name from store is displayed
         expect(wraper.text()).toContain('Test Corp')
-        expect(wraper.text()).toContain('Nice to see you again')
+        expect(wraper.text()).toContain('Admin Access')
         
         // Verify logo
         const img = wraper.find('img[alt="Test Corp"]')
@@ -57,5 +56,6 @@ describe('Login Page', () => {
         
         // Should show default Spatium Hub text
         expect(wraper.text()).toContain('Spatium Hub')
+        expect(wraper.text()).toContain('Admin Access')
     })
 })

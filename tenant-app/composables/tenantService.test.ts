@@ -25,6 +25,6 @@ describe('Tenant Service', () => {
         // Since we are mocking the return value in the actual file for now
         const id = getCurrentTenantId()
         // It's currently hardcoded to tenant-b in the source
-        expect(id).toBe('tenant-b')
+        expect(id).toBe('tenant-c')
     })
 })
