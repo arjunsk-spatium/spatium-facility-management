@@ -20,6 +20,7 @@ export interface SubscriptionPayload {
     plan: string;
     start_date: string;
     end_date: string;
+    modules?: string[];
 }
 
 // Mock data for display purposes until real APIs are ready
@@ -67,7 +68,7 @@ export const useTenantService = () => {
 
     const assignPlan = async (payload: SubscriptionPayload) => {
         // useApi already sets headers, so if payload is JSON, useFetch defaults to application/json
-        return request('/api/platform/tenants/subscriptions/', {
+        return request('/api/platform/billing/subscriptions/', {
             method: 'POST',
             body: payload,
         });
