@@ -22,11 +22,18 @@
             <a-row :gutter="[24, 24]">
                 <!-- Left Column (Main Info & Employees) -->
                 <a-col :xs="24" :lg="16">
-                    <div class="space-y-6">
+                    <div class="flex flex-col gap-6">
                         <!-- Main Info Card -->
-                        <a-card :bordered="false" class="shadow-sm">
+                        <a-card>
                             <template #title>
-                                <span class="font-semibold text-lg">Company Information</span>
+                                <div class="flex items-center gap-3">
+                                    <a-avatar :src="company.logo" :size="40"
+                                        class="flex-shrink-0 bg-primary-100 text-primary-600">
+                                        {{ getInitials(company.name) }}
+                                    </a-avatar>
+                                    <span class="font-semibold text-lg text-gray-900 dark:text-gray-100">Company
+                                        Information</span>
+                                </div>
                             </template>
                             <template #extra>
                                 <NuxtLink :to="`/companies/${company.id}/edit`">
@@ -46,10 +53,11 @@
                         </a-card>
 
                         <!-- Employee List -->
-                        <a-card :bordered="false" class="shadow-sm">
+                        <a-card>
                             <template #title>
                                 <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-lg">Employee List</span>
+                                    <span class="font-semibold text-lg text-gray-900 dark:text-gray-100">Employee
+                                        List</span>
                                     <a-button size="small">View All</a-button>
                                 </div>
                             </template>
@@ -93,21 +101,22 @@
                 <a-col :xs="24" :lg="8">
                     <div class="flex flex-col gap-6">
                         <!-- Credits Card -->
-                        <a-card :bordered="false"
-                            class="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 shadow-sm border-indigo-100 dark:border-indigo-800">
+                        <a-card>
                             <template #title>
                                 <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-indigo-900 dark:text-indigo-100">Credits</span>
+                                    <span class="font-semibold text-gray-900 dark:text-gray-100">Credits</span>
                                     <div class="flex gap-2">
                                         <a-tooltip title="View History">
                                             <a-button type="text" size="small"
-                                                class="text-indigo-600 dark:text-indigo-400" @click="openHistoryDrawer">
+                                                class="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                                                @click="openHistoryDrawer">
                                                 <HistoryOutlined />
                                             </a-button>
                                         </a-tooltip>
                                         <a-tooltip title="Edit Credits">
                                             <a-button type="text" size="small"
-                                                class="text-indigo-600 dark:text-indigo-400" @click="openCreditModal">
+                                                class="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                                                @click="openCreditModal">
                                                 <EditOutlined />
                                             </a-button>
                                         </a-tooltip>
@@ -129,7 +138,7 @@
                                     <div class="text-xl font-bold text-green-600">{{ credits.balance }}</div>
                                 </div>
                             </div>
-                            <div class="mt-4 pt-4 border-t border-indigo-100 dark:border-indigo-800/50">
+                            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700/50">
                                 <a-progress :percent="Math.round((credits.used / credits.alloted) * 100)"
                                     status="active" :stroke-color="{ '0%': '#108ee9', '100%': '#87d068' }" />
                                 <div class="text-xs text-right mt-1 text-gray-500">Usage</div>
@@ -137,10 +146,11 @@
                         </a-card>
 
                         <!-- SPOC Details -->
-                        <a-card :bordered="false" class="shadow-sm">
+                        <a-card>
                             <template #title>
                                 <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-lg">SPOC Details</span>
+                                    <span class="font-semibold text-lg text-gray-900 dark:text-gray-100">SPOC
+                                        Details</span>
                                     <a-button type="link" size="small" @click="openAddSpocModal">Add SPOC</a-button>
                                 </div>
                             </template>
@@ -173,7 +183,7 @@
                                         <p
                                             class="text-xs text-gray-500 dark:text-gray-400 text-center truncate w-full px-2">
                                             {{
-                                            item.designation }}</p>
+                                                item.designation }}</p>
                                     </div>
 
                                     <div class="space-y-1.5 pt-2 border-t border-gray-200 dark:border-gray-700">
