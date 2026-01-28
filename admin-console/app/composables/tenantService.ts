@@ -74,12 +74,59 @@ export const useTenantService = () => {
         });
     };
 
+    const assignModules = async (payload: { tenant: string; modules: { module: string; priority: number }[] }) => {
+        return request('/api/platform/modules/tenant-assignments/', {
+            method: 'POST',
+            body: payload,
+        });
+    };
+
+    const getTenantModules = async (tenantId: string) => {
+        return request<any>(`/api/platform/modules/tenant-assignments/?tenant_id=${tenantId}`, {
+            method: 'GET',
+        });
+    }
+
+    const updateBranding = async (formData: FormData) => {
+        return request('/api/platform/tenants/branding/', {
+            method: 'POST',
+            body: formData,
+        });
+    };
+
+    const updatePii = async (payload: any) => {
+        return request('/api/platform/tenants/pii/', {
+            method: 'POST',
+            body: payload,
+        });
+    };
+
+    const getTenantSubscription = async (tenantId: string) => {
+        return request<any>(`/api/platform/billing/subscriptions/?tenant=${tenantId}`, {
+            method: 'GET',
+        });
+    };
+
+    const getTenantBranding = async (tenantId: string) => {
+        return request<any>(`/api/platform/tenants/branding/?tenant=${tenantId}`, {
+            method: 'GET',
+        });
+    };
+
+    const getTenantPii = async (tenantId: string) => {
+        return request<any>(`/api/platform/tenants/pii/?tenant=${tenantId}`, {
+            method: 'GET',
+        });
+    };
+
     // Mocks / Placeholders for other actions to prevent errors
     const getTenants = async () => {
         return request<any>('/api/platform/tenants/tenants/', {
             method: 'GET',
         });
     }
+
+
 
     const getTenantById = async (id: string): Promise<Tenant | null> => {
         try {
@@ -125,6 +172,13 @@ export const useTenantService = () => {
         createTenant,
         updateTenant,
         assignPlan,
+        assignModules,
+        getTenantModules,
+        getTenantSubscription,
+        getTenantBranding,
+        getTenantPii,
+        updateBranding,
+        updatePii,
         getTenants,
         getTenantById,
         deleteTenant,

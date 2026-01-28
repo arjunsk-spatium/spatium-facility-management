@@ -1,10 +1,15 @@
 
 export interface Plan {
     id: string;
+    code: string;
     name: string;
-    description?: string;
-    price?: number;
-    // Add other fields as needed
+    description: string;
+    price: string;
+    billing_cycle: string;
+    is_custom: boolean;
+    is_active: boolean;
+    max_users: number;
+    features?: string[];
 }
 
 export const usePlanService = () => {
