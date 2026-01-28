@@ -1,8 +1,7 @@
 <template>
     <div class="space-y-6">
         <!-- Page Header -->
-        <div
-            class="flex justify-between items-center p-4 rounded-lg shadow-sm transition-colors duration-300 page-header">
+        <div class="flex justify-between items-center p-4 transition-colors duration-300">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
                 <p class="text-gray-500 text-sm">Configure admin console settings</p>

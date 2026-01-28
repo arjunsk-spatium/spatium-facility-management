@@ -28,7 +28,18 @@ export const useTenantStore = defineStore('tenant', {
                 // Response is the raw JSON body
                 if (response && response.success) {
                     const results = response.data?.results || [];
-                    this.tenants = results
+                    this.tenants = results.map((t: any) => ({
+                        id: t.id,
+                        name: t.name,
+                        domain: t.domain,
+                        status: t.status,
+                        planName: t.active_plan?.name,
+                        moduleCount: t.module_count,
+                        userCount: t.user_count,
+                        createdAt: t.created_at,
+                        onboarded_at: t.onboarded_at,
+                        modules: t.modules || [] // Fallback if API sends it
+                    }));
                     console.log('fetchTenants: updated tenants', this.tenants);
                 } else {
                      this.tenants = [];

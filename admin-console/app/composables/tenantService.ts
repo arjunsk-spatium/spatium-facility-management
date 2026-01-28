@@ -9,6 +9,7 @@ export interface Tenant {
     planName?: string
     status?: 'active' | 'trial' | 'suspended' | 'inactive'
     modules?: string[]
+    moduleCount?: number
     createdAt?: string
     userCount?: number
     onboarded_at?: string
@@ -20,6 +21,7 @@ export interface SubscriptionPayload {
     plan: string;
     start_date: string;
     end_date: string;
+    modules?: string[];
 }
 
 // Mock data for display purposes until real APIs are ready
@@ -67,9 +69,54 @@ export const useTenantService = () => {
 
     const assignPlan = async (payload: SubscriptionPayload) => {
         // useApi already sets headers, so if payload is JSON, useFetch defaults to application/json
-        return request('/api/platform/tenants/subscriptions/', {
+        return request('/api/platform/billing/subscriptions/', {
             method: 'POST',
             body: payload,
+        });
+    };
+
+    const assignModules = async (payload: { tenant: string; modules: { module: string; priority: number }[] }) => {
+        return request('/api/platform/modules/tenant-assignments/', {
+            method: 'POST',
+            body: payload,
+        });
+    };
+
+    const getTenantModules = async (tenantId: string) => {
+        return request<any>(`/api/platform/modules/tenant-assignments/?tenant_id=${tenantId}`, {
+            method: 'GET',
+        });
+    }
+
+    const updateBranding = async (formData: FormData) => {
+        return request('/api/platform/tenants/branding/', {
+            method: 'POST',
+            body: formData,
+        });
+    };
+
+    const updatePii = async (payload: any) => {
+        return request('/api/platform/tenants/pii/', {
+            method: 'POST',
+            body: payload,
+        });
+    };
+
+    const getTenantSubscription = async (tenantId: string) => {
+        return request<any>(`/api/platform/billing/subscriptions/?tenant_id=${tenantId}`, {
+            method: 'GET',
+        });
+    };
+
+    const getTenantBranding = async (tenantId: string) => {
+        return request<any>(`/api/platform/tenants/branding/?tenant_id=${tenantId}`, {
+            method: 'GET',
+        });
+    };
+
+    const getTenantPii = async (tenantId: string) => {
+        return request<any>(`/api/platform/tenants/pii/?tenant_id=${tenantId}`, {
+            method: 'GET',
         });
     };
 
@@ -79,6 +126,8 @@ export const useTenantService = () => {
             method: 'GET',
         });
     }
+
+
 
     const getTenantById = async (id: string): Promise<Tenant | null> => {
         try {
@@ -124,6 +173,13 @@ export const useTenantService = () => {
         createTenant,
         updateTenant,
         assignPlan,
+        assignModules,
+        getTenantModules,
+        getTenantSubscription,
+        getTenantBranding,
+        getTenantPii,
+        updateBranding,
+        updatePii,
         getTenants,
         getTenantById,
         deleteTenant,

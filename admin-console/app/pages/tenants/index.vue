@@ -1,8 +1,7 @@
 <template>
     <div class="space-y-6">
         <!-- Page Header -->
-        <div
-            class="flex justify-between items-center p-4 rounded-lg shadow-sm transition-colors duration-300 page-header">
+        <div class="flex justify-between items-center p-4  transition-colors duration-300">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Tenants</h1>
             <NuxtLink to="/tenants/create">
                 <a-button type="primary" size="large">
@@ -37,7 +36,7 @@
                     </template>
                 </a-statistic>
             </a-card>
-                <a-card class="flex-grow min-w-[160px]">
+            <a-card class="flex-grow min-w-[160px]">
                 <a-statistic title="Suspended" :value="stats.suspended" :value-style="{ color: '#ff4d4f' }">
                     <template #prefix>
                         <StopOutlined />
@@ -76,9 +75,7 @@
                     <a-tag :color="getStatusColor(record.status)">{{ record.status }}</a-tag>
                 </template>
                 <template v-if="column.key === 'modules'">
-                    <a-tooltip :title="(record.modules || []).join(', ')">
-                        <span>{{ (record.modules || []).length }} modules</span>
-                    </a-tooltip>
+                    <span>{{ record.moduleCount ?? (record.modules || []).length }} modules</span>
                 </template>
                 <template v-if="column.key === 'action'">
                     <a-space>
@@ -128,7 +125,7 @@
                                     class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Modules</span>
                                 <div class="flex flex-wrap gap-1 mt-1">
                                     <a-tag v-for="mod in (tenant.modules || [])" :key="mod" size="small">{{ mod
-                                    }}</a-tag>
+                                        }}</a-tag>
                                 </div>
                             </div>
                         </div>
