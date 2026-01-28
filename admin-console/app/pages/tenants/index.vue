@@ -75,9 +75,7 @@
                     <a-tag :color="getStatusColor(record.status)">{{ record.status }}</a-tag>
                 </template>
                 <template v-if="column.key === 'modules'">
-                    <a-tooltip :title="(record.modules || []).join(', ')">
-                        <span>{{ (record.modules || []).length }} modules</span>
-                    </a-tooltip>
+                    <span>{{ record.moduleCount ?? (record.modules || []).length }} modules</span>
                 </template>
                 <template v-if="column.key === 'action'">
                     <a-space>
@@ -127,7 +125,7 @@
                                     class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Modules</span>
                                 <div class="flex flex-wrap gap-1 mt-1">
                                     <a-tag v-for="mod in (tenant.modules || [])" :key="mod" size="small">{{ mod
-                                    }}</a-tag>
+                                        }}</a-tag>
                                 </div>
                             </div>
                         </div>

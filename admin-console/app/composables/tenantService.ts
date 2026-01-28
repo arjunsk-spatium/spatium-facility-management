@@ -9,6 +9,7 @@ export interface Tenant {
     planName?: string
     status?: 'active' | 'trial' | 'suspended' | 'inactive'
     modules?: string[]
+    moduleCount?: number
     createdAt?: string
     userCount?: number
     onboarded_at?: string
@@ -102,19 +103,19 @@ export const useTenantService = () => {
     };
 
     const getTenantSubscription = async (tenantId: string) => {
-        return request<any>(`/api/platform/billing/subscriptions/?tenant=${tenantId}`, {
+        return request<any>(`/api/platform/billing/subscriptions/?tenant_id=${tenantId}`, {
             method: 'GET',
         });
     };
 
     const getTenantBranding = async (tenantId: string) => {
-        return request<any>(`/api/platform/tenants/branding/?tenant=${tenantId}`, {
+        return request<any>(`/api/platform/tenants/branding/?tenant_id=${tenantId}`, {
             method: 'GET',
         });
     };
 
     const getTenantPii = async (tenantId: string) => {
-        return request<any>(`/api/platform/tenants/pii/?tenant=${tenantId}`, {
+        return request<any>(`/api/platform/tenants/pii/?tenant_id=${tenantId}`, {
             method: 'GET',
         });
     };
