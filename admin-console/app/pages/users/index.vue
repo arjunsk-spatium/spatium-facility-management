@@ -15,6 +15,11 @@
         <a-card class="shadow-sm">
             <ResponsiveDataView :columns="columns" :data="users || []" :loading="pending">
                 <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'apps'">
+                        <span>
+                            <a-tag v-for="app in record.apps" :key="app">{{ app }}</a-tag>
+                        </span>
+                    </template>
                     <template v-if="column.key === 'actions'">
                         <div class="flex gap-2">
                             <NuxtLink :to="`/users/${record.id}`">
@@ -63,8 +68,10 @@
                                 <span>{{ record.phone_number }}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-500">App Name:</span>
-                                <a-tag>{{ record.app_name }}</a-tag>
+                                <span class="text-gray-500">Apps:</span>
+                                <div>
+                                    <a-tag v-for="app in record.apps" :key="app">{{ app }}</a-tag>
+                                </div>
                             </div>
                         </div>
                     </a-card>
@@ -102,9 +109,9 @@ const columns = [
         key: 'phone_number',
     },
     {
-        title: 'App Name',
-        dataIndex: 'app_name',
-        key: 'app_name',
+        title: 'Apps',
+        dataIndex: 'apps',
+        key: 'apps',
     },
     {
         title: 'Actions',

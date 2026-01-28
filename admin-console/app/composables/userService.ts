@@ -5,9 +5,8 @@ export const useUserService = () => {
     const { request } = useApi();
 
     const getUsers = async () => {
-        return request<PortalUser[]>('/api/portal/users/', {
-            query: { app_name: 'admin' }
-        });
+        const response = await request<any>('/api/portal/users/admin/list/');
+        return response?.data?.results || [];
     };
 
     const getUserById = async (id: string) => {

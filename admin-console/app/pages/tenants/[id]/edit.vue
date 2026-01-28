@@ -1,6 +1,6 @@
 <template>
     <div class="space-y-12 pb-20">
-        <div class="flex items-center gap-4 border-b pb-6 dark:border-gray-700">
+        <div class="flex items-center gap-4 border-b border-gray-200 pb-6 dark:border-gray-700">
             <NuxtLink :to="`/tenants`">
                 <a-button type="text">
                     <ArrowLeftOutlined /> Back
@@ -23,7 +23,7 @@
                     <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h2>
                     <p class="text-gray-500 text-sm">Core tenant details and status.</p>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border dark:border-gray-700">
+                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                     <a-form :model="basicForm" layout="vertical" @finish="updateBasicInfo">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <a-form-item label="Tenant Name" name="name"
@@ -61,7 +61,7 @@
                     <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Subscription Plan</h2>
                     <p class="text-gray-500 text-sm">Manage plan, billing cycle, and limits.</p>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border dark:border-gray-700">
+                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                     <a-form :model="subscriptionForm" layout="vertical" @finish="updateSubscription">
 
                         <div class="mb-10">
@@ -123,7 +123,7 @@
                     <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Assigned Modules</h2>
                     <p class="text-gray-500 text-sm">Enable or disable features.</p>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border dark:border-gray-700">
+                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div v-for="mod in modules" :key="mod.id"
                             class="p-4 border rounded-xl hover:bg-white dark:hover:bg-gray-800 transition-all cursor-pointer flex items-start space-x-3 bg-white dark:bg-gray-800"
