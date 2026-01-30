@@ -15,7 +15,7 @@ export const useUserService = () => {
     };
 
     const createUser = async (userData: Partial<PortalUser>) => {
-        return request('/api/portal/users/', {
+        return request('/api/portal/users/create/', {
             method: 'POST',
             body: userData,
         });
