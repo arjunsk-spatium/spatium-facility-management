@@ -22,7 +22,7 @@ export const useUserService = () => {
     };
 
     const updateUser = async (id: string, userData: Partial<PortalUser>) => {
-        return request(`/api/portal/users/${id}/update/`, {
+        return request(`/api/platform/users/admin/${id}/update/`, {
             method: 'PATCH',
             body: userData,
         });

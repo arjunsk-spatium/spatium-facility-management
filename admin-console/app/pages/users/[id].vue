@@ -84,7 +84,7 @@ watch(user, (newUser) => {
 const onFinish = async (values: any) => {
     saving.value = true;
     try {
-        await updateUser(userId, { ...values, apps: formState.apps });
+        await updateUser(userId, values);
         message.success('User updated successfully');
         router.push('/users');
     } catch (error) {
