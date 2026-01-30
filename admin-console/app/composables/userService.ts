@@ -28,6 +28,13 @@ export const useUserService = () => {
         });
     };
 
+    const patchUser = async (id: string, userData: Partial<PortalUser>) => {
+        return request(`/api/portal/users/${id}/update/`, {
+            method: 'PATCH',
+            body: userData,
+        });
+    };
+
     const deleteUser = async (id: string) => {
         return request(`/api/portal/users/${id}/`, {
             method: 'DELETE',
@@ -39,6 +46,7 @@ export const useUserService = () => {
         getUserById,
         createUser,
         updateUser,
+        patchUser,
         deleteUser,
     };
 };

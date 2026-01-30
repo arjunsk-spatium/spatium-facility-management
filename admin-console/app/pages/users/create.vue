@@ -29,6 +29,16 @@
                 </div>
             </a-form>
         </a-card>
+
+        <a-modal
+            v-model:open="confirmationVisible"
+            title="User Already Exists"
+            @ok="handleConfirmAdd"
+            :confirmLoading="loading"
+        >
+            <p>{{ existingUserMessage }}</p>
+            <p>Do you want to add this person to the admin portal?</p>
+        </a-modal>
     </div>
 </template>
 
@@ -38,8 +48,11 @@ import { message } from 'ant-design-vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { createUser } = useUserService();
+const { createUser, patchUser } = useUserService();
 const loading = ref(false);
+const confirmationVisible = ref(false);
+const existingUserId = ref('');
+const existingUserMessage = ref('');
 
 const formState = reactive({
     app_name: 'admin',
@@ -54,8 +67,33 @@ const onFinish = async (values: any) => {
         await createUser({ ...values, app_name: 'admin' });
         message.success('User created successfully');
         router.push('/users');
-    } catch (error) {
+    } catch (error: any) {
+        if (error.data?.code === 'USER_CREATION_ERROR' && error.data?.error?.type === 'VALIDATION_ERROR') {
+            const userIdError = error.data?.error?.fields?.user_id?.[0];
+            const emailError = error.data?.error?.fields?.email?.[0];
+            
+            if (userIdError) {
+                existingUserId.value = userIdError.message;
+                existingUserMessage.value = emailError?.message || 'User already exists in another app.';
+                confirmationVisible.value = true;
+                return;
+            }
+        }
         message.error('Failed to create user');
+    } finally {
+        loading.value = false;
+    }
+};
+
+const handleConfirmAdd = async () => {
+    loading.value = true;
+    confirmationVisible.value = false;
+    try {
+        await patchUser(existingUserId.value, { ...formState, app_name: 'admin' });
+        message.success('User added to admin portal successfully');
+        router.push('/users');
+    } catch (error) {
+        message.error('Failed to add existing user to admin portal');
     } finally {
         loading.value = false;
     }
