@@ -3,12 +3,12 @@
         <!-- Company Name -->
         <a-form-item label="Company Name" name="name"
             :rules="[{ required: true, message: 'Please input company name!' }]">
-            <a-input v-model:value="form.name" placeholder="Enter company name" />
+            <a-input v-model:value="form.name" placeholder="Enter company name" :maxlength="100" />
         </a-form-item>
 
         <!-- Address -->
         <a-form-item label="Address" name="address" :rules="[{ required: true, message: 'Please input address!' }]">
-            <a-textarea v-model:value="form.address" placeholder="Enter company address" :rows="3" />
+            <a-textarea v-model:value="form.address" placeholder="Enter company address" :rows="3" :maxlength="500" />
         </a-form-item>
 
         <!-- SPOC Details Section -->
@@ -18,20 +18,23 @@
             <a-col :span="12">
                 <a-form-item label="SPOC Name" name="spoc_name"
                     :rules="[{ required: true, message: 'Please input SPOC name!' }]">
-                    <a-input v-model:value="form.spoc_name" placeholder="Enter SPOC name" />
+                    <a-input v-model:value="form.spoc_name" placeholder="Enter SPOC name" :maxlength="100" />
                 </a-form-item>
             </a-col>
             <a-col :span="12">
                 <a-form-item label="SPOC Email" name="spoc_email"
                     :rules="[{ required: true, type: 'email', message: 'Please input a valid email!' }]">
-                    <a-input v-model:value="form.spoc_email" placeholder="Enter SPOC email" />
+                    <a-input v-model:value="form.spoc_email" placeholder="Enter SPOC email" :maxlength="100" />
                 </a-form-item>
             </a-col>
         </a-row>
 
         <a-form-item label="SPOC Phone" name="spoc_phone"
-            :rules="[{ required: true, message: 'Please input SPOC phone number!' }]">
-            <a-input v-model:value="form.spoc_phone" placeholder="Enter SPOC phone number" />
+            :rules="[
+                { required: true, message: 'Please input SPOC phone number!' },
+                { pattern: /^\d{10}$/, message: 'Please enter a valid 10-digit phone number!' }
+            ]">
+            <a-input v-model:value="form.spoc_phone" placeholder="Enter SPOC phone number" :maxlength="10" />
         </a-form-item>
 
         <!-- Business Details Section -->
@@ -39,8 +42,11 @@
 
         <a-row :gutter="16">
             <a-col :span="12">
-                <a-form-item label="GSTIN" name="gstin">
-                    <a-input v-model:value="form.gstin" placeholder="Enter GSTIN" />
+                <a-form-item label="GSTIN" name="gstin"
+                    :rules="[
+                        { pattern: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, message: 'Please enter a valid GSTIN!' }
+                    ]">
+                    <a-input v-model:value="form.gstin" placeholder="Enter GSTIN" :maxlength="15" @input="form.gstin = form.gstin.toUpperCase()" />
                 </a-form-item>
             </a-col>
             <a-col :span="12">
