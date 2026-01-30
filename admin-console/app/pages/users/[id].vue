@@ -62,6 +62,7 @@ const formState = reactive({
     full_name: '',
     email: '',
     phone_number: '',
+    apps: [] as string[]
 });
 
 const { data: user, pending, error } = await useAsyncData(() => getUserById(userId));
@@ -73,7 +74,10 @@ if (error.value) {
 
 watch(user, (newUser) => {
     if (newUser) {
-        Object.assign(formState, newUser);
+        Object.assign(formState, {
+            ...newUser,
+            apps: newUser.apps || []
+        });
     }
 }, { immediate: true });
 

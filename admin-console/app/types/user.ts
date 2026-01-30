@@ -7,6 +7,7 @@ export interface PortalUser {
     apps: string[];
     tenant_id: string | null;
     status: string;
+    app_name?: string;
     created_at?: string;
     updated_at?: string;
 }
