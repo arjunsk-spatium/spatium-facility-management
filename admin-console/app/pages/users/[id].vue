@@ -62,6 +62,7 @@ const formState = reactive({
     full_name: '',
     email: '',
     phone_number: '',
+    apps: [] as string[]
 });
 
 const { data: user, pending, error } = await useAsyncData(() => getUserById(userId));
@@ -73,14 +74,17 @@ if (error.value) {
 
 watch(user, (newUser) => {
     if (newUser) {
-        Object.assign(formState, newUser);
+        Object.assign(formState, {
+            ...newUser,
+            apps: newUser.apps || []
+        });
     }
 }, { immediate: true });
 
 const onFinish = async (values: any) => {
     saving.value = true;
     try {
-        await updateUser(userId, values);
+        await updateUser(userId, { ...values, apps: formState.apps });
         message.success('User updated successfully');
         router.push('/users');
     } catch (error) {
