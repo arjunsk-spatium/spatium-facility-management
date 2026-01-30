@@ -10,7 +10,8 @@ export const useUserService = () => {
     };
 
     const getUserById = async (id: string) => {
-        return request<PortalUser>(`/api/portal/users/${id}/`);
+        const response = await request<any>(`/api/platform/users/admin/${id}/detail/`);
+        return response?.data;
     };
 
     const createUser = async (userData: Partial<PortalUser>) => {
@@ -21,7 +22,7 @@ export const useUserService = () => {
     };
 
     const updateUser = async (id: string, userData: Partial<PortalUser>) => {
-        return request(`/api/portal/users/${id}/`, {
+        return request(`/api/portal/users/${id}/update/`, {
             method: 'PATCH',
             body: userData,
         });

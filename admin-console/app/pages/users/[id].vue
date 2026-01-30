@@ -58,7 +58,7 @@ const formState = reactive({
     phone_number: '',
 });
 
-const { data: user, pending, error } = await getUserById(userId);
+const { data: user, pending, error } = await useAsyncData(() => getUserById(userId));
 
 if (error.value) {
     message.error('Failed to load user');
