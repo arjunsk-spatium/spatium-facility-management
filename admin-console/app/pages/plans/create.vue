@@ -1,150 +1,34 @@
 <template>
-    <div class="space-y-6">
-        <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Create Plan</h1>
-        </div>
-
-        <a-card>
-            <a-form :model="form" layout="vertical" @finish="handleSubmit" class="max-w-2xl">
-                <!-- Plan Name -->
-                <a-form-item label="Plan Name" name="name"
-                    :rules="[{ required: true, message: 'Please enter plan name' }]">
-                    <a-input v-model:value="form.name" placeholder="e.g., Pro Plan" size="large" />
-                </a-form-item>
-
-                <!-- Description -->
-                <a-form-item label="Description" name="description">
-                    <a-textarea v-model:value="form.description" placeholder="Brief description of this plan"
-                        :rows="3" />
-                </a-form-item>
-
-                <!-- Pricing -->
-                <a-divider orientation="left">Pricing</a-divider>
-
-                <a-row :gutter="16">
-                    <a-col :span="12">
-                        <a-form-item label="Price (₹)" name="price"
-                            :rules="[{ required: true, message: 'Please enter price' }]">
-                            <a-input-number v-model:value="form.price" :min="0" :precision="0" style="width: 100%"
-                                size="large" />
-                        </a-form-item>
-                    </a-col>
-                    <a-col :span="12">
-                        <a-form-item label="Billing Cycle" name="billingCycle">
-                            <a-select v-model:value="form.billingCycle" size="large">
-                                <a-select-option value="monthly">Monthly</a-select-option>
-                                <a-select-option value="yearly">Yearly</a-select-option>
-                            </a-select>
-                        </a-form-item>
-                    </a-col>
-                </a-row>
-
-                <a-form-item label="Max Users" name="maxUsers">
-                    <a-input-number v-model:value="form.maxUsers" :min="1" style="width: 200px" size="large" />
-                </a-form-item>
-
-                <!-- Modules -->
-                <a-divider orientation="left">Modules</a-divider>
-
-                <a-form-item label="Select Modules" name="modules">
-                    <a-checkbox-group v-model:value="form.modules" class="w-full">
-                        <div class="flex flex-wrap gap-3">
-                            <div v-for="mod in availableModules" :key="mod.id"
-                                class="px-4 py-2 border rounded-full hover:border-primary-300 transition-colors bg-white dark:bg-neutral-800 dark:border-neutral-600 dark:hover:border-primary-500">
-                                <a-checkbox :value="mod.id" class="!ml-0">
-                                    <span class="ml-2">{{ mod.name }}</span>
-                                </a-checkbox>
-                            </div>
-                        </div>
-                    </a-checkbox-group>
-                </a-form-item>
-
-                <!-- Features -->
-                <a-divider orientation="left">Features</a-divider>
-
-                <a-form-item label="Plan Features">
-                    <div class="space-y-2">
-                        <div v-for="(feature, index) in form.features" :key="index" class="flex gap-2">
-                            <a-input v-model:value="form.features[index]" placeholder="Feature description" />
-                            <a-button type="text" danger @click="removeFeature(index)">
-                                <DeleteOutlined />
-                            </a-button>
-                        </div>
-                        <a-button type="dashed" @click="addFeature" block>
-                            <PlusOutlined /> Add Feature
-                        </a-button>
-                    </div>
-                </a-form-item>
-
-                <!-- Active Status -->
-                <a-form-item label="Status">
-                    <a-switch v-model:checked="form.isActive" checked-children="Active"
-                        un-checked-children="Inactive" />
-                </a-form-item>
-
-                <!-- Actions -->
-                <a-form-item>
-                    <div class="flex justify-end gap-4">
-                        <a-button @click="handleCancel">Cancel</a-button>
-                        <a-button type="primary" html-type="submit" :loading="loading">Create Plan</a-button>
-                    </div>
-                </a-form-item>
-            </a-form>
-        </a-card>
+    <div class="max-w-4xl mx-auto">
+        <PlanForm :submitting="submitting" @submit="handleCreate" @cancel="handleCancel" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
-import { usePlanStore } from '../../../stores/plan'
-import { availableModules } from '../../composables/planService'
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { message } from 'ant-design-vue';
+import { usePlanService } from '../../composables/planService';
+import PlanForm from '../../components/plans/PlanForm.vue';
 
-const router = useRouter()
-const store = usePlanStore()
-const loading = computed(() => store.loading)
-
-const form = ref({
-    name: '',
-    description: '',
-    price: 0,
-    billingCycle: 'monthly' as 'monthly' | 'yearly',
-    modules: [] as string[],
-    maxUsers: 10,
-    features: [''],
-    isActive: true
-})
-
-const addFeature = () => {
-    form.value.features.push('')
-}
-
-const removeFeature = (index: number) => {
-    form.value.features.splice(index, 1)
-}
+const router = useRouter();
+const { createPlan } = usePlanService();
+const submitting = ref(false);
 
 const handleCancel = () => {
-    router.push('/plans')
-}
+    router.push('/plans');
+};
 
-const handleSubmit = async () => {
+const handleCreate = async (values: any) => {
+    submitting.value = true;
     try {
-        await store.createPlanAction({
-            name: form.value.name,
-            description: form.value.description,
-            price: form.value.price,
-            billingCycle: form.value.billingCycle,
-            modules: form.value.modules,
-            maxUsers: form.value.maxUsers,
-            features: form.value.features.filter(f => f.trim()),
-            isActive: form.value.isActive
-        })
-        message.success('Plan created successfully')
-        router.push('/plans')
-    } catch (error) {
-        message.error('Failed to create plan')
+        await createPlan(values);
+        message.success('Plan created successfully');
+        router.push('/plans');
+    } catch (error: any) {
+        message.error(error.data?.message || 'Failed to create plan');
+    } finally {
+        submitting.value = false;
     }
-}
+};
 </script>
