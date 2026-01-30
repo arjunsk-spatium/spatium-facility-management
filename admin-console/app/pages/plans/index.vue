@@ -2,117 +2,151 @@
     <div class="space-y-6">
         <!-- Page Header -->
         <div
-            class="flex justify-between items-center p-4 rounded-lg shadow-sm transition-colors duration-300 page-header">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Plans</h1>
-            <NuxtLink to="/plans/create">
-                <a-button type="primary" size="large">
-                    <template #icon>
-                        <PlusOutlined />
-                    </template>
-                    Create <span class="hidden sm:inline">Plan</span>
-                </a-button>
-            </NuxtLink>
+            class="flex flex-col md:flex-row md:justify-between md:items-center p-4 rounded-lg shadow-sm transition-colors duration-300 page-header gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Plan Management</h1>
+                <p class="text-gray-500 text-sm">Manage billing plans and pricing</p>
+            </div>
+            <div>
+                <NuxtLink to="/plans/create">
+                    <a-button type="primary">
+                        <template #icon>
+                            <PlusOutlined />
+                        </template>
+                        Create Plan
+                    </a-button>
+                </NuxtLink>
+            </div>
         </div>
 
-        <!-- Plans Grid -->
-        <div v-if="loading" class="flex justify-center p-12">
-            <a-spin size="large" />
-        </div>
+        <!-- Data View -->
+        <ResponsiveDataView :columns="columns" :data="plans" :loading="loading" :pagination="pagination"
+            :row-key="(record: any) => record.id" @change="handleTableChange">
+            <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'price'">
+                    <span v-if="record.is_custom">Custom</span>
+                    <span v-else>₹{{ record.price }} / {{ record.billing_cycle === 'monthly' ? 'mo' : 'yr' }}</span>
+                </template>
+                <template v-if="column.key === 'is_active'">
+                    <a-tag :color="record.is_active ? 'green' : 'red'">
+                        {{ record.is_active ? 'Active' : 'Inactive' }}
+                    </a-tag>
+                </template>
+                <template v-if="column.key === 'actions'">
+                    <a-space>
+                        <NuxtLink :to="`/plans/${record.id}/edit`">
+                            <a-button type="text" size="small">
+                                <template #icon>
+                                    <EditOutlined />
+                                </template>
+                            </a-button>
+                        </NuxtLink>
+                        <a-popconfirm title="Are you sure archive this plan?" ok-text="Yes" cancel-text="No"
+                            @confirm="handleDelete(record.id)">
+                            <a-button type="text" danger size="small">
+                                <template #icon>
+                                    <DeleteOutlined />
+                                </template>
+                            </a-button>
+                        </a-popconfirm>
+                    </a-space>
+                </template>
+            </template>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-            <a-card v-for="plan in plans" :key="plan.id" 
-                class="h-full flex flex-col"
-                :bodyStyle="{ flex: 1, display: 'flex', flexDirection: 'column' }">
-                <template #title>
-                    <div class="flex items-center justify-between">
-                        <span class="font-semibold">{{ plan.name }}</span>
-                        <a-tag :color="plan.isActive ? 'green' : 'default'">
-                            {{ plan.isActive ? 'Active' : 'Inactive' }}
+            <template #mobileCard="{ record }">
+                <a-card class="mb-4" :title="record.name">
+                    <template #extra>
+                        <a-tag :color="record.is_active ? 'green' : 'red'">
+                            {{ record.is_active ? 'Active' : 'Inactive' }}
                         </a-tag>
+                    </template>
+                    <p><strong>Code:</strong> {{ record.code }}</p>
+                    <p><strong>Price:</strong> <span v-if="record.is_custom">Custom</span><span v-else>₹{{ record.price
+                    }} / {{
+                                record.billing_cycle }}</span></p>
+                    <p><strong>Max Users:</strong> {{ record.max_users > 0 ? record.max_users : 'Unlimited' }}</p>
+                    <p class="text-gray-500 text-sm mt-2">{{ record.description }}</p>
+
+                    <div class="flex justify-end mt-4 gap-2">
+                        <NuxtLink :to="`/plans/${record.id}/edit`">
+                            <a-button size="small">Edit</a-button>
+                        </NuxtLink>
+                        <a-popconfirm title="Are you sure archive this plan?" ok-text="Yes" cancel-text="No"
+                            @confirm="handleDelete(record.id)">
+                            <a-button type="text" danger size="small">Archive</a-button>
+                        </a-popconfirm>
                     </div>
-                </template>
-
-                <div class="space-y-4 flex-1 flex flex-col">
-                    <p class="text-gray-500 text-sm min-h-[40px]">{{ plan.description }}</p>
-
-                    <div class="text-center py-4 border-y border-gray-100 dark:border-gray-800">
-                        <div v-if="plan.price > 0" class="text-3xl font-bold text-primary-600">
-                            ₹{{ plan.price }}
-                            <span class="text-sm font-normal text-gray-500">/{{ plan.billingCycle === 'monthly' ? 'mo' :
-                                'yr'
-                            }}</span>
-                        </div>
-                        <div v-else class="text-2xl font-bold text-primary-600">Custom Pricing</div>
-                        <div class="text-sm text-gray-500 mt-1">Up to {{ plan.maxUsers }} users</div>
-                    </div>
-
-                    <div class="min-h-[60px]">
-                        <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Modules</div>
-                        <div class="flex flex-wrap gap-1">
-                            <a-tag v-for="mod in plan.modules" :key="mod" size="small">{{ mod }}</a-tag>
-                            <span v-if="plan.modules.length === 0" class="text-gray-400 text-sm">Custom selection</span>
-                        </div>
-                    </div>
-
-                    <div class="flex-1 min-h-[100px]">
-                        <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Features</div>
-                        <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                            <li v-for="feature in plan.features.slice(0, 3)" :key="feature"
-                                class="flex items-center gap-2">
-                                <CheckOutlined class="text-green-500 text-xs" />
-                                {{ feature }}
-                            </li>
-                            <li v-if="plan.features.length > 3" class="text-primary-500 text-xs">
-                                +{{ plan.features.length - 3 }} more
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <template #actions>
-                    <NuxtLink :to="`/plans/${plan.id}/edit`">
-                        <a-button type="text">
-                            <EditOutlined /> Edit
-                        </a-button>
-                    </NuxtLink>
-                    <a-popconfirm title="Delete this plan?" @confirm="handleDelete(plan.id)">
-                        <a-button type="text" danger>
-                            <DeleteOutlined /> Delete
-                        </a-button>
-                    </a-popconfirm>
-                </template>
-            </a-card>
-        </div>
+                </a-card>
+            </template>
+        </ResponsiveDataView>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
-import {
-    PlusOutlined,
-    CheckOutlined,
-    EditOutlined,
-    DeleteOutlined
-} from '@ant-design/icons-vue'
-import { usePlanStore } from '../../../stores/plan'
+import { ref, reactive, onMounted } from 'vue';
+import { message } from 'ant-design-vue';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { usePlanService, type Plan } from '../../composables/planService';
 
-const store = usePlanStore()
-const plans = computed(() => store.plans)
-const loading = computed(() => store.loading)
+const { getPlans, deletePlan } = usePlanService();
+
+// State
+const plans = ref<Plan[]>([]);
+const loading = ref(false);
+
+const pagination = reactive({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true
+});
+
+const columns = [
+    { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: 'Code', dataIndex: 'code', key: 'code' },
+    { title: 'Price', key: 'price' },
+    { title: 'Max Users', dataIndex: 'max_users', key: 'max_users' },
+    { title: 'Status', dataIndex: 'is_active', key: 'is_active', width: 100 },
+    { title: 'Actions', key: 'actions', width: 120, align: 'center' }
+];
+
+// Methods
+const fetchPlans = async (page = 1, pageSize = 10) => {
+    loading.value = true;
+    try {
+        const response = await getPlans({ page, page_size: pageSize });
+        if (response.success) {
+            plans.value = response.data.results;
+            pagination.total = response.data.count;
+            pagination.current = page;
+            pagination.pageSize = pageSize;
+        }
+    } catch (error) {
+        message.error('Failed to load plans');
+        console.error(error);
+    } finally {
+        loading.value = false;
+    }
+};
+
+const handleTableChange = (pag: any) => {
+    fetchPlans(pag.current, pag.pageSize);
+};
 
 const handleDelete = async (id: string) => {
     try {
-        await store.deletePlanAction(id)
-        message.success('Plan deleted successfully')
-    } catch {
-        message.error('Failed to delete plan')
+        await deletePlan(id);
+        message.success('Plan archived successfully');
+        fetchPlans(pagination.current, pagination.pageSize);
+    } catch (error) {
+        message.error('Failed to archive plan');
+        console.error(error);
     }
-}
+};
 
 onMounted(() => {
-    store.fetchPlans()
-})
+    fetchPlans();
+});
 </script>
 
 <style scoped>
