@@ -93,6 +93,12 @@
                                 </a-select>
                             </a-form-item>
 
+                            <a-form-item v-if="isCustomPlan" label="Price">
+                                <a-input-number v-model:value="subscriptionForm.price" class="w-full" :min="0"
+                                    :formatter="(value: any) => `₹ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
+                                    :parser="(value: string) => value.replace(/₹\s?|(,*)/g, '')" size="large" />
+                            </a-form-item>
+
                             <a-form-item label="Max Users">
                                 <a-input-number v-model:value="subscriptionForm.max_users" class="w-full" :min="1"
                                     size="large" />
@@ -277,21 +283,26 @@
                     <p class="text-gray-500 text-sm">Legal entity and contact information.</p>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border dark:border-gray-700">
-                    <a-form layout="vertical" @finish="savePii">
-                        <a-form-item label="GSTIN / Tax ID">
+                    <a-form :model="piiForm" layout="vertical" @finish="savePii">
+                        <a-form-item label="GSTIN / Tax ID" name="gstin"
+                            :rules="[{ required: true, message: 'Please enter GSTIN/Tax ID' }]">
                             <a-input v-model:value="piiForm.gstin" size="large" />
                         </a-form-item>
-                        <a-form-item label="Full Address">
+                        <a-form-item label="Full Address" name="address"
+                            :rules="[{ required: true, message: 'Please enter full address' }]">
                             <a-textarea v-model:value="piiForm.address" :rows="3" />
                         </a-form-item>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <a-form-item label="Contact Name">
+                            <a-form-item label="Contact Name" name="contact_name"
+                                :rules="[{ required: true, message: 'Please enter contact name' }]">
                                 <a-input v-model:value="piiForm.contact_name" size="large" />
                             </a-form-item>
-                            <a-form-item label="Contact Email">
+                            <a-form-item label="Contact Email" name="email"
+                                :rules="[{ required: true, type: 'email', message: 'Please enter valid email' }]">
                                 <a-input v-model:value="piiForm.email" size="large" />
                             </a-form-item>
-                            <a-form-item label="Contact Phone">
+                            <a-form-item label="Contact Phone" name="phone"
+                                :rules="[{ required: true, message: 'Please enter contact phone' }]">
                                 <a-input v-model:value="piiForm.phone" size="large" />
                             </a-form-item>
                         </div>
@@ -308,7 +319,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { message } from 'ant-design-vue';
 import { ArrowLeftOutlined, CloudUploadOutlined, FileImageOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
@@ -338,7 +349,7 @@ const tenant = ref<any>(null);
 
 // Forms
 const basicForm = reactive({ name: '', domain: '', status: '' });
-const subscriptionForm = reactive({ plan: '', start_date: '', end_date: '', billing_cycle: 'monthly', max_users: 100 });
+const subscriptionForm = reactive({ plan: '', start_date: '', end_date: '', billing_cycle: 'monthly', max_users: 100, price: 0 });
 const selectedModules = ref<string[]>([]);
 const brandingForm = reactive({
     primary_color: '#ffffff',
@@ -364,6 +375,11 @@ const loadingSubscription = ref(false);
 const loadingModules = ref(false);
 const loadingBranding = ref(false);
 const loadingPii = ref(false);
+
+const isCustomPlan = computed(() => {
+    const p = plans.value.find(plan => plan.id === subscriptionForm.plan);
+    return p?.is_custom || false;
+});
 
 const fetchData = async () => {
     loading.value = true;
@@ -396,6 +412,7 @@ const fetchData = async () => {
                     subscriptionForm.end_date = sub.end_date;
                     subscriptionForm.billing_cycle = sub.billing_cycle;
                     subscriptionForm.max_users = sub.max_users;
+                    subscriptionForm.price = sub.price ? Number(sub.price) : 0;
                 }
             }
         } catch (e) {
@@ -462,6 +479,8 @@ const selectPlan = (plan: Plan) => {
     if (plan.billing_cycle) {
         subscriptionForm.billing_cycle = plan.billing_cycle;
     }
+    // Set default price from plan, but allow override for custom
+    subscriptionForm.price = plan.price ? Number(plan.price) : 0;
 };
 
 const updateBasicInfo = async () => {
@@ -477,7 +496,11 @@ const updateSubscription = async () => {
     loadingSubscription.value = true;
     try {
         const selectedPlan = plans.value.find(p => p.id === subscriptionForm.plan);
-        const price = selectedPlan ? parseFloat(selectedPlan.price) : 0;
+        // Use the form price if it's there (custom plan logic), otherwise default to plan price if needed, 
+        // but since we populate form.price on select, we can just use form.price for custom overrides.
+        // For strictness: if not custom, maybe force plan price? But users might want to discount standard plans too?
+        // Let's stick to the prompt: custom pricing logic implies relying on the form input.
+        const price = subscriptionForm.price;
         const payload = {
             tenant: tenantId,
             ...subscriptionForm,
@@ -547,8 +570,29 @@ const savePii = async () => {
     try {
         await updatePii({ tenant: tenantId, ...piiForm });
         message.success('Organization details updated');
-    } catch (e) { message.error('Failed to update organization'); }
-    finally { loadingPii.value = false; }
+    } catch (error: any) {
+        console.error('savePii error:', error);
+        const errorData = error.data || error.response?._data || error;
+
+        if (errorData && (errorData.code === 'VALIDATION_ERROR' || errorData.error?.type === 'VALIDATION') && errorData.error?.fields) {
+            const fields = errorData.error.fields;
+            Object.keys(fields).forEach(key => {
+                const fieldErrors = fields[key];
+                // Handle array of errors or single error object
+                const errors = Array.isArray(fieldErrors) ? fieldErrors : [fieldErrors];
+                errors.forEach((err: any) => {
+                    const msg = err.message || err.code || 'Invalid value';
+                    // capitalize key for better UX
+                    const label = key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ');
+                    message.error(`${label}: ${msg}`);
+                });
+            });
+        } else {
+            message.error(errorData?.message || 'Failed to update organization');
+        }
+    } finally {
+        loadingPii.value = false;
+    }
 };
 
 onMounted(() => {

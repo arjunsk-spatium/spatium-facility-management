@@ -87,36 +87,56 @@
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                         <h3 class="font-semibold text-gray-900 dark:text-white">Organization Details</h3>
                     </div>
-                    <div class="p-6">
-                        <a-descriptions :column="{ xs: 1, sm: 2 }" layout="vertical">
-                            <a-descriptions-item label="Tenant Domain">
-                                <a href="#" class="text-primary-600 hover:text-primary-700 font-medium">
-                                    {{ tenant.domain }}
-                                </a>
-                            </a-descriptions-item>
-                            <a-descriptions-item label="Onboarded At">
-                                {{ formatDate(tenant.onboarded_at || tenant.created_at) }}
-                            </a-descriptions-item>
+                    <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-[15px]">
+                        <!-- Tenant Domain -->
+                        <div class="flex flex-col gap-[5px]">
+                            <span class="text-gray-500 font-medium text-sm">Tenant Domain</span>
+                            <a href="#" class="text-primary-600 hover:text-primary-700 font-medium">
+                                {{ tenant.domain }}
+                            </a>
+                        </div>
 
-                            <a-descriptions-item label="Contact Name">
-                                {{ tenant.pii?.contact_name || '-' }}
-                            </a-descriptions-item>
-                            <a-descriptions-item label="Contact Email">
-                                <span v-if="tenant.pii?.email">{{ tenant.pii.email }}</span>
-                                <span v-else class="text-gray-400">-</span>
-                            </a-descriptions-item>
-                            <a-descriptions-item label="GSTIN / Tax ID">
-                                <span class="font-mono text-gray-600 dark:text-gray-400">{{ tenant.pii?.gstin || '-'
-                                    }}</span>
-                            </a-descriptions-item>
-                            <a-descriptions-item label="Phone">
-                                {{ tenant.pii?.phone || '-' }}
-                            </a-descriptions-item>
-                            <a-descriptions-item label="Address" :span="2">
-                                <span class="whitespace-pre-line text-gray-600 dark:text-gray-400">{{
-                                    tenant.pii?.address || '-' }}</span>
-                            </a-descriptions-item>
-                        </a-descriptions>
+                        <!-- Onboarded At -->
+                        <div class="flex flex-col gap-[5px]">
+                            <span class="text-gray-500 font-medium text-sm">Onboarded At</span>
+                            <span class="text-gray-900 dark:text-gray-100">
+                                {{ formatDate(tenant.onboarded_at || tenant.created_at) }}
+                            </span>
+                        </div>
+
+                        <!-- Contact Name -->
+                        <div class="flex flex-col gap-[5px]">
+                            <span class="text-gray-500 font-medium text-sm">Contact Name</span>
+                            <span class="text-gray-900 dark:text-gray-100">{{ tenant.pii?.contact_name || '-' }}</span>
+                        </div>
+
+                        <!-- Contact Email -->
+                        <div class="flex flex-col gap-[5px]">
+                            <span class="text-gray-500 font-medium text-sm">Contact Email</span>
+                            <span v-if="tenant.pii?.email" class="text-gray-900 dark:text-gray-100">{{ tenant.pii.email
+                                }}</span>
+                            <span v-else class="text-gray-400">-</span>
+                        </div>
+
+                        <!-- GSTIN -->
+                        <div class="flex flex-col gap-[5px]">
+                            <span class="text-gray-500 font-medium text-sm">GSTIN / Tax ID</span>
+                            <span class="font-mono text-gray-600 dark:text-gray-400">{{ tenant.pii?.gstin || '-'
+                                }}</span>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="flex flex-col gap-[5px]">
+                            <span class="text-gray-500 font-medium text-sm">Phone</span>
+                            <span class="text-gray-900 dark:text-gray-100">{{ tenant.pii?.phone || '-' }}</span>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="flex flex-col gap-[5px] sm:col-span-2">
+                            <span class="text-gray-500 font-medium text-sm">Address</span>
+                            <span class="whitespace-pre-line text-gray-600 dark:text-gray-400">{{
+                                tenant.pii?.address || '-' }}</span>
+                        </div>
                     </div>
                 </section>
 
