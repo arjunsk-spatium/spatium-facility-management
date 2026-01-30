@@ -265,8 +265,11 @@
                                 </a-form-item>
                             </div>
                         </div>
-                        <div class="flex justify-end mt-8">
-                            <a-button type="primary" size="large" @click="saveBranding" :loading="loadingBranding">
+                        <div class="flex justify-end mt-8 gap-2">
+                            <a-button @click="showBrandingPreview = true" class="mr-4">
+                                <EyeOutlined /> Preview Branding
+                            </a-button>
+                            <a-button type="primary" @click="saveBranding" :loading="loadingBranding">
                                 Update Branding
                             </a-button>
                         </div>
@@ -316,13 +319,19 @@
 
         </div>
     </div>
+
+
+    <BrandingPreviewModal v-model:visible="showBrandingPreview" :primary-color="brandingForm.primary_color"
+        :logo="brandingForm.logoPreview || brandingForm.logoUrl"
+        :dark-logo="brandingForm.darkLogoPreview || brandingForm.darkLogoUrl" />
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { message } from 'ant-design-vue';
-import { ArrowLeftOutlined, CloudUploadOutlined, FileImageOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
+import { ArrowLeftOutlined, CloudUploadOutlined, FileImageOutlined, InfoCircleOutlined, EyeOutlined } from '@ant-design/icons-vue';
+import BrandingPreviewModal from '../../../components/tenants/BrandingPreviewModal.vue';
 import { useTenantService } from '../../../composables/tenantService';
 import { useModuleRegistry, type RegistryModule } from '../../../composables/useModuleRegistry';
 import { usePlanService, type Plan } from '../../../composables/planService';
@@ -373,7 +382,9 @@ const modules = ref<RegistryModule[]>([]);
 const loadingBasic = ref(false);
 const loadingSubscription = ref(false);
 const loadingModules = ref(false);
+
 const loadingBranding = ref(false);
+const showBrandingPreview = ref(false);
 const loadingPii = ref(false);
 
 const isCustomPlan = computed(() => {
