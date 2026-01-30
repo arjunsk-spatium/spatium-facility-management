@@ -21,6 +21,12 @@
                 <a-form-item label="Email" name="email"
                     :rules="[{ required: true, message: 'Please input email!' }, { type: 'email', message: 'Please enter a valid email!' }]">
                     <a-input v-model:value="formState.email" placeholder="john@example.com" />
+                    <a-alert v-if="user?.apps?.length > 1" type="warning" show-icon class="mt-2">
+                        <template #message>
+                            This email is connected to multiple apps: <strong>{{ user.apps.join(', ') }}</strong>.
+                            Changing it will affect all linked accounts.
+                        </template>
+                    </a-alert>
                 </a-form-item>
 
                 <a-form-item label="Phone Number" name="phone_number"
