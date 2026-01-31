@@ -64,7 +64,7 @@
 
           <div class="transition-all duration-300">
             <!-- Step 1: Email -->
-            <form v-if="step === 'email'" @submit.prevent="handleEmailSubmit" class="space-y-6">
+            <form v-if="step === 'email'" @submit.prevent="handleEmailSubmit" class="space-y-6" novalidate>
               <!-- Email Input -->
               <div>
                 <label for="email" class="label">Email</label>
@@ -144,6 +144,7 @@ const loading = ref(false)
 const isImageLoading = ref(true)
 const tenantStore = useTenantStore()
 const authStore = useAuthStore()
+const { isValidEmail, sanitizeError } = useValidation()
 const config = useRuntimeConfig()
 const errorMsg = ref('')
 
@@ -186,13 +187,19 @@ const getRandomItem = <T>(arr: T[]): T => {
 
 const handleEmailSubmit = async () => {
   if (!form.email) return
+
+  if (!isValidEmail(form.email)) {
+    errorMsg.value = 'Please enter a valid email address.'
+    return
+  }
+
   loading.value = true
   errorMsg.value = ''
   try {
     await authStore.requestOtp(form.email)
     step.value = 'otp'
   } catch (error: any) {
-    console.error('Error sending OTP:', error)
+    console.error('Error sending OTP:', sanitizeError(error))
     errorMsg.value = error?.data?.message || 'Failed to send OTP. Please try again.'
   } finally {
     loading.value = false
@@ -208,7 +215,7 @@ const handleLogin = async () => {
     await authStore.login(form.email, form.otp, config.public.tenantClientAppId)
     navigateTo('/dashboard')
   } catch (error: any) {
-    console.error('Login failed', error)
+    console.error('Login failed', sanitizeError(error))
     errorMsg.value = error?.data?.message || 'Login failed. Please check your credentials.'
   } finally {
     loading.value = false

@@ -41,7 +41,8 @@ export const useAuthStore = defineStore('auth', {
             });
             return true;
         } catch (error) {
-            console.error('OTP Request failed', error);
+            const { sanitizeError } = useValidation();
+            console.error('OTP Request failed', sanitizeError(error));
             throw error;
         }
     },
@@ -72,7 +73,8 @@ export const useAuthStore = defineStore('auth', {
              throw new Error(response.message || 'Login failed');
         }
       } catch (error) {
-        console.error('Login failed', error);
+        const { sanitizeError } = useValidation();
+        console.error('Login failed', sanitizeError(error));
         throw error;
       }
     },
