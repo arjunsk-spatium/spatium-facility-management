@@ -135,7 +135,7 @@
                                     }" class="mt-1" />
                                     <div>
                                         <span class="font-medium block text-gray-900 dark:text-gray-100">{{ mod.name
-                                        }}</span>
+                                            }}</span>
                                         <span class="text-sm text-gray-500 mt-1 block">{{ mod.description }}</span>
                                     </div>
                                 </div>
@@ -266,7 +266,12 @@
                         </a-form>
 
                         <div class="flex justify-between pt-4 mt-6 border-t dark:border-gray-700">
-                            <a-button @click="currentStep--">Back</a-button>
+                            <div class="flex items-center">
+                                <a-button @click="currentStep--">Back</a-button>
+                                <a-button @click="showBrandingPreview = true" class="ml-4">
+                                    <EyeOutlined /> Preview Branding
+                                </a-button>
+                            </div>
                             <a-button type="primary" @click="handleStep4" :loading="loading">
                                 Next: Organization
                             </a-button>
@@ -326,17 +331,23 @@
             </div>
         </div>
     </div>
+
+    <BrandingPreviewModal v-model:visible="showBrandingPreview" :primary-color="brandingForm.primary_color"
+        :logo="brandingForm.logoPreview || brandingForm.logo"
+        :dark-logo="brandingForm.darkLogoPreview || brandingForm.dark_logo" />
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
 import { message } from 'ant-design-vue';
-import { ArrowLeftOutlined, CloudUploadOutlined, FileImageOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
+import { ArrowLeftOutlined, CloudUploadOutlined, FileImageOutlined, InfoCircleOutlined, EyeOutlined } from '@ant-design/icons-vue';
+import BrandingPreviewModal from '../../components/tenants/BrandingPreviewModal.vue';
 import { useModuleRegistry, type RegistryModule } from '../../composables/useModuleRegistry';
 import { usePlanService, type Plan } from '../../composables/planService';
 
 const currentStep = ref(0);
 const loading = ref(false);
+const showBrandingPreview = ref(false);
 const tenantId = ref<string | null>(null);
 
 const { createTenant, updateTenant, assignPlan, assignModules, getTenantModules, updateBranding, updatePii } = useTenantService();

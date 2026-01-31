@@ -107,14 +107,15 @@
                         <!-- Contact Name -->
                         <div class="flex flex-col gap-[5px]">
                             <span class="text-gray-500 font-medium text-sm">Contact Name</span>
-                            <span class="text-gray-900 dark:text-gray-100">{{ tenant.pii?.contact_name || '-' }}</span>
+                            <span class="text-gray-900 dark:text-gray-100">{{ tenant.pii?.full_name ||
+                                tenant.pii?.contact_person || '-' }}</span>
                         </div>
 
                         <!-- Contact Email -->
                         <div class="flex flex-col gap-[5px]">
                             <span class="text-gray-500 font-medium text-sm">Contact Email</span>
                             <span v-if="tenant.pii?.email" class="text-gray-900 dark:text-gray-100">{{ tenant.pii.email
-                                }}</span>
+                            }}</span>
                             <span v-else class="text-gray-400">-</span>
                         </div>
 
@@ -122,13 +123,14 @@
                         <div class="flex flex-col gap-[5px]">
                             <span class="text-gray-500 font-medium text-sm">GSTIN / Tax ID</span>
                             <span class="font-mono text-gray-600 dark:text-gray-400">{{ tenant.pii?.gstin || '-'
-                                }}</span>
+                            }}</span>
                         </div>
 
                         <!-- Phone -->
                         <div class="flex flex-col gap-[5px]">
                             <span class="text-gray-500 font-medium text-sm">Phone</span>
-                            <span class="text-gray-900 dark:text-gray-100">{{ tenant.pii?.phone || '-' }}</span>
+                            <span class="text-gray-900 dark:text-gray-100">{{ tenant.pii?.phone ||
+                                tenant.pii?.phone_number || '-' }}</span>
                         </div>
 
                         <!-- Address -->
