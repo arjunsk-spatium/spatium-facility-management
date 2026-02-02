@@ -12,6 +12,7 @@ export interface Tenant {
     moduleCount?: number
     createdAt?: string
     userCount?: number
+    clientUserCount?: number
     onboarded_at?: string
     updated_at?: string
 }
@@ -19,6 +20,11 @@ export interface Tenant {
 export interface SubscriptionPayload {
     tenant: string;
     plan: string;
+    max_users?: number;
+    max_client_users?: number;
+    price?: number;
+    billing_cycle?: string;
+    status?: string;
     start_date: string;
     end_date: string;
     modules?: string[];

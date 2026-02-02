@@ -86,6 +86,11 @@
                                     <a-input-number v-model:value="subscriptionForm.max_users" class="w-full"
                                         :min="1" />
                                 </a-form-item>
+ 
+                                 <a-form-item v-if="isCustomPlan" label="Max Client Users" required>
+                                     <a-input-number v-model:value="subscriptionForm.max_client_users" class="w-full"
+                                         :min="0" />
+                                 </a-form-item>
 
                                 <a-form-item v-if="isCustomPlan" label="Price" required>
                                     <a-input-number v-model:value="subscriptionForm.price" class="w-full" :min="0"
@@ -407,6 +412,7 @@ const subscriptionForm = reactive({
     end_date: '',
     billing_cycle: 'monthly',
     max_users: 100,
+    max_client_users: 100,
     price: 0,
     selectedModules: [] as string[]
 });
@@ -446,6 +452,7 @@ watch(() => subscriptionForm.plan, (newPlanId) => {
         // Only override max_users if it's not custom (or set to default custom value)
         // If it is custom, we might want to let them edit, so maybe set a default but allow change
         subscriptionForm.max_users = p.max_users || 100;
+        subscriptionForm.max_client_users = p.max_client_users || 100;
         subscriptionForm.price = p.price ? Number(p.price) : 0;
     }
 });
@@ -522,6 +529,7 @@ const handleStep2 = async () => {
             start_date: subscriptionForm.start_date,
             end_date: subscriptionForm.end_date,
             max_users: subscriptionForm.max_users,
+            max_client_users: subscriptionForm.max_client_users,
             billing_cycle: subscriptionForm.billing_cycle,
             price: subscriptionForm.price,
             status: 'active'

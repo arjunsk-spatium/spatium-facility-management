@@ -211,6 +211,12 @@
                                 || '∞' }}</span>
                         </div>
                         <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700/50">
+                            <span class="text-gray-500">Client User Limit</span>
+                            <span class="font-medium">{{ tenant.client_user_count || 0 }} / {{
+                                tenant.subscription?.max_client_users
+                                || '∞' }}</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700/50">
                             <span class="text-gray-500">Start Date</span>
                             <span class="font-medium">{{ formatDate(tenant.subscription?.start_date) }}</span>
                         </div>
