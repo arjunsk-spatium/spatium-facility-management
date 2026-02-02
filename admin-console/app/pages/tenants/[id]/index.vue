@@ -142,6 +142,36 @@
                     </div>
                 </section>
 
+                <!-- Section 6: Users -->
+                <section
+                    class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <h3 class="font-semibold text-gray-900 dark:text-white">Tenant Users</h3>
+                        <a-button type="primary" size="small" @click="showCreateUserModal = true">
+                            <template #icon>
+                                <PlusOutlined />
+                            </template>
+                            Create User
+                        </a-button>
+                    </div>
+                    <div class="p-0">
+                        <a-table :dataSource="tenantUsers" :columns="userColumns" :pagination="false" size="middle">
+                            <template #bodyCell="{ column, record }">
+                                <template v-if="column.key === 'actions'">
+                                    <a-popconfirm title="Are you sure delete this user?" ok-text="Yes" cancel-text="No"
+                                        @confirm="handleDeleteUser(record.id)">
+                                        <a-button type="text" danger size="small">
+                                            <template #icon>
+                                                <DeleteOutlined />
+                                            </template>
+                                        </a-button>
+                                    </a-popconfirm>
+                                </template>
+                            </template>
+                        </a-table>
+                    </div>
+                </section>
+
             </div>
 
             <!-- RIGHT COLUMN: Subscription & Modules -->
@@ -196,16 +226,17 @@
                     class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                         <h3 class="font-semibold text-gray-900 dark:text-white">Enabled Modules</h3>
-                        <a-badge :count="tenant.module_count"
+                        <a-badge :count="assignedModules.length"
                             :number-style="{ backgroundColor: '#e6f7ff', color: '#1890ff', boxShadow: '0 0 0 1px #91d5ff inset' }" />
                     </div>
                     <div class="p-6">
-                        <div v-if="tenant.modules && tenant.modules.length" class="grid grid-cols-1 gap-3">
-                            <div v-for="mod in tenant.modules" :key="mod"
+                        <div v-if="assignedModules.length" class="grid grid-cols-1 gap-3">
+                            <div v-for="mod in assignedModules" :key="mod.id"
                                 class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/50">
                                 <CheckCircleFilled class="text-green-500 text-lg" />
-                                <span class="font-medium text-gray-700 dark:text-gray-200 capitalize">{{
-                                    mod.replace(/_/g, ' ') }}</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-200 capitalize">
+                                    {{ mod.module_name || mod.module?.name || mod.module_id || mod.module }}
+                                </span>
                             </div>
                         </div>
                         <div v-else class="text-center py-8 text-gray-400 italic">
@@ -222,33 +253,125 @@
             <p class="text-gray-500 text-lg">Tenant not found</p>
             <NuxtLink to="/tenants" class="text-primary-600 mt-2 block hover:underline">Return to list</NuxtLink>
         </div>
+
+        <!-- Create User Modal -->
+        <a-modal v-model:visible="showCreateUserModal" title="Create Tenant User" @ok="handleCreateUser"
+            :confirmLoading="creatingUser">
+            <a-form :model="userForm" layout="vertical">
+                <a-form-item label="Full Name" name="full_name"
+                    :rules="[{ required: true, message: 'Please enter full name' }]">
+                    <a-input v-model:value="userForm.full_name" placeholder="John Doe" />
+                </a-form-item>
+                <a-form-item label="Email" name="email"
+                    :rules="[{ required: true, type: 'email', message: 'Please enter valid email' }]">
+                    <a-input v-model:value="userForm.email" placeholder="john@example.com" />
+                </a-form-item>
+                <a-form-item label="Phone Number" name="phone_number">
+                    <a-input v-model:value="userForm.phone_number" placeholder="+1234567890" />
+                </a-form-item>
+            </a-form>
+        </a-modal>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { ArrowLeftOutlined, EditOutlined, CheckCircleFilled } from '@ant-design/icons-vue';
+import { ArrowLeftOutlined, EditOutlined, CheckCircleFilled, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { useTenantService } from '../../../composables/tenantService';
+import { useUserService } from '../../../composables/userService';
+import { message } from 'ant-design-vue';
 
 const route = useRoute();
 const tenantId = route.params.id as string;
-const { getTenantById } = useTenantService();
+const { getTenantById, getTenantModules } = useTenantService();
+const { getUsers, createUser, deleteUser } = useUserService();
 
 const loading = ref(true);
 const tenant = ref<any>(null);
+const assignedModules = ref<any[]>([]);
+const tenantUsers = ref<any[]>([]);
+
+const showCreateUserModal = ref(false);
+const creatingUser = ref(false);
+const userForm = reactive({
+    full_name: '',
+    email: '',
+    phone_number: '',
+});
+
+const userColumns = [
+    { title: 'Name', dataIndex: 'full_name', key: 'full_name' },
+    { title: 'Email', dataIndex: 'email', key: 'email' },
+    { title: 'Phone', dataIndex: 'phone_number', key: 'phone_number' },
+    { title: '', key: 'actions', width: 60 },
+];
 
 const fetchData = async () => {
     loading.value = true;
     try {
-        const fetchedTenant = await getTenantById(tenantId);
+        const [fetchedTenant, modulesRes, users] = await Promise.all([
+            getTenantById(tenantId),
+            getTenantModules(tenantId),
+            getUsers({ tenant_id: tenantId })
+        ]);
+
         if (fetchedTenant) {
             tenant.value = fetchedTenant;
         }
+
+        if (modulesRes && modulesRes.data) {
+            const results = modulesRes.data.results || modulesRes.data;
+            assignedModules.value = Array.isArray(results) ? results : [];
+        }
+
+        if (users) {
+            tenantUsers.value = users;
+        }
     } catch (e) {
-        console.error('Failed to load tenant', e);
+        console.error('Failed to load tenant data', e);
     } finally {
         loading.value = false;
+    }
+};
+
+const handleCreateUser = async () => {
+    if (!userForm.full_name || !userForm.email) {
+        message.warning('Please fill in required fields');
+        return;
+    }
+
+    creatingUser.value = true;
+    try {
+        await createUser({
+            ...userForm,
+            tenant_id: tenantId,
+            app_name: 'tenant',
+            apps: ['tenant']
+        });
+        message.success('User created successfully');
+        showCreateUserModal.value = false;
+        // Reset form
+        userForm.full_name = '';
+        userForm.email = '';
+        userForm.phone_number = '';
+        // Refresh users
+        const users = await getUsers({ tenant_id: tenantId });
+        tenantUsers.value = users;
+    } catch (e: any) {
+        message.error(e.data?.message || 'Failed to create user');
+    } finally {
+        creatingUser.value = false;
+    }
+};
+
+const handleDeleteUser = async (id: string) => {
+    try {
+        await deleteUser(id);
+        message.success('User deleted successfully');
+        tenantUsers.value = tenantUsers.value.filter(u => u.id !== id);
+    } catch (e) {
+        message.error('Failed to delete user');
     }
 };
 
