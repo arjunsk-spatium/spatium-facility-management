@@ -91,9 +91,6 @@ export const useAuthStore = defineStore('auth', {
                 body: { refresh: this.refreshToken }
             });
 
-
-            console.log('Refresh token response:', response);
-
             if (response.success && response.data?.access) {
                 this.token = response.data.access;
                 // Update refresh token if provided
@@ -102,7 +99,6 @@ export const useAuthStore = defineStore('auth', {
                 }
                 
                 if (import.meta.client) {
-                    console.log('Updating localStorage with new token:', this.token);
                     localStorage.setItem('admin_auth_token', this.token || '');
                     if (this.refreshToken) {
                          localStorage.setItem('admin_auth_refresh_token', this.refreshToken);

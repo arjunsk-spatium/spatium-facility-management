@@ -18,7 +18,6 @@ export const useApi = () => {
                         if (refreshed) {
                             // Retry the original request
                             // We need to update the header with the new token
-                            console.log('Retrying request with new token:', authStore.token);
                             options.headers = {
                                 ...options.headers,
                                 Authorization: `Bearer ${authStore.token}`
