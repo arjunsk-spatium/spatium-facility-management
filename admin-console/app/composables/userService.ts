@@ -4,8 +4,8 @@ import { type PortalUser } from '~/types/user';
 export const useUserService = () => {
     const { request } = useApi();
 
-    const getUsers = async () => {
-        const response = await request<any>('/api/portal/users/list/');
+    const getUsers = async (params: any = {}) => {
+        const response = await request<any>('/api/portal/users/list/', { params });
         return response?.data?.results || [];
     };
 
