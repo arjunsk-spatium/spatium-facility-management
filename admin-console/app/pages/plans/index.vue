@@ -65,6 +65,7 @@
                     }} / {{
                                 record.billing_cycle }}</span></p>
                     <p><strong>Max Users:</strong> {{ record.max_users > 0 ? record.max_users : 'Unlimited' }}</p>
+                    <p><strong>Max Client Users:</strong> {{ record.max_client_users > 0 ? record.max_client_users : 'Unlimited' }}</p>
                     <p class="text-gray-500 text-sm mt-2">{{ record.description }}</p>
 
                     <div class="flex justify-end mt-4 gap-2">
@@ -106,6 +107,7 @@ const columns = [
     { title: 'Code', dataIndex: 'code', key: 'code' },
     { title: 'Price', key: 'price' },
     { title: 'Max Users', dataIndex: 'max_users', key: 'max_users' },
+    { title: 'Max Client Users', dataIndex: 'max_client_users', key: 'max_client_users' },
     { title: 'Status', dataIndex: 'is_active', key: 'is_active', width: 100 },
     { title: 'Actions', key: 'actions', width: 120, align: 'center' }
 ];

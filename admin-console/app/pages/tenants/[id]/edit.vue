@@ -77,7 +77,7 @@
                                             <a-radio :value="plan.id" class="absolute top-4 right-4" />
                                         </div>
                                         <div class="text-lg font-bold text-primary-600 mb-1">
-                                            {{ parseFloat(plan.price) === 0 ? 'Free' : `₹${plan.price}` }}
+                                            {{ parseFloat(String(plan.price)) === 0 ? 'Free' : `₹${plan.price}` }}
                                         </div>
                                         <a-tag v-if="plan.is_custom" color="orange" class="text-xs">Custom</a-tag>
                                     </div>
@@ -101,6 +101,11 @@
 
                             <a-form-item label="Max Users">
                                 <a-input-number v-model:value="subscriptionForm.max_users" class="w-full" :min="1"
+                                    size="large" />
+                            </a-form-item>
+
+                            <a-form-item label="Max Client Users">
+                                <a-input-number v-model:value="subscriptionForm.max_client_users" class="w-full" :min="0"
                                     size="large" />
                             </a-form-item>
 
@@ -358,7 +363,7 @@ const tenant = ref<any>(null);
 
 // Forms
 const basicForm = reactive({ name: '', domain: '', status: '' });
-const subscriptionForm = reactive({ plan: '', start_date: '', end_date: '', billing_cycle: 'monthly', max_users: 100, price: 0 });
+const subscriptionForm = reactive({ plan: '', start_date: '', end_date: '', billing_cycle: 'monthly', max_users: 100, max_client_users: 100, price: 0 });
 const selectedModules = ref<string[]>([]);
 const brandingForm = reactive({
     primary_color: '#ffffff',
@@ -423,6 +428,7 @@ const fetchData = async () => {
                     subscriptionForm.end_date = sub.end_date;
                     subscriptionForm.billing_cycle = sub.billing_cycle;
                     subscriptionForm.max_users = sub.max_users;
+                    subscriptionForm.max_client_users = sub.max_client_users || 0;
                     subscriptionForm.price = sub.price ? Number(sub.price) : 0;
                 }
             }
@@ -487,6 +493,7 @@ const fetchData = async () => {
 const selectPlan = (plan: Plan) => {
     subscriptionForm.plan = plan.id;
     subscriptionForm.max_users = plan.max_users;
+    subscriptionForm.max_client_users = plan.max_client_users || 0;
     if (plan.billing_cycle) {
         subscriptionForm.billing_cycle = plan.billing_cycle;
     }

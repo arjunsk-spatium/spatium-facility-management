@@ -8,6 +8,7 @@ export interface Plan {
     is_custom: boolean;
     is_active: boolean;
     max_users: number;
+    max_client_users: number;
     features?: string[];
     is_archive?: boolean;
     archived_at?: string | null;
@@ -23,6 +24,7 @@ export interface CreatePlanPayload {
     price: number;
     billing_cycle: string;
     max_users: number;
+    max_client_users: number;
     is_custom: boolean;
 }
 
@@ -33,6 +35,7 @@ export interface UpdatePlanPayload {
     price?: number;
     billing_cycle?: string;
     max_users?: number;
+    max_client_users?: number;
     is_custom?: boolean;
     is_active?: boolean;
 }

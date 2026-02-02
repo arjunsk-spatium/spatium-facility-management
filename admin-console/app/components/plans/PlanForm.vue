@@ -48,14 +48,24 @@
             </a-row>
 
             <a-row :gutter="16">
+
                 <a-col :span="12">
-                    <a-form-item label="Max Users" name="max_users">
-                        <a-input-number v-model:value="formState.max_users" :min="0" class="w-full"
-                            help="0 for unlimited" />
-                    </a-form-item>
-                </a-col>
-                <a-col :span="12">
-                    <a-form-item label="Options">
+                     <a-form-item label="Max Users" name="max_users">
+                         <a-input-number v-model:value="formState.max_users" :min="0" class="w-full"
+                             help="0 for unlimited" />
+                     </a-form-item>
+                 </a-col>
+                 <a-col :span="12">
+                     <a-form-item label="Max Client Users" name="max_client_users">
+                         <a-input-number v-model:value="formState.max_client_users" :min="0" class="w-full"
+                             help="0 for unlimited" />
+                     </a-form-item>
+                 </a-col>
+             </a-row>
+ 
+             <a-row :gutter="16">
+                 <a-col :span="12">
+                     <a-form-item label="Options">
                         <div class="flex flex-col gap-2">
                             <a-checkbox v-model:checked="formState.is_custom">Custom Pricing</a-checkbox>
                             <a-checkbox v-model:checked="formState.is_active">Active</a-checkbox>
@@ -137,7 +147,9 @@ const formState = reactive({
     description: '',
     price: 0,
     billing_cycle: 'monthly',
+
     max_users: 0,
+    max_client_users: 0,
     is_custom: false,
     is_active: true,
     modules: [] as string[],
