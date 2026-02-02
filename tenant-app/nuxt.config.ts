@@ -1,5 +1,21 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from "@tailwindcss/vite";
+import fs from 'fs';
+
+// Workaround for stale process.env variables
+try {
+  if (fs.existsSync('.env')) {
+    const envConfig = fs.readFileSync('.env', 'utf8');
+    envConfig.split('\n').forEach(line => {
+      const match = line.match(/^([^=]+)=(.*)$/);
+      if (match && match[1] && match[2]) {
+        process.env[match[1].trim()] = match[2].trim();
+      }
+    });
+  }
+} catch (e) {
+  console.error('Failed to manually load .env', e);
+}
 
 export default defineNuxtConfig({
   ssr: false,
