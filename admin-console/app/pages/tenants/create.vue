@@ -356,7 +356,7 @@ const showBrandingPreview = ref(false);
 const tenantId = ref<string | null>(null);
 
 const { createTenant, updateTenant, assignPlan, assignModules, getTenantModules, updateBranding, updatePii } = useTenantService();
-const { getRegistry } = useModuleRegistry();
+const { getRegistry, getActiveRegistry } = useModuleRegistry();
 const { getPlans } = usePlanService();
 
 // Step 1 Data
@@ -390,9 +390,12 @@ const fetchData = async () => {
 
     // Fetch Modules
     try {
-        const modulesResponse = await getRegistry();
+        const modulesResponse = await getActiveRegistry();
         if (modulesResponse && modulesResponse.success && modulesResponse.data) {
-            modules.value = modulesResponse.data.results || [];
+            // Check if data is array (ActiveRegistryResponse) or object with results (RegistryResponse)
+            modules.value = Array.isArray(modulesResponse.data) 
+                ? modulesResponse.data 
+                : (modulesResponse.data.results || []);
             // Default select all modules
             subscriptionForm.selectedModules = modules.value.map(m => m.id);
         }

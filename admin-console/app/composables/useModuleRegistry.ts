@@ -44,6 +44,18 @@ export interface RegistryResponse {
     };
 }
 
+export interface ActiveRegistryResponse {
+    success: boolean;
+    code: string;
+    message: string;
+    data: RegistryModule[];
+    error: any;
+    meta: {
+        request_id: string;
+        timestamp: string;
+    };
+}
+
 export interface SingleRegistryResponse {
     success: boolean;
     code: string;
@@ -60,33 +72,57 @@ export const useModuleRegistry = () => {
     const { request } = useApi();
 
     const getRegistry = async (params: any = {}): Promise<RegistryResponse> => {
-        return request<RegistryResponse>('/api/platform/modules/registry/', { params });
-    };
-
-    const createModule = async (payload: CreateModulePayload): Promise<SingleRegistryResponse> => {
-        return request<SingleRegistryResponse>('/api/platform/modules/registry/', {
-            method: 'POST',
-            body: payload
+        return request<RegistryResponse>("/api/platform/modules/registry/", {
+            params,
         });
     };
 
-    const updateModule = async (id: string, payload: UpdateModulePayload): Promise<SingleRegistryResponse> => {
-        return request<SingleRegistryResponse>(`/api/platform/modules/registry/${id}/`, {
-            method: 'PATCH',
-            body: payload
-        });
+    const getActiveRegistry = async (
+        params: any = {},
+    ): Promise<ActiveRegistryResponse> => {
+        return request<ActiveRegistryResponse>(
+            "/api/platform/modules/registry/active/",
+            { params },
+        );
+    };
+
+    const createModule = async (
+        payload: CreateModulePayload,
+    ): Promise<SingleRegistryResponse> => {
+        return request<SingleRegistryResponse>(
+            "/api/platform/modules/registry/",
+            {
+                method: "POST",
+                body: payload,
+            },
+        );
+    };
+
+    const updateModule = async (
+        id: string,
+        payload: UpdateModulePayload,
+    ): Promise<SingleRegistryResponse> => {
+        return request<SingleRegistryResponse>(
+            `/api/platform/modules/registry/${id}/`,
+            {
+                method: "PATCH",
+                body: payload,
+            },
+        );
     };
 
     const deleteModule = async (id: string): Promise<any> => {
         return request(`/api/platform/modules/registry/${id}/`, {
-            method: 'DELETE'
+            method: "DELETE",
         });
     };
 
     return {
         getRegistry,
+        getActiveRegistry,
+
         createModule,
         updateModule,
-        deleteModule
+        deleteModule,
     };
 };

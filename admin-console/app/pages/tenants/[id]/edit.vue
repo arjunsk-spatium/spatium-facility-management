@@ -355,7 +355,7 @@ const {
     getTenantBranding,
     getTenantPii
 } = useTenantService();
-const { getRegistry } = useModuleRegistry();
+const { getRegistry, getActiveRegistry } = useModuleRegistry();
 const { getPlans } = usePlanService();
 
 const loading = ref(true);
@@ -411,9 +411,13 @@ const fetchData = async () => {
         }
 
         // 2. Fetch Plans & Registry
-        const [plansRes, modulesRes] = await Promise.all([getPlans(), getRegistry()]);
+        const [plansRes, modulesRes] = await Promise.all([getPlans(), getActiveRegistry()]);
         if (plansRes) plans.value = plansRes.data?.results || plansRes.data || [];
-        if (modulesRes) modules.value = modulesRes.data?.results || [];
+        if (modulesRes) {
+             modules.value = Array.isArray(modulesRes.data) 
+                ? modulesRes.data 
+                : (modulesRes.data.results || []);
+        }
 
         // 3. Fetch Sub-Resources (Prefill)
         // Subscription
