@@ -34,24 +34,83 @@
                         <a-form-item label="Facility Name" required>
                             <a-input v-model:value="formData.name" placeholder="Enter facility name" />
                         </a-form-item>
+                        <a-form-item label="Address" required>
+                            <a-textarea v-model:value="formData.address" placeholder="Street address" :rows="3" />
+                        </a-form-item>
+                        <a-form-item label="Postal Code">
+                            <a-input v-model:value="formData.postal_code" placeholder="Postal/ZIP code" />
+                        </a-form-item>
                     </div>
                 </div>
 
-                <!-- Location Section -->
+                <!-- Location Section with Cascading Dropdowns -->
                 <div class="mb-8">
                     <h2 class="text-lg font-semibold mb-4 dark:text-white">Location Details</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <a-form-item label="Address" required>
-                            <a-input v-model:value="formData.location.address" placeholder="Street address" />
-                        </a-form-item>
-                        <a-form-item label="City" required>
-                            <a-input v-model:value="formData.location.city" placeholder="City" />
-                        </a-form-item>
-                        <a-form-item label="State" required>
-                            <a-input v-model:value="formData.location.state" placeholder="State/Province" />
-                        </a-form-item>
+                        <!-- Country Dropdown -->
                         <a-form-item label="Country" required>
-                            <a-input v-model:value="formData.location.country" placeholder="Country" />
+                            <a-select
+                                v-model:value="formData.country"
+                                placeholder="Select Country"
+                                :loading="loadingCountries"
+                                show-search
+                            option-filter-prop="label"
+                            @change="handleCountryChange"
+                            >
+                                <a-select-option v-for="country in countries" :key="country.id" :value="country.id" :label="country.name">
+                                    {{ country.name }}
+                                </a-select-option>
+                            </a-select>
+                        </a-form-item>
+
+                        <!-- State Dropdown -->
+                        <a-form-item label="State" required>
+                            <a-select
+                                v-model:value="formData.state"
+                                placeholder="Select State"
+                                :loading="loadingStates"
+                                :disabled="!formData.country"
+                                show-search
+                            option-filter-prop="label"
+                            @change="handleStateChange"
+                            >
+                                <a-select-option v-for="state in states" :key="state.id" :value="state.id" :label="state.name">
+                                    {{ state.name }}
+                                </a-select-option>
+                            </a-select>
+                        </a-form-item>
+
+                        <!-- City Dropdown -->
+                        <a-form-item label="City" required>
+                            <a-select
+                                v-model:value="formData.city"
+                                placeholder="Select City"
+                                :loading="loadingCities"
+                                :disabled="!formData.state"
+                                show-search
+                            option-filter-prop="label"
+                            @change="handleCityChange"
+                            >
+                                <a-select-option v-for="city in cities" :key="city.id" :value="city.id" :label="city.name">
+                                    {{ city.name }}
+                                </a-select-option>
+                            </a-select>
+                        </a-form-item>
+
+                        <!-- Zone Dropdown -->
+                        <a-form-item label="Zone" required>
+                            <a-select
+                                v-model:value="formData.zone"
+                                placeholder="Select Zone"
+                                :loading="loadingZones"
+                                :disabled="!formData.city"
+                                show-search
+                                option-filter-prop="label"
+                            >
+                                <a-select-option v-for="zone in zones" :key="zone.id" :value="zone.id" :label="zone.name">
+                                    {{ zone.name }}
+                                </a-select-option>
+                            </a-select>
                         </a-form-item>
                     </div>
                 </div>
@@ -59,42 +118,32 @@
                 <!-- Structure Section -->
                 <div class="mb-8">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold dark:text-white">Structure (Towers, Floors, Wings)</h2>
-                        <a-button type="primary" @click="openManageStructureModal">
-                            <EditOutlined /> Manage Structure
+                        <h2 class="text-lg font-semibold dark:text-white">Structure (Towers)</h2>
+                        <a-button type="link" @click="navigateTo(`/facilities/${facilityId}`)">
+                            Manage Towers →
                         </a-button>
                     </div>
 
                     <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                        <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="grid grid-cols-2 gap-4 text-center">
                             <div>
-                                <div class="text-2xl font-bold dark:text-white">{{ formData.towers.length }}</div>
+                                <div class="text-2xl font-bold dark:text-white">{{ facility.tower_count || 0 }}</div>
                                 <div class="text-xs text-gray-500">Towers</div>
                             </div>
                             <div>
-                                <div class="text-2xl font-bold dark:text-white">{{ totalFloors }}</div>
-                                <div class="text-xs text-gray-500">Floors</div>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-bold dark:text-white">{{ totalWings }}</div>
-                                <div class="text-xs text-gray-500">Wings</div>
+                                <div class="text-2xl font-bold dark:text-white">{{ formData.has_towers ? 'Yes' : 'No' }}</div>
+                                <div class="text-xs text-gray-500">Multi-Building</div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Amenities Section -->
-                <div class="mb-8">
-                    <h2 class="text-lg font-semibold mb-4 dark:text-white">Amenities</h2>
-                    <a-select v-model:value="formData.amenities" mode="multiple" placeholder="Select amenities"
-                        style="width: 100%">
-                        <a-select-option value="Parking">Parking</a-select-option>
-                        <a-select-option value="Gym">Gym</a-select-option>
-                        <a-select-option value="Cafeteria">Cafeteria</a-select-option>
-                        <a-select-option value="Conference Rooms">Conference Rooms</a-select-option>
-                        <a-select-option value="Security">24/7 Security</a-select-option>
-                        <a-select-option value="EV Charging">EV Charging</a-select-option>
-                    </a-select>
+                    <div class="mt-4 flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <a-switch v-model:checked="formData.has_towers" />
+                        <div>
+                            <div class="font-medium">Multi-Building Complex</div>
+                            <div class="text-sm text-gray-500">Enable if this facility has multiple towers.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Action Buttons -->
@@ -107,82 +156,15 @@
             </a-form>
         </a-card>
     </div>
-        <!-- Manage Structure Modal -->
-        <a-modal v-model:open="isManageStructureModalOpen" title="Manage Structure" width="800px" :footer="null">
-            <div class="space-y-6">
-                <!-- Add Tower -->
-                <div class="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-                    <span class="font-medium text-lg dark:text-gray-200">Towers</span>
-                    <a-button type="primary" @click="addTower">
-                        <PlusOutlined /> Add Tower
-                    </a-button>
-                </div>
-
-                <div class="space-y-4 max-h-[60vh] overflow-y-auto">
-                    <a-card v-for="(tower, tIndex) in formData.towers" :key="tIndex" size="small" >
-                        <template #title>
-                            <div class="flex items-center gap-2">
-                                <a-input v-model:value="tower.name" class="font-bold max-w-[200px]" :bordered="false" />
-                            </div>
-                        </template>
-                        <template #extra>
-                            <a-popconfirm title="Delete tower?" @confirm="removeTower(tIndex)">
-                                <a-button type="text" danger size="small">
-                                    <DeleteOutlined />
-                                </a-button>
-                            </a-popconfirm>
-                        </template>
-
-                        <!-- Floors -->
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center text-xs text-gray-500 mb-2 pb-1">
-                                <span>FLOORS</span>
-                                <a-button type="link" size="small" @click="addFloor(tIndex)">+ Add Floor</a-button>
-                            </div>
-
-                            <div v-for="(floor, fIndex) in tower.floors" :key="fIndex"
-                                class="bg-white dark:bg-gray-900 p-3 rounded-lg shadow-sm">
-                                <div class="flex justify-between items-center mb-2">
-                                    <a-input v-model:value="floor.name" class="max-w-[150px]" size="small"
-                                        :bordered="false" />
-                                    <div class="flex items-center gap-2">
-                                        <a-button type="link" size="small" @click="addWing(tIndex, fIndex)">+
-                                            Wing</a-button>
-                                        <a-popconfirm title="Delete floor?" @confirm="removeFloor(tIndex, fIndex)">
-                                            <CloseCircleOutlined
-                                                class="text-red-500 cursor-pointer hover:text-red-400" />
-                                        </a-popconfirm>
-                                    </div>
-                                </div>
-
-                                <!-- Wings Chips -->
-                                <div class="flex flex-wrap gap-2">
-                                    <span v-if="floor.wings.length === 0" class="text-xs text-gray-400 italic">No wings
-                                        added</span>
-                                    <a-tag v-for="(wing, wIndex) in floor.wings" :key="wIndex" closable
-                                        class="mr-0 mb-1" @close="removeWing(tIndex, fIndex, wIndex)">
-                                        {{ wing.name }}
-                                    </a-tag>
-                                </div>
-                            </div>
-                        </div>
-                    </a-card>
-                </div>
-
-                <div class="pt-4 flex justify-end gap-2">
-                    <a-button @click="isManageStructureModalOpen = false">Done</a-button>
-                </div>
-            </div>
-        </a-modal>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { useFacilityService } from '../../../../composables/facilityService';
+import { useFacilityService, type Facility } from '../../../../composables/facilityService';
+import { useLocationService, type Country, type State, type City, type Zone } from '../../../../composables/locationService';
 import AppLoader from '../../../../components/AppLoader.vue';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CloseCircleOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 
 definePageMeta({
@@ -192,35 +174,119 @@ definePageMeta({
 const route = useRoute();
 const facilityId = route.params.id as string;
 const facilityService = useFacilityService();
+const locationService = useLocationService();
 
 const loading = ref(true);
 const saving = ref(false);
-const facility = ref<any>(null);
-const isManageStructureModalOpen = ref(false);
+const facility = ref<Facility | null>(null);
+
+// Location data
+const countries = ref<Country[]>([]);
+const states = ref<State[]>([]);
+const cities = ref<City[]>([]);
+const zones = ref<Zone[]>([]);
+
+// Loading states
+const loadingCountries = ref(false);
+const loadingStates = ref(false);
+const loadingCities = ref(false);
+const loadingZones = ref(false);
 
 const formData = reactive({
     name: '',
-    location: {
-        address: '',
-        city: '',
-        state: '',
-        country: ''
-    },
-    amenities: [] as string[],
-    hasTowers: false,
-    towers: [] as any[],
-    staff: [] as any[]
+    address: '',
+    postal_code: '',
+    country: '' as string,
+    state: '' as string,
+    city: '' as string,
+    zone: '' as string,
+    has_towers: false
 });
 
-const totalFloors = computed(() => {
-    return formData.towers.reduce((acc: number, tower: any) => acc + tower.floors.length, 0);
-});
+// Filter option for searchable selects
+const filterOption = (input: string, option: any) => {
+    return option.children?.[0]?.children?.toLowerCase().includes(input.toLowerCase());
+};
 
-const totalWings = computed(() => {
-    return formData.towers.reduce((acc: number, tower: any) => {
-        return acc + tower.floors.reduce((floorAcc: number, floor: any) => floorAcc + floor.wings.length, 0);
-    }, 0);
-});
+const loadCountries = async () => {
+    loadingCountries.value = true;
+    try {
+        countries.value = await locationService.getCountries();
+    } catch (e) {
+        console.error('Failed to load countries', e);
+    } finally {
+        loadingCountries.value = false;
+    }
+};
+
+const loadStatesForCountry = async (countryId: string) => {
+    loadingStates.value = true;
+    try {
+        states.value = await locationService.getStatesByCountry(countryId);
+    } catch (e) {
+        console.error('Failed to load states', e);
+    } finally {
+        loadingStates.value = false;
+    }
+};
+
+const loadCitiesForState = async (stateId: string) => {
+    loadingCities.value = true;
+    try {
+        cities.value = await locationService.getCitiesByState(stateId);
+    } catch (e) {
+        console.error('Failed to load cities', e);
+    } finally {
+        loadingCities.value = false;
+    }
+};
+
+const loadZonesForCity = async (cityId: string) => {
+    loadingZones.value = true;
+    try {
+        zones.value = await locationService.getZonesByCity(cityId);
+    } catch (e) {
+        console.error('Failed to load zones', e);
+    } finally {
+        loadingZones.value = false;
+    }
+};
+
+// Handle country change - load states and reset dependent fields
+const handleCountryChange = async (countryId: string) => {
+    formData.state = '';
+    formData.city = '';
+    formData.zone = '';
+    states.value = [];
+    cities.value = [];
+    zones.value = [];
+
+    if (countryId) {
+        await loadStatesForCountry(countryId);
+    }
+};
+
+// Handle state change - load cities and reset dependent fields
+const handleStateChange = async (stateId: string) => {
+    formData.city = '';
+    formData.zone = '';
+    cities.value = [];
+    zones.value = [];
+
+    if (stateId) {
+        await loadCitiesForState(stateId);
+    }
+};
+
+// Handle city change - load zones
+const handleCityChange = async (cityId: string) => {
+    formData.zone = '';
+    zones.value = [];
+
+    if (cityId) {
+        await loadZonesForCity(cityId);
+    }
+};
 
 const fetchFacility = async () => {
     loading.value = true;
@@ -230,64 +296,33 @@ const fetchFacility = async () => {
 
         // Populate form with facility data
         formData.name = data.name;
-        formData.location = { ...data.location };
-        formData.amenities = [...(data.amenities || [])];
-        formData.hasTowers = data.hasTowers;
-        formData.towers = JSON.parse(JSON.stringify(data.towers || []));
-        formData.staff = [...(data.staff || [])];
+        formData.address = data.address;
+        formData.postal_code = data.postal_code || '';
+        formData.country = data.country;
+        formData.state = data.state;
+        formData.city = data.city;
+        formData.zone = data.zone;
+        formData.has_towers = data.has_towers;
+
+        // Load countries first
+        await loadCountries();
+
+        // Load cascading data based on existing values
+        if (data.country) {
+            await loadStatesForCountry(data.country);
+        }
+        if (data.state) {
+            await loadCitiesForState(data.state);
+        }
+        if (data.city) {
+            await loadZonesForCity(data.city);
+        }
     } catch (e) {
         console.error('Failed to load facility', e);
+        message.error('Failed to load facility');
     } finally {
         loading.value = false;
     }
-};
-
-const openManageStructureModal = () => {
-    isManageStructureModalOpen.value = true;
-};
-
-// Tower Operations
-const addTower = () => {
-    const nextNum = formData.towers.length + 1;
-    formData.towers.push({
-        id: Date.now().toString(),
-        name: `Tower ${String.fromCharCode(64 + nextNum)}`,
-        floors: []
-    });
-};
-
-const removeTower = (index: number) => {
-    formData.towers.splice(index, 1);
-};
-
-// Floor Operations
-const addFloor = (tIndex: number) => {
-    const tower = formData.towers[tIndex];
-    const nextNum = tower.floors.length + 1;
-    tower.floors.push({
-        id: Date.now().toString(),
-        name: `Floor ${nextNum}`,
-        number: nextNum,
-        wings: []
-    });
-};
-
-const removeFloor = (tIndex: number, fIndex: number) => {
-    formData.towers[tIndex].floors.splice(fIndex, 1);
-};
-
-// Wing Operations
-const addWing = (tIndex: number, fIndex: number) => {
-    const floor = formData.towers[tIndex].floors[fIndex];
-    const nextNum = floor.wings.length + 1;
-    floor.wings.push({
-        id: Date.now().toString(),
-        name: `Wing ${String.fromCharCode(64 + nextNum)}`
-    });
-};
-
-const removeWing = (tIndex: number, fIndex: number, wIndex: number) => {
-    formData.towers[tIndex].floors[fIndex].wings.splice(wIndex, 1);
 };
 
 // Save
@@ -296,16 +331,26 @@ const handleSave = async () => {
         message.error('Please enter a facility name');
         return;
     }
+    if (!formData.address) {
+        message.error('Please enter an address');
+        return;
+    }
+    if (!formData.country || !formData.state || !formData.city || !formData.zone) {
+        message.error('Please select all location fields');
+        return;
+    }
 
     saving.value = true;
     try {
         await facilityService.updateFacility(facilityId, {
             name: formData.name,
-            location: formData.location,
-            amenities: formData.amenities,
-            hasTowers: formData.hasTowers,
-            towers: formData.towers,
-            staff: formData.staff
+            address: formData.address,
+            postal_code: formData.postal_code || undefined,
+            country: formData.country,
+            state: formData.state,
+            city: formData.city,
+            zone: formData.zone,
+            has_towers: formData.has_towers
         });
 
         message.success('Facility updated successfully');

@@ -7,135 +7,172 @@
         <div class="flex justify-center">
         <a-card class="w-full sm:max-w-4xl" :bodyStyle="{ padding: '16px 24px' }">
             <a-steps :current="currentStep" class="mb-8">
-                <a-step title="Basic Info" description="Location & Details" />
-                <a-step title="Structure" description="Towers & Floors" />
+                <a-step title="Basic Info" description="Name & Address" />
+                <a-step title="Location" description="Country, State, City" />
+                <a-step title="Review" description="Confirm Details" />
             </a-steps>
 
             <!-- Step 1: Basic Information -->
             <div v-show="currentStep === 0" class="max-w-3xl mx-auto space-y-8 py-8">
                 <a-form layout="vertical" :model="formData">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <a-form-item label="Facility Name" required>
-                            <a-input v-model:value="formData.name" placeholder="e.g. Headquarters" size="large" />
-                        </a-form-item>
-                        <a-form-item label="Address" required>
-                            <a-input v-model:value="formData.location.address" placeholder="Street Address"
-                                size="large" />
-                        </a-form-item>
-                        <a-form-item label="City" required>
-                            <a-input v-model:value="formData.location.city" placeholder="City" size="large" />
-                        </a-form-item>
-                        <a-form-item label="State/Province">
-                            <a-input v-model:value="formData.location.state" placeholder="State" size="large" />
-                        </a-form-item>
-                        <a-form-item label="Country" required>
-                            <a-input v-model:value="formData.location.country" placeholder="Country" size="large" />
-                        </a-form-item>
-                    </div>
-                </a-form>
+                        <!-- Left Column (Name & Postal Code) -->
+                        <div class="space-y-6">
+                            <a-form-item label="Facility Name" required>
+                                <a-input v-model:value="formData.name" placeholder="e.g. Headquarters" size="large" />
+                            </a-form-item>
+                            <a-form-item label="Postal Code">
+                                <a-input v-model:value="formData.postal_code" placeholder="Postal/ZIP Code" size="large" />
+                            </a-form-item>
+                        </div>
 
-                <div class="pt-4 border-t dark:border-gray-700">
-                    <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <a-switch v-model:checked="formData.hasTowers" />
-                        <div>
-                            <div class="font-medium">Multi-Building Complex</div>
-                            <div class="text-sm text-gray-500">Enable if this facility has multiple towers/buildings.
+                        <!-- Right Column (Address & Image) -->
+                        <div class="space-y-6">
+                            <a-form-item label="Address" required>
+                                <a-textarea v-model:value="formData.address" placeholder="Street Address" :rows="3" />
+                            </a-form-item>
+                            <a-form-item label="Facility Image">
+                                <a-upload
+                                    :before-upload="handleBeforeUpload"
+                                    :show-upload-list="false"
+                                    accept="image/*"
+                                >
+                                    <a-button>
+                                        <template #icon><UploadOutlined /></template>
+                                        Select Image
+                                    </a-button>
+                                </a-upload>
+                                <div v-if="imagePreview" class="mt-2">
+                                    <img :src="imagePreview" alt="Preview" class="max-w-48 max-h-32 rounded border object-cover" />
+                                    <a-button type="link" danger size="small" @click="removeImage">Remove</a-button>
+                                </div>
+                                <div v-if="formData.image_url && !imagePreview" class="mt-1 text-sm text-gray-500">
+                                    {{ formData.image_url.name }}
+                                </div>
+                            </a-form-item>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t dark:border-gray-700 mt-6">
+                        <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <a-switch v-model:checked="formData.has_towers" />
+                            <div>
+                                <div class="font-medium">Multi-Building Complex</div>
+                                <div class="text-sm text-gray-500">Enable if this facility has multiple towers/buildings.</div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </a-form>
             </div>
 
-            <!-- Step 2: Structure -->
-            <div v-show="currentStep === 1" class="max-w-4xl mx-auto">
-                <div v-if="formData.towers.length === 0" class="text-center py-8">
-                    <a-button type="dashed" size="large" @click="addTower">
-                        <template #icon>
-                            <PlusOutlined />
-                        </template>
-                        Add {{ formData.hasTowers ? 'Tower' : 'Main Building' }}
-                    </a-button>
-                </div>
+            <!-- Step 2: Location Details with Cascading Dropdowns -->
+            <div v-show="currentStep === 1" class="max-w-3xl mx-auto space-y-8 py-8">
+                <a-form layout="vertical" :model="formData">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Country Dropdown -->
+                        <a-form-item label="Country" required>
+                            <a-select
+                                v-model:value="formData.country"
+                                placeholder="Select Country"
+                                size="large"
+                                :loading="loadingCountries"
+                                show-search
+                                option-filter-prop="label"
+                                @change="handleCountryChange"
+                            >
+                                <a-select-option v-for="country in countries" :key="country.id" :value="country.id" :label="country.name">
+                                    {{ country.name }}
+                                </a-select-option>
+                            </a-select>
+                        </a-form-item>
 
-                <div v-else class="space-y-6">
-                    <a-collapse v-model:activeKey="activeTowers" :bordered="false">
-                        <a-collapse-panel v-for="(tower, tIndex) in formData.towers" :key="tower.id">
-                            <template #header>
-                                <div class="flex items-center justify-between w-full pr-4">
-                                    <span class="font-medium text-lg">{{ tower.name }}</span>
-                                    <DeleteOutlined class="text-red-500 hover:text-red-700"
-                                        @click.stop="removeTower(tIndex)" />
-                                </div>
-                            </template>
+                        <!-- State Dropdown -->
+                        <a-form-item label="State" required>
+                            <a-select
+                                v-model:value="formData.state"
+                                placeholder="Select State"
+                                size="large"
+                                :loading="loadingStates"
+                                :disabled="!formData.country"
+                                show-search
+                                option-filter-prop="label"
+                                @change="handleStateChange"
+                            >
+                                <a-select-option v-for="state in states" :key="state.id" :value="state.id" :label="state.name">
+                                    {{ state.name }}
+                                </a-select-option>
+                            </a-select>
+                        </a-form-item>
 
-                            <div class="space-y-4">
-                                <a-input v-model:value="tower.name" addon-before="Name" />
+                        <!-- City Dropdown -->
+                        <a-form-item label="City" required>
+                            <a-select
+                                v-model:value="formData.city"
+                                placeholder="Select City"
+                                size="large"
+                                :loading="loadingCities"
+                                :disabled="!formData.state"
+                                show-search
+                                option-filter-prop="label"
+                                @change="handleCityChange"
+                            >
+                                <a-select-option v-for="city in cities" :key="city.id" :value="city.id" :label="city.name">
+                                    {{ city.name }}
+                                </a-select-option>
+                            </a-select>
+                        </a-form-item>
 
-                                <!-- Floors -->
-                                <div class="pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-4">
-                                    <div class="flex justify-between items-center">
-                                        <h4 class="font-medium text-gray-600 dark:text-gray-400">Floors</h4>
-                                        <a-button size="small" type="dashed" @click="addFloor(tIndex)">+ Add
-                                            Floor</a-button>
-                                    </div>
+                        <!-- Zone Dropdown -->
+                        <a-form-item label="Zone" required>
+                            <a-select
+                                v-model:value="formData.zone"
+                                placeholder="Select Zone"
+                                size="large"
+                                :loading="loadingZones"
+                                :disabled="!formData.city"
+                                show-search
+                                option-filter-prop="label"
+                            >
+                                <a-select-option v-for="zone in zones" :key="zone.id" :value="zone.id" :label="zone.name">
+                                    {{ zone.name }}
+                                </a-select-option>
+                            </a-select>
+                            <span v-if="formData.city && zones.length === 0 && !loadingZones" class="text-xs text-orange-500">
+                                No zones found for selected city
+                            </span>
+                        </a-form-item>
+                    </div>
+                </a-form>
+            </div>
 
-                                    <div v-if="tower.floors.length === 0" class="text-sm text-gray-400 italic">No floors
-                                        added.</div>
-
-                                    <div v-for="(floor, fIndex) in tower.floors" :key="floor.id"
-                                        class="p-3 bg-gray-50 dark:bg-gray-800 rounded flex flex-col gap-3">
-                                        <div class="flex items-center gap-3">
-                                            <a-input v-model:value="floor.name" placeholder="Floor Name (e.g. 1st)"
-                                                class="flex-1" />
-                                            <DeleteOutlined class="text-gray-400 hover:text-red-500"
-                                                @click="removeFloor(tIndex, fIndex)" />
-                                        </div>
-
-                                        <!-- Wings (Optional) -->
-                                        <div class="ml-4">
-                                            <div class="flex flex-wrap gap-2 items-center">
-                                                <span class="text-xs text-gray-400">Wings:</span>
-                                                <a-tag v-for="(wing, wIndex) in floor.wings" :key="wing.id" closable
-                                                    @close="removeWing(tIndex, fIndex, wIndex)">
-                                                    {{ wing.name }}
-                                                </a-tag>
-                                                <a-input v-if="inputVisible[floor.id]" ref="wingInputRef"
-                                                    v-model:value="wingInputValue[floor.id]" type="text" size="small"
-                                                    :style="{ width: '78px' }"
-                                                    @blur="handleWingInputConfirm(tIndex, fIndex)"
-                                                    @keyup.enter="handleWingInputConfirm(tIndex, fIndex)" />
-                                                <a-tag v-else class="border-dashed bg-white dark:bg-transparent"
-                                                    @click="showWingInput(floor.id)">
-                                                    <PlusOutlined /> New Wing
-                                                </a-tag>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </a-collapse-panel>
-                    </a-collapse>
-
-                    <div v-if="formData.hasTowers" class="text-center pt-4">
-                        <a-button type="dashed" @click="addTower">
-                            <template #icon>
-                                <PlusOutlined />
-                            </template> Add Another Tower
-                        </a-button>
+            <!-- Step 3: Review -->
+            <div v-show="currentStep === 2" class="max-w-4xl mx-auto py-8">
+                <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+                    <h3 class="font-medium mb-4 text-lg">Summary</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div><span class="text-gray-500">Name:</span> {{ formData.name || 'Not set' }}</div>
+                        <div><span class="text-gray-500">Address:</span> {{ formData.address || 'Not set' }}</div>
+                        <div><span class="text-gray-500">Postal Code:</span> {{ formData.postal_code || 'N/A' }}</div>
+                        <div><span class="text-gray-500">Multi-Building:</span> {{ formData.has_towers ? 'Yes' : 'No' }}</div>
+                        <div><span class="text-gray-500">Country:</span> {{ selectedCountryName }}</div>
+                        <div><span class="text-gray-500">State:</span> {{ selectedStateName }}</div>
+                        <div><span class="text-gray-500">City:</span> {{ selectedCityName }}</div>
+                        <div><span class="text-gray-500">Zone:</span> {{ selectedZoneName }}</div>
                     </div>
                 </div>
+                
+                <div class="mt-6 text-center text-gray-500">
+                    <p>Towers can be added after the facility is created from the facility detail page.</p>
+                </div>
             </div>
-
-
-
 
             <!-- Actions -->
             <div class="mt-8 flex justify-between border-t border-gray-100 dark:border-gray-800 pt-6">
                 <a-button v-if="currentStep > 0" @click="currentStep--">Previous</a-button>
-                <div v-else></div> <!-- Spacer -->
+                <div v-else></div>
 
-                <a-button v-if="currentStep < 1" type="primary" @click="currentStep++">Next</a-button>
-                <a-button v-else type="primary" @click="handleSubmit">Submit Facility</a-button>
+                <a-button v-if="currentStep < 2" type="primary" @click="handleNextStep">Next</a-button>
+                <a-button v-else type="primary" :loading="submitting" @click="handleSubmit">Create Facility</a-button>
             </div>
         </a-card>
     </div>
@@ -143,118 +180,224 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick, watch, computed } from 'vue';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useFacilityStore } from '../../../stores/facility';
+import { useLocationService, type Country, type State, type City, type Zone } from '../../../composables/locationService';
+import { message } from 'ant-design-vue';
+import { UploadOutlined } from '@ant-design/icons-vue';
 
 definePageMeta({
     middleware: 'auth'
 });
 
 const facilityStore = useFacilityStore();
+const locationService = useLocationService();
+
 const currentStep = ref(0);
-const activeTowers = ref<string[]>([]);
-const inputVisible = reactive<Record<string, boolean>>({});
-const wingInputValue = reactive<Record<string, string>>({});
-const wingInputRef = ref();
+const submitting = ref(false);
+
+// Location data
+const countries = ref<Country[]>([]);
+const states = ref<State[]>([]);
+const cities = ref<City[]>([]);
+const zones = ref<Zone[]>([]);
+
+// Loading states
+const loadingCountries = ref(false);
+const loadingStates = ref(false);
+const loadingCities = ref(false);
+const loadingZones = ref(false);
 
 const formData = reactive({
     name: '',
-    location: {
-        address: '',
-        city: '',
-        state: '',
-        country: ''
-    },
-    amenities: [] as string[],
-    hasTowers: false,
-    towers: [] as any[],
-    staff: [] as any[]
+    address: '',
+    country: '' as string,
+    state: '' as string,
+    city: '' as string,
+    zone: '' as string,
+    has_towers: false,
+    postal_code: '',
+    image_url: undefined as File | undefined
 });
 
-// Watch 'hasTowers' to reset or adjust towers
-watch(() => formData.hasTowers, (newVal) => {
-    // If turning OFF towers, ensure only one exists and rename it
-    if (!newVal && formData.towers.length > 0) {
-        // Keep the first one, remove others
-        formData.towers = [formData.towers[0]];
-        formData.towers[0].name = 'Main Building';
-    }
-    // If turning ON towers, rename 'Main Building' if it's the only one
-    else if (newVal && formData.towers.length === 1 && formData.towers[0].name === 'Main Building') {
-        formData.towers[0].name = 'Tower 1';
-    }
+// Image upload handling
+const imagePreview = ref<string | null>(null);
+
+const handleBeforeUpload = (file: File) => {
+    formData.image_url = file;
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        imagePreview.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    return false; // Prevent auto upload
+};
+
+const removeImage = () => {
+    formData.image_url = undefined;
+    imagePreview.value = null;
+};
+
+// Computed names for display in review step
+const selectedCountryName = computed(() => {
+    const country = countries.value.find(c => c.id === formData.country);
+    return country?.name || 'Not selected';
 });
 
-// Structure Management
-const addTower = () => {
-    const id = Date.now().toString();
-    formData.towers.push({
-        id,
-        name: formData.hasTowers ? `Tower ${formData.towers.length + 1}` : 'Main Building',
-        floors: []
-    });
-    activeTowers.value.push(id);
+const selectedStateName = computed(() => {
+    const state = states.value.find(s => s.id === formData.state);
+    return state?.name || 'Not selected';
+});
+
+const selectedCityName = computed(() => {
+    const city = cities.value.find(c => c.id === formData.city);
+    return city?.name || 'Not selected';
+});
+
+const selectedZoneName = computed(() => {
+    const zone = zones.value.find(z => z.id === formData.zone);
+    return zone?.name || 'Not selected';
+});
+
+// Filter option for searchable selects
+const filterOption = (input: string, option: any) => {
+    return option.children?.[0]?.children?.toLowerCase().includes(input.toLowerCase());
 };
 
-const removeTower = (index: number) => {
-    formData.towers.splice(index, 1);
-};
-
-const addFloor = (towerIndex: number) => {
-    const floorNum = formData.towers[towerIndex].floors.length;
-    formData.towers[towerIndex].floors.push({
-        id: Date.now().toString() + Math.random(),
-        name: floorNum === 0 ? 'Ground Floor' : `${floorNum}th Floor`,
-        number: floorNum,
-        wings: []
-    });
-};
-
-const removeFloor = (towerIndex: number, floorIndex: number) => {
-    formData.towers[towerIndex].floors.splice(floorIndex, 1);
-};
-
-// Wing Management
-const showWingInput = (floorId: string) => {
-    inputVisible[floorId] = true;
-    nextTick(() => {
-        wingInputRef.value?.focus();
-    });
-};
-
-const handleWingInputConfirm = (tIndex: number, fIndex: number) => {
-    const floor = formData.towers[tIndex].floors[fIndex];
-    const val = wingInputValue[floor.id];
-
-    if (val) {
-        floor.wings.push({
-            id: Date.now().toString(),
-            name: val
-        });
+// Load countries on mount
+const loadCountries = async () => {
+    loadingCountries.value = true;
+    try {
+        countries.value = await locationService.getCountries();
+    } catch (e) {
+        console.error('Failed to load countries', e);
+        message.error('Failed to load countries');
+    } finally {
+        loadingCountries.value = false;
     }
-
-    inputVisible[floor.id] = false;
-    wingInputValue[floor.id] = '';
 };
 
-const removeWing = (tIndex: number, fIndex: number, wIndex: number) => {
-    formData.towers[tIndex].floors[fIndex].wings.splice(wIndex, 1);
+// Handle country change - load states
+const handleCountryChange = async (countryId: string) => {
+    // Reset dependent fields
+    formData.state = '';
+    formData.city = '';
+    formData.zone = '';
+    states.value = [];
+    cities.value = [];
+    zones.value = [];
+
+    if (!countryId) return;
+
+    loadingStates.value = true;
+    try {
+        states.value = await locationService.getStatesByCountry(countryId);
+    } catch (e) {
+        console.error('Failed to load states', e);
+        message.error('Failed to load states');
+    } finally {
+        loadingStates.value = false;
+    }
+};
+
+// Handle state change - load cities
+const handleStateChange = async (stateId: string) => {
+    // Reset dependent fields
+    formData.city = '';
+    formData.zone = '';
+    cities.value = [];
+    zones.value = [];
+
+    if (!stateId) return;
+
+    loadingCities.value = true;
+    try {
+        cities.value = await locationService.getCitiesByState(stateId);
+    } catch (e) {
+        console.error('Failed to load cities', e);
+        message.error('Failed to load cities');
+    } finally {
+        loadingCities.value = false;
+    }
+};
+
+// Handle city change - load zones
+const handleCityChange = async (cityId: string) => {
+    // Reset dependent field
+    formData.zone = '';
+    zones.value = [];
+
+    if (!cityId) return;
+
+    loadingZones.value = true;
+    try {
+        zones.value = await locationService.getZonesByCity(cityId);
+    } catch (e) {
+        console.error('Failed to load zones', e);
+        message.error('Failed to load zones');
+    } finally {
+        loadingZones.value = false;
+    }
+};
+
+const handleNextStep = () => {
+    if (currentStep.value === 0) {
+        // Validate step 1
+        if (!formData.name) {
+            message.error('Please enter a facility name');
+            return;
+        }
+        if (!formData.address) {
+            message.error('Please enter an address');
+            return;
+        }
+    } else if (currentStep.value === 1) {
+        // Validate step 2
+        if (!formData.country) {
+            message.error('Please select a country');
+            return;
+        }
+        if (!formData.state) {
+            message.error('Please select a state');
+            return;
+        }
+        if (!formData.city) {
+            message.error('Please select a city');
+            return;
+        }
+        if (!formData.zone) {
+            message.error('Please select a zone');
+            return;
+        }
+    }
+    currentStep.value++;
 };
 
 const handleSubmit = async () => {
+    submitting.value = true;
     try {
-        await facilityStore.createFacility(formData);
+        await facilityStore.createFacility({
+            name: formData.name,
+            address: formData.address,
+            country: formData.country,
+            state: formData.state,
+            city: formData.city,
+            zone: formData.zone,
+            has_towers: formData.has_towers,
+            postal_code: formData.postal_code || undefined
+        });
+        message.success('Facility created successfully');
         navigateTo('/facilities');
-    } catch (e) {
-        console.error(e);
+    } catch (e: any) {
+        console.error('Failed to create facility', e);
+        message.error(e.message || 'Failed to create facility');
+    } finally {
+        submitting.value = false;
     }
 };
 
-
-
-// Initialize with one tower if not multiple
-if (!formData.hasTowers && formData.towers.length === 0) {
-    addTower();
-}
+onMounted(() => {
+    loadCountries();
+});
 </script>
