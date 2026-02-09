@@ -30,7 +30,7 @@
         <!-- Grid Layout -->
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
             <a-card v-for="facility in facilityStore.facilities" :key="facility.id">
-                <!-- Card Content (Same as before) -->
+                <!-- Card Content -->
                 <template #cover>
                     <div class="h-32 bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center overflow-hidden">
                         <img :src="buildingDrawing" alt="Facility Building"
@@ -43,28 +43,29 @@
                         <div class="space-y-2 mt-2">
                             <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
                                 <EnvironmentOutlined class="mr-1.5" />
-                                {{ facility.location.city }}, {{ facility.location.country }}
+                                {{ facility.city_details?.name || facility.location?.city || 'N/A' }}, 
+                                {{ facility.country_details?.name || facility.location?.country || 'N/A' }}
                             </div>
 
                             <div
                                 class="flex items-center justify-between pt-2 mt-2 border-t border-gray-100 dark:border-gray-700">
                                 <div class="text-center">
                                     <div class="text-lg font-bold text-gray-700 dark:text-gray-200">
-                                        {{ facility.hasTowers ? facility.towers.length : 1 }}
+                                        {{ facility.tower_count || (facility.towers?.length || 0) }}
                                     </div>
-                                    <span class="text-xs text-gray-500">Buildings</span>
+                                    <span class="text-xs text-gray-500">Towers</span>
                                 </div>
                                 <div class="text-center">
                                     <div class="text-lg font-bold text-gray-700 dark:text-gray-200">
-                                        {{ countFloors(facility) }}
+                                        {{ facility.has_towers ? 'Yes' : 'No' }}
                                     </div>
-                                    <span class="text-xs text-gray-500">Floors</span>
+                                    <span class="text-xs text-gray-500">Multi-Building</span>
                                 </div>
                                 <div class="text-center">
                                     <div class="text-lg font-bold text-gray-700 dark:text-gray-200">
-                                        {{ facility.staff.length }}
+                                        {{ facility.zone_details?.name?.substring(0, 8) || 'N/A' }}
                                     </div>
-                                    <span class="text-xs text-gray-500">Staff</span>
+                                    <span class="text-xs text-gray-500">Zone</span>
                                 </div>
                             </div>
                         </div>
@@ -80,6 +81,17 @@
                     </div>
                 </template>
             </a-card>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="facilityStore.totalFacilities > 0" class="flex justify-center mt-6">
+            <a-pagination
+                :current="facilityStore.page"
+                :total="facilityStore.count"
+                :page-size="facilityStore.pageSize"
+                :show-size-changer="false"
+                @change="handlePageChange"
+            />
         </div>
     </div>
 </template>
@@ -103,13 +115,11 @@ definePageMeta({
 
 const facilityStore = useFacilityStore();
 
-
-// Helper to count total floors across all towers
-const countFloors = (facility: any) => {
-    return facility.towers.reduce((acc: number, tower: any) => acc + tower.floors.length, 0);
+const handlePageChange = (page: number) => {
+    facilityStore.goToPage(page);
 };
 
 onMounted(() => {
-    facilityStore.fetchFacilities();
+    facilityStore.fetchFacilities({}, true);
 });
 </script>
