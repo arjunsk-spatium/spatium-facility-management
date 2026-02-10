@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { useCompanyService, type Company, type CompanyInsights } from '../composables/companyService'
+import { useCompanyService, type Company, type CompanyInsights, type CreateCompanyPayload } from '../composables/companyService'
 
 export const useCompanyStore = defineStore('company', {
     state: () => ({
@@ -11,15 +11,16 @@ export const useCompanyStore = defineStore('company', {
     }),
     actions: {
         async fetchCompanies() {
-            this.loading = true
-            this.error = null
+            this.loading = true;
+            this.error = null;
             try {
-                const { getCompanies } = useCompanyService()
-                this.companies = await getCompanies()
-            } catch (err) {
-                this.error = 'Failed to fetch companies'
+                const { getCompanies } = useCompanyService();
+                this.companies = await getCompanies();
+            } catch (err: any) {
+                console.error("[CompanyStore] Error fetching companies:", err);
+                this.error = "Failed to fetch companies: " + err.message;
             } finally {
-                this.loading = false
+                this.loading = false;
             }
         },
         async fetchCompany(id: string) {
@@ -34,7 +35,7 @@ export const useCompanyStore = defineStore('company', {
                 this.loading = false
             }
         },
-        async createCompanyAction(data: Omit<Company, 'id'>) {
+        async createCompanyAction(data: CreateCompanyPayload) {
             this.loading = true
             this.error = null
             try {
@@ -49,7 +50,7 @@ export const useCompanyStore = defineStore('company', {
                 this.loading = false
             }
         },
-        async updateCompanyAction(id: string, data: Partial<Omit<Company, 'id'>>) {
+        async updateCompanyAction(id: string, data: Partial<CreateCompanyPayload>) {
             this.loading = true
             this.error = null
             try {

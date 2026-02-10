@@ -45,10 +45,11 @@
 
                             <a-descriptions :column="{ xs: 1, sm: 2 }" bordered size="small">
                                 <a-descriptions-item label="Company Name">{{ company.name }}</a-descriptions-item>
-                                <a-descriptions-item label="Address">{{ company.address }}</a-descriptions-item>
-                                <a-descriptions-item label="GSTIN">{{ company.gstin || 'N/A' }}</a-descriptions-item>
-                                <a-descriptions-item label="Facility">{{ company.facility || 'N/A'
-                                    }}</a-descriptions-item>
+                                <a-descriptions-item label="Address">{{ company.contacts[0]?.address }}</a-descriptions-item>
+                                <a-descriptions-item label="GSTIN">{{ company.contacts[0]?.gstin || 'N/A' }}</a-descriptions-item>
+                                <a-descriptions-item label="Contact Name">{{ company.contacts[0]?.contact_name }}</a-descriptions-item>
+                                <a-descriptions-item label="Email">{{ company.contacts[0]?.email }}</a-descriptions-item>
+                                <a-descriptions-item label="Phone">{{ company.contacts[0]?.phone }}</a-descriptions-item>
                             </a-descriptions>
                         </a-card>
 
@@ -419,12 +420,12 @@ onMounted(async () => {
     const id = route.params.id as string
     if (id) {
         await store.fetchCompany(id)
-        // Initialize SPOCs from store data if available, otherwise use defaults
-        if (store.currentCompany) {
+        if (store.currentCompany && store.currentCompany.contacts.length > 0) {
+            const contact = store.currentCompany.contacts[0]
             spocs.value = [{
-                name: store.currentCompany.spoc_name,
-                email: store.currentCompany.spoc_email,
-                phone: store.currentCompany.spoc_phone,
+                name: contact.contact_name,
+                email: contact.email,
+                phone: contact.phone,
                 designation: 'Primary Point of Contact'
             }]
         }
@@ -433,11 +434,12 @@ onMounted(async () => {
 
 // Watch for company load to init SPOC if not already done (e.g. if loaded late)
 watch(() => store.currentCompany, (newVal) => {
-    if (newVal && spocs.value.length === 0) {
+    if (newVal && newVal.contacts.length > 0 && spocs.value.length === 0) {
+        const contact = newVal.contacts[0]
         spocs.value = [{
-            name: newVal.spoc_name,
-            email: newVal.spoc_email,
-            phone: newVal.spoc_phone,
+            name: contact.contact_name,
+            email: contact.email,
+            phone: contact.phone,
             designation: 'Primary Point of Contact'
         }]
     }

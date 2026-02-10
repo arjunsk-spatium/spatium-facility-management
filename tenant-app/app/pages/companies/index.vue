@@ -93,7 +93,7 @@
                             </NuxtLink>
                             <span
                                 class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full dark:bg-green-900 dark:text-green-100">
-                                Active
+                                {{ company.status === 'active' ? 'Active' : 'Inactive' }}
                             </span>
                         </div>
 
@@ -102,25 +102,19 @@
                             <div class="flex flex-col">
                                 <span
                                     class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Address</span>
-                                <span class="text-neutral-900 dark:text-neutral-200">{{ company.address }}</span>
+                                <span class="text-neutral-900 dark:text-neutral-200">{{ company.contacts[0]?.address }}</span>
                             </div>
-                            <div class="flex flex-col">
-                                <span
-                                    class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Facility</span>
-                                <span class="text-neutral-900 dark:text-neutral-200">{{ company.facility || 'N/A'
-                                    }}</span>
-                            </div>
-                            <!-- SPOC Details Section -->
+                            <!-- Contact Details Section -->
                             <div class="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
                                 <span
                                     class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider block mb-1">Contact
-                                    Person (SPOC)</span>
+                                    Person</span>
                                 <div
                                     class="flex flex-col gap-1 pl-2 border-l-2 border-primary-200 dark:border-primary-800">
-                                    <span class="font-medium">{{ company.spoc_name }}</span>
-                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_email
+                                    <span class="font-medium">{{ company.contacts[0]?.contact_name }}</span>
+                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.contacts[0]?.email
                                         }}</span>
-                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.spoc_phone
+                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.contacts[0]?.phone
                                         }}</span>
                                 </div>
                             </div>
@@ -174,18 +168,17 @@ const filteredCompanies = computed(() => {
     const search = searchText.value.toLowerCase()
     return companies.value.filter(company =>
         company.name.toLowerCase().includes(search) ||
-        company.spoc_name.toLowerCase().includes(search) ||
-        company.spoc_email.toLowerCase().includes(search) ||
-        company.spoc_phone.toLowerCase().includes(search) ||
-        (company.facility && company.facility.toLowerCase().includes(search))
+        company.contacts[0]?.contact_name?.toLowerCase().includes(search) ||
+        company.contacts[0]?.email?.toLowerCase().includes(search) ||
+        company.contacts[0]?.phone?.toLowerCase().includes(search)
     )
 })
 
 // Stats for companies
 const stats = computed(() => ({
     total: companies.value.length,
-    active: companies.value.length, // All companies are active
-    inactive: 0
+    active: companies.value.filter(c => c.status === 'active').length,
+    inactive: companies.value.filter(c => c.status === 'inactive').length
 }))
 
 // Download as Excel
@@ -197,12 +190,12 @@ const downloadExcel = async () => {
 
         const data = filteredCompanies.value.map(company => ({
             'Company Name': company.name,
-            'Address': company.address,
-            'SPOC Name': company.spoc_name,
-            'SPOC Email': company.spoc_email,
-            'SPOC Phone': company.spoc_phone,
-            'GSTIN': company.gstin || '',
-            'Facility': company.facility || ''
+            'Status': company.status,
+            'Contact Name': company.contacts.contact_name,
+            'Email': company.contacts.email,
+            'Address': company.contacts.address,
+            'Phone': company.contacts.phone,
+            'GSTIN': company.contacts.gstin || ''
         }))
 
         const worksheet = XLSX.utils.json_to_sheet(data)
@@ -231,24 +224,24 @@ const columns = [
         sorter: (a: any, b: any) => a.name.localeCompare(b.name)
     },
     {
-        title: 'SPOC Name',
-        dataIndex: 'spoc_name',
-        key: 'spoc_name',
+        title: 'Status',
+        dataIndex: 'status',
+        key: 'status',
     },
     {
-        title: 'SPOC Email',
-        dataIndex: 'spoc_email',
-        key: 'spoc_email',
+        title: 'Contact Name',
+        key: 'contact_name',
+        customRender: ({ record }: { record: any }) => record.contacts[0]?.contact_name || '-'
     },
     {
-        title: 'SPOC Phone',
-        dataIndex: 'spoc_phone',
-        key: 'spoc_phone',
+        title: 'Email',
+        key: 'email',
+        customRender: ({ record }: { record: any }) => record.contacts[0]?.email || '-'
     },
     {
-        title: 'Facility',
-        dataIndex: 'facility',
-        key: 'facility',
+        title: 'Phone',
+        key: 'phone',
+        customRender: ({ record }: { record: any }) => record.contacts[0]?.phone || '-'
     },
     {
         title: 'Action',
