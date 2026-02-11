@@ -22,6 +22,24 @@ export interface CompanyInsights {
     revenue: number;
 }
 
+export interface CompanyFacilityMapping {
+    id?: string;
+    company: string;
+    facility_id: string;
+    tower_id?: string;
+    floor_id?: string;
+    facility_name?: string;
+    tower_name?: string;
+    floor_name?: string;
+}
+
+export interface CreateCompanyFacilityMappingPayload {
+    company: string;
+    facility_id: string;
+    tower_id?: string;
+    floor_id?: string;
+}
+
 const MOCK_COMPANIES: Company[] = [
     {
         id: "1",
@@ -92,15 +110,24 @@ export const useCompanyService = () => {
     const getCompanies = async (): Promise<Company[]> => {
         const url = buildUrl("/api/portal/companies/");
         console.log("[CompanyService] Fetching companies from:", url);
-        const response = await $api<{ success: boolean; data: { results: Company[] } }>(url, { method: "GET" });
-        console.log("[CompanyService] Companies fetched:", response.data?.results?.length || 0);
+        const response = await $api<{
+            success: boolean;
+            data: { results: Company[] };
+        }>(url, { method: "GET" });
+        console.log(
+            "[CompanyService] Companies fetched:",
+            response.data?.results?.length || 0,
+        );
         return response.data?.results || [];
     };
 
     const getCompanyById = async (id: string): Promise<Company | null> => {
         const url = buildUrl(`/api/portal/companies/${id}/`);
         try {
-            const response = await $api<{ success: boolean; data: Company }>(url, { method: "GET" });
+            const response = await $api<{ success: boolean; data: Company }>(
+                url,
+                { method: "GET" },
+            );
             return response.data;
         } catch (error: any) {
             if (error.statusCode === 404) return null;
@@ -116,7 +143,7 @@ export const useCompanyService = () => {
         const body: any = {
             name: data.name,
             status: data.status,
-            contacts: data.contacts
+            contacts: data.contacts,
         };
 
         if (data.logo) {
@@ -125,7 +152,7 @@ export const useCompanyService = () => {
 
         const response = await $api<Company>(url, {
             method: "POST",
-            body
+            body,
         });
         return response;
     };
@@ -181,11 +208,44 @@ export const useCompanyService = () => {
         }
     };
 
+    const getCompanyFacilities = async (companyId: string): Promise<CompanyFacilityMapping[]> => {
+        const url = buildUrl("/api/portal/companies/mappings/");
+        const response = await $api<{
+            success: boolean;
+            data: { results: CompanyFacilityMapping[] };
+        }>(url, { 
+            method: "GET",
+            query: { company: companyId }
+        });
+        return response.data?.results || [];
+    };
+
+    const createCompanyFacilityMapping = async (
+        data: CreateCompanyFacilityMappingPayload
+    ): Promise<CompanyFacilityMapping> => {
+        const url = buildUrl("/api/portal/companies/mappings/");
+        const response = await $api<CompanyFacilityMapping>(url, {
+            method: "POST",
+            body: data,
+        });
+        return response;
+    };
+
+    const deleteCompanyFacilityMapping = async (mappingId: string): Promise<void> => {
+        const url = buildUrl(`/api/portal/companies/mappings/${mappingId}/`);
+        await $api(url, {
+            method: "DELETE",
+        });
+    };
+
     return {
         getCompanies,
         getCompanyById,
         createCompany,
         updateCompany,
         getInsights,
+        getCompanyFacilities,
+        createCompanyFacilityMapping,
+        deleteCompanyFacilityMapping,
     };
 };

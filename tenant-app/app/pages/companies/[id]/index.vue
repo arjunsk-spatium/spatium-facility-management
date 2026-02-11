@@ -53,6 +53,41 @@
                             </a-descriptions>
                         </a-card>
 
+                        <!-- Facilities List -->
+                        <a-card>
+                            <template #title>
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold text-lg text-gray-900 dark:text-gray-100">Facilities</span>
+                                    <a-button type="primary" size="small" @click="openAddFacilityModal">
+                                        <PlusOutlined /> Add Facility
+                                    </a-button>
+                                </div>
+                            </template>
+                            <div v-if="companyFacilities.length === 0" class="text-center py-8 text-gray-500">
+                                <BuildOutlined class="text-3xl mb-2" />
+                                <p>No facilities assigned yet</p>
+                            </div>
+                            <div v-else class="space-y-3">
+                                <div v-for="facility in companyFacilities" :key="facility.id"
+                                    class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    <div class="flex items-center gap-3">
+                                        <BuildOutlined class="text-primary-500 text-lg" />
+                                        <div>
+                                            <div class="font-medium text-gray-900 dark:text-gray-100">{{ facility.facility_name || 'Facility' }}</div>
+                                            <div class="text-xs text-gray-500">
+                                                <span v-if="facility.tower_name">{{ facility.tower_name }}</span>
+                                                <span v-if="facility.tower_name && facility.floor_name"> • </span>
+                                                <span v-if="facility.floor_name">{{ facility.floor_name }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <a-button type="text" size="small" class="text-red-500" @click="deleteFacility(facility.id!)">
+                                        <DeleteOutlined />
+                                    </a-button>
+                                </div>
+                            </div>
+                        </a-card>
+
                         <!-- Employee List -->
                         <a-card>
                             <template #title>
@@ -268,6 +303,51 @@
             </a-form>
         </a-modal>
 
+        <!-- Add Facility Modal -->
+        <a-modal v-model:open="isFacilityModalVisible" title="Add Facility" @ok="handleFacilityOk" :confirm-loading="facilityLoading">
+            <a-form layout="vertical">
+                <a-form-item label="Facility" required>
+                    <a-select 
+                        v-model:value="facilityForm.facility_id" 
+                        placeholder="Select Facility"
+                        @change="onFacilityChange"
+                        :loading="facilitiesLoading"
+                    >
+                        <a-select-option v-for="facility in facilities" :key="facility.id" :value="facility.id">
+                            {{ facility.name }}
+                        </a-select-option>
+                    </a-select>
+                </a-form-item>
+                <a-form-item label="Tower (Optional)">
+                    <a-select 
+                        v-model:value="facilityForm.tower_id" 
+                        placeholder="Select Tower"
+                        @change="onTowerChange"
+                        :loading="towersLoading"
+                        :disabled="!facilityForm.facility_id"
+                        allow-clear
+                    >
+                        <a-select-option v-for="tower in towers" :key="tower.id" :value="tower.id">
+                            {{ tower.name }}
+                        </a-select-option>
+                    </a-select>
+                </a-form-item>
+                <a-form-item label="Floor (Optional)">
+                    <a-select 
+                        v-model:value="facilityForm.floor_id" 
+                        placeholder="Select Floor"
+                        :loading="floorsLoading"
+                        :disabled="!facilityForm.tower_id"
+                        allow-clear
+                    >
+                        <a-select-option v-for="floor in floors" :key="floor.id" :value="floor.id">
+                            {{ floor.name }}
+                        </a-select-option>
+                    </a-select>
+                </a-form-item>
+            </a-form>
+        </a-modal>
+
     </div>
 </template>
 
@@ -275,6 +355,7 @@
 import { onMounted, computed, ref, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCompanyStore } from '../../../../stores/company'
+import { useFacilityService, type Facility, type Tower, type Floor } from '../../../../composables/facilityService'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
 import {
     ArrowLeftOutlined,
@@ -282,14 +363,19 @@ import {
     MailOutlined,
     PhoneOutlined,
     HistoryOutlined,
-    DeleteOutlined
+    DeleteOutlined,
+    PlusOutlined,
+    BuildOutlined
 } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
 
 const route = useRoute()
 const store = useCompanyStore()
+const facilityService = useFacilityService()
 
 const company = computed(() => store.currentCompany)
 const loading = computed(() => store.loading)
+const companyFacilities = computed(() => store.currentCompanyFacilities)
 
 // --- Mock Data & Component State ---
 
@@ -347,6 +433,21 @@ const employeeColumns = [
     { title: 'Status', dataIndex: 'status', key: 'status' },
 ]
 
+// Facilities
+const isFacilityModalVisible = ref(false)
+const facilityLoading = ref(false)
+const facilitiesLoading = ref(false)
+const towersLoading = ref(false)
+const floorsLoading = ref(false)
+const facilities = ref<Facility[]>([])
+const towers = ref<Tower[]>([])
+const floors = ref<Floor[]>([])
+const facilityForm = reactive({
+    facility_id: undefined as string | undefined,
+    tower_id: undefined as string | undefined,
+    floor_id: undefined as string | undefined
+})
+
 // --- Actions: Credits ---
 
 const openCreditModal = () => {
@@ -402,6 +503,96 @@ const handleSpocOk = () => {
     isSpocModalVisible.value = false
 }
 
+// --- Actions: Facilities ---
+
+const openAddFacilityModal = async () => {
+    facilityForm.facility_id = undefined
+    facilityForm.tower_id = undefined
+    facilityForm.floor_id = undefined
+    towers.value = []
+    floors.value = []
+    isFacilityModalVisible.value = true
+    
+    // Load facilities
+    facilitiesLoading.value = true
+    try {
+        const response = await facilityService.getFacilities()
+        facilities.value = response.facilities
+    } catch (err) {
+        message.error('Failed to load facilities')
+    } finally {
+        facilitiesLoading.value = false
+    }
+}
+
+const onFacilityChange = async (facilityId: string) => {
+    facilityForm.tower_id = undefined
+    facilityForm.floor_id = undefined
+    towers.value = []
+    floors.value = []
+    
+    if (!facilityId) return
+    
+    towersLoading.value = true
+    try {
+        towers.value = await facilityService.getTowers(facilityId)
+    } catch (err) {
+        message.error('Failed to load towers')
+    } finally {
+        towersLoading.value = false
+    }
+}
+
+const onTowerChange = async (towerId: string) => {
+    facilityForm.floor_id = undefined
+    floors.value = []
+    
+    if (!towerId) return
+    
+    floorsLoading.value = true
+    try {
+        floors.value = await facilityService.getFloors(towerId)
+    } catch (err) {
+        message.error('Failed to load floors')
+    } finally {
+        floorsLoading.value = false
+    }
+}
+
+const handleFacilityOk = async () => {
+    if (!facilityForm.facility_id) {
+        message.error('Please select a facility')
+        return
+    }
+    
+    facilityLoading.value = true
+    try {
+        const payload = {
+            company: route.params.id as string,
+            facility_id: facilityForm.facility_id,
+            ...(facilityForm.tower_id && { tower_id: facilityForm.tower_id }),
+            ...(facilityForm.floor_id && { floor_id: facilityForm.floor_id })
+        }
+        
+        await store.createCompanyFacilityMappingAction(payload)
+        message.success('Facility added successfully')
+        isFacilityModalVisible.value = false
+    } catch (err) {
+        message.error('Failed to add facility')
+    } finally {
+        facilityLoading.value = false
+    }
+}
+
+const deleteFacility = async (mappingId: string) => {
+    try {
+        await store.deleteCompanyFacilityMappingAction(mappingId)
+        message.success('Facility removed successfully')
+    } catch (err) {
+        message.error('Failed to remove facility')
+    }
+}
+
 // --- Helpers ---
 
 const getInitials = (name: string) => {
@@ -420,6 +611,7 @@ onMounted(async () => {
     const id = route.params.id as string
     if (id) {
         await store.fetchCompany(id)
+        await store.fetchCompanyFacilitiesAction(id)
         if (store.currentCompany && store.currentCompany.contacts.length > 0) {
             const contact = store.currentCompany.contacts[0]
             spocs.value = [{
