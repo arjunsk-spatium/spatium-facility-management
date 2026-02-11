@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
-import { useCompanyService, type Company, type CompanyInsights, type CreateCompanyPayload } from '../composables/companyService'
+import { useCompanyService, type Company, type CompanyInsights, type CreateCompanyPayload, type CompanyFacilityMapping, type CreateCompanyFacilityMappingPayload } from '../composables/companyService'
 
 export const useCompanyStore = defineStore('company', {
     state: () => ({
         companies: [] as Company[],
         currentCompany: null as Company | null,
+        currentCompanyFacilities: [] as CompanyFacilityMapping[],
         insights: null as CompanyInsights | null,
         loading: false,
         error: null as string | null
@@ -79,6 +80,50 @@ export const useCompanyStore = defineStore('company', {
                 this.insights = await getInsights()
             } catch (err) {
                 this.error = 'Failed to fetch insights'
+            } finally {
+                this.loading = false
+            }
+        },
+        async fetchCompanyFacilitiesAction(companyId: string) {
+            this.loading = true
+            this.error = null
+            try {
+                const { getCompanyFacilities } = useCompanyService()
+                this.currentCompanyFacilities = await getCompanyFacilities(companyId)
+            } catch (err: any) {
+                console.error("[CompanyStore] Error fetching company facilities:", err)
+                this.error = "Failed to fetch company facilities: " + err.message
+            } finally {
+                this.loading = false
+            }
+        },
+        async createCompanyFacilityMappingAction(data: CreateCompanyFacilityMappingPayload) {
+            this.loading = true
+            this.error = null
+            try {
+                const { createCompanyFacilityMapping } = useCompanyService()
+                const newMapping = await createCompanyFacilityMapping(data)
+                this.currentCompanyFacilities.push(newMapping)
+                return newMapping
+            } catch (err: any) {
+                console.error("[CompanyStore] Error creating facility mapping:", err)
+                this.error = "Failed to create facility mapping: " + err.message
+                throw err
+            } finally {
+                this.loading = false
+            }
+        },
+        async deleteCompanyFacilityMappingAction(mappingId: string) {
+            this.loading = true
+            this.error = null
+            try {
+                const { deleteCompanyFacilityMapping } = useCompanyService()
+                await deleteCompanyFacilityMapping(mappingId)
+                this.currentCompanyFacilities = this.currentCompanyFacilities.filter(f => f.id !== mappingId)
+            } catch (err: any) {
+                console.error("[CompanyStore] Error deleting facility mapping:", err)
+                this.error = "Failed to delete facility mapping: " + err.message
+                throw err
             } finally {
                 this.loading = false
             }
