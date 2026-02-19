@@ -136,8 +136,8 @@
                 <!-- Right Column (Credits & SPOC) -->
                 <a-col :xs="24" :lg="8">
                     <div class="flex flex-col gap-6">
-                        <!-- Credits Card -->
-                        <a-card>
+                        <!-- Credits Card (only shown when credit system is enabled) -->
+                        <a-card v-if="creditSystemEnabled" :loading="creditLoading">
                             <template #title>
                                 <div class="flex justify-between items-center">
                                     <span class="font-semibold text-gray-900 dark:text-gray-100">Credits</span>
@@ -250,22 +250,23 @@
             </NuxtLink>
         </div>
 
-        <!-- Edit Credits Modal -->
-        <a-modal v-model:open="isCreditModalVisible" title="Edit Credits" @ok="handleCreditOk">
+        <!-- Edit Credits Modal (only when credit system enabled) -->
+        <a-modal v-if="creditSystemEnabled" v-model:open="isCreditModalVisible" title="Edit Credits" @ok="handleCreditOk" :confirm-loading="creditSaving">
             <a-form layout="vertical">
-                <a-form-item label="Allotted Credits">
-                    <a-input-number v-model:value="creditForm.alloted" class="w-full" :min="0" />
+                <a-form-item label="Monthly Credit Allocation">
+                    <a-input-number v-model:value="creditForm.monthly_credit_allocation" class="w-full" :min="0" />
                 </a-form-item>
-                <a-form-item label="Used Credits">
-                    <a-input-number v-model:value="creditForm.used" class="w-full" :min="0" />
+                <a-form-item label="Balance">
+                    <a-input-number v-model:value="creditForm.balance" class="w-full" :min="0" />
                 </a-form-item>
                 <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">
                     <div class="flex justify-between mb-1">
-                        <span>New Balance:</span>
-                        <span
-                            :class="{ 'text-red-500': (creditForm.alloted - creditForm.used) < 0, 'text-green-600': (creditForm.alloted - creditForm.used) >= 0, 'font-bold': true }">
-                            {{ creditForm.alloted - creditForm.used }}
-                        </span>
+                        <span>Monthly Allocation:</span>
+                        <span class="font-bold">{{ creditForm.monthly_credit_allocation }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Balance:</span>
+                        <span class="font-bold" :class="creditForm.balance >= 0 ? 'text-green-600' : 'text-red-500'">{{ creditForm.balance }}</span>
                     </div>
                 </div>
             </a-form>
@@ -354,6 +355,8 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthFetch } from '../../../../composables/useAuthFetch'
+import { useTenantService } from '../../../../composables/tenantService'
 import { useCompanyStore } from '../../../../stores/company'
 import { useFacilityService, type Facility, type Tower, type Floor } from '../../../../composables/facilityService'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
@@ -377,19 +380,21 @@ const company = computed(() => store.currentCompany)
 const loading = computed(() => store.loading)
 const companyFacilities = computed(() => store.currentCompanyFacilities)
 
-// --- Mock Data & Component State ---
+// --- Credit System ---
+const creditSystemEnabled = ref(false)
+const creditLoading = ref(false)
+const creditSaving = ref(false)
 
-// Credits
 const credits = ref({
-    alloted: 5000,
-    used: 1200,
-    balance: 3800
+    alloted: 0,
+    used: 0,
+    balance: 0
 })
 
 const isCreditModalVisible = ref(false)
 const creditForm = reactive({
-    alloted: 0,
-    used: 0
+    monthly_credit_allocation: 0,
+    balance: 0
 })
 
 const isHistoryDrawerVisible = ref(false)
@@ -450,17 +455,71 @@ const facilityForm = reactive({
 
 // --- Actions: Credits ---
 
+const fetchCreditConfig = async () => {
+    try {
+        const { getTenantConfig, getCurrentTenantId } = useTenantService()
+        const config = await getTenantConfig(getCurrentTenantId())
+        creditSystemEnabled.value = config?.credit_system_enabled ?? false
+    } catch (err) {
+        creditSystemEnabled.value = false
+    }
+}
+
+const fetchWallet = async () => {
+    const companyId = route.params.id as string
+    creditLoading.value = true
+    try {
+        const { authFetch } = useAuthFetch()
+        const result = await authFetch<any>(`/api/portal/companies/wallets/?company=${companyId}`)
+        let wallet = null
+        if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+            wallet = result.data[0]
+        } else if (result.success && result.data?.results?.length > 0) {
+            wallet = result.data.results[0]
+        }
+        if (wallet) {
+            credits.value.alloted = wallet.monthly_credit_allocation ?? 0
+            credits.value.balance = wallet.balance ?? 0
+            credits.value.used = credits.value.alloted - credits.value.balance
+        }
+    } catch (err) {
+        console.error('Failed to fetch wallet:', err)
+    } finally {
+        creditLoading.value = false
+    }
+}
+
 const openCreditModal = () => {
-    creditForm.alloted = credits.value.alloted
-    creditForm.used = credits.value.used
+    creditForm.monthly_credit_allocation = credits.value.alloted
+    creditForm.balance = credits.value.balance
     isCreditModalVisible.value = true
 }
 
-const handleCreditOk = () => {
-    credits.value.alloted = creditForm.alloted
-    credits.value.used = creditForm.used
-    credits.value.balance = creditForm.alloted - creditForm.used
-    isCreditModalVisible.value = false
+const handleCreditOk = async () => {
+    const companyId = route.params.id as string
+    creditSaving.value = true
+    try {
+        const { authFetch } = useAuthFetch()
+        const result = await authFetch<any>('/api/portal/companies/wallets/', {
+            method: 'POST',
+            body: {
+                company: companyId,
+                monthly_credit_allocation: creditForm.monthly_credit_allocation,
+                balance: creditForm.balance
+            }
+        })
+        if (result.success) {
+            message.success('Credits updated successfully')
+            await fetchWallet()
+        } else {
+            message.error('Failed to update credits')
+        }
+    } catch (err) {
+        message.error('Failed to update credits')
+    } finally {
+        creditSaving.value = false
+        isCreditModalVisible.value = false
+    }
 }
 
 const openHistoryDrawer = () => {
@@ -620,6 +679,11 @@ onMounted(async () => {
                 phone: contact.phone,
                 designation: 'Primary Point of Contact'
             }]
+        }
+        // Check if credit system is enabled, then fetch wallet
+        await fetchCreditConfig()
+        if (creditSystemEnabled.value) {
+            await fetchWallet()
         }
     }
 })
