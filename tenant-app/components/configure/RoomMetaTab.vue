@@ -23,7 +23,7 @@
             <a-tab-pane key="amenities" tab="Amenities">
                 <div class="py-4">
                     <ConfigTable title="Amenities" :columns="amenityColumns" :data="amenities" :loading="loading"
-                        @add="handleAddAmenity" @edit="handleEditAmenity" @delete="handleDeleteAmenity" />
+                        :fields="amenityFields" @add="handleAddAmenity" @edit="handleEditAmenity" @delete="handleDeleteAmenity" />
                 </div>
             </a-tab-pane>
         </a-tabs>
@@ -34,6 +34,12 @@
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import ConfigTable from './ConfigTable.vue'
+import { useAuthFetch } from '../../composables/useAuthFetch'
+
+const { authFetch } = useAuthFetch()
+
+const API_BASE = '/api/portal/meeting-rooms/room-types'
+const AMENITY_API_BASE = '/api/portal/meeting-rooms/amenities'
 
 const activeSubTab = ref('roomTypes')
 const loading = ref(false)
@@ -50,7 +56,6 @@ const amenities = ref<any[]>([])
 // Columns
 const roomTypeColumns = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
     { title: 'Action', key: 'action', width: 150 }
 ]
 
@@ -71,45 +76,160 @@ const amenityColumns = [
     { title: 'Action', key: 'action', width: 150 }
 ]
 
-// Mock data for now
-onMounted(() => {
-    // TODO: Replace with API calls
-    roomTypes.value = [
-        { id: 1, name: 'Conference Room', description: 'Large meeting space' },
-        { id: 2, name: 'Huddle Room', description: 'Small team meetings' },
-        { id: 3, name: 'Training Room', description: 'Training and workshops' },
-        { id: 4, name: 'Board Room', description: 'Executive meetings' }
-    ]
+const amenityFields = [
+    { name: 'name', label: 'Name', type: 'text' as const }
+]
+
+// API Functions
+const fetchRoomTypes = async () => {
+    loading.value = true
+    try {
+        const result = await authFetch<any>(API_BASE + '/')
+        if (result.success) {
+            roomTypes.value = result.data.results || []
+        }
+    } catch (error) {
+        console.error('Failed to fetch room types:', error)
+        message.error('Failed to load room types')
+    } finally {
+        loading.value = false
+    }
+}
+
+const createRoomType = async (data: { name: string }) => {
+    try {
+        const result = await authFetch<any>(API_BASE + '/', {
+            method: 'POST',
+            body: { name: data.name }
+        })
+        if (result.success) {
+            message.success('Room type added successfully')
+            await fetchRoomTypes()
+        } else {
+            message.error(result.message || 'Failed to add room type')
+        }
+    } catch (error) {
+        message.error('Failed to add room type')
+    }
+}
+
+const updateRoomType = async (record: any, data: { name: string }) => {
+    try {
+        const result = await authFetch<any>(API_BASE + '/' + record.id + '/', {
+            method: 'PATCH',
+            body: { name: data.name }
+        })
+        if (result.success) {
+            message.success('Room type updated successfully')
+            await fetchRoomTypes()
+        } else {
+            message.error(result.message || 'Failed to update room type')
+        }
+    } catch (error) {
+        message.error('Failed to update room type')
+    }
+}
+
+const deleteRoomType = async (record: any) => {
+    try {
+        await authFetch<any>(API_BASE + '/' + record.id + '/', {
+            method: 'DELETE'
+        })
+        message.success('Room type deleted successfully')
+        await fetchRoomTypes()
+    } catch (error) {
+        message.error('Failed to delete room type')
+    }
+}
+
+// Amenities API Functions
+const fetchAmenities = async () => {
+    loading.value = true
+    try {
+        const result = await authFetch<any>(AMENITY_API_BASE + '/')
+        if (result.success) {
+            amenities.value = result.data.results || []
+        }
+    } catch (error) {
+        console.error('Failed to fetch amenities:', error)
+        message.error('Failed to load amenities')
+    } finally {
+        loading.value = false
+    }
+}
+
+const createAmenity = async (data: { name: string; icon?: File }) => {
+    try {
+        const body: any = { name: data.name }
+        
+        const result = await authFetch<any>(AMENITY_API_BASE + '/', {
+            method: 'POST',
+            body: body
+        })
+        if (result.success) {
+            message.success('Amenity added successfully')
+            await fetchAmenities()
+        } else {
+            message.error(result.message || 'Failed to add amenity')
+        }
+    } catch (error) {
+        message.error('Failed to add amenity')
+    }
+}
+
+const updateAmenity = async (record: any, data: { name: string; icon?: File }) => {
+    try {
+        const body: any = { name: data.name }
+
+        const result = await authFetch<any>(AMENITY_API_BASE + '/' + record.id + '/', {
+            method: 'PATCH',
+            body: body
+        })
+        if (result.success) {
+            message.success('Amenity updated successfully')
+            await fetchAmenities()
+        } else {
+            message.error(result.message || 'Failed to update amenity')
+        }
+    } catch (error) {
+        message.error('Failed to update amenity')
+    }
+}
+
+const deleteAmenity = async (record: any) => {
+    try {
+        await authFetch<any>(AMENITY_API_BASE + '/' + record.id + '/', {
+            method: 'DELETE'
+        })
+        message.success('Amenity deleted successfully')
+        await fetchAmenities()
+    } catch (error) {
+        message.error('Failed to delete amenity')
+    }
+}
+
+onMounted(async () => {
+    await fetchRoomTypes()
+    await fetchAmenities()
     paxValues.value = [
         { id: 1, value: 5, label: '1-5 persons' },
         { id: 2, value: 10, label: '6-10 persons' },
         { id: 3, value: 20, label: '11-20 persons' },
         { id: 4, value: 50, label: '21-50 persons' }
     ]
-    amenities.value = [
-        { id: 1, name: 'Projector', icon: 'projector' },
-        { id: 2, name: 'Whiteboard', icon: 'whiteboard' },
-        { id: 3, name: 'Video Conference', icon: 'video' },
-        { id: 4, name: 'TV Screen', icon: 'tv' },
-        { id: 5, name: 'Coffee Machine', icon: 'coffee' }
-    ]
 })
 
 // Room Type Handlers
-const handleAddRoomType = (data: any) => {
-    message.success('Room type added successfully')
-    roomTypes.value.push({ id: Date.now(), ...data })
+const handleAddRoomType = async (data: any) => {
+    await createRoomType(data)
 }
 
-const handleEditRoomType = (record: any, data: any) => {
-    message.success('Room type updated successfully')
-    const index = roomTypes.value.findIndex(r => r.id === record.id)
-    if (index > -1) roomTypes.value[index] = { ...record, ...data }
+const handleEditRoomType = async (record: any, data: any) => {
+    await updateRoomType(record, data)
 }
 
-const handleDeleteRoomType = (record: any) => {
-    message.success('Room type deleted successfully')
-    roomTypes.value = roomTypes.value.filter(r => r.id !== record.id)
+const handleDeleteRoomType = async (record: any) => {
+    await deleteRoomType(record)
 }
 
 // PAX Handlers
@@ -130,19 +250,15 @@ const handleDeletePax = (record: any) => {
 }
 
 // Amenity Handlers
-const handleAddAmenity = (data: any) => {
-    message.success('Amenity added successfully')
-    amenities.value.push({ id: Date.now(), ...data })
+const handleAddAmenity = async (data: any) => {
+    await createAmenity(data)
 }
 
-const handleEditAmenity = (record: any, data: any) => {
-    message.success('Amenity updated successfully')
-    const index = amenities.value.findIndex(a => a.id === record.id)
-    if (index > -1) amenities.value[index] = { ...record, ...data }
+const handleEditAmenity = async (record: any, data: any) => {
+    await updateAmenity(record, data)
 }
 
-const handleDeleteAmenity = (record: any) => {
-    message.success('Amenity deleted successfully')
-    amenities.value = amenities.value.filter(a => a.id !== record.id)
+const handleDeleteAmenity = async (record: any) => {
+    await deleteAmenity(record)
 }
 </script>

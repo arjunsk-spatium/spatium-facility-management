@@ -70,6 +70,20 @@ export const useMeetingRoomStore = defineStore('meetingRoom', {
             } catch(err) {
                 console.error(err);
             }
+        },
+
+        async deleteRoom(id: string) {
+            this.loading = true;
+            try {
+                const service = useMeetingRoomService();
+                await service.deleteRoom(id);
+                this.rooms = this.rooms.filter(r => r.id !== id);
+            } catch (err: any) {
+                this.error = err.message || 'Failed to delete room';
+                throw err;
+            } finally {
+                this.loading = false;
+            }
         }
     }
 });

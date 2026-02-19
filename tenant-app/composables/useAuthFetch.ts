@@ -24,13 +24,14 @@ export const useAuthFetch = () => {
         const authStore = useAuthStore();
 
         // Build headers with auth token
-        const getHeaders = () => {
+        const getHeaders = (body?: any) => {
             const token =
                 typeof window !== "undefined"
                     ? localStorage.getItem("access_token")
                     : null;
+            const isFormData = body instanceof FormData;
             return {
-                "Content-Type": "application/json",
+                ...(isFormData ? {} : { "Content-Type": "application/json" }),
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 ...options.headers,
             };
@@ -44,7 +45,7 @@ export const useAuthFetch = () => {
                     : `${baseUrl}${endpoint}`,
                 {
                     ...options,
-                    headers: getHeaders(),
+                    headers: getHeaders(options.body),
                 },
             );
             return response;
@@ -65,7 +66,7 @@ export const useAuthFetch = () => {
                             : `${baseUrl}${endpoint}`,
                         {
                             ...options,
-                            headers: getHeaders(),
+                            headers: getHeaders(options.body),
                         },
                     );
                     return retryResponse;
