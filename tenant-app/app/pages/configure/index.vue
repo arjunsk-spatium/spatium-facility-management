@@ -62,6 +62,7 @@
                 <LocationTab v-if="activeTab === 'location'" />
                 <HelpdeskTab v-if="activeTab === 'helpdesk'" />
                 <RoomMetaTab v-if="activeTab === 'roomMeta'" />
+                <CreditSystemTab v-if="activeTab === 'creditSystem'" />
             </a-card>
         </div>
     </div>
@@ -74,12 +75,14 @@ import {
     CustomerServiceOutlined,
     AppstoreOutlined,
     LeftOutlined,
-    RightOutlined
+    RightOutlined,
+    CreditCardOutlined
 } from '@ant-design/icons-vue'
 
 import LocationTab from '../../../components/configure/LocationTab.vue'
 import HelpdeskTab from '../../../components/configure/HelpdeskTab.vue'
 import RoomMetaTab from '../../../components/configure/RoomMetaTab.vue'
+import CreditSystemTab from '../../../components/configure/CreditSystemTab.vue'
 
 definePageMeta({
     middleware: 'auth'
@@ -93,7 +96,8 @@ const activeTab = ref('location')
 const tabs = [
     { key: 'location', label: 'Location', icon: EnvironmentOutlined },
     { key: 'helpdesk', label: 'Helpdesk', icon: CustomerServiceOutlined },
-    { key: 'roomMeta', label: 'Room Meta', icon: AppstoreOutlined }
+    { key: 'roomMeta', label: 'Room Meta', icon: AppstoreOutlined },
+    { key: 'creditSystem', label: 'Credit System', icon: CreditCardOutlined }
 ]
 
 // Whitelabeled active tab style using tenant's primary color
