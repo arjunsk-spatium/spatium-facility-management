@@ -81,6 +81,13 @@
                     <a-form-item v-for="field in fields" :key="field.name" :label="field.label">
                         <a-input-number v-if="field.type === 'number'" v-model:value="formData[field.name]"
                             :placeholder="`Enter ${field.label.toLowerCase()}`" style="width: 100%" />
+                        <a-upload v-else-if="field.type === 'file'" :before-upload="(file: File) => { formData[field.name] = file; return false }"
+                            :show-upload-list="false" accept="image/*">
+                            <a-button>
+                                <template #icon><UploadOutlined /></template>
+                                Select Icon
+                            </a-button>
+                        </a-upload>
                         <a-input v-else v-model:value="formData[field.name]"
                             :placeholder="`Enter ${field.label.toLowerCase()}`" />
                     </a-form-item>
@@ -102,7 +109,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../ResponsiveDataView.vue'
 
 interface Column {
@@ -115,7 +122,7 @@ interface Column {
 interface Field {
     name: string
     label: string
-    type: 'text' | 'number'
+    type: 'text' | 'number' | 'file'
 }
 
 interface ParentOption {
