@@ -15,10 +15,12 @@
             <a-spin size="large" />
         </div>
 
-        <a-card v-else-if="currentCompany">
-            <CompanyForm :initial-values="formInitialValues" submit-text="Save Changes" :loading="loading"
-                @submit="handleUpdate" @cancel="handleCancel" />
-        </a-card>
+        <div v-else-if="currentCompany" class="flex justify-center">
+            <a-card class="w-full sm:max-w-4xl" :bodyStyle="{ padding: '16px 24px' }">
+                <CompanyForm :initial-values="formInitialValues" submit-text="Save Changes" :loading="loading"
+                    @submit="handleUpdate" @cancel="handleCancel" />
+            </a-card>
+        </div>
     </div>
 </template>
 
