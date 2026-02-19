@@ -2,7 +2,7 @@
     <div>
         <!-- Desktop Table View -->
         <a-table v-if="!isMobile" :columns="columns" :data-source="data" :loading="loading" :row-key="rowKey"
-            :pagination="pagination" :scroll="{ x: 900 }">
+            :pagination="pagination" :scroll="{ x: 'max-content' }">
             <template #bodyCell="{ column, record }">
                 <slot name="bodyCell" :column="column" :record="record"></slot>
             </template>

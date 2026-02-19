@@ -12,23 +12,24 @@
         </div>
 
         <!-- Responsive Data Table -->
-        <ResponsiveDataView :columns="tableColumns" :data="data" :loading="loading"
-            :row-key="(record: any) => record.id" :pagination="{ pageSize: 10 }" :mobile-page-size="5">
-            <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'action'">
-                    <a-space>
-                        <a-button type="link" size="small" @click="openEditModal(record)">
-                            <EditOutlined />
-                        </a-button>
-                        <a-popconfirm title="Are you sure you want to delete this item?" ok-text="Yes" cancel-text="No"
-                            @confirm="handleDelete(record)">
-                            <a-button type="link" size="small" danger>
-                                <DeleteOutlined />
+        <div class="overflow-x-auto">
+            <ResponsiveDataView :columns="tableColumns" :data="data" :loading="loading"
+                :row-key="(record: any) => record.id" :pagination="{ pageSize: 10 }" :mobile-page-size="5">
+                <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'action'">
+                        <a-space>
+                            <a-button type="link" size="small" @click="openEditModal(record)">
+                                <EditOutlined />
                             </a-button>
-                        </a-popconfirm>
-                    </a-space>
+                            <a-popconfirm title="Are you sure you want to delete this item?" ok-text="Yes" cancel-text="No"
+                                @confirm="handleDelete(record)">
+                                <a-button type="link" size="small" danger>
+                                    <DeleteOutlined />
+                                </a-button>
+                            </a-popconfirm>
+                        </a-space>
+                    </template>
                 </template>
-            </template>
 
             <!-- Mobile Card View -->
             <template #mobileCard="{ record }">
@@ -65,6 +66,7 @@
                 </a-card>
             </template>
         </ResponsiveDataView>
+        </div>
 
         <!-- Add/Edit Modal -->
         <a-modal v-model:open="modalVisible" :title="isEditing ? `Edit ${singularTitle}` : `Add ${singularTitle}`"
