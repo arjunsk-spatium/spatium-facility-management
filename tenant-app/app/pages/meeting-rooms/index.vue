@@ -38,13 +38,6 @@
                     <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">{{ fac.name
                         }}</a-select-option>
                 </a-select>
-
-                <a-select v-model:value="typeFilter" placeholder="Room Type" class="w-full md:w-44" allow-clear>
-                    <a-select-option value="Meeting Room">Meeting Room</a-select-option>
-                    <a-select-option value="Board Room">Board Room</a-select-option>
-                    <a-select-option value="Discussion Room">Discussion Room</a-select-option>
-                    <a-select-option value="Training Room">Training Room</a-select-option>
-                </a-select>
             </div>
         </div>
 
@@ -52,7 +45,7 @@
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'name'">
                     <div class="flex items-center gap-3">
-                        <a-avatar shape="square" :size="40" :src="record.images?.[0] || null">
+                        <a-avatar shape="square" :size="40" :src="record.images?.[0]?.image || null">
                             <template #icon>
                                 <PictureOutlined />
                             </template>
@@ -73,21 +66,20 @@
                 <template v-if="column.key === 'capacity'">
                     <span class="flex items-center gap-1">
                         <UserOutlined class="text-gray-400" />
-                        {{ record.capacity }} PAX
+                        {{ record.pax }} PAX
                     </span>
                 </template>
 
                 <template v-if="column.key === 'pricing'">
                     <div>
-                        <div class="font-medium">₹{{ record.pricePerHour }}/hr</div>
-                        <div class="text-xs text-gray-500">{{ record.creditCost }} Credits/hr</div>
+                        <div class="font-medium">₹{{ record.price }}/hr</div>
+                        <div class="text-xs text-gray-500">{{ record.credits }} Credits/hr</div>
                     </div>
                 </template>
 
                 <template v-if="column.key === 'location'">
                     <div>
-                        <div class="font-medium">{{ record.facilityName }}</div>
-                        <div class="text-xs text-gray-500">{{ record.locationDetails }}</div>
+                        <div class="font-medium">{{ record.facility }}</div>
                     </div>
                 </template>
 
@@ -107,7 +99,7 @@
                 <a-card :bodyStyle="{ padding: '16px' }">
                     <div class="flex justify-between items-start mb-3">
                         <div class="flex items-center gap-3">
-                            <a-avatar shape="square" :size="40" :src="record.images?.[0] || null">
+                            <a-avatar shape="square" :size="40" :src="record.images?.[0]?.image || null">
                                 <template #icon>
                                     <PictureOutlined />
                                 </template>
@@ -125,20 +117,20 @@
 
                     <div class="grid grid-cols-2 gap-y-2 text-sm mb-3">
                         <div class="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                            <UserOutlined /> {{ record.capacity }} PAX
+                            <UserOutlined /> {{ record.pax }} PAX
                         </div>
                         <div class="text-gray-600 dark:text-gray-400">
-                            {{ record.type }}
+                            {{ record.room_type_details?.name }}
                         </div>
                         <div class="col-span-2 text-gray-600 dark:text-gray-400">
-                            {{ record.facilityName }}
+                            {{ record.facility }}
                         </div>
                     </div>
 
                     <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
                         <div>
-                            <div class="font-bold text-gray-900 dark:text-white">₹{{ record.pricePerHour }}/hr</div>
-                            <div class="text-xs text-gray-400">{{ record.creditCost }} Credits</div>
+                            <div class="font-bold text-gray-900 dark:text-white">₹{{ record.price }}/hr</div>
+                            <div class="text-xs text-gray-400">{{ record.credits }} Credits</div>
                         </div>
                         <a-button @click="navigateTo(`/meeting-rooms/${record.id}`)">
                             <template #icon>
@@ -183,15 +175,14 @@ const { facilities } = storeToRefs(facilityStore);
 // State
 const searchText = ref('');
 const facilityFilter = ref<string | undefined>(undefined);
-const typeFilter = ref<string | undefined>(undefined);
 
 // Columns
 const columns = [
     { title: 'Room Details', dataIndex: 'name', key: 'name' },
-    { title: 'Type', dataIndex: 'type', key: 'type', width: 150 },
-    { title: 'Capacity', dataIndex: 'capacity', key: 'capacity', width: 120 },
-    { title: 'Location', dataIndex: 'location', key: 'location', width: 200 },
-    { title: 'Pricing', dataIndex: 'pricing', key: 'pricing', width: 150 },
+    { title: 'Type', dataIndex: ['room_type_details', 'name'], key: 'type', width: 150 },
+    { title: 'Capacity', dataIndex: 'pax', key: 'capacity', width: 120 },
+    { title: 'Location', dataIndex: 'facility', key: 'location', width: 200 },
+    { title: 'Pricing', dataIndex: 'price', key: 'pricing', width: 150 },
     { title: 'Status', dataIndex: 'status', key: 'status', width: 120 },
     { title: '', key: 'actions', width: 60 }
 ];
@@ -202,12 +193,7 @@ const filteredRooms = computed(() => {
 
     // Facility Filter
     if (facilityFilter.value) {
-        result = result.filter(r => r.facilityId === facilityFilter.value);
-    }
-
-    // Type Filter
-    if (typeFilter.value) {
-        result = result.filter(r => r.type === typeFilter.value);
+        result = result.filter(r => r.facility === facilityFilter.value);
     }
 
     // Search

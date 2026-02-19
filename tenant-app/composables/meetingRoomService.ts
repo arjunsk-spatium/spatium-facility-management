@@ -1,17 +1,36 @@
 
+import { useAuthFetch } from './useAuthFetch';
+
 export interface MeetingRoom {
     id: string;
     name: string;
-    capacity: number;
-    type: 'Meeting Room' | 'Discussion Room' | 'Board Room' | 'Training Room';
-    facilityId: string;
-    facilityName: string;
-    locationDetails: string; // Floor/Tower
-    pricePerHour: number;
-    creditCost: number;
-    status: 'Active' | 'Inactive' | 'Maintenance';
-    amenities: string[];
-    images: string[];
+    status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+    pax: number;
+    room_type: string;
+    room_type_details?: {
+        id: string;
+        name: string;
+    };
+    facility: string;
+    tower?: string | null;
+    floor?: string | null;
+    wing?: string | null;
+    price: string;
+    credits: number;
+    images: Array<{
+        id: string;
+        image: string;
+        is_primary: boolean;
+    }>;
+    amenities_details?: Array<{
+        id: string;
+        amenity: string;
+        amenity_details: {
+            id: string;
+            name: string;
+            icon: string;
+        };
+    }>;
 }
 
 export interface Booking {
@@ -35,152 +54,88 @@ export interface RoomStats {
     avgDailyBookings: number;
 }
 
-const MOCK_ROOMS: MeetingRoom[] = [
-    {
-        id: 'MR-001',
-        name: 'Alpha Conference',
-        capacity: 12,
-        type: 'Board Room',
-        facilityId: '1',
-        facilityName: 'Headquarters',
-        locationDetails: 'Tower A, 12th Floor',
-        pricePerHour: 50,
-        creditCost: 10,
-        status: 'Active',
-        amenities: ['TV', 'Video Conf', 'Whiteboard'],
-        images: []
-    },
-    {
-        id: 'MR-002',
-        name: 'Brainstorm Pod',
-        capacity: 4,
-        type: 'Discussion Room',
-        facilityId: '1',
-        facilityName: 'Headquarters',
-        locationDetails: 'Tower B, Ground Floor',
-        pricePerHour: 20,
-        creditCost: 4,
-        status: 'Active',
-        amenities: ['Whiteboard', 'Wifi'],
-        images: []
-    },
-    {
-        id: 'MR-003',
-        name: 'Training Center',
-        capacity: 30,
-        type: 'Training Room',
-        facilityId: '2',
-        facilityName: 'North Wing',
-        locationDetails: 'Level 2',
-        pricePerHour: 100,
-        creditCost: 20,
-        status: 'Maintenance',
-        amenities: ['Projector', 'Sound System', 'Desks'],
-        images: []
-    }
-];
-
-const MOCK_BOOKINGS: Booking[] = [
-    {
-        id: 'BK-1001',
-        roomId: 'MR-001',
-        roomName: 'Alpha Conference',
-        companyId: 'C1',
-        companyName: 'Acme Corp',
-        bookedBy: 'John Doe',
-        startTime: '2024-10-26T10:00:00Z',
-        endTime: '2024-10-26T12:00:00Z',
-        status: 'Confirmed',
-        creditsUsed: 20,
-        amountCharged: 100
-    },
-    {
-        id: 'BK-1002',
-        roomId: 'MR-002',
-        roomName: 'Brainstorm Pod',
-        companyId: 'C2',
-        companyName: 'Globex',
-        bookedBy: 'Jane Smith',
-        startTime: '2024-10-26T14:00:00Z',
-        endTime: '2024-10-26T15:00:00Z',
-        status: 'Completed',
-        creditsUsed: 4,
-        amountCharged: 20
-    }
-];
+const API_BASE = '/api/portal/meeting-rooms/rooms';
 
 export const useMeetingRoomService = () => {
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const { authFetch } = useAuthFetch();
+
+    const getRooms = async (): Promise<MeetingRoom[]> => {
+        const result = await authFetch<any>(API_BASE + '/')
+        if (result.success) {
+            return result.data.results || []
+        }
+        return []
+    }
+
+    const getRoomById = async (id: string): Promise<MeetingRoom | undefined> => {
+        const result = await authFetch<any>(API_BASE + '/' + id + '/')
+        if (result.success) {
+            return result.data
+        }
+        return undefined
+    }
+
+    const createRoom = async (room: Partial<MeetingRoom>): Promise<MeetingRoom> => {
+        const result = await authFetch<any>(API_BASE + '/', {
+            method: 'POST',
+            body: room
+        })
+        if (result.success) {
+            return result.data
+        }
+        throw new Error(result.message || 'Failed to create room')
+    }
+
+    const updateRoom = async (id: string, room: Partial<MeetingRoom>): Promise<MeetingRoom> => {
+        const result = await authFetch<any>(API_BASE + '/' + id + '/', {
+            method: 'PATCH',
+            body: room
+        })
+        if (result.success) {
+            return result.data
+        }
+        throw new Error(result.message || 'Failed to update room')
+    }
+
+    const deleteRoom = async (id: string): Promise<void> => {
+        await authFetch<any>(API_BASE + '/' + id + '/', {
+            method: 'DELETE'
+        })
+    }
+
+    const uploadImages = async (id: string, images: File[]): Promise<any[]> => {
+        const formData = new FormData()
+        images.forEach(img => formData.append('images', img))
+
+        const result = await authFetch<any>(API_BASE + '/' + id + '/upload-images/', {
+            method: 'POST',
+            body: formData
+        })
+        if (result.success) {
+            return result.data
+        }
+        throw new Error(result.message || 'Failed to upload images')
+    }
+
+    const deleteImages = async (id: string, imageIds: string[]): Promise<void> => {
+        await authFetch<any>(API_BASE + '/' + id + '/delete-images/', {
+            method: 'POST',
+            body: { image_ids: imageIds }
+        })
+    }
 
     return {
-        getRooms: async (): Promise<MeetingRoom[]> => {
-            await delay(500);
-            return [...MOCK_ROOMS];
-        },
-        
-        getRoomById: async (id: string): Promise<MeetingRoom | undefined> => {
-            await delay(300);
-            return MOCK_ROOMS.find(r => r.id === id);
-        },
-
-        getBookings: async (): Promise<Booking[]> => {
-            await delay(500);
-            return [...MOCK_BOOKINGS];
-        },
-
-        getStats: async (): Promise<RoomStats> => {
-            await delay(400);
-            return {
-                totalBookings: 145,
-                totalRevenue: 5200,
-                utilizationRate: 68,
-                avgDailyBookings: 8.5
-            };
-        },
-
-        createRoom: async (room: Omit<MeetingRoom, 'id'>): Promise<MeetingRoom> => {
-            await delay(500);
-            const newRoom: MeetingRoom = {
-                ...room,
-                id: `MR-${String(MOCK_ROOMS.length + 1).padStart(3, '0')}`
-            };
-            MOCK_ROOMS.push(newRoom);
-            return newRoom;
-        },
-
-        updateRoom: async (id: string, room: Partial<MeetingRoom>): Promise<MeetingRoom | undefined> => {
-            await delay(400);
-            const index = MOCK_ROOMS.findIndex(r => r.id === id);
-            if (index === -1) return undefined;
-            MOCK_ROOMS[index] = { ...MOCK_ROOMS[index], ...room };
-            return MOCK_ROOMS[index];
-        },
-
-        // Analytics Mocks
-        getBookingsByStatus: async () => {
-            await delay(300);
-            return [
-                { type: 'Confirmed', value: 85 },
-                { type: 'Completed', value: 45 },
-                { type: 'Cancelled', value: 15 }
-            ];
-        },
-        
-        getBookingsTrend: async () => {
-             await delay(300);
-             return {
-                 labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-                 values: [20, 35, 30, 45, 55, 60]
-             }
-        },
-        
-        getTopRooms: async () => {
-             await delay(300);
-             return [
-                 { name: 'Alpha Conference', count: 42 },
-                 { name: 'Brainstorm Pod', count: 35 },
-                 { name: 'Glass Room', count: 28 }
-             ];
-        }
-    };
-};
+        getRooms,
+        getRoomById,
+        createRoom,
+        updateRoom,
+        deleteRoom,
+        uploadImages,
+        deleteImages,
+        getBookings: async (): Promise<Booking[]> => [],
+        getStats: async (): Promise<RoomStats> => ({ totalBookings: 0, totalRevenue: 0, utilizationRate: 0, avgDailyBookings: 0 }),
+        getBookingsByStatus: async () => [],
+        getBookingsTrend: async () => ({ labels: [], values: [] }),
+        getTopRooms: async () => []
+    }
+}
