@@ -45,11 +45,16 @@
 
                             <a-descriptions :column="{ xs: 1, sm: 2 }" bordered size="small">
                                 <a-descriptions-item label="Company Name">{{ company.name }}</a-descriptions-item>
-                                <a-descriptions-item label="Address">{{ company.contacts[0]?.address }}</a-descriptions-item>
-                                <a-descriptions-item label="GSTIN">{{ company.contacts[0]?.gstin || 'N/A' }}</a-descriptions-item>
-                                <a-descriptions-item label="Contact Name">{{ company.contacts[0]?.contact_name }}</a-descriptions-item>
-                                <a-descriptions-item label="Email">{{ company.contacts[0]?.email }}</a-descriptions-item>
-                                <a-descriptions-item label="Phone">{{ company.contacts[0]?.phone }}</a-descriptions-item>
+                                <a-descriptions-item label="Address">{{ company.contacts[0]?.address
+                                    }}</a-descriptions-item>
+                                <a-descriptions-item label="GSTIN">{{ company.contacts[0]?.gstin || 'N/A'
+                                    }}</a-descriptions-item>
+                                <a-descriptions-item label="Contact Name">{{ company.contacts[0]?.contact_name
+                                    }}</a-descriptions-item>
+                                <a-descriptions-item label="Email">{{ company.contacts[0]?.email
+                                    }}</a-descriptions-item>
+                                <a-descriptions-item label="Phone">{{ company.contacts[0]?.phone
+                                    }}</a-descriptions-item>
                             </a-descriptions>
                         </a-card>
 
@@ -57,7 +62,8 @@
                         <a-card>
                             <template #title>
                                 <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-lg text-gray-900 dark:text-gray-100">Facilities</span>
+                                    <span
+                                        class="font-semibold text-lg text-gray-900 dark:text-gray-100">Facilities</span>
                                     <a-button type="primary" size="small" @click="openAddFacilityModal">
                                         <PlusOutlined /> Add Facility
                                     </a-button>
@@ -73,7 +79,9 @@
                                     <div class="flex items-center gap-3">
                                         <BuildOutlined class="text-primary-500 text-lg" />
                                         <div>
-                                            <div class="font-medium text-gray-900 dark:text-gray-100">{{ facility.facility_name || 'Facility' }}</div>
+                                            <div class="font-medium text-gray-900 dark:text-gray-100">{{
+                                                facility.facility_name || 'Facility' }}
+                                            </div>
                                             <div class="text-xs text-gray-500">
                                                 <span v-if="facility.tower_name">{{ facility.tower_name }}</span>
                                                 <span v-if="facility.tower_name && facility.floor_name"> • </span>
@@ -81,7 +89,8 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <a-button type="text" size="small" class="text-red-500" @click="deleteFacility(facility.id!)">
+                                    <a-button type="text" size="small" class="text-red-500"
+                                        @click="deleteFacility(facility.id!)">
                                         <DeleteOutlined />
                                     </a-button>
                                 </div>
@@ -89,46 +98,26 @@
                         </a-card>
 
                         <!-- Employee List -->
-                        <a-card>
+                        <a-card :loading="employeesLoading">
                             <template #title>
                                 <div class="flex justify-between items-center">
                                     <span class="font-semibold text-lg text-gray-900 dark:text-gray-100">Employee
                                         List</span>
-                                    <a-button size="small">View All</a-button>
+                                    <a-button type="primary" size="small" @click="openAddEmployeeModal">
+                                        <PlusOutlined /> Add Employee
+                                    </a-button>
                                 </div>
                             </template>
-                            <ResponsiveDataView :data="employees" :columns="employeeColumns"
-                                :row-key="(record) => record.key">
+                            <a-table :dataSource="employees" :columns="employeeColumns" :pagination="false" rowKey="id"
+                                size="small">
                                 <template #bodyCell="{ column, record }">
-                                    <template v-if="column.key === 'status'">
-                                        <a-badge :status="record.status === 'Active' ? 'success' : 'default'"
-                                            :text="record.status" />
-                                    </template>
-                                    <template v-else-if="column.key === 'role'">
-                                        <a-tag :color="record.role === 'Admin' ? 'blue' : 'default'">{{ record.role
-                                            }}</a-tag>
+                                    <template v-if="column.key === 'actions'">
+                                        <a-button type="link" size="small" @click="openEditEmployeeModal(record)">
+                                            <EditOutlined /> Edit
+                                        </a-button>
                                     </template>
                                 </template>
-                                <template #mobileCard="{ record }">
-                                    <a-card size="small" class="mb-3 border-gray-200 dark:border-gray-800">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <div>
-                                                <div class="font-medium text-gray-900 dark:text-gray-100">{{ record.name
-                                                    }}</div>
-                                                <div class="text-xs text-gray-500">{{ record.email }}</div>
-                                            </div>
-                                            <a-tag :color="record.role === 'Admin' ? 'blue' : 'default'"
-                                                class="m-0 text-xs">{{ record.role }}</a-tag>
-                                        </div>
-                                        <div
-                                            class="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-800/50">
-                                            <span class="text-xs text-gray-500">Status</span>
-                                            <a-badge :status="record.status === 'Active' ? 'success' : 'default'"
-                                                :text="record.status" />
-                                        </div>
-                                    </a-card>
-                                </template>
-                            </ResponsiveDataView>
+                            </a-table>
                         </a-card>
                     </div>
                 </a-col>
@@ -163,7 +152,7 @@
                                 <div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Allotted</div>
                                     <div class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ credits.alloted
-                                        }}</div>
+                                    }}</div>
                                 </div>
                                 <div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Used</div>
@@ -251,7 +240,8 @@
         </div>
 
         <!-- Edit Credits Modal (only when credit system enabled) -->
-        <a-modal v-if="creditSystemEnabled" v-model:open="isCreditModalVisible" title="Edit Credits" @ok="handleCreditOk" :confirm-loading="creditSaving">
+        <a-modal v-if="creditSystemEnabled" v-model:open="isCreditModalVisible" title="Edit Credits"
+            @ok="handleCreditOk" :confirm-loading="creditSaving">
             <a-form layout="vertical">
                 <a-form-item label="Monthly Credit Allocation">
                     <a-input-number v-model:value="creditForm.monthly_credit_allocation" class="w-full" :min="0" />
@@ -266,7 +256,8 @@
                     </div>
                     <div class="flex justify-between">
                         <span>Balance:</span>
-                        <span class="font-bold" :class="creditForm.balance >= 0 ? 'text-green-600' : 'text-red-500'">{{ creditForm.balance }}</span>
+                        <span class="font-bold" :class="creditForm.balance >= 0 ? 'text-green-600' : 'text-red-500'">{{
+                            creditForm.balance }}</span>
                     </div>
                 </div>
             </a-form>
@@ -286,61 +277,60 @@
         </a-drawer>
 
         <!-- Edit/Add SPOC Modal -->
-        <a-modal v-model:open="isSpocModalVisible" :title="editingSpocIndex === -1 ? 'Add SPOC' : 'Edit SPOC'"
-            @ok="handleSpocOk">
+        <a-modal v-model:open="isSpocModalVisible" :title="editingSpocId ? 'Edit SPOC' : 'Add SPOC'" @ok="handleSpocOk"
+            :confirm-loading="spocSaving">
             <a-form layout="vertical">
-                <a-form-item label="Name" required>
-                    <a-input v-model:value="spocForm.name" />
-                </a-form-item>
-                <a-form-item label="Designation">
-                    <a-input v-model:value="spocForm.designation" />
+                <a-form-item label="Full Name" required>
+                    <a-input v-model:value="spocForm.full_name" />
                 </a-form-item>
                 <a-form-item label="Email" required>
                     <a-input v-model:value="spocForm.email" />
                 </a-form-item>
                 <a-form-item label="Phone">
-                    <a-input v-model:value="spocForm.phone" />
+                    <a-input v-model:value="spocForm.phone_number" />
+                </a-form-item>
+            </a-form>
+        </a-modal>
+
+        <!-- Add/Edit Employee Modal -->
+        <a-modal v-model:open="isEmployeeModalVisible" :title="editingEmployeeId ? 'Edit Employee' : 'Add Employee'"
+            @ok="handleEmployeeOk" :confirm-loading="employeeSaving">
+            <a-form layout="vertical">
+                <a-form-item label="Full Name" required>
+                    <a-input v-model:value="employeeForm.full_name" />
+                </a-form-item>
+                <a-form-item label="Email" required>
+                    <a-input v-model:value="employeeForm.email" />
+                </a-form-item>
+                <a-form-item label="Phone">
+                    <a-input v-model:value="employeeForm.phone_number" />
                 </a-form-item>
             </a-form>
         </a-modal>
 
         <!-- Add Facility Modal -->
-        <a-modal v-model:open="isFacilityModalVisible" title="Add Facility" @ok="handleFacilityOk" :confirm-loading="facilityLoading">
+        <a-modal v-model:open="isFacilityModalVisible" title="Add Facility" @ok="handleFacilityOk"
+            :confirm-loading="facilityLoading">
             <a-form layout="vertical">
                 <a-form-item label="Facility" required>
-                    <a-select 
-                        v-model:value="facilityForm.facility_id" 
-                        placeholder="Select Facility"
-                        @change="onFacilityChange"
-                        :loading="facilitiesLoading"
-                    >
+                    <a-select v-model:value="facilityForm.facility_id" placeholder="Select Facility"
+                        @change="onFacilityChange" :loading="facilitiesLoading">
                         <a-select-option v-for="facility in facilities" :key="facility.id" :value="facility.id">
                             {{ facility.name }}
                         </a-select-option>
                     </a-select>
                 </a-form-item>
                 <a-form-item label="Tower (Optional)">
-                    <a-select 
-                        v-model:value="facilityForm.tower_id" 
-                        placeholder="Select Tower"
-                        @change="onTowerChange"
-                        :loading="towersLoading"
-                        :disabled="!facilityForm.facility_id"
-                        allow-clear
-                    >
+                    <a-select v-model:value="facilityForm.tower_id" placeholder="Select Tower" @change="onTowerChange"
+                        :loading="towersLoading" :disabled="!facilityForm.facility_id" allow-clear>
                         <a-select-option v-for="tower in towers" :key="tower.id" :value="tower.id">
                             {{ tower.name }}
                         </a-select-option>
                     </a-select>
                 </a-form-item>
                 <a-form-item label="Floor (Optional)">
-                    <a-select 
-                        v-model:value="facilityForm.floor_id" 
-                        placeholder="Select Floor"
-                        :loading="floorsLoading"
-                        :disabled="!facilityForm.tower_id"
-                        allow-clear
-                    >
+                    <a-select v-model:value="facilityForm.floor_id" placeholder="Select Floor" :loading="floorsLoading"
+                        :disabled="!facilityForm.tower_id" allow-clear>
                         <a-select-option v-for="floor in floors" :key="floor.id" :value="floor.id">
                             {{ floor.name }}
                         </a-select-option>
@@ -349,17 +339,23 @@
             </a-form>
         </a-modal>
 
+        <!-- User Already Exists Confirmation Modal -->
+        <a-modal v-model:open="existingUserConfirmVisible" title="User Already Exists" @ok="handleConfirmExistingUser"
+            :confirmLoading="existingUserSaving">
+            <p>{{ existingUserMessage }}</p>
+            <p>Do you want to add this person to the {{ existingUserAppLabel }}?</p>
+        </a-modal>
+
     </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref, reactive, watch } from 'vue'
+import { onMounted, computed, ref, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthFetch } from '../../../../composables/useAuthFetch'
 import { useTenantService } from '../../../../composables/tenantService'
 import { useCompanyStore } from '../../../../stores/company'
 import { useFacilityService, type Facility, type Tower, type Floor } from '../../../../composables/facilityService'
-import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
 import {
     ArrowLeftOutlined,
     EditOutlined,
@@ -411,32 +407,44 @@ const historyColumns = [
 ]
 
 
-// SPOCs
+// SPOCs (app_name: client_portal)
 const spocs = ref<any[]>([])
+const spocsLoading = ref(false)
+const spocSaving = ref(false)
 const isSpocModalVisible = ref(false)
-const editingSpocIndex = ref(-1)
+const editingSpocId = ref<string | null>(null)
 const spocForm = reactive({
-    name: '',
+    full_name: '',
     email: '',
-    phone: '',
-    designation: ''
+    phone_number: ''
 })
 
-// Employees
-const employees = ref([
-    { key: 1, name: 'Alice Johnson', email: 'alice@techcorp.com', role: 'Admin', status: 'Active' },
-    { key: 2, name: 'Bob Smith', email: 'bob@techcorp.com', role: 'User', status: 'Active' },
-    { key: 3, name: 'Charlie Brown', email: 'charlie@techcorp.com', role: 'User', status: 'Inactive' },
-    { key: 4, name: 'Diana Prince', email: 'diana@techcorp.com', role: 'User', status: 'Active' },
-    { key: 5, name: 'Evan Wright', email: 'evan@techcorp.com', role: 'Admin', status: 'Active' },
-])
+// Employees (app_name: hub)
+const employees = ref<any[]>([])
+const employeesLoading = ref(false)
+const employeeSaving = ref(false)
+const isEmployeeModalVisible = ref(false)
+const editingEmployeeId = ref<string | null>(null)
+const employeeForm = reactive({
+    full_name: '',
+    email: '',
+    phone_number: ''
+})
 
 const employeeColumns = [
-    { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: 'Name', dataIndex: 'full_name', key: 'full_name' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Role', dataIndex: 'role', key: 'role' },
-    { title: 'Status', dataIndex: 'status', key: 'status' },
+    { title: 'Phone', dataIndex: 'phone_number', key: 'phone_number' },
+    { title: 'Actions', key: 'actions', width: 100 },
 ]
+
+// Existing user confirmation (422 handling)
+const existingUserConfirmVisible = ref(false)
+const existingUserSaving = ref(false)
+const existingUserId = ref('')
+const existingUserMessage = ref('')
+const existingUserAppName = ref('')
+const existingUserAppLabel = computed(() => existingUserAppName.value === 'hub' ? 'employee portal' : 'client portal')
 
 // Facilities
 const isFacilityModalVisible = ref(false)
@@ -526,24 +534,144 @@ const openHistoryDrawer = () => {
     isHistoryDrawerVisible.value = true
 }
 
-// --- Actions: SPOCs ---
+// --- Actions: Users (Employees & SPOCs) ---
+
+const fetchEmployees = async () => {
+    const companyId = route.params.id as string
+    employeesLoading.value = true
+    try {
+        const { authFetch } = useAuthFetch()
+        const result = await authFetch<any>(`/api/portal/users/list/?company_id=${companyId}&app_name=hub`)
+        let users: any[] = []
+        if (result.success && Array.isArray(result.data)) {
+            users = result.data
+        } else if (result.success && result.data?.results) {
+            users = result.data.results
+        }
+        employees.value = users
+    } catch (err) {
+        console.error('Failed to fetch employees:', err)
+    } finally {
+        employeesLoading.value = false
+    }
+}
+
+const fetchSpocs = async () => {
+    const companyId = route.params.id as string
+    spocsLoading.value = true
+    try {
+        const { authFetch } = useAuthFetch()
+        const result = await authFetch<any>(`/api/portal/users/list/?company_id=${companyId}&app_name=hub`)
+        let users: any[] = []
+        if (result.success && Array.isArray(result.data)) {
+            users = result.data
+        } else if (result.success && result.data?.results) {
+            users = result.data.results
+        }
+        spocs.value = users.map((u: any) => ({
+            id: u.id,
+            name: u.full_name,
+            email: u.email,
+            phone: u.phone_number,
+            designation: 'SPOC'
+        }))
+    } catch (err) {
+        console.error('Failed to fetch SPOCs:', err)
+    } finally {
+        spocsLoading.value = false
+    }
+}
+
+// --- Employee Actions ---
+
+const openAddEmployeeModal = () => {
+    editingEmployeeId.value = null
+    employeeForm.full_name = ''
+    employeeForm.email = ''
+    employeeForm.phone_number = ''
+    isEmployeeModalVisible.value = true
+}
+
+const openEditEmployeeModal = (record: any) => {
+    editingEmployeeId.value = record.id
+    employeeForm.full_name = record.full_name || ''
+    employeeForm.email = record.email || ''
+    employeeForm.phone_number = record.phone_number || ''
+    isEmployeeModalVisible.value = true
+}
+
+const handleEmployeeOk = async () => {
+    employeeSaving.value = true
+    try {
+        const { authFetch } = useAuthFetch()
+        const { getCurrentTenantId } = useTenantService()
+        const companyId = route.params.id as string
+        const tenantId = getCurrentTenantId()
+
+        if (editingEmployeeId.value) {
+            // Edit
+            await authFetch<any>(`/api/portal/users/opstrack/${editingEmployeeId.value}/update/`, {
+                method: 'PATCH',
+                body: {
+                    full_name: employeeForm.full_name,
+                    email: employeeForm.email,
+                    phone_number: employeeForm.phone_number,
+                    tenant_id: tenantId,
+                    company_id: companyId
+                }
+            })
+            message.success('Employee updated successfully')
+        } else {
+            // Create
+            await authFetch<any>('/api/portal/users/create/', {
+                method: 'POST',
+                body: {
+                    app_name: 'hub',
+                    full_name: employeeForm.full_name,
+                    email: employeeForm.email,
+                    phone_number: employeeForm.phone_number,
+                    tenant_id: tenantId,
+                    company_id: companyId
+                }
+            })
+            message.success('Employee added successfully')
+        }
+        await fetchEmployees()
+    } catch (err: any) {
+        if (err.data?.code === 'USER_CREATION_ERROR' && err.data?.error?.type === 'VALIDATION_ERROR') {
+            const userIdError = err.data?.error?.fields?.user_id?.[0]
+            const emailError = err.data?.error?.fields?.email?.[0]
+            if (userIdError) {
+                existingUserId.value = userIdError.message
+                existingUserMessage.value = emailError?.message || 'User already exists in another app.'
+                existingUserAppName.value = 'hub'
+                existingUserConfirmVisible.value = true
+                return
+            }
+        }
+        message.error('Failed to save employee')
+    } finally {
+        employeeSaving.value = false
+        isEmployeeModalVisible.value = false
+    }
+}
+
+// --- SPOC Actions ---
 
 const openAddSpocModal = () => {
-    editingSpocIndex.value = -1
-    spocForm.name = ''
+    editingSpocId.value = null
+    spocForm.full_name = ''
     spocForm.email = ''
-    spocForm.phone = ''
-    spocForm.designation = 'Point of Contact'
+    spocForm.phone_number = ''
     isSpocModalVisible.value = true
 }
 
 const editSpoc = (index: number) => {
-    editingSpocIndex.value = index
     const spoc = spocs.value[index]
-    spocForm.name = spoc.name
-    spocForm.email = spoc.email
-    spocForm.phone = spoc.phone
-    spocForm.designation = spoc.designation
+    editingSpocId.value = spoc.id || null
+    spocForm.full_name = spoc.name || ''
+    spocForm.email = spoc.email || ''
+    spocForm.phone_number = spoc.phone || ''
     isSpocModalVisible.value = true
 }
 
@@ -551,15 +679,88 @@ const deleteSpoc = (index: number) => {
     spocs.value.splice(index, 1)
 }
 
-const handleSpocOk = () => {
-    if (editingSpocIndex.value === -1) {
-        // Add
-        spocs.value.push({ ...spocForm })
-    } else {
-        // Edit
-        spocs.value[editingSpocIndex.value] = { ...spocForm }
+const handleSpocOk = async () => {
+    spocSaving.value = true
+    try {
+        const { authFetch } = useAuthFetch()
+        const { getCurrentTenantId } = useTenantService()
+        const companyId = route.params.id as string
+        const tenantId = getCurrentTenantId()
+
+        if (editingSpocId.value) {
+            // Edit
+            await authFetch<any>(`/api/portal/users/opstrack/${editingSpocId.value}/update/`, {
+                method: 'PATCH',
+                body: {
+                    full_name: spocForm.full_name,
+                    email: spocForm.email,
+                    phone_number: spocForm.phone_number,
+                    tenant_id: tenantId,
+                    company_id: companyId
+                }
+            })
+            message.success('SPOC updated successfully')
+        } else {
+            // Create
+            await authFetch<any>('/api/portal/users/create/', {
+                method: 'POST',
+                body: {
+                    app_name: 'client_portal',
+                    full_name: spocForm.full_name,
+                    email: spocForm.email,
+                    phone_number: spocForm.phone_number,
+                    tenant_id: tenantId,
+                    company_id: companyId
+                }
+            })
+            message.success('SPOC added successfully')
+        }
+        await fetchSpocs()
+    } catch (err: any) {
+        if (err.data?.code === 'USER_CREATION_ERROR' && err.data?.error?.type === 'VALIDATION_ERROR') {
+            const userIdError = err.data?.error?.fields?.user_id?.[0]
+            const emailError = err.data?.error?.fields?.email?.[0]
+            if (userIdError) {
+                existingUserId.value = userIdError.message
+                existingUserMessage.value = emailError?.message || 'User already exists in another app.'
+                existingUserAppName.value = 'client_portal'
+                existingUserConfirmVisible.value = true
+                return
+            }
+        }
+        message.error('Failed to save SPOC')
+    } finally {
+        spocSaving.value = false
+        isSpocModalVisible.value = false
     }
-    isSpocModalVisible.value = false
+}
+
+const handleConfirmExistingUser = async () => {
+    existingUserSaving.value = true
+    existingUserConfirmVisible.value = false
+    try {
+        const { authFetch } = useAuthFetch()
+        await authFetch<any>(`/api/portal/users/${existingUserId.value}/update/`, {
+            method: 'PATCH',
+            body: {
+                app_name: existingUserAppName.value,
+                company_id: route.params.id as string,
+                full_name: existingUserAppName.value === 'hub' ? employeeForm.full_name : spocForm.full_name,
+                email: existingUserAppName.value === 'hub' ? employeeForm.email : spocForm.email,
+                phone_number: existingUserAppName.value === 'hub' ? employeeForm.phone_number : spocForm.phone_number,
+            }
+        })
+        message.success('User added successfully')
+        if (existingUserAppName.value === 'hub') {
+            await fetchEmployees()
+        } else {
+            await fetchSpocs()
+        }
+    } catch (err) {
+        message.error('Failed to add existing user')
+    } finally {
+        existingUserSaving.value = false
+    }
 }
 
 // --- Actions: Facilities ---
@@ -571,7 +772,7 @@ const openAddFacilityModal = async () => {
     towers.value = []
     floors.value = []
     isFacilityModalVisible.value = true
-    
+
     // Load facilities
     facilitiesLoading.value = true
     try {
@@ -589,9 +790,9 @@ const onFacilityChange = async (facilityId: string) => {
     facilityForm.floor_id = undefined
     towers.value = []
     floors.value = []
-    
+
     if (!facilityId) return
-    
+
     towersLoading.value = true
     try {
         towers.value = await facilityService.getTowers(facilityId)
@@ -605,9 +806,9 @@ const onFacilityChange = async (facilityId: string) => {
 const onTowerChange = async (towerId: string) => {
     facilityForm.floor_id = undefined
     floors.value = []
-    
+
     if (!towerId) return
-    
+
     floorsLoading.value = true
     try {
         floors.value = await facilityService.getFloors(towerId)
@@ -623,7 +824,7 @@ const handleFacilityOk = async () => {
         message.error('Please select a facility')
         return
     }
-    
+
     facilityLoading.value = true
     try {
         const payload = {
@@ -632,7 +833,7 @@ const handleFacilityOk = async () => {
             ...(facilityForm.tower_id && { tower_id: facilityForm.tower_id }),
             ...(facilityForm.floor_id && { floor_id: facilityForm.floor_id })
         }
-        
+
         await store.createCompanyFacilityMappingAction(payload)
         message.success('Facility added successfully')
         isFacilityModalVisible.value = false
@@ -671,33 +872,14 @@ onMounted(async () => {
     if (id) {
         await store.fetchCompany(id)
         await store.fetchCompanyFacilitiesAction(id)
-        if (store.currentCompany && store.currentCompany.contacts.length > 0) {
-            const contact = store.currentCompany.contacts[0]
-            spocs.value = [{
-                name: contact.contact_name,
-                email: contact.email,
-                phone: contact.phone,
-                designation: 'Primary Point of Contact'
-            }]
-        }
+        // Fetch employees and SPOCs from API
+        await fetchEmployees()
+        await fetchSpocs()
         // Check if credit system is enabled, then fetch wallet
         await fetchCreditConfig()
         if (creditSystemEnabled.value) {
             await fetchWallet()
         }
-    }
-})
-
-// Watch for company load to init SPOC if not already done (e.g. if loaded late)
-watch(() => store.currentCompany, (newVal) => {
-    if (newVal && newVal.contacts.length > 0 && spocs.value.length === 0) {
-        const contact = newVal.contacts[0]
-        spocs.value = [{
-            name: contact.contact_name,
-            email: contact.email,
-            phone: contact.phone,
-            designation: 'Primary Point of Contact'
-        }]
     }
 })
 </script>
