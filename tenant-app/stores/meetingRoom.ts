@@ -1,13 +1,17 @@
 
 import { defineStore } from 'pinia';
-import { useMeetingRoomService, type MeetingRoom, type Booking, type RoomStats } from '../composables/meetingRoomService';
+import { useMeetingRoomService, type MeetingRoom, type Booking, type RoomStats, type TimeSlot, type BookingListParams } from '../composables/meetingRoomService';
 
 export const useMeetingRoomStore = defineStore('meetingRoom', {
     state: () => ({
         rooms: [] as MeetingRoom[],
         bookings: [] as Booking[],
+        bookingsCount: 0,
+        bookingsNext: null as string | null,
+        bookingsPrevious: null as string | null,
         currentRoom: null as MeetingRoom | null,
         stats: null as RoomStats | null,
+        timeSlots: [] as TimeSlot[],
         loading: false,
         error: null as string | null,
         init: false
@@ -34,13 +38,19 @@ export const useMeetingRoomStore = defineStore('meetingRoom', {
             }
         },
 
-        async fetchBookings() {
+        async fetchBookings(params?: BookingListParams) {
             this.loading = true;
+            this.error = null;
             try {
                 const service = useMeetingRoomService();
-                this.bookings = await service.getBookings();
+                const result = await service.getBookings(params);
+                this.bookings = result.results;
+                this.bookingsCount = result.count;
+                this.bookingsNext = result.next;
+                this.bookingsPrevious = result.previous;
             } catch (err: any) {
                 this.error = err.message || 'Failed to fetch bookings';
+                this.bookings = [];
             } finally {
                 this.loading = false;
             }
@@ -69,6 +79,43 @@ export const useMeetingRoomStore = defineStore('meetingRoom', {
                 this.stats = await service.getStats();
             } catch(err) {
                 console.error(err);
+            }
+        },
+
+        async fetchTimeSlots(roomId: string, date: string, company?: string) {
+            this.loading = true;
+            try {
+                const service = useMeetingRoomService();
+                this.timeSlots = await service.getTimeSlots(roomId, date, company);
+            } catch (err: any) {
+                this.error = err.message || 'Failed to fetch time slots';
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async createBooking(booking: {
+            company: string;
+            meetingRoom: string;
+            bookingDate: string;
+            startTime: string;
+            endTime: string;
+            bookingType: string;
+            bookingHours: number;
+            amountCharged: number;
+            slots: Array<{ slot: string }>;
+        }) {
+            this.loading = true;
+            try {
+                const service = useMeetingRoomService();
+                const newBooking = await service.createBooking(booking);
+                this.bookings.unshift(newBooking);
+                return newBooking;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to create booking';
+                throw err;
+            } finally {
+                this.loading = false;
             }
         },
 
