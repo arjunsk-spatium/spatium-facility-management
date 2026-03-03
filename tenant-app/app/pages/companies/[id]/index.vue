@@ -119,6 +119,58 @@
                                 </template>
                             </a-table>
                         </a-card>
+
+                        <!-- Visitors List -->
+                        <a-card :loading="visitorsLoading">
+                            <template #title>
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold text-lg text-gray-900 dark:text-gray-100">Visitors
+                                        List</span>
+                                </div>
+                            </template>
+                            <ResponsiveDataView :columns="visitorColumns" :data="visitors" :loading="visitorsLoading"
+                                :row-key="(record: any) => record.id" :pagination="true">
+                                <template #bodyCell="{ column, record }">
+                                    <template v-if="column.key === 'visitor_type'">
+                                        {{ formatVisitorType(record.visitor_type) }}
+                                    </template>
+                                    <template v-if="column.key === 'status'">
+                                        <a-tag
+                                            :color="record.status === 'Approved' ? 'green' : record.status === 'Pending' ? 'orange' : 'default'">
+                                            {{ record.status }}
+                                        </a-tag>
+                                    </template>
+                                    <template
+                                        v-if="column.key === 'appointment_time' || column.key === 'check_in_time'">
+                                        {{ formatDate(record[column.dataIndex as keyof typeof record]) }}
+                                    </template>
+                                </template>
+
+                                <!-- Mobile Card Content -->
+                                <template #mobileCard="{ record }">
+                                    <a-card class="mb-4" size="small">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <span class="font-semibold text-gray-900 dark:text-gray-100">{{ record.name
+                                                }}</span>
+                                            <a-tag
+                                                :color="record.status === 'Approved' ? 'green' : record.status === 'Pending' ? 'orange' : 'default'">
+                                                {{ record.status }}
+                                            </a-tag>
+                                        </div>
+                                        <div class="grid grid-cols-1 gap-1 text-sm text-gray-600 dark:text-gray-400">
+                                            <div v-if="record.visitor_type"><span class="font-medium">Type:</span> {{
+                                                formatVisitorType(record.visitor_type) }}</div>
+                                            <div v-if="record.appointment_time"><span class="font-medium">Expected
+                                                    In:</span> {{ formatDate(record.appointment_time) }}</div>
+                                            <div v-if="record.check_in_time"><span class="font-medium">Check In:</span>
+                                                {{ formatDate(record.check_in_time) }}</div>
+                                            <div v-if="record.facility_name"><span class="font-medium">Facility:</span>
+                                                {{ record.facility_name }}</div>
+                                        </div>
+                                    </a-card>
+                                </template>
+                            </ResponsiveDataView>
+                        </a-card>
                     </div>
                 </a-col>
 
@@ -367,6 +419,7 @@ import {
     BuildOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
 
 const route = useRoute()
 const { $api } = useNuxtApp()
@@ -419,6 +472,18 @@ const spocForm = reactive({
     email: '',
     phone_number: ''
 })
+
+// Visitors
+const visitors = ref<any[]>([])
+const visitorsLoading = ref(false)
+const visitorColumns = [
+    { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: 'Visitor Type', dataIndex: 'visitor_type', key: 'visitor_type' },
+    { title: 'Status', dataIndex: 'status', key: 'status' },
+    { title: 'Facility', dataIndex: 'facility_name', key: 'facility_name' },
+    { title: 'Expected In', dataIndex: 'appointment_time', key: 'appointment_time' },
+    { title: 'Check In', dataIndex: 'check_in_time', key: 'check_in_time' },
+]
 
 // Employees (app_name: hub)
 const employees = ref<any[]>([])
@@ -856,6 +921,19 @@ const deleteFacility = async (mappingId: string) => {
 
 // --- Helpers ---
 
+const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '-'
+    return new Date(dateStr).toLocaleString(undefined, {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    })
+}
+
+const formatVisitorType = (type: string) => {
+    if (type === 'pre_invite') return 'Pre-Invite'
+    if (type === 'walk_in') return 'Walk-in'
+    return type
+}
+
 const getInitials = (name: string) => {
     if (!name) return ''
     return name
@@ -864,6 +942,24 @@ const getInitials = (name: string) => {
         .join('')
         .toUpperCase()
         .slice(0, 2)
+}
+
+const fetchVisitors = async () => {
+    const companyId = route.params.id as string
+    visitorsLoading.value = true
+    try {
+        const { authFetch } = useAuthFetch()
+        const result = await authFetch<any>(`/api/portal/visitors/client/visitors/?company_id=${companyId}`)
+        if (result.success && result.data?.results) {
+            visitors.value = result.data.results
+        } else if (result.success && Array.isArray(result.data)) {
+            visitors.value = result.data
+        }
+    } catch (err) {
+        console.error('Failed to fetch visitors:', err)
+    } finally {
+        visitorsLoading.value = false
+    }
 }
 
 // --- Lifecycle ---
@@ -876,6 +972,7 @@ onMounted(async () => {
         // Fetch employees and SPOCs from API
         await fetchEmployees()
         await fetchSpocs()
+        await fetchVisitors()
         // Check if credit system is enabled, then fetch wallet
         await fetchCreditConfig()
         if (creditSystemEnabled.value) {
