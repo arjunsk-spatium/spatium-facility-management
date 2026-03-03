@@ -35,16 +35,53 @@ export interface MeetingRoom {
 
 export interface Booking {
     id: string;
-    roomId: string;
+    bookingId: string;
+    tenantId?: string;
+    user: string;
+    userName: string;
+    meetingRoom: string;
+    meetingRoomName: string;
     roomName: string;
-    companyId: string;
+    company: string;
     companyName: string;
-    bookedBy: string; // User Name
-    startTime: string; // ISO
-    endTime: string; // ISO
-    status: 'Confirmed' | 'Cancelled' | 'Completed';
-    creditsUsed: number;
-    amountCharged: number;
+    bookingDate: string;
+    startTime: string;
+    endTime: string;
+    bookingType: string;
+    bookingHours: string;
+    creditsUsed: number | null;
+    amountCharged: string;
+    paymentMode?: string;
+    totalCredits: number | null;
+    remainingCredits: number | null;
+    bookingStatus: string;
+    cancelledAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    slots: Array<{
+        id: string;
+        slot: string;
+        bookingDate: string;
+        slotDetails: {
+            startTime: string;
+            endTime: string;
+        };
+    }>;
+    attendees: Array<any>;
+    // Legacy compatibility
+    roomId?: string;
+    companyId?: string;
+    bookedBy?: string;
+    status?: 'Confirmed' | 'Cancelled' | 'Completed';
+    creditsUsedLegacy?: number;
+    amountChargedLegacy?: number;
+}
+
+export interface TimeSlot {
+    id: string;
+    startTime: string;
+    endTime: string;
+    isAvailable: boolean;
 }
 
 export interface RoomStats {
@@ -54,7 +91,23 @@ export interface RoomStats {
     avgDailyBookings: number;
 }
 
+const BOOKING_API_BASE = '/api/portal/bookings/bookings';
 const API_BASE = '/api/portal/meeting-rooms/rooms';
+
+export interface BookingListParams {
+    meeting_room__facility?: string;
+    company?: string;
+    booking_date?: string;
+    page?: number;
+    page_size?: number;
+}
+
+export interface PaginatedResponse<T> {
+    results: T[];
+    count: number;
+    next: string | null;
+    previous: string | null;
+}
 
 export const useMeetingRoomService = () => {
     const { authFetch } = useAuthFetch();
@@ -73,6 +126,124 @@ export const useMeetingRoomService = () => {
             return result.data
         }
         return undefined
+    }
+
+    const getTimeSlots = async (roomId: string, date: string, company?: string): Promise<TimeSlot[]> => {
+        let url = `${API_BASE}/${roomId}/time-slots/?date=${date}`
+        if (company) {
+            url += `&company=${company}`
+        }
+        const result = await authFetch<any>(url)
+        if (result.success) {
+            return result.data.map((slot: any) => ({
+                id: slot.id,
+                startTime: slot.start_time,
+                endTime: slot.end_time,
+                isAvailable: slot.is_available
+            }))
+        }
+        return []
+    }
+
+    const getBookings = async (params?: BookingListParams): Promise<PaginatedResponse<Booking>> => {
+        const queryParams = new URLSearchParams()
+        if (params) {
+            if (params.meeting_room__facility) queryParams.append('meeting_room__facility', params.meeting_room__facility)
+            if (params.company) queryParams.append('company', params.company)
+            if (params.booking_date) queryParams.append('booking_date', params.booking_date)
+            if (params.page) queryParams.append('page', params.page.toString())
+            if (params.page_size) queryParams.append('page_size', params.page_size.toString())
+        }
+        const queryString = queryParams.toString()
+        const result = await authFetch<any>(BOOKING_API_BASE + '/' + (queryString ? `?${queryString}` : ''))
+        if (result.success) {
+            return {
+                results: result.data.results.map(transformBooking),
+                count: result.data.count,
+                next: result.data.next,
+                previous: result.data.previous
+            }
+        }
+        return { results: [], count: 0, next: null, previous: null }
+    }
+
+    const getBookingById = async (id: string): Promise<Booking | undefined> => {
+        const result = await authFetch<any>(BOOKING_API_BASE + '/' + id + '/')
+        if (result.success) {
+            return transformBooking(result.data)
+        }
+        return undefined
+    }
+
+    const transformBooking = (data: any): Booking => ({
+        id: data.id,
+        bookingId: data.booking_id,
+        tenantId: data.tenant_id,
+        user: data.user,
+        userName: data.user_name,
+        meetingRoom: data.meeting_room,
+        meetingRoomName: data.meeting_room_name,
+        roomName: data.meeting_room_name,
+        company: data.company,
+        companyName: data.company_name,
+        bookingDate: data.booking_date,
+        startTime: data.start_time,
+        endTime: data.end_time,
+        bookingType: data.booking_type,
+        bookingHours: data.booking_hours,
+        creditsUsed: data.credits_used,
+        amountCharged: data.amount_charged,
+        paymentMode: data.payment_mode,
+        totalCredits: data.total_credits,
+        remainingCredits: data.remaining_credits,
+        bookingStatus: data.booking_status,
+        cancelledAt: data.cancelled_at,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        slots: data.slots.map((s: any) => ({
+            id: s.id,
+            slot: s.slot,
+            bookingDate: s.booking_date,
+            slotDetails: {
+                startTime: s.slot_details?.start_time || s.slot_details?.startTime || '',
+                endTime: s.slot_details?.end_time || s.slot_details?.endTime || ''
+            }
+        })),
+        attendees: data.attendees || []
+    })
+
+    const createBooking = async (booking: {
+        company: string;
+        meetingRoom: string;
+        bookingDate: string;
+        startTime: string;
+        endTime: string;
+        bookingType: string;
+        bookingHours: number;
+        amountCharged: number;
+        slots: Array<{ slot: string }>;
+    }): Promise<Booking> => {
+        const payload = {
+            company: booking.company,
+            meeting_room: booking.meetingRoom,
+            booking_date: booking.bookingDate,
+            start_time: booking.startTime,
+            end_time: booking.endTime,
+            booking_type: booking.bookingType,
+            booking_hours: booking.bookingHours,
+            amount_charged: booking.amountCharged,
+            slots: booking.slots
+        }
+        const result = await authFetch<any>(BOOKING_API_BASE + '/', {
+            method: 'POST',
+            body: payload
+        })
+        if (result.success === true) {
+            return transformBooking(result.data)
+        } else if (result.id || result.booking_id) {
+            return transformBooking(result)
+        }
+        throw new Error(result.message || 'Failed to create booking')
     }
 
     const createRoom = async (room: Partial<MeetingRoom>): Promise<MeetingRoom> => {
@@ -127,12 +298,15 @@ export const useMeetingRoomService = () => {
     return {
         getRooms,
         getRoomById,
+        getTimeSlots,
+        getBookings,
+        getBookingById,
+        createBooking,
         createRoom,
         updateRoom,
         deleteRoom,
         uploadImages,
         deleteImages,
-        getBookings: async (): Promise<Booking[]> => [],
         getStats: async (): Promise<RoomStats> => ({ totalBookings: 0, totalRevenue: 0, utilizationRate: 0, avgDailyBookings: 0 }),
         getBookingsByStatus: async () => [],
         getBookingsTrend: async () => ({ labels: [], values: [] }),
