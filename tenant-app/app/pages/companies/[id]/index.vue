@@ -352,7 +352,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, reactive } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAuthFetch } from '../../../../composables/useAuthFetch'
+import { useNuxtApp } from '#app'
 import { useTenantService } from '../../../../composables/tenantService'
 import { useCompanyStore } from '../../../../stores/company'
 import { useFacilityService, type Facility, type Tower, type Floor } from '../../../../composables/facilityService'
@@ -369,6 +369,7 @@ import {
 import { message } from 'ant-design-vue'
 
 const route = useRoute()
+const { $api } = useNuxtApp()
 const store = useCompanyStore()
 const facilityService = useFacilityService()
 
@@ -477,8 +478,7 @@ const fetchWallet = async () => {
     const companyId = route.params.id as string
     creditLoading.value = true
     try {
-        const { authFetch } = useAuthFetch()
-        const result = await authFetch<any>(`/api/portal/companies/wallets/?company=${companyId}`)
+        const result = await $api<any>(`/api/portal/companies/wallets/?company=${companyId}`)
         let wallet = null
         if (result.success && Array.isArray(result.data) && result.data.length > 0) {
             wallet = result.data[0]
@@ -507,8 +507,7 @@ const handleCreditOk = async () => {
     const companyId = route.params.id as string
     creditSaving.value = true
     try {
-        const { authFetch } = useAuthFetch()
-        const result = await authFetch<any>('/api/portal/companies/wallets/', {
+        const result = await $api<any>('/api/portal/companies/wallets/', {
             method: 'POST',
             body: {
                 company: companyId,
@@ -540,8 +539,7 @@ const fetchEmployees = async () => {
     const companyId = route.params.id as string
     employeesLoading.value = true
     try {
-        const { authFetch } = useAuthFetch()
-        const result = await authFetch<any>(`/api/portal/users/list/?company_id=${companyId}&app_name=hub`)
+        const result = await $api<any>(`/api/portal/users/list/?company_id=${companyId}&app_name=hub`)
         let users: any[] = []
         if (result.success && Array.isArray(result.data)) {
             users = result.data
@@ -560,8 +558,7 @@ const fetchSpocs = async () => {
     const companyId = route.params.id as string
     spocsLoading.value = true
     try {
-        const { authFetch } = useAuthFetch()
-        const result = await authFetch<any>(`/api/portal/users/list/?company_id=${companyId}&app_name=hub`)
+        const result = await $api<any>(`/api/portal/users/list/?company_id=${companyId}&app_name=hub`)
         let users: any[] = []
         if (result.success && Array.isArray(result.data)) {
             users = result.data
@@ -603,14 +600,13 @@ const openEditEmployeeModal = (record: any) => {
 const handleEmployeeOk = async () => {
     employeeSaving.value = true
     try {
-        const { authFetch } = useAuthFetch()
         const { getCurrentTenantId } = useTenantService()
         const companyId = route.params.id as string
         const tenantId = getCurrentTenantId()
 
         if (editingEmployeeId.value) {
             // Edit
-            await authFetch<any>(`/api/portal/users/opstrack/${editingEmployeeId.value}/update/`, {
+            await $api<any>(`/api/portal/users/opstrack/${editingEmployeeId.value}/update/`, {
                 method: 'PATCH',
                 body: {
                     full_name: employeeForm.full_name,
@@ -623,7 +619,7 @@ const handleEmployeeOk = async () => {
             message.success('Employee updated successfully')
         } else {
             // Create
-            await authFetch<any>('/api/portal/users/create/', {
+            await $api<any>('/api/portal/users/create/', {
                 method: 'POST',
                 body: {
                     app_name: 'hub',
@@ -682,14 +678,13 @@ const deleteSpoc = (index: number) => {
 const handleSpocOk = async () => {
     spocSaving.value = true
     try {
-        const { authFetch } = useAuthFetch()
         const { getCurrentTenantId } = useTenantService()
         const companyId = route.params.id as string
         const tenantId = getCurrentTenantId()
 
         if (editingSpocId.value) {
             // Edit
-            await authFetch<any>(`/api/portal/users/opstrack/${editingSpocId.value}/update/`, {
+            await $api<any>(`/api/portal/users/opstrack/${editingSpocId.value}/update/`, {
                 method: 'PATCH',
                 body: {
                     full_name: spocForm.full_name,
@@ -702,7 +697,7 @@ const handleSpocOk = async () => {
             message.success('SPOC updated successfully')
         } else {
             // Create
-            await authFetch<any>('/api/portal/users/create/', {
+            await $api<any>('/api/portal/users/create/', {
                 method: 'POST',
                 body: {
                     app_name: 'client_portal',
@@ -739,8 +734,7 @@ const handleConfirmExistingUser = async () => {
     existingUserSaving.value = true
     existingUserConfirmVisible.value = false
     try {
-        const { authFetch } = useAuthFetch()
-        await authFetch<any>(`/api/portal/users/${existingUserId.value}/update/`, {
+        await $api<any>(`/api/portal/users/${existingUserId.value}/update/`, {
             method: 'PATCH',
             body: {
                 app_name: existingUserAppName.value,

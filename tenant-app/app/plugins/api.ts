@@ -92,6 +92,7 @@ export default defineNuxtPlugin(() => {
 
         try {
             let response = await makeRequest(getAuthHeaders());
+            console.log("[API] Initial response status:", response.status);
 
             // Handle 401 - attempt token refresh
             if (response.status === 401) {
@@ -99,11 +100,15 @@ export default defineNuxtPlugin(() => {
 
                 const authStore = useAuthStore();
                 const refreshSuccess = await authStore.refreshAccessToken();
+                console.log("[API] Refresh success:", refreshSuccess);
 
                 if (refreshSuccess) {
                     console.log("[API] Token refreshed, retrying request...");
+                    const newToken = localStorage.getItem("access_token");
+                    console.log("[API] New token:", newToken ? "present" : "missing");
                     // Retry with new token
                     response = await makeRequest(getAuthHeaders());
+                    console.log("[API] Retry response status:", response.status);
                 } else {
                     console.log(
                         "[API] Token refresh failed, redirecting to login...",

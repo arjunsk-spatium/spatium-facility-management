@@ -1,5 +1,5 @@
 
-import { useAuthFetch } from './useAuthFetch';
+import { useNuxtApp } from '#app'
 
 export interface MeetingRoom {
     id: string;
@@ -110,10 +110,10 @@ export interface PaginatedResponse<T> {
 }
 
 export const useMeetingRoomService = () => {
-    const { authFetch } = useAuthFetch();
+    const { $api } = useNuxtApp()
 
     const getRooms = async (): Promise<MeetingRoom[]> => {
-        const result = await authFetch<any>(API_BASE + '/')
+        const result = await $api<any>(API_BASE + '/')
         if (result.success) {
             return result.data.results || []
         }
@@ -121,7 +121,7 @@ export const useMeetingRoomService = () => {
     }
 
     const getRoomById = async (id: string): Promise<MeetingRoom | undefined> => {
-        const result = await authFetch<any>(API_BASE + '/' + id + '/')
+        const result = await $api<any>(API_BASE + '/' + id + '/')
         if (result.success) {
             return result.data
         }
@@ -133,7 +133,7 @@ export const useMeetingRoomService = () => {
         if (company) {
             url += `&company=${company}`
         }
-        const result = await authFetch<any>(url)
+        const result = await $api<any>(url)
         if (result.success) {
             return result.data.map((slot: any) => ({
                 id: slot.id,
@@ -155,7 +155,7 @@ export const useMeetingRoomService = () => {
             if (params.page_size) queryParams.append('page_size', params.page_size.toString())
         }
         const queryString = queryParams.toString()
-        const result = await authFetch<any>(BOOKING_API_BASE + '/' + (queryString ? `?${queryString}` : ''))
+        const result = await $api<any>(BOOKING_API_BASE + '/' + (queryString ? `?${queryString}` : ''))
         if (result.success) {
             return {
                 results: result.data.results.map(transformBooking),
@@ -168,7 +168,7 @@ export const useMeetingRoomService = () => {
     }
 
     const getBookingById = async (id: string): Promise<Booking | undefined> => {
-        const result = await authFetch<any>(BOOKING_API_BASE + '/' + id + '/')
+        const result = await $api<any>(BOOKING_API_BASE + '/' + id + '/')
         if (result.success) {
             return transformBooking(result.data)
         }
@@ -234,7 +234,7 @@ export const useMeetingRoomService = () => {
             amount_charged: booking.amountCharged,
             slots: booking.slots
         }
-        const result = await authFetch<any>(BOOKING_API_BASE + '/', {
+        const result = await $api<any>(BOOKING_API_BASE + '/', {
             method: 'POST',
             body: payload
         })
@@ -247,7 +247,7 @@ export const useMeetingRoomService = () => {
     }
 
     const createRoom = async (room: Partial<MeetingRoom>): Promise<MeetingRoom> => {
-        const result = await authFetch<any>(API_BASE + '/', {
+        const result = await $api<any>(API_BASE + '/', {
             method: 'POST',
             body: room
         })
@@ -258,7 +258,7 @@ export const useMeetingRoomService = () => {
     }
 
     const updateRoom = async (id: string, room: Partial<MeetingRoom>): Promise<MeetingRoom> => {
-        const result = await authFetch<any>(API_BASE + '/' + id + '/', {
+        const result = await $api<any>(API_BASE + '/' + id + '/', {
             method: 'PATCH',
             body: room
         })
@@ -269,7 +269,7 @@ export const useMeetingRoomService = () => {
     }
 
     const deleteRoom = async (id: string): Promise<void> => {
-        await authFetch<any>(API_BASE + '/' + id + '/', {
+        await $api<any>(API_BASE + '/' + id + '/', {
             method: 'DELETE'
         })
     }
@@ -278,7 +278,7 @@ export const useMeetingRoomService = () => {
         const formData = new FormData()
         images.forEach(img => formData.append('images', img))
 
-        const result = await authFetch<any>(API_BASE + '/' + id + '/upload-images/', {
+        const result = await $api<any>(API_BASE + '/' + id + '/upload-images/', {
             method: 'POST',
             body: formData
         })
@@ -289,7 +289,7 @@ export const useMeetingRoomService = () => {
     }
 
     const deleteImages = async (id: string, imageIds: string[]): Promise<void> => {
-        await authFetch<any>(API_BASE + '/' + id + '/delete-images/', {
+        await $api<any>(API_BASE + '/' + id + '/delete-images/', {
             method: 'POST',
             body: { image_ids: imageIds }
         })

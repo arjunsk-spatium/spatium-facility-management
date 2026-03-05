@@ -47,11 +47,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useNuxtApp } from '#app'
 import { message } from 'ant-design-vue'
-import { useAuthFetch } from '../../composables/useAuthFetch'
 import { useTenantService, type TenantConfig } from '../../composables/tenantService'
 
-const { authFetch } = useAuthFetch()
+const { $api } = useNuxtApp()
 const { getCurrentTenantId, updateTenantConfig, getTenantConfig, updateModuleConfig } = useTenantService()
 
 const loading = ref(false)
@@ -99,9 +99,8 @@ const fetchConfig = async () => {
 const fetchModules = async () => {
     loadingModules.value = true
     try {
-        const { authFetch } = useAuthFetch()
         // Use module-configs endpoint which returns module name + billing mode
-        const result = await authFetch<any>('/api/portal/tenants/module-configs/')
+        const result = await $api<any>('/api/portal/tenants/module-configs/')
         
         // Response: { success: true, data: [ { module, module_name, billing_mode, ... } ] }
         let configs: any[] = [];
