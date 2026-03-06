@@ -43,9 +43,11 @@ export default defineEventHandler(async (event) => {
     if (method !== "GET" && method !== "HEAD") {
         const contentType = incomingHeaders["content-type"] || "";
         if (contentType.includes("multipart/form-data")) {
-            // Read raw body for multipart
-            const body = await readRawBody(event);
-            fetchOptions.body = body;
+            // Read as FormData and let fetch generate a new boundary Content-Type
+            const { readFormData } = await import("h3");
+            const formData = await readFormData(event);
+            fetchOptions.body = formData as any;
+            delete forwardHeaders["Content-Type"];
         } else {
             const body = await readBody(event);
             if (body) {

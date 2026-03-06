@@ -74,16 +74,16 @@
             <div class="space-y-2">
                 <label class="block text-sm font-bold text-gray-700">Phone Number</label>
                 <div class="flex h-14 rounded-xl border border-blue-500 ring-2 ring-blue-100 overflow-hidden bg-white">
-                    <div
-                        class="w-24 border-r border-gray-100 flex items-center justify-center bg-gray-50 px-2 cursor-default">
+                    <div class="w-24 flex items-center justify-center bg-gray-50 px-2 cursor-default shrink-0">
                         <span class="mr-2 text-xl">🇮🇳</span>
-                        <span class="font-medium text-gray-700">+91</span>
+                        <span class="font-bold text-gray-700">+91</span>
                     </div>
+                    <div class="w-px h-full bg-gray-100 my-auto py-2 bg-clip-content shrink-0"></div>
                     <input type="tel" v-model="formState.phone" placeholder="98xxx xxxxx"
                         class="flex-1 px-4 text-lg outline-none w-full bg-transparent text-gray-900 placeholder:text-gray-400"
                         @keyup.enter="sendOtp" autofocus />
                     <div v-if="formState.phone" @click="formState.phone = ''"
-                        class="flex items-center px-4 cursor-pointer text-gray-400 hover:text-gray-600">
+                        class="flex items-center px-4 cursor-pointer text-gray-400 hover:text-gray-600 shrink-0">
                         <CloseCircleFilled />
                     </div>
                 </div>
@@ -572,7 +572,7 @@ const handleSubmit = async () => {
         fd.append('company_id', formState.companyId)
         fd.append('purpose_of_visit_id', formState.purposeOfVisitId)
         fd.append('name', formState.name)
-        fd.append('phone', formState.phone)
+        fd.append('phone', getFullPhone())
         if (formState.email) fd.append('email', formState.email)
         if (formState.fromCompany) fd.append('from_company', formState.fromCompany)
         if (profilePhotoFile.value) fd.append('image', profilePhotoFile.value)
