@@ -36,7 +36,7 @@
                 <a-select v-model:value="facilityFilter" placeholder="Filter by Facility" class="w-full md:w-48"
                     allow-clear>
                     <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">{{ fac.name
-                        }}</a-select-option>
+                    }}</a-select-option>
                 </a-select>
             </div>
         </div>
@@ -54,7 +54,6 @@
                             <a @click="navigateTo(`/meeting-rooms/${record.id}`)"
                                 class="font-medium hover:underline block text-gray-900 dark:text-white">{{
                                     record.name }}</a>
-                            <span class="text-xs text-gray-500">{{ record.id }}</span>
                         </div>
                     </div>
                 </template>
@@ -109,7 +108,6 @@
                                     @click="navigateTo(`/meeting-rooms/${record.id}`)">
                                     {{ record.name }}
                                 </h4>
-                                <div class="text-xs text-gray-500">{{ record.id }}</div>
                             </div>
                         </div>
                         <RoomStatusBadge :status="record.status" />
