@@ -168,7 +168,7 @@
                     </div>
                 </div>
                 <span class="text-xs text-gray-500 font-medium">Add Profile Photo</span>
-                <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileSelect" />
+                <input ref="fileInput" type="file" accept="image/*" capture="user" class="hidden" @change="handleFileSelect" />
             </div>
 
             <div class="space-y-4">
@@ -499,9 +499,7 @@ const verifyOtpCode = async () => {
             // Fetch dropdown data now that we have the token
             try {
                 purposes.value = await getPurposesOfVisit()
-                if (facilityId.value) {
-                    companies.value = await getCompanies(facilityId.value)
-                }
+                companies.value = await getCompanies(facilityId.value || undefined)
             } catch (e) {
                 console.error('Failed to load dropdown data', e)
             }

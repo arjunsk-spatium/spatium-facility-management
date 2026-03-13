@@ -57,7 +57,18 @@ export const usePublicVisitorService = () => {
     const route = useRoute();
 
     const getTenantId = (): string => {
-        return (route.query.tenant as string) || "";
+        // Priority: URL query → Pinia store → localStorage → cookie
+        const fromQuery = route.query.tenant as string;
+        if (fromQuery) return fromQuery;
+        try {
+            const storeId = useTenantStore().tenant?.id;
+            if (storeId) return storeId;
+        } catch (_) {}
+        if (typeof window !== 'undefined') {
+            const fromStorage = localStorage.getItem('tenant_id');
+            if (fromStorage) return fromStorage;
+        }
+        return '';
     };
 
     // Same-origin fetch that goes through Nitro server proxy
@@ -164,11 +175,13 @@ export const usePublicVisitorService = () => {
     };
 
     const getCompanies = async (
-        facilityId: string,
+        facilityId?: string,
     ): Promise<PublicCompany[]> => {
+        const query: Record<string, any> = {};
+        if (facilityId) query.facility_id = facilityId;
         const response = await publicFetch<ApiResponse<PublicCompany[]>>(
             "/api/portal/visitors/public/companies/",
-            { query: { facility_id: facilityId } },
+            { query },
         );
         if (response.success && response.data) {
             return response.data;

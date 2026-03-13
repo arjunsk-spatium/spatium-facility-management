@@ -43,6 +43,11 @@ export const useTenantStore = defineStore("tenant", {
                 const tenant = await getTenantByDomain(origin);
                 if (tenant) {
                     this.tenant = tenant;
+                    // Persist tenant ID so API calls can use it immediately
+                    localStorage.setItem("tenant_id", tenant.id);
+                    // Also set as cookie so the server-side proxy middleware can read it
+                    document.cookie = `tenant_id=${tenant.id}; path=/; max-age=86400; SameSite=Lax`;
+
                 } else {
                     this.error = "Tenant not found for domain";
                 }

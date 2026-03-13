@@ -24,6 +24,7 @@ export default defineNuxtConfig({
     devtools: { enabled: false },
     telemetry: { enabled: false },
     modules: ["@pinia/nuxt", "@nuxt/test-utils/module"],
+
     runtimeConfig: {
         public: {
             apiBaseUrl: "",
