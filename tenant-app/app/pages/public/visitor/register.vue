@@ -156,9 +156,8 @@
 
             <!-- Photo Upload -->
             <div class="text-center mb-6">
-                <div class="relative w-24 h-24 mx-auto mb-2">
-                    <div class="w-full h-full rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden"
-                        @click="triggerFileInput">
+                <div class="relative w-24 h-24 mx-auto mb-2" @click="showCamera = true">
+                    <div class="w-full h-full rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden">
                         <img v-if="profilePhotoPreview" :src="profilePhotoPreview" class="w-full h-full object-cover" />
                         <CameraFilled v-else class="text-2xl text-gray-400" />
                     </div>
@@ -168,7 +167,6 @@
                     </div>
                 </div>
                 <span class="text-xs text-gray-500 font-medium">Add Profile Photo</span>
-                <input ref="fileInput" type="file" accept="image/*" capture="user" class="hidden" @change="handleFileSelect" />
             </div>
 
             <div class="space-y-4">
@@ -304,6 +302,16 @@
                 </a-button>
             </NuxtLink>
         </div>
+
+        <!-- Camera Modal -->
+        <Teleport to="body">
+            <div v-if="showCamera"
+                class="fixed inset-0 z-[9999] bg-black flex items-center justify-center">
+                <ClientOnly>
+                    <CameraCapture @capture="handlePhotoCapture" @close="showCamera = false" />
+                </ClientOnly>
+            </div>
+        </Teleport>
     </div>
 </template>
 
@@ -317,6 +325,7 @@ import {
     MailOutlined, BankOutlined, LoadingOutlined, UserAddOutlined,
     QrcodeOutlined, RightOutlined
 } from '@ant-design/icons-vue'
+import CameraCapture from '../../../../components/common/CameraCapture.vue'
 
 definePageMeta({
     layout: 'public'
@@ -340,7 +349,7 @@ const otpDigits = ref(['', '', '', '', '', ''])
 const otpInputs = ref<HTMLInputElement[]>([])
 const profilePhotoFile = ref<File | null>(null)
 const profilePhotoPreview = ref<string | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
+const showCamera = ref(false)
 
 // Dropdown data
 const purposes = ref<PurposeOfVisit[]>([])
@@ -531,21 +540,17 @@ const verifyOtpCode = async () => {
 }
 
 // Photo handling
-const triggerFileInput = () => {
-    fileInput.value?.click()
-}
-
-const handleFileSelect = (e: Event) => {
-    const target = e.target as HTMLInputElement
-    const file = target.files?.[0]
-    if (!file) return
-
-    profilePhotoFile.value = file
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-        profilePhotoPreview.value = ev.target?.result as string
-    }
-    reader.readAsDataURL(file)
+const handlePhotoCapture = (imageDataUrl: string) => {
+    profilePhotoPreview.value = imageDataUrl
+    
+    // Convert data URL to File
+    const base64Response = fetch(imageDataUrl)
+        .then(res => res.blob())
+        .then(blob => {
+            profilePhotoFile.value = new File([blob], 'photo.jpg', { type: 'image/jpeg' })
+        })
+    
+    showCamera.value = false
 }
 
 const clearForm = () => {
