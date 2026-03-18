@@ -34,11 +34,19 @@ export interface SpocStats {
     totalEmployees: number
 }
 
+export interface PurposeOfVisit {
+    id: string
+    name: string
+    code: string
+}
+
 export const useSpocStore = defineStore('spoc', {
     state: () => ({
         visitors: [] as SpocVisitor[],
         employees: [] as SpocEmployee[],
         stats: null as SpocStats | null,
+        purposes: [] as PurposeOfVisit[],
+        facilities: [] as { id: string; name: string }[],
         loading: false,
         error: null as string | null
     }),
@@ -149,29 +157,113 @@ export const useSpocStore = defineStore('spoc', {
             }
         },
 
-        async inviteVisitor(data: Partial<SpocVisitor>) {
+        async inviteVisitor(data: Partial<SpocVisitor> & { facility_id?: string; purpose_of_visit_id?: string }) {
             this.loading = true
             try {
-                // Mock API call - backend handles email/SMS
-                await new Promise(resolve => setTimeout(resolve, 500))
-                const newVisitor: SpocVisitor = {
-                    id: Date.now().toString(),
-                    name: data.name || '',
-                    phone: data.phone || '',
-                    email: data.email,
-                    visitDate: data.visitDate || new Date().toISOString().split('T')[0],
-                    visitTime: data.visitTime,
-                    purpose: data.purpose || 'General Visit',
-                    status: 'pending',
-                    hostName: data.hostName,
-                    passcode: Math.floor(100000 + Math.random() * 900000).toString(),
-                    createdAt: new Date().toISOString()
+                const { $api } = useNuxtApp()
+                
+                if (data.facility_id && data.purpose_of_visit_id) {
+                    // Call the pre-invite API
+                    const response = await $api<any>('/api/portal/visitors/client/pre-invite/', {
+                        method: 'POST',
+                        body: {
+                            facility_id: data.facility_id,
+                            purpose_of_visit_id: data.purpose_of_visit_id,
+                            name: data.name,
+                            phone: data.phone,
+                            email: data.email,
+                            appointment_date: data.visitDate,
+                            appointment_time: data.visitTime
+                        }
+                    })
+                    
+                    if (response.success && response.data) {
+                        const newVisitor: SpocVisitor = {
+                            id: response.data.id || Date.now().toString(),
+                            name: data.name || '',
+                            phone: data.phone || '',
+                            email: data.email,
+                            visitDate: data.visitDate || new Date().toISOString().split('T')[0],
+                            visitTime: data.visitTime,
+                            purpose: data.purpose || 'General Visit',
+                            status: 'pending',
+                            hostName: data.hostName,
+                            passcode: response.data.passcode || response.data.code,
+                            createdAt: new Date().toISOString()
+                        }
+                        this.visitors.unshift(newVisitor)
+                        return newVisitor
+                    } else {
+                        throw new Error(response.message || 'Failed to create pre-invite')
+                    }
+                } else {
+                    // Fallback to mock for testing without facility_id
+                    await new Promise(resolve => setTimeout(resolve, 500))
+                    const newVisitor: SpocVisitor = {
+                        id: Date.now().toString(),
+                        name: data.name || '',
+                        phone: data.phone || '',
+                        email: data.email,
+                        visitDate: data.visitDate || new Date().toISOString().split('T')[0],
+                        visitTime: data.visitTime,
+                        purpose: data.purpose || 'General Visit',
+                        status: 'pending',
+                        hostName: data.hostName,
+                        passcode: Math.floor(100000 + Math.random() * 900000).toString(),
+                        createdAt: new Date().toISOString()
+                    }
+                    this.visitors.unshift(newVisitor)
+                    return newVisitor
                 }
-                this.visitors.unshift(newVisitor)
-                return newVisitor
-            } catch (err) {
-                this.error = 'Failed to invite visitor'
+            } catch (err: any) {
+                this.error = err?.data?.message || err?.message || 'Failed to invite visitor'
                 throw err
+            } finally {
+                this.loading = false
+            }
+        },
+
+        async fetchPurposesOfVisit() {
+            this.loading = true
+            try {
+                const { $api } = useNuxtApp()
+                const response = await $api<any>('/api/portal/mobile/hub/purposes-of-visit/', {
+                    method: 'GET'
+                })
+                
+                if (response.success && response.data) {
+                    this.purposes = response.data
+                } else {
+                    this.purposes = []
+                }
+            } catch (err) {
+                console.error('Failed to fetch purposes of visit:', err)
+                this.purposes = []
+            } finally {
+                this.loading = false
+            }
+        },
+
+        async fetchFacilities() {
+            this.loading = true
+            try {
+                const { $api } = useNuxtApp()
+                const response = await $api<any>('/api/portal/facilities/', {
+                    method: 'GET',
+                    query: { page_size: 100 }
+                })
+                
+                if (response.success && response.data?.results) {
+                    this.facilities = response.data.results.map((f: any) => ({
+                        id: f.id,
+                        name: f.name
+                    }))
+                } else {
+                    this.facilities = []
+                }
+            } catch (err) {
+                console.error('Failed to fetch facilities:', err)
+                this.facilities = []
             } finally {
                 this.loading = false
             }

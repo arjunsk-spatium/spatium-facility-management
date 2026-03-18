@@ -64,7 +64,7 @@
 
           <div class="transition-all duration-300">
             <!-- Step 1: Email -->
-            <form v-if="step === 'email'" @submit.prevent="handleEmailSubmit" class="space-y-6" novalidate>
+            <form v-if="step === 'email'" @submit.prevent="handleEmailSubmit" class="space-y-4" novalidate>
               <!-- Email Input -->
               <div>
                 <label for="email" class="label">Email</label>
@@ -118,8 +118,14 @@
             {{ errorMsg }}
           </div>
 
-          <p class="mt-6 text-center text-xs text-neutral-500 dark:text-neutral-500">
+          <p class="pt-2 text-center text-xs text-neutral-500 dark:text-neutral-500">
             Having trouble signing in? Contact your Spatium administrator.
+          </p>
+          <p class="mt-2 text-center text-xs text-neutral-500 dark:text-neutral-500">
+            Are you a tenant administrator?
+            <NuxtLink to="/admin/login" class="text-primary-600 hover:text-primary-700 font-medium">
+              Sign in here
+            </NuxtLink>
           </p>
         </div>
       </div>

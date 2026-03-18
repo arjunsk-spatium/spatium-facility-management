@@ -166,7 +166,7 @@ export const usePublicVisitorService = () => {
 
     const getPurposesOfVisit = async (): Promise<PurposeOfVisit[]> => {
         const response = await publicFetch<ApiResponse<PurposeOfVisit[]>>(
-            "/api/portal/visitors/public/purposes-of-visit/",
+            "/api/portal/mobile/hub/purposes-of-visit/",
         );
         if (response.success && response.data) {
             return response.data;
@@ -231,6 +231,27 @@ export const usePublicVisitorService = () => {
         return response.data;
     };
 
+    const preInvite = async (data: {
+        facility_id: string;
+        purpose_of_visit_id: string;
+        name: string;
+        phone: string;
+        email?: string;
+        appointment_date: string;
+        appointment_time: string;
+    }): Promise<any> => {
+        const response = await publicFetch<ApiResponse<any>>(
+            "/api/portal/visitors/client/pre-invite/",
+            { method: "POST", body: data },
+        );
+        if (!response.success) {
+            throw new Error(
+                response.message || "Failed to create pre-invite",
+            );
+        }
+        return response.data;
+    };
+
     return {
         requestOtp,
         verifyOtp,
@@ -240,5 +261,6 @@ export const usePublicVisitorService = () => {
         getCompanyUsers,
         getFacility,
         createWalkIn,
+        preInvite,
     };
 };

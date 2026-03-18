@@ -46,15 +46,23 @@
                             use12-hours />
                     </a-form-item>
 
+                    <a-form-item label="Facility" name="facilityId"
+                        :rules="[{ required: true, message: 'Please select facility' }]">
+                        <a-select v-model:value="formState.facilityId" placeholder="Select facility" size="large"
+                            show-search :filter-option="filterOption">
+                            <a-select-option v-for="facility in facilities" :key="facility.id" :value="facility.id">
+                                {{ facility.name }}
+                            </a-select-option>
+                        </a-select>
+                    </a-form-item>
+
                     <a-form-item label="Purpose of Visit" name="purpose"
-                        :rules="[{ required: true, message: 'Please select purpose' }]" class="sm:col-span-2">
-                        <a-select v-model:value="formState.purpose" placeholder="Select purpose" size="large">
-                            <a-select-option value="Business Meeting">Business Meeting</a-select-option>
-                            <a-select-option value="Interview">Interview</a-select-option>
-                            <a-select-option value="Delivery">Delivery</a-select-option>
-                            <a-select-option value="Vendor Visit">Vendor Visit</a-select-option>
-                            <a-select-option value="Personal">Personal</a-select-option>
-                            <a-select-option value="Other">Other</a-select-option>
+                        :rules="[{ required: true, message: 'Please select purpose' }]">
+                        <a-select v-model:value="formState.purpose" placeholder="Select purpose" size="large"
+                            show-search :filter-option="filterOption">
+                            <a-select-option v-for="purpose in purposes" :key="purpose.id" :value="purpose.id">
+                                {{ purpose.name }}
+                            </a-select-option>
                         </a-select>
                     </a-form-item>
 
@@ -141,7 +149,7 @@ interface SpocVisitor {
 }
 
 const store = useSpocStore()
-const { employees, loading } = storeToRefs(store)
+const { employees, loading, purposes, facilities } = storeToRefs(store)
 
 const showSuccess = ref(false)
 const lastInvited = ref<SpocVisitor | null>(null)
@@ -153,6 +161,7 @@ const formState = reactive({
     visitDate: null as Dayjs | null,
     visitTime: null as Dayjs | null,
     purpose: null as string | null,
+    facilityId: null as string | null,
     hostName: null as string | null,
     notes: ''
 })
@@ -172,6 +181,7 @@ const resetForm = () => {
     formState.visitDate = null
     formState.visitTime = null
     formState.purpose = null
+    formState.facilityId = null
     formState.hostName = null
     formState.notes = ''
 }
@@ -183,8 +193,10 @@ const handleSubmit = async () => {
             phone: formState.phone,
             email: formState.email || undefined,
             visitDate: formState.visitDate?.format('YYYY-MM-DD'),
-            visitTime: formState.visitTime?.format('hh:mm A'),
+            visitTime: formState.visitTime ? formState.visitTime.format('HH:mm') : undefined,
             purpose: formState.purpose || 'General Visit',
+            facility_id: formState.facilityId || undefined,
+            purpose_of_visit_id: formState.purpose || undefined,
             hostName: formState.hostName || undefined
         }
 
@@ -197,7 +209,11 @@ const handleSubmit = async () => {
     }
 }
 
-onMounted(() => {
+onMounted(async () => {
     store.fetchEmployees()
+    await Promise.all([
+        store.fetchPurposesOfVisit(),
+        store.fetchFacilities()
+    ])
 })
 </script>
