@@ -28,6 +28,13 @@
 
         <!-- Filters -->
         <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <a-select v-model:value="selectedFacility" placeholder="All Facilities" allow-clear style="min-width: 180px"
+                class="w-full sm:w-auto" @change="handleFacilityChange">
+                <a-select-option v-for="facility in facilities" :key="facility.id" :value="facility.id">
+                    {{ facility.name }}
+                </a-select-option>
+            </a-select>
+
             <a-select v-model:value="selectedStatus" placeholder="All Status" allow-clear style="min-width: 150px"
                 class="w-full sm:w-auto">
                 <a-select-option value="pending">Pending</a-select-option>
@@ -174,10 +181,15 @@ definePageMeta({
 })
 
 const store = useSpocStore()
-const { visitors, loading } = storeToRefs(store)
+const { visitors, loading, facilities } = storeToRefs(store)
 
 const selectedStatus = ref<string | null>(null)
+const selectedFacility = ref<string | null>(null)
 const searchQuery = ref('')
+
+const handleFacilityChange = () => {
+    store.fetchVisitors(selectedFacility.value || undefined)
+}
 const showDetailsModal = ref(false)
 const selectedVisitor = ref<Visitor | null>(null)
 
@@ -258,7 +270,8 @@ const getStatusLabel = (status: string) => {
     return labels[status] || status
 }
 
-onMounted(() => {
+onMounted(async () => {
+    await store.fetchFacilities()
     store.fetchVisitors()
 })
 </script>
