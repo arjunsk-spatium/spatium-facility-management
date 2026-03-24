@@ -79,19 +79,20 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useNuxtApp } from '#app'
 import { message } from 'ant-design-vue'
 import type { FormInstance } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
 import { useMeetingRoomStore } from '../../../stores/meetingRoom'
 import { useFacilityStore } from '../../../stores/facility'
 import { useMeetingRoomService, type MeetingRoom } from '../../../composables/meetingRoomService'
-import { useAuthFetch } from '../../../composables/useAuthFetch'
 import { storeToRefs } from 'pinia'
 
 definePageMeta({
     middleware: 'auth'
 })
 
+const { $api } = useNuxtApp()
 const facilityStore = useFacilityStore()
 const roomStore = useMeetingRoomStore()
 const { facilities } = storeToRefs(facilityStore)
@@ -100,8 +101,6 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 const roomTypes = ref<any[]>([])
 const amenitiesList = ref<any[]>([])
-
-const { authFetch } = useAuthFetch()
 
 const formState = reactive({
     name: '',
@@ -128,8 +127,8 @@ const { createRoom } = useMeetingRoomService()
 const fetchDropdowns = async () => {
     try {
         const [rtResult, amResult] = await Promise.all([
-            authFetch<any>('/api/portal/meeting-rooms/room-types/'),
-            authFetch<any>('/api/portal/meeting-rooms/amenities/')
+            $api<any>('/api/portal/meeting-rooms/room-types/'),
+            $api<any>('/api/portal/meeting-rooms/amenities/')
         ])
         if (rtResult.success) {
             roomTypes.value = rtResult.data.results || []

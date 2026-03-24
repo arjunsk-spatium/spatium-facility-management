@@ -64,7 +64,7 @@
 
                     <div class="transition-all duration-300">
                         <!-- Step 1: Email -->
-                        <form v-if="step === 'email'" @submit.prevent="handleEmailSubmit" class="space-y-6">
+                        <form v-if="step === 'email'" @submit.prevent="handleEmailSubmit" class="space-y-4">
                             <!-- Email Input -->
                             <div>
                                 <label for="email" class="label">Email</label>
@@ -121,7 +121,7 @@
                         {{ errorMsg }}
                     </div>
 
-                    <p class="mt-6 text-center text-xs text-neutral-500 dark:text-neutral-500">
+                    <p class="pt-2 text-center text-xs text-neutral-500 dark:text-neutral-500">
                         Having trouble signing in? Contact your Spatium administrator.
                     </p>
                 </div>

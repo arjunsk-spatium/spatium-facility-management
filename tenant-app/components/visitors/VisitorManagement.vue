@@ -16,6 +16,10 @@
 
         <!-- Filters -->
         <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <!-- Date Range Filter -->
+            <a-range-picker v-model:value="dateRange" format="YYYY-MM-DD" :allow-clear="true"
+                class="w-full sm:w-auto" @change="handleFilterChange" />
+
             <!-- Facility Filter -->
             <a-select v-model:value="selectedFacility" placeholder="All Facilities" allow-clear style="min-width: 180px"
                 class="w-full sm:w-auto" @change="handleFilterChange">
@@ -45,6 +49,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ExportOutlined } from '@ant-design/icons-vue'
+import type { Dayjs } from 'dayjs'
 
 import VisitorList from './VisitorList.vue'
 
@@ -55,44 +60,31 @@ const facilityStore = useFacilityStore()
 const { visitors, loading } = storeToRefs(store)
 
 // Filter state
-const selectedFacility = ref<number | null>(null)
-const selectedCompany = ref<number | null>(null)
+const selectedFacility = ref<string | null>(null)
+const selectedCompany = ref<string | null>(null)
 const searchQuery = ref('')
+const dateRange = ref<[Dayjs, Dayjs] | null>(null)
 
 // Facility and company lists
 const facilities = computed(() => facilityStore.facilities)
 const companies = computed(() => companyStore.companies)
 
 // Filtered visitors
-const filteredVisitors = computed(() => {
-    let result = visitors.value
+const filteredVisitors = computed(() => visitors.value)
 
-    // Filter by facility
-    if (selectedFacility.value) {
-        result = result.filter(v => v.facilityId === selectedFacility.value)
+const handleFilterChange = async () => {
+    const params: any = {
+        facility_id: selectedFacility.value || undefined,
+        company_id: selectedCompany.value || undefined,
+        search: searchQuery.value || undefined,
     }
-
-    // Filter by company
-    if (selectedCompany.value) {
-        result = result.filter(v => v.companyId === selectedCompany.value)
+    
+    if (dateRange.value && dateRange.value.length === 2) {
+        params.start_date = dateRange.value[0].format('YYYY-MM-DD')
+        params.end_date = dateRange.value[1].format('YYYY-MM-DD')
     }
-
-    // Filter by search query
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase()
-        result = result.filter(v =>
-            v.name.toLowerCase().includes(query) ||
-            v.company?.toLowerCase().includes(query) ||
-            v.hostName?.toLowerCase().includes(query) ||
-            v.visitPurpose?.toLowerCase().includes(query)
-        )
-    }
-
-    return result
-})
-
-const handleFilterChange = () => {
-    // Filters are reactive, no need for additional action
+    
+    await store.fetchVisitors(params)
 }
 
 const handleStatusUpdate = async (id: string, status: any) => {

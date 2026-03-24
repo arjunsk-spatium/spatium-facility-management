@@ -1,10 +1,8 @@
-import { useAuthFetch } from "./useAuthFetch";
-
 export interface Tenant {
     id: string;
     name: string;
     logoUrl: string;
-    faviconUrl?: string; // Optional favicon
+    faviconUrl?: string;
     colors: {
         primary: string;
         secondary: string;
@@ -20,6 +18,8 @@ export interface TenantConfig {
 }
 
 export const useTenantService = () => {
+    const { $api } = useNuxtApp();
+
     const getTenantById = async (id: string): Promise<Tenant | null> => {
         // Return a default tenant configuration
         // Replace with real API call when tenant API is available
@@ -55,12 +55,34 @@ export const useTenantService = () => {
         return "tenant-c";
     };
 
+    const getTenantByDomain = async (domain: string): Promise<Tenant | null> => {
+        const response = await $api<any>("/api/portal/tenants/public/domain/", {
+            method: "POST",
+            body: { domain },
+        });
+
+        if (response && response.success && response.data) {
+            const data = response.data;
+            const branding = data.branding || {};
+            return {
+                id: data.tenant_id || "00000000-0000-0000-0000-000000000000",
+                name: data.name,
+                logoUrl: branding.logo_url || "",
+                faviconUrl: branding.favicon_url || "/favicon.ico",
+                colors: {
+                    primary: branding.primary_color || "#0499E4",
+                    secondary: branding.secondary_color || "#64748b",
+                },
+            };
+        }
+        return null;
+    };
+
     const updateTenantConfig = async (
         tenantId: string,
         config: Partial<TenantConfig>,
     ): Promise<TenantConfig | null> => {
-        const { authFetch } = useAuthFetch();
-        const response = await authFetch<any>("/api/portal/tenants/configs/", {
+        const response = await $api<any>("/api/portal/tenants/configs/", {
             method: "POST",
             body: config,
         });
@@ -74,8 +96,7 @@ export const useTenantService = () => {
     const getTenantConfig = async (
         tenantId: string,
     ): Promise<TenantConfig | null> => {
-        const { authFetch } = useAuthFetch();
-        const response = await authFetch<any>("/api/portal/tenants/configs/");
+        const response = await $api<any>("/api/portal/tenants/configs/");
 
         if (
             response.success &&
@@ -92,8 +113,7 @@ export const useTenantService = () => {
         moduleId: string,
         billingMode: string,
     ): Promise<boolean> => {
-        const { authFetch } = useAuthFetch();
-        const response = await authFetch<any>(
+        const response = await $api<any>(
             "/api/portal/tenants/module-configs/",
             {
                 method: "POST",
@@ -112,6 +132,7 @@ export const useTenantService = () => {
 
     return {
         getTenantById,
+        getTenantByDomain,
         getCurrentTenantId,
         updateTenantConfig,
         getTenantConfig,

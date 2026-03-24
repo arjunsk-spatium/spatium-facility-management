@@ -1,21 +1,26 @@
-import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
-
 export interface Visitor {
     id: string
     name: string
-    email: string
-    phone: string
-    company: string
-    companyId?: number
-    facilityId?: number
-    photoUrl?: string
-    visitPurpose?: string
-    hostName?: string
-    status: 'pending' | 'approved' | 'rejected' | 'checked-in' | 'checked-out'
-    checkInTime?: string
-    checkOutTime?: string
-    visitDate: string
+    email: string | null
+    from_company: string | null
+    visitor_type: 'walk_in' | 'pre_invite'
+    status: 'Pending' | 'Approved' | 'Rejected'
+    facility_id: string
+    facility_name: string
+    company_id: string | null
+    company_name: string | null
+    purpose_of_visit_id: string
+    purpose_of_visit: string
+    appointment_time: string | null
+    check_in_time: string | null
+    check_out_time: string | null
+    is_on_premises: boolean
+    creator_type: string | null
+    created_by_id: string | null
+    approved_by_id: string | null
+    rejected_by_id: string | null
+    created_at: string
+    updated_at: string
 }
 
 export interface VisitorStats {
@@ -25,207 +30,231 @@ export interface VisitorStats {
     expected: number
 }
 
-// Mock Data
-const MOCK_VISITORS: Visitor[] = [
-    {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '+1234567890',
-        company: 'Tech Corp',
-        companyId: 1,
-        facilityId: 1,
-        visitPurpose: 'Meeting',
-        hostName: 'Alice Smith',
-        status: 'checked-in',
-        checkInTime: dayjs().subtract(2, 'hour').toISOString(),
-        visitDate: dayjs().toISOString()
-    },
-    {
-        id: '2',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        phone: '+0987654321',
-        company: 'Biz Solutions',
-        companyId: 2,
-        facilityId: 1,
-        visitPurpose: 'Interview',
-        hostName: 'Bob Jones',
-        status: 'pending',
-        visitDate: dayjs().toISOString()
-    },
-    {
-        id: '3',
-        name: 'Mike Johnson',
-        email: 'mike@example.com',
-        phone: '+1122334455',
-        company: 'Delivery Inc',
-        companyId: 3,
-        facilityId: 2,
-        visitPurpose: 'Delivery',
-        hostName: 'Reception',
-        status: 'approved',
-        visitDate: dayjs().add(1, 'day').toISOString()
-    },
-    {
-        id: '4',
-        name: 'Sarah Williams',
-        email: 'sarah@example.com',
-        phone: '+5544332211',
-        company: 'Tech Corp',
-        companyId: 1,
-        facilityId: 2,
-        visitPurpose: 'Site Visit',
-        hostName: 'Mark Brown',
-        status: 'pending',
-        visitDate: dayjs().toISOString()
-    },
-    {
-        id: '5',
-        name: 'David Lee',
-        email: 'david@example.com',
-        phone: '+6677889900',
-        company: 'Biz Solutions',
-        companyId: 2,
-        facilityId: 3,
-        visitPurpose: 'Meeting',
-        hostName: 'Lisa White',
-        status: 'checked-in',
-        checkInTime: dayjs().subtract(1, 'hour').toISOString(),
-        visitDate: dayjs().toISOString()
-    }
-]
+export interface PaginatedResponse<T> {
+    count: number
+    next: string | null
+    previous: string | null
+    results: T[]
+}
 
-export const useVisitorService = () => {
-    const getVisitors = async (): Promise<Visitor[]> => {
-        // Simulate API call
-        return new Promise((resolve) => {
-            setTimeout(() => resolve([...MOCK_VISITORS]), 500)
-        })
+export interface ApiResponse<T> {
+    success: boolean
+    code: string
+    message: string
+    data: T
+    error: any | null
+    meta: {
+        request_id: string
+        timestamp: string
     }
+}
 
-    const registerWalkIn = async (data: Partial<Visitor>): Promise<Visitor> => {
-        return new Promise((resolve) => {
-            const newVisitor: Visitor = {
-                id: Math.random().toString(36).substr(2, 9),
-                name: data.name || '',
-                email: data.email || '',
-                phone: data.phone || '',
-                company: data.company || '',
-                visitPurpose: data.visitPurpose,
-                hostName: data.hostName,
-                status: 'pending',
-                visitDate: dayjs().toISOString(),
-                ...data
-            } as Visitor
-            
-            // In a real app, this would be saved to DB
-            MOCK_VISITORS.push(newVisitor)
-            setTimeout(() => resolve(newVisitor), 800)
-        })
-    }
+export interface VisitorListParams {
+    page?: number
+    page_size?: number
+    start_date?: string
+    end_date?: string
+    company_id?: string
+    facility_id?: string
+    search?: string
+}
 
-    const verifyOtp = async (phone: string, otp: string): Promise<boolean> => {
-        // Mock OTP verification
-        return new Promise((resolve) => {
-            setTimeout(() => resolve(otp === '1234'), 500)
-        })
-    }
+export interface IVisitorService {
+    getVisitors(params?: VisitorListParams): Promise<{
+        visitors: Visitor[]
+        count: number
+        next: string | null
+        previous: string | null
+    }>
+    getVisitorById(id: string): Promise<Visitor>
+    registerWalkIn(data: Partial<Visitor>): Promise<Visitor>
+    updateVisitorStatus(id: string, status: string): Promise<Visitor>
+    verifyOtp(phone: string, otp: string): Promise<boolean>
+    getVisitorByPasscode(passcode: string): Promise<Visitor | null>
+    getStats(): Promise<VisitorStats>
+    getTrends(): Promise<any[]>
+    getPurposeStats(): Promise<any[]>
+    searchHosts(query: string): Promise<any[]>
+}
 
-    const getVisitorByPasscode = async (passcode: string): Promise<Visitor | null> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                if (passcode === '123456') {
-                    resolve({
-                        id: 'invite-1',
-                        name: 'Invited Guest',
-                        email: 'guest@invite.com',
-                        phone: '+9988776655',
-                        company: 'VIP Partners',
-                        visitPurpose: 'Site Visit',
-                        hostName: 'CEO',
-                        status: 'approved',
-                        visitDate: dayjs().toISOString()
-                    })
-                } else {
-                    resolve(null)
-                }
-            }, 600)
-        })
-    }
-
-    const updateVisitorStatus = async (id: string, status: Visitor['status']): Promise<Visitor | null> => {
-        return new Promise((resolve) => {
-            const visitor = MOCK_VISITORS.find(v => v.id === id)
-            if (visitor) {
-                visitor.status = status
-                if (status === 'checked-in') visitor.checkInTime = dayjs().toISOString()
-                if (status === 'checked-out') visitor.checkOutTime = dayjs().toISOString()
-            }
-            setTimeout(() => resolve(visitor || null), 400)
-        })
-    }
-
-    const getStats = async (): Promise<VisitorStats> => {
-        return new Promise((resolve) => {
-            const stats = {
-                total: MOCK_VISITORS.length,
-                checkedIn: MOCK_VISITORS.filter(v => v.status === 'checked-in').length,
-                pending: MOCK_VISITORS.filter(v => v.status === 'pending').length,
-                expected: MOCK_VISITORS.filter(v => v.status === 'approved' || v.status === 'pending').length
-            }
-            setTimeout(() => resolve(stats), 300)
-        })
-    }
-
-    const getTrends = async () => {
-        return new Promise((resolve) => {
-            setTimeout(() => resolve([
-                { day: 'Mon', count: 45 },
-                { day: 'Tue', count: 52 },
-                { day: 'Wed', count: 38 },
-                { day: 'Thu', count: 65 },
-                { day: 'Fri', count: 48 },
-                { day: 'Sat', count: 20 },
-                { day: 'Sun', count: 15 },
-            ]), 400)
-        })
-    }
-
-    const getPurposeStats = async () => {
-        return new Promise((resolve) => {
-            setTimeout(() => resolve([
-                { purpose: 'Meeting', count: 45, color: '#3b82f6' },
-                { purpose: 'Interview', count: 15, color: '#10b981' },
-                { purpose: 'Delivery', count: 25, color: '#f59e0b' },
-                { purpose: 'Site Visit', count: 10, color: '#8b5cf6' },
-                { purpose: 'Other', count: 5, color: '#6b7280' },
-            ]), 400)
-        })
-    }
+export const useVisitorService = (): IVisitorService => {
+    const { $api } = useNuxtApp()
 
     return {
-        getVisitors,
-        registerWalkIn,
-        verifyOtp,
-        getVisitorByPasscode,
-        updateVisitorStatus,
-        getStats,
-        getTrends,
-        getPurposeStats,
-        searchHosts: async (query: string) => {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    const hosts = [
-                        { id: '1', name: 'Sarah Jenkins', role: 'Product Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
-                        { id: '2', name: 'David Lee', role: 'HR Director', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David' },
-                        { id: '3', name: 'Emily Chen', role: 'Operations Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily' },
-                        { id: '4', name: 'John Doe', role: 'Facility Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John' }
-                    ]
-                    if (!query) resolve(hosts)
-                    resolve(hosts.filter(h => h.name.toLowerCase().includes(query.toLowerCase())))
-                }, 400)
+        getVisitors: async (params: VisitorListParams = {}) => {
+            const query: any = {}
+            if (params.page) query.page = params.page
+            if (params.page_size) query.page_size = params.page_size
+            if (params.start_date) query.start_date = params.start_date
+            if (params.end_date) query.end_date = params.end_date
+            if (params.company_id) query.company_id = params.company_id
+            if (params.facility_id) query.facility_id = params.facility_id
+            if (params.search) query.search = params.search
+
+            const response = await $api<
+                ApiResponse<PaginatedResponse<Visitor>>
+            >('/api/portal/visitors/client/visitors/', {
+                method: 'GET',
+                query,
             })
-        }
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to fetch visitors')
+            }
+
+            return {
+                visitors: response.data.results,
+                count: response.data.count,
+                next: response.data.next,
+                previous: response.data.previous,
+            }
+        },
+
+        getVisitorById: async (id: string) => {
+            const response = await $api<ApiResponse<Visitor>>(
+                `/api/portal/visitors/client/visitors/${id}/`,
+                {
+                    method: 'GET',
+                },
+            )
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to fetch visitor')
+            }
+
+            return response.data
+        },
+
+        registerWalkIn: async (data: Partial<Visitor>) => {
+            const response = await $api<ApiResponse<Visitor>>(
+                '/api/portal/visitors/client/visitors/',
+                {
+                    method: 'POST',
+                    body: {
+                        name: data.name,
+                        email: data.email,
+                        from_company: data.from_company,
+                        visitor_type: 'walk_in',
+                        facility_id: data.facility_id,
+                        purpose_of_visit_id: data.purpose_of_visit_id,
+                    },
+                },
+            )
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to register visitor')
+            }
+
+            return response.data
+        },
+
+        updateVisitorStatus: async (id: string, status: string) => {
+            const response = await $api<ApiResponse<Visitor>>(
+                `/api/portal/visitors/client/visitors/${id}/`,
+                {
+                    method: 'PATCH',
+                    body: { status },
+                },
+            )
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to update visitor status')
+            }
+
+            return response.data
+        },
+
+        verifyOtp: async (phone: string, otp: string): Promise<boolean> => {
+            const response = await $api<ApiResponse<{ verified: boolean }>>(
+                '/api/portal/visitors/verify-otp/',
+                {
+                    method: 'POST',
+                    body: { phone, otp },
+                },
+            )
+
+            return response.success && response.data.verified
+        },
+
+        getVisitorByPasscode: async (passcode: string): Promise<Visitor | null> => {
+            const response = await $api<any>(
+                '/api/portal/visitors/public/passcode/verify/',
+                {
+                    method: 'POST',
+                    body: { passcode },
+                },
+            )
+
+            if (!response.success || !response.data) {
+                throw new Error(response.message || 'Invalid Passcode')
+            }
+
+            return response.data
+        },
+
+        getStats: async (): Promise<VisitorStats> => {
+            const { visitors } = await useVisitorService().getVisitors({ page_size: 1000 })
+            
+            const checkedIn = visitors.filter(v => v.is_on_premises).length
+            const pending = visitors.filter(v => v.status === 'Pending').length
+            
+            return {
+                total: visitors.length,
+                checkedIn,
+                pending,
+                expected: visitors.filter(v => v.status === 'Approved' || v.status === 'Pending').length,
+            }
+        },
+
+        getTrends: async () => {
+            const { visitors } = await useVisitorService().getVisitors({ page_size: 1000 })
+            
+            const trendsMap = new Map<string, number>()
+            visitors.forEach(v => {
+                const date = new Date(v.created_at).toLocaleDateString('en-US', { weekday: 'short' })
+                trendsMap.set(date, (trendsMap.get(date) || 0) + 1)
+            })
+            
+            return Array.from(trendsMap.entries()).map(([day, count]) => ({ day, count }))
+        },
+
+        getPurposeStats: async () => {
+            const { visitors } = await useVisitorService().getVisitors({ page_size: 1000 })
+            
+            const purposeMap = new Map<string, number>()
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#6b7280']
+            
+            visitors.forEach(v => {
+                const purpose = v.purpose_of_visit || 'Other'
+                purposeMap.set(purpose, (purposeMap.get(purpose) || 0) + 1)
+            })
+            
+            return Array.from(purposeMap.entries()).map(([purpose, count], index) => ({
+                purpose,
+                count,
+                color: colors[index % colors.length],
+            }))
+        },
+
+        searchHosts: async (query: string) => {
+            const response = await $api<ApiResponse<PaginatedResponse<any>>>(
+                '/api/portal/users/',
+                {
+                    method: 'GET',
+                    query: { search: query },
+                },
+            )
+
+            if (!response.success) {
+                return []
+            }
+
+            return response.data.results.map(user => ({
+                id: user.id,
+                name: user.name,
+                role: user.role,
+                avatar: user.avatar_url,
+            }))
+        },
     }
 }

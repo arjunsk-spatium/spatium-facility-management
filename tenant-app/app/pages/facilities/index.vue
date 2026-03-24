@@ -33,7 +33,7 @@
                 <!-- Card Content -->
                 <template #cover>
                     <div class="h-32 bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center overflow-hidden">
-                        <img :src="buildingDrawing" alt="Facility Building"
+                        <img :src="facility.image_url || buildingDrawing" :alt="facility.name"
                             class="h-full w-full object-cover opacity-90 hover:scale-105 transition-transform duration-500" />
                     </div>
                 </template>

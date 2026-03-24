@@ -32,11 +32,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useNuxtApp } from '#app'
 import { message } from 'ant-design-vue'
 import ConfigTable from './ConfigTable.vue'
-import { useAuthFetch } from '../../composables/useAuthFetch'
 
-const { authFetch } = useAuthFetch()
+const { $api } = useNuxtApp()
 
 const API_BASE = '/api/portal/meeting-rooms/room-types'
 const AMENITY_API_BASE = '/api/portal/meeting-rooms/amenities'
@@ -84,7 +84,7 @@ const amenityFields = [
 const fetchRoomTypes = async () => {
     loading.value = true
     try {
-        const result = await authFetch<any>(API_BASE + '/')
+        const result = await $api<any>(API_BASE + '/')
         if (result.success) {
             roomTypes.value = result.data.results || []
         }
@@ -98,7 +98,7 @@ const fetchRoomTypes = async () => {
 
 const createRoomType = async (data: { name: string }) => {
     try {
-        const result = await authFetch<any>(API_BASE + '/', {
+        const result = await $api<any>(API_BASE + '/', {
             method: 'POST',
             body: { name: data.name }
         })
@@ -115,7 +115,7 @@ const createRoomType = async (data: { name: string }) => {
 
 const updateRoomType = async (record: any, data: { name: string }) => {
     try {
-        const result = await authFetch<any>(API_BASE + '/' + record.id + '/', {
+        const result = await $api<any>(API_BASE + '/' + record.id + '/', {
             method: 'PATCH',
             body: { name: data.name }
         })
@@ -132,7 +132,7 @@ const updateRoomType = async (record: any, data: { name: string }) => {
 
 const deleteRoomType = async (record: any) => {
     try {
-        await authFetch<any>(API_BASE + '/' + record.id + '/', {
+        await $api<any>(API_BASE + '/' + record.id + '/', {
             method: 'DELETE'
         })
         message.success('Room type deleted successfully')
@@ -146,7 +146,7 @@ const deleteRoomType = async (record: any) => {
 const fetchAmenities = async () => {
     loading.value = true
     try {
-        const result = await authFetch<any>(AMENITY_API_BASE + '/')
+        const result = await $api<any>(AMENITY_API_BASE + '/')
         if (result.success) {
             amenities.value = result.data.results || []
         }
@@ -162,7 +162,7 @@ const createAmenity = async (data: { name: string; icon?: File }) => {
     try {
         const body: any = { name: data.name }
         
-        const result = await authFetch<any>(AMENITY_API_BASE + '/', {
+        const result = await $api<any>(AMENITY_API_BASE + '/', {
             method: 'POST',
             body: body
         })
@@ -181,7 +181,7 @@ const updateAmenity = async (record: any, data: { name: string; icon?: File }) =
     try {
         const body: any = { name: data.name }
 
-        const result = await authFetch<any>(AMENITY_API_BASE + '/' + record.id + '/', {
+        const result = await $api<any>(AMENITY_API_BASE + '/' + record.id + '/', {
             method: 'PATCH',
             body: body
         })
@@ -198,7 +198,7 @@ const updateAmenity = async (record: any, data: { name: string; icon?: File }) =
 
 const deleteAmenity = async (record: any) => {
     try {
-        await authFetch<any>(AMENITY_API_BASE + '/' + record.id + '/', {
+        await $api<any>(AMENITY_API_BASE + '/' + record.id + '/', {
             method: 'DELETE'
         })
         message.success('Amenity deleted successfully')

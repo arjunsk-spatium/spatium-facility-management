@@ -1,10 +1,9 @@
-
-import { useAuthFetch } from './useAuthFetch';
+import { useNuxtApp } from "#app";
 
 export interface MeetingRoom {
     id: string;
     name: string;
-    status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+    status: "ACTIVE" | "INACTIVE" | "MAINTENANCE";
     pax: number;
     room_type: string;
     room_type_details?: {
@@ -67,12 +66,20 @@ export interface Booking {
             endTime: string;
         };
     }>;
-    attendees: Array<any>;
+    attendees: Array<{
+        id?: string;
+        attendee_type: string;
+        user?: string | null;
+        user_name?: string | null;
+        email?: string | null;
+        name?: string | null;
+        is_notified?: boolean;
+    }>;
     // Legacy compatibility
     roomId?: string;
     companyId?: string;
     bookedBy?: string;
-    status?: 'Confirmed' | 'Cancelled' | 'Completed';
+    status?: "Confirmed" | "Cancelled" | "Completed";
     creditsUsedLegacy?: number;
     amountChargedLegacy?: number;
 }
@@ -91,8 +98,8 @@ export interface RoomStats {
     avgDailyBookings: number;
 }
 
-const BOOKING_API_BASE = '/api/portal/bookings/bookings';
-const API_BASE = '/api/portal/meeting-rooms/rooms';
+const BOOKING_API_BASE = "/api/portal/bookings/bookings";
+const API_BASE = "/api/portal/meeting-rooms/rooms";
 
 export interface BookingListParams {
     meeting_room__facility?: string;
@@ -110,70 +117,86 @@ export interface PaginatedResponse<T> {
 }
 
 export const useMeetingRoomService = () => {
-    const { authFetch } = useAuthFetch();
+    const { $api } = useNuxtApp();
 
     const getRooms = async (): Promise<MeetingRoom[]> => {
-        const result = await authFetch<any>(API_BASE + '/')
+        const result = await $api<any>(API_BASE + "/");
         if (result.success) {
-            return result.data.results || []
+            return result.data.results || [];
         }
-        return []
-    }
+        return [];
+    };
 
-    const getRoomById = async (id: string): Promise<MeetingRoom | undefined> => {
-        const result = await authFetch<any>(API_BASE + '/' + id + '/')
+    const getRoomById = async (
+        id: string,
+    ): Promise<MeetingRoom | undefined> => {
+        const result = await $api<any>(API_BASE + "/" + id + "/");
         if (result.success) {
-            return result.data
+            return result.data;
         }
-        return undefined
-    }
+        return undefined;
+    };
 
-    const getTimeSlots = async (roomId: string, date: string, company?: string): Promise<TimeSlot[]> => {
-        let url = `${API_BASE}/${roomId}/time-slots/?date=${date}`
+    const getTimeSlots = async (
+        roomId: string,
+        date: string,
+        company?: string,
+    ): Promise<TimeSlot[]> => {
+        let url = `${API_BASE}/${roomId}/time-slots/?date=${date}`;
         if (company) {
-            url += `&company=${company}`
+            url += `&company=${company}`;
         }
-        const result = await authFetch<any>(url)
+        const result = await $api<any>(url);
         if (result.success) {
             return result.data.map((slot: any) => ({
                 id: slot.id,
                 startTime: slot.start_time,
                 endTime: slot.end_time,
-                isAvailable: slot.is_available
-            }))
+                isAvailable: slot.is_available,
+            }));
         }
-        return []
-    }
+        return [];
+    };
 
-    const getBookings = async (params?: BookingListParams): Promise<PaginatedResponse<Booking>> => {
-        const queryParams = new URLSearchParams()
+    const getBookings = async (
+        params?: BookingListParams,
+    ): Promise<PaginatedResponse<Booking>> => {
+        const queryParams = new URLSearchParams();
         if (params) {
-            if (params.meeting_room__facility) queryParams.append('meeting_room__facility', params.meeting_room__facility)
-            if (params.company) queryParams.append('company', params.company)
-            if (params.booking_date) queryParams.append('booking_date', params.booking_date)
-            if (params.page) queryParams.append('page', params.page.toString())
-            if (params.page_size) queryParams.append('page_size', params.page_size.toString())
+            if (params.meeting_room__facility)
+                queryParams.append(
+                    "meeting_room__facility",
+                    params.meeting_room__facility,
+                );
+            if (params.company) queryParams.append("company", params.company);
+            if (params.booking_date)
+                queryParams.append("booking_date", params.booking_date);
+            if (params.page) queryParams.append("page", params.page.toString());
+            if (params.page_size)
+                queryParams.append("page_size", params.page_size.toString());
         }
-        const queryString = queryParams.toString()
-        const result = await authFetch<any>(BOOKING_API_BASE + '/' + (queryString ? `?${queryString}` : ''))
+        const queryString = queryParams.toString();
+        const result = await $api<any>(
+            BOOKING_API_BASE + "/" + (queryString ? `?${queryString}` : ""),
+        );
         if (result.success) {
             return {
                 results: result.data.results.map(transformBooking),
                 count: result.data.count,
                 next: result.data.next,
-                previous: result.data.previous
-            }
+                previous: result.data.previous,
+            };
         }
-        return { results: [], count: 0, next: null, previous: null }
-    }
+        return { results: [], count: 0, next: null, previous: null };
+    };
 
     const getBookingById = async (id: string): Promise<Booking | undefined> => {
-        const result = await authFetch<any>(BOOKING_API_BASE + '/' + id + '/')
+        const result = await $api<any>(BOOKING_API_BASE + "/" + id + "/");
         if (result.success) {
-            return transformBooking(result.data)
+            return transformBooking(result.data);
         }
-        return undefined
-    }
+        return undefined;
+    };
 
     const transformBooking = (data: any): Booking => ({
         id: data.id,
@@ -205,12 +228,16 @@ export const useMeetingRoomService = () => {
             slot: s.slot,
             bookingDate: s.booking_date,
             slotDetails: {
-                startTime: s.slot_details?.start_time || s.slot_details?.startTime || '',
-                endTime: s.slot_details?.end_time || s.slot_details?.endTime || ''
-            }
+                startTime:
+                    s.slot_details?.start_time ||
+                    s.slot_details?.startTime ||
+                    "",
+                endTime:
+                    s.slot_details?.end_time || s.slot_details?.endTime || "",
+            },
         })),
-        attendees: data.attendees || []
-    })
+        attendees: data.attendees || [],
+    });
 
     const createBooking = async (booking: {
         company: string;
@@ -222,6 +249,11 @@ export const useMeetingRoomService = () => {
         bookingHours: number;
         amountCharged: number;
         slots: Array<{ slot: string }>;
+        attendees?: Array<{
+            attendee_type: string;
+            user?: string;
+            email?: string;
+        }>;
     }): Promise<Booking> => {
         const payload = {
             company: booking.company,
@@ -232,68 +264,80 @@ export const useMeetingRoomService = () => {
             booking_type: booking.bookingType,
             booking_hours: booking.bookingHours,
             amount_charged: booking.amountCharged,
-            slots: booking.slots
-        }
-        const result = await authFetch<any>(BOOKING_API_BASE + '/', {
-            method: 'POST',
-            body: payload
-        })
+            slots: booking.slots,
+            attendees: booking.attendees,
+        };
+        const result = await $api<any>(BOOKING_API_BASE + "/", {
+            method: "POST",
+            body: payload,
+        });
         if (result.success === true) {
-            return transformBooking(result.data)
+            return transformBooking(result.data);
         } else if (result.id || result.booking_id) {
-            return transformBooking(result)
+            return transformBooking(result);
         }
-        throw new Error(result.message || 'Failed to create booking')
-    }
+        throw new Error(result.message || "Failed to create booking");
+    };
 
-    const createRoom = async (room: Partial<MeetingRoom>): Promise<MeetingRoom> => {
-        const result = await authFetch<any>(API_BASE + '/', {
-            method: 'POST',
-            body: room
-        })
+    const createRoom = async (
+        room: Partial<MeetingRoom>,
+    ): Promise<MeetingRoom> => {
+        const result = await $api<any>(API_BASE + "/", {
+            method: "POST",
+            body: room,
+        });
         if (result.success) {
-            return result.data
+            return result.data;
         }
-        throw new Error(result.message || 'Failed to create room')
-    }
+        throw new Error(result.message || "Failed to create room");
+    };
 
-    const updateRoom = async (id: string, room: Partial<MeetingRoom>): Promise<MeetingRoom> => {
-        const result = await authFetch<any>(API_BASE + '/' + id + '/', {
-            method: 'PATCH',
-            body: room
-        })
+    const updateRoom = async (
+        id: string,
+        room: Partial<MeetingRoom>,
+    ): Promise<MeetingRoom> => {
+        const result = await $api<any>(API_BASE + "/" + id + "/", {
+            method: "PATCH",
+            body: room,
+        });
         if (result.success) {
-            return result.data
+            return result.data;
         }
-        throw new Error(result.message || 'Failed to update room')
-    }
+        throw new Error(result.message || "Failed to update room");
+    };
 
     const deleteRoom = async (id: string): Promise<void> => {
-        await authFetch<any>(API_BASE + '/' + id + '/', {
-            method: 'DELETE'
-        })
-    }
+        await $api<any>(API_BASE + "/" + id + "/", {
+            method: "DELETE",
+        });
+    };
 
     const uploadImages = async (id: string, images: File[]): Promise<any[]> => {
-        const formData = new FormData()
-        images.forEach(img => formData.append('images', img))
+        const formData = new FormData();
+        images.forEach((img) => formData.append("images", img));
 
-        const result = await authFetch<any>(API_BASE + '/' + id + '/upload-images/', {
-            method: 'POST',
-            body: formData
-        })
+        const result = await $api<any>(
+            API_BASE + "/" + id + "/upload-images/",
+            {
+                method: "POST",
+                body: formData,
+            },
+        );
         if (result.success) {
-            return result.data
+            return result.data;
         }
-        throw new Error(result.message || 'Failed to upload images')
-    }
+        throw new Error(result.message || "Failed to upload images");
+    };
 
-    const deleteImages = async (id: string, imageIds: string[]): Promise<void> => {
-        await authFetch<any>(API_BASE + '/' + id + '/delete-images/', {
-            method: 'POST',
-            body: { image_ids: imageIds }
-        })
-    }
+    const deleteImages = async (
+        id: string,
+        imageIds: string[],
+    ): Promise<void> => {
+        await $api<any>(API_BASE + "/" + id + "/delete-images/", {
+            method: "POST",
+            body: { image_ids: imageIds },
+        });
+    };
 
     return {
         getRooms,
@@ -307,9 +351,14 @@ export const useMeetingRoomService = () => {
         deleteRoom,
         uploadImages,
         deleteImages,
-        getStats: async (): Promise<RoomStats> => ({ totalBookings: 0, totalRevenue: 0, utilizationRate: 0, avgDailyBookings: 0 }),
+        getStats: async (): Promise<RoomStats> => ({
+            totalBookings: 0,
+            totalRevenue: 0,
+            utilizationRate: 0,
+            avgDailyBookings: 0,
+        }),
         getBookingsByStatus: async () => [],
         getBookingsTrend: async () => ({ labels: [], values: [] }),
-        getTopRooms: async () => []
-    }
-}
+        getTopRooms: async () => [],
+    };
+};

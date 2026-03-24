@@ -352,7 +352,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, reactive } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAuthFetch } from '../../../../composables/useAuthFetch'
+import { useNuxtApp } from '#app'
 import { useTenantService } from '../../../../composables/tenantService'
 import { useCompanyStore } from '../../../../stores/company'
 import { useFacilityService, type Facility, type Tower, type Floor } from '../../../../composables/facilityService'
@@ -369,6 +369,7 @@ import {
 import { message } from 'ant-design-vue'
 
 const route = useRoute()
+const { $api } = useNuxtApp()
 const store = useCompanyStore()
 const facilityService = useFacilityService()
 
@@ -477,8 +478,7 @@ const fetchWallet = async () => {
     const companyId = route.params.id as string
     creditLoading.value = true
     try {
-        const { authFetch } = useAuthFetch()
-        const result = await authFetch<any>(`/api/portal/companies/wallets/?company=${companyId}`)
+        const result = await $api<any>(`/api/portal/companies/wallets/?company=${companyId}`)
         let wallet = null
         if (result.success && Array.isArray(result.data) && result.data.length > 0) {
             wallet = result.data[0]
@@ -507,8 +507,7 @@ const handleCreditOk = async () => {
     const companyId = route.params.id as string
     creditSaving.value = true
     try {
-        const { authFetch } = useAuthFetch()
-        const result = await authFetch<any>('/api/portal/companies/wallets/', {
+        const result = await $api<any>('/api/portal/companies/wallets/', {
             method: 'POST',
             body: {
                 company: companyId,
@@ -540,15 +539,22 @@ const fetchEmployees = async () => {
     const companyId = route.params.id as string
     employeesLoading.value = true
     try {
-        const { authFetch } = useAuthFetch()
-        const result = await authFetch<any>(`/api/portal/users/list/?company_id=${companyId}&app_name=hub`)
+        const result = await $api<any>(`/api/portal/users/client_portal/list/?company_id=${companyId}`)
         let users: any[] = []
         if (result.success && Array.isArray(result.data)) {
             users = result.data
         } else if (result.success && result.data?.results) {
             users = result.data.results
         }
+        // Filter users who don't have client_portal (only hub) - these are employees
         employees.value = users
+            .filter((u: any) => !u.apps || !u.apps.includes('client_portal'))
+            .map((u: any) => ({
+                id: u.id,
+                full_name: u.full_name || u.email?.split('@')[0] || 'Unknown',
+                email: u.email,
+                phone_number: u.phone_number
+            }))
     } catch (err) {
         console.error('Failed to fetch employees:', err)
     } finally {
@@ -560,21 +566,23 @@ const fetchSpocs = async () => {
     const companyId = route.params.id as string
     spocsLoading.value = true
     try {
-        const { authFetch } = useAuthFetch()
-        const result = await authFetch<any>(`/api/portal/users/list/?company_id=${companyId}&app_name=hub`)
+        const result = await $api<any>(`/api/portal/users/client_portal/list/?company_id=${companyId}`)
         let users: any[] = []
         if (result.success && Array.isArray(result.data)) {
             users = result.data
         } else if (result.success && result.data?.results) {
             users = result.data.results
         }
-        spocs.value = users.map((u: any) => ({
-            id: u.id,
-            name: u.full_name,
-            email: u.email,
-            phone: u.phone_number,
-            designation: 'SPOC'
-        }))
+        // Filter only users who have client_portal in their apps array
+        spocs.value = users
+            .filter((u: any) => u.apps && u.apps.includes('client_portal'))
+            .map((u: any) => ({
+                id: u.id,
+                name: u.full_name || u.email?.split('@')[0] || 'Unknown',
+                email: u.email,
+                phone: u.phone_number,
+                designation: 'SPOC'
+            }))
     } catch (err) {
         console.error('Failed to fetch SPOCs:', err)
     } finally {
@@ -603,14 +611,13 @@ const openEditEmployeeModal = (record: any) => {
 const handleEmployeeOk = async () => {
     employeeSaving.value = true
     try {
-        const { authFetch } = useAuthFetch()
         const { getCurrentTenantId } = useTenantService()
         const companyId = route.params.id as string
         const tenantId = getCurrentTenantId()
 
         if (editingEmployeeId.value) {
             // Edit
-            await authFetch<any>(`/api/portal/users/opstrack/${editingEmployeeId.value}/update/`, {
+            await $api<any>(`/api/portal/users/opstrack/${editingEmployeeId.value}/update/`, {
                 method: 'PATCH',
                 body: {
                     full_name: employeeForm.full_name,
@@ -623,7 +630,7 @@ const handleEmployeeOk = async () => {
             message.success('Employee updated successfully')
         } else {
             // Create
-            await authFetch<any>('/api/portal/users/create/', {
+            await $api<any>('/api/portal/users/create/', {
                 method: 'POST',
                 body: {
                     app_name: 'hub',
@@ -682,34 +689,29 @@ const deleteSpoc = (index: number) => {
 const handleSpocOk = async () => {
     spocSaving.value = true
     try {
-        const { authFetch } = useAuthFetch()
-        const { getCurrentTenantId } = useTenantService()
         const companyId = route.params.id as string
-        const tenantId = getCurrentTenantId()
 
         if (editingSpocId.value) {
             // Edit
-            await authFetch<any>(`/api/portal/users/opstrack/${editingSpocId.value}/update/`, {
+            await $api<any>(`/api/portal/users/opstrack/${editingSpocId.value}/update/`, {
                 method: 'PATCH',
                 body: {
                     full_name: spocForm.full_name,
                     email: spocForm.email,
                     phone_number: spocForm.phone_number,
-                    tenant_id: tenantId,
                     company_id: companyId
                 }
             })
             message.success('SPOC updated successfully')
         } else {
-            // Create
-            await authFetch<any>('/api/portal/users/create/', {
+            // Create - use org_portal create endpoint
+            await $api<any>('/api/portal/users/org_portal/create/', {
                 method: 'POST',
                 body: {
                     app_name: 'client_portal',
                     full_name: spocForm.full_name,
                     email: spocForm.email,
                     phone_number: spocForm.phone_number,
-                    tenant_id: tenantId,
                     company_id: companyId
                 }
             })
@@ -739,8 +741,7 @@ const handleConfirmExistingUser = async () => {
     existingUserSaving.value = true
     existingUserConfirmVisible.value = false
     try {
-        const { authFetch } = useAuthFetch()
-        await authFetch<any>(`/api/portal/users/${existingUserId.value}/update/`, {
+        await $api<any>(`/api/portal/users/${existingUserId.value}/update/`, {
             method: 'PATCH',
             body: {
                 app_name: existingUserAppName.value,

@@ -11,6 +11,15 @@ export const useValidation = () => {
     if (error) {
        if (typeof error === 'string') return error;
 
+       if (error.data?.error?.type === 'VALIDATION' && error.data?.error?.fields) {
+         const fields = error.data.error.fields;
+         for (const key in fields) {
+           if (Array.isArray(fields[key]) && fields[key].length > 0 && fields[key][0].message) {
+             return fields[key][0].message;
+           }
+         }
+       }
+
        const message = error.data?.message || error.message;
        if (message && typeof message === 'string') {
          return message;

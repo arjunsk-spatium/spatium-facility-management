@@ -50,7 +50,9 @@
         <ResponsiveDataView :columns="columns" :data="filteredBookings" :loading="loading" row-key="bookingId">
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'id'">
-                    <span class="font-medium">{{ record.bookingId }}</span>
+                    <a @click="openBookingDetails(record)"
+                        class="font-medium text-primary-600 hover:text-primary-700 hover:underline cursor-pointer">{{
+                        record.bookingId }}</a>
                 </template>
 
                 <template v-if="column.key === 'room'">
@@ -94,21 +96,6 @@
                     </div>
                 </template>
 
-                <template v-if="column.key === 'actions'">
-                    <a-dropdown>
-                        <template #overlay>
-                            <a-menu>
-                                <a-menu-item key="1" danger>Cancel Booking</a-menu-item>
-                                <a-menu-item key="2">View Invoice</a-menu-item>
-                            </a-menu>
-                        </template>
-                        <a-button type="text" shape="circle">
-                            <template #icon>
-                                <MoreOutlined />
-                            </template>
-                        </a-button>
-                    </a-dropdown>
-                </template>
             </template>
 
             <!-- Mobile Card View -->
@@ -116,7 +103,8 @@
                 <a-card :bodyStyle="{ padding: '16px' }">
                     <div class="flex justify-between items-start mb-3">
                         <div>
-                            <h4 class="font-bold text-base dark:text-white mb-0">{{ record.bookingId }}</h4>
+                            <h4 class="font-bold text-base text-primary-600 dark:text-primary-400 mb-0 cursor-pointer hover:underline"
+                                @click="openBookingDetails(record)">{{ record.bookingId }}</h4>
                             <span class="text-xs text-gray-500">{{ record.bookingDate }}</span>
                         </div>
                         <BookingStatusBadge :status="record.bookingStatus" />
@@ -146,32 +134,23 @@
                     </div>
 
                     <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <span class="text-gray-500 font-medium">Total Cost:</span>
                         <div class="text-right">
                             <div class="font-bold text-gray-900 dark:text-white">₹{{ record.amountCharged }}</div>
                             <div class="text-xs text-gray-400">{{ record.creditsUsed || 0 }} Credits</div>
                         </div>
-                        <a-dropdown>
-                            <template #overlay>
-                                <a-menu>
-                                    <a-menu-item key="1" danger>Cancel</a-menu-item>
-                                    <a-menu-item key="2">View Invoice</a-menu-item>
-                                </a-menu>
-                            </template>
-                            <a-button size="small">
-                                Actions
-                                <MoreOutlined />
-                            </a-button>
-                        </a-dropdown>
                     </div>
                 </a-card>
             </template>
         </ResponsiveDataView>
 
         <!-- New Booking Modal -->
-        <a-modal v-model:open="showBookingModal" title="New Booking" :width="700" :confirm-loading="bookingLoading" @ok="handleCreateBooking" @cancel="handleCancelBooking">
+        <a-modal v-model:open="showBookingModal" title="New Booking" :width="700" :confirm-loading="bookingLoading"
+            @ok="handleCreateBooking" @cancel="handleCancelBooking">
             <a-form :model="bookingForm" layout="vertical">
                 <a-form-item label="Company" required>
-                    <a-select v-model:value="bookingForm.company" placeholder="Select company" show-search :filter-option="filterCompany">
+                    <a-select v-model:value="bookingForm.company" placeholder="Select company" show-search
+                        :filter-option="filterCompany">
                         <a-select-option v-for="company in companies" :key="company.id" :value="company.id">
                             {{ company.name }}
                         </a-select-option>
@@ -179,42 +158,58 @@
                 </a-form-item>
 
                 <a-form-item label="Meeting Room" required>
-                    <a-select v-model:value="bookingForm.meetingRoom" placeholder="Select room" show-search :filter-option="filterRoom">
+                    <a-select v-model:value="bookingForm.meetingRoom" placeholder="Select room" show-search
+                        :filter-option="filterRoom">
                         <a-select-option v-for="room in rooms" :key="room.id" :value="room.id">
                             {{ room.name }}
                         </a-select-option>
                     </a-select>
                 </a-form-item>
 
+                <a-form-item label="Internal Attendees">
+                    <a-select v-model:value="bookingForm.internalAttendees" placeholder="Select internal attendees"
+                        mode="multiple" :loading="employeesLoading" :disabled="!bookingForm.company" show-search
+                        optionFilterProp="label">
+                        <a-select-option v-for="user in companyEmployees" :key="user.id" :value="user.id"
+                            :label="user.name">
+                            {{ user.name }}
+                        </a-select-option>
+                    </a-select>
+                </a-form-item>
+
+                <a-form-item label="External Attendees (Optional)">
+                    <a-select v-model:value="bookingForm.externalAttendees" placeholder="Add external email addresses"
+                        mode="tags" :token-separators="[',', ' ']" :open="false">
+                    </a-select>
+                </a-form-item>
+
                 <a-form-item label="Booking Date" required>
-                    <a-date-picker v-model:value="bookingForm.bookingDate" class="w-full" :disabled-date="disabledDate" />
+                    <a-date-picker v-model:value="bookingForm.bookingDate" class="w-full"
+                        :disabled-date="disabledDate" />
                 </a-form-item>
 
                 <a-form-item label="Available Time Slots">
-                    <div v-if="!bookingForm.company || !bookingForm.meetingRoom || !bookingForm.bookingDate" class="text-gray-500 text-sm py-4 text-center bg-gray-50 rounded-lg">
+                    <div v-if="!bookingForm.company || !bookingForm.meetingRoom || !bookingForm.bookingDate"
+                        class="text-gray-500 text-sm py-4 text-center bg-gray-50 rounded-lg">
                         Select company, room and date to view available slots
                     </div>
                     <div v-else-if="loading" class="text-center py-4">
                         <a-spin />
                     </div>
-                    <div v-else-if="timeSlots.length === 0" class="text-gray-500 text-sm py-4 text-center bg-gray-50 rounded-lg">
+                    <div v-else-if="timeSlots.length === 0"
+                        class="text-gray-500 text-sm py-4 text-center bg-gray-50 rounded-lg">
                         No slots available for selected options
                     </div>
                     <div v-else class="space-y-3">
                         <div class="flex flex-wrap gap-2">
-                            <div
-                                v-for="slot in timeSlots"
-                                :key="slot.id"
-                                :class="[
-                                    'flex flex-col items-center justify-center px-4 py-3 rounded-lg cursor-pointer transition-all min-w-[90px] border-2',
-                                    slot.isAvailable
-                                        ? selectedSlots.includes(slot.id)
-                                            ? 'bg-emerald-500 border-emerald-500 text-white shadow-md'
-                                            : 'bg-white border-gray-200 text-gray-700 hover:border-emerald-400 hover:shadow-sm'
-                                        : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-                                ]"
-                                @click="slot.isAvailable && toggleSlot(slot.id)"
-                            >
+                            <div v-for="slot in timeSlots" :key="slot.id" :class="[
+                                'flex flex-col items-center justify-center px-4 py-3 rounded-lg cursor-pointer transition-all min-w-[90px] border-2',
+                                slot.isAvailable
+                                    ? selectedSlots.includes(slot.id)
+                                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-md'
+                                        : 'bg-white border-gray-200 text-gray-700 hover:border-emerald-400 hover:shadow-sm'
+                                    : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                            ]" @click="slot.isAvailable && toggleSlot(slot.id)">
                                 <span class="text-xs opacity-75">{{ slot.startTime }}</span>
                                 <span class="text-xs font-medium">{{ slot.endTime }}</span>
                             </div>
@@ -226,6 +221,79 @@
                     </div>
                 </a-form-item>
             </a-form>
+        </a-modal>
+
+        <!-- Booking Detail Modal -->
+        <a-modal v-model:open="showDetailModal" title="Booking Details" :width="600" :footer="null">
+            <template v-if="selectedBookingDetails">
+                <div class="space-y-6">
+                    <!-- Header section -->
+                    <div class="flex justify-between items-start border-b pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold mb-1">{{ selectedBookingDetails.meetingRoomName }}</h2>
+                            <p class="text-sm text-gray-500 mb-0">Booking ID: {{ selectedBookingDetails.bookingId }}</p>
+                        </div>
+                        <BookingStatusBadge :status="selectedBookingDetails.bookingStatus" />
+                    </div>
+
+                    <!-- Details sections -->
+                    <a-descriptions :column="2" layout="vertical" bordered size="small">
+                        <a-descriptions-item label="Date">
+                            <span class="font-medium">{{ selectedBookingDetails.bookingDate }}</span>
+                        </a-descriptions-item>
+                        <a-descriptions-item label="Time">
+                            <span class="font-medium">
+                                {{ selectedBookingDetails.startTime?.substring(0, 5) }} -
+                                {{ selectedBookingDetails.endTime?.substring(0, 5) }}
+                            </span>
+                        </a-descriptions-item>
+                        <a-descriptions-item label="Booked By">
+                            <div>{{ selectedBookingDetails.userName }}</div>
+                            <div class="text-xs text-gray-500">{{ selectedBookingDetails.companyName }}</div>
+                        </a-descriptions-item>
+                        <a-descriptions-item label="Cost">
+                            <div>₹{{ selectedBookingDetails.amountCharged }}</div>
+                            <div class="text-xs text-gray-500">{{ selectedBookingDetails.creditsUsed || 0 }} Credits
+                            </div>
+                        </a-descriptions-item>
+                    </a-descriptions>
+
+                    <!-- Attendees Section -->
+                    <div v-if="selectedBookingDetails.attendees && selectedBookingDetails.attendees.length > 0">
+                        <h3 class="text-base font-semibold mb-3 border-b pb-2">Attendees</h3>
+                        <a-list item-layout="horizontal" :data-source="selectedBookingDetails.attendees" size="small"
+                            :bordered="true">
+                            <template #renderItem="{ item }">
+                                <a-list-item>
+                                    <a-list-item-meta>
+                                        <template #title>
+                                            <span v-if="item.attendee_type === 'INTERNAL'">
+                                                {{ item.user_name || item.name || 'Internal Employee' }}
+                                            </span>
+                                            <span v-else>
+                                                {{ item.email || item.name || 'External Guest' }}
+                                            </span>
+                                        </template>
+                                        <template #avatar>
+                                            <a-avatar size="small" class="bg-primary-100 text-primary-600">
+                                                {{ item.attendee_type === 'INTERNAL' ? 'IN' : 'EX' }}
+                                            </a-avatar>
+                                        </template>
+                                    </a-list-item-meta>
+                                    <template #actions>
+                                        <a-tag :color="item.attendee_type === 'INTERNAL' ? 'blue' : 'orange'">
+                                            {{ item.attendee_type }}
+                                        </a-tag>
+                                    </template>
+                                </a-list-item>
+                            </template>
+                        </a-list>
+                    </div>
+                    <div v-else class="text-center py-4 bg-gray-50 rounded border border-gray-100 italic text-gray-500">
+                        No additional attendees for this booking.
+                    </div>
+                </div>
+            </template>
         </a-modal>
 
     </div>
@@ -273,9 +341,19 @@ const bookingForm = ref({
     company: null as string | null,
     meetingRoom: null as string | null,
     bookingDate: null as Dayjs | null,
-    amountCharged: 0
+    amountCharged: 0,
+    internalAttendees: [] as string[],
+    externalAttendees: [] as string[]
 });
 const selectedSlots = ref<string[]>([]);
+const companyEmployees = ref<Array<{ id: string; name: string }>>([]);
+const employeesLoading = ref(false);
+
+// Booking detail modal state
+const showDetailModal = ref(false);
+const selectedBookingDetails = ref<any | null>(null);
+
+const { $api } = useNuxtApp();
 
 // Columns
 const columns = [
@@ -285,8 +363,7 @@ const columns = [
     { title: 'Date', dataIndex: 'bookingDate', key: 'date', width: 120 },
     { title: 'Time', dataIndex: 'startTime', key: 'time', width: 120 },
     { title: 'User / Company', dataIndex: 'userName', key: 'user' },
-    { title: 'Cost', dataIndex: 'amountCharged', key: 'cost', align: 'right', width: 120 },
-    { title: '', key: 'actions', width: 50 }
+    { title: 'Cost', dataIndex: 'amountCharged', key: 'cost', align: 'right', width: 120 }
 ];
 
 // Computed
@@ -341,9 +418,37 @@ const toggleSlot = (slotId: string) => {
     }
 };
 
+const fetchCompanyEmployees = async () => {
+    if (!bookingForm.value.company) {
+        companyEmployees.value = [];
+        return;
+    }
+    employeesLoading.value = true;
+    try {
+        const result = await $api<any>(`/api/portal/users/list/?company_id=${bookingForm.value.company}&app_name=hub`);
+        let users: any[] = [];
+        if (result.success && Array.isArray(result.data)) {
+            users = result.data;
+        } else if (result.success && result.data?.results) {
+            users = result.data.results;
+        }
+        companyEmployees.value = users.map((u: any) => ({
+            id: u.id,
+            name: u.full_name || u.email
+        }));
+    } catch (err) {
+        console.error('Failed to fetch employees:', err);
+        companyEmployees.value = [];
+    } finally {
+        employeesLoading.value = false;
+    }
+};
+
 watch(() => bookingForm.value.company, () => {
     selectedSlots.value = [];
+    bookingForm.value.internalAttendees = [];
     fetchTimeSlots();
+    fetchCompanyEmployees();
 });
 
 watch(() => bookingForm.value.bookingDate, () => {
@@ -375,6 +480,14 @@ const handleCreateBooking = async () => {
 
     bookingLoading.value = true;
     try {
+        const attendeesPayload: Array<{ attendee_type: string; user?: string; email?: string }> = [];
+        bookingForm.value.internalAttendees.forEach(userId => {
+            attendeesPayload.push({ attendee_type: 'INTERNAL', user: userId });
+        });
+        bookingForm.value.externalAttendees.forEach(email => {
+            attendeesPayload.push({ attendee_type: 'EXTERNAL', email: email });
+        });
+
         await roomStore.createBooking({
             company: bookingForm.value.company,
             meetingRoom: bookingForm.value.meetingRoom,
@@ -384,9 +497,10 @@ const handleCreateBooking = async () => {
             bookingType: 'INTERNAL',
             bookingHours: hours,
             amountCharged: bookingForm.value.amountCharged,
-            slots: selectedSlots.value.map(slotId => ({ 
+            slots: selectedSlots.value.map(slotId => ({
                 slot: slotId
-            }))
+            })),
+            attendees: attendeesPayload
         });
         message.success('Booking created successfully');
         showBookingModal.value = false;
@@ -409,9 +523,12 @@ const resetBookingForm = () => {
         company: null,
         meetingRoom: null,
         bookingDate: null,
-        amountCharged: 0
+        amountCharged: 0,
+        internalAttendees: [],
+        externalAttendees: []
     };
     selectedSlots.value = [];
+    companyEmployees.value = [];
 };
 
 // Initialization
@@ -427,4 +544,9 @@ onMounted(async () => {
         console.error('Failed to load initial data:', error);
     }
 });
+
+const openBookingDetails = (booking: any) => {
+    selectedBookingDetails.value = booking;
+    showDetailModal.value = true;
+};
 </script>
