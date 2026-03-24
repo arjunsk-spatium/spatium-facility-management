@@ -177,19 +177,19 @@ export const useVisitorService = (): IVisitorService => {
         },
 
         getVisitorByPasscode: async (passcode: string): Promise<Visitor | null> => {
-            const response = await $api<ApiResponse<Visitor>>(
-                '/api/portal/visitors/client/visitors/',
+            const response = await $api<any>(
+                '/api/portal/visitors/public/passcode/verify/',
                 {
-                    method: 'GET',
-                    query: { passcode },
+                    method: 'POST',
+                    body: { passcode },
                 },
             )
 
-            if (!response.success || !response.data.results.length) {
-                return null
+            if (!response.success || !response.data) {
+                throw new Error(response.message || 'Invalid Passcode')
             }
 
-            return response.data.results[0]
+            return response.data
         },
 
         getStats: async (): Promise<VisitorStats> => {

@@ -28,7 +28,13 @@
 
                     <a-form-item label="Phone Number" name="phone"
                         :rules="[{ required: true, message: 'Please enter phone number' }]">
-                        <a-input v-model:value="formState.phone" placeholder="+91 98765 43210" size="large" />
+                        <a-input-group compact>
+                            <a-select v-model:value="formState.countryCode" style="width: 90px" size="large" disabled>
+                                <a-select-option value="+91">+91</a-select-option>
+                            </a-select>
+                            <a-input v-model:value="formState.phone" placeholder="98765 43210" size="large"
+                                style="width: calc(100% - 90px)" />
+                        </a-input-group>
                     </a-form-item>
 
                     <a-form-item label="Email" name="email" class="sm:col-span-2">
@@ -43,7 +49,7 @@
 
                     <a-form-item label="Visit Time" name="visitTime">
                         <a-time-picker v-model:value="formState.visitTime" class="w-full" size="large" format="hh:mm A"
-                            use12-hours />
+                            use12-hours :disabled-time="disabledTime" :show-now="false" />
                     </a-form-item>
 
                     <a-form-item label="Facility" name="facilityId"
@@ -64,20 +70,6 @@
                                 {{ purpose.name }}
                             </a-select-option>
                         </a-select>
-                    </a-form-item>
-
-                    <a-form-item label="Host Employee" name="hostName" class="sm:col-span-2">
-                        <a-select v-model:value="formState.hostName" placeholder="Select host employee" size="large"
-                            show-search :filter-option="filterOption">
-                            <a-select-option v-for="emp in employees" :key="emp.id" :value="emp.name">
-                                {{ emp.name }} - {{ emp.department }}
-                            </a-select-option>
-                        </a-select>
-                    </a-form-item>
-
-                    <a-form-item label="Additional Notes" name="notes" class="sm:col-span-2">
-                        <a-textarea v-model:value="formState.notes" placeholder="Any special instructions..."
-                            :rows="3" />
                     </a-form-item>
                 </div>
 
@@ -144,30 +136,57 @@ interface SpocVisitor {
     visitTime?: string
     purpose: string
     status: string
-    hostName?: string
     passcode?: string
 }
 
 const store = useSpocStore()
-const { employees, loading, purposes, facilities } = storeToRefs(store)
+const { loading, purposes, facilities, error } = storeToRefs(store)
 
 const showSuccess = ref(false)
 const lastInvited = ref<SpocVisitor | null>(null)
 
 const formState = reactive({
     name: '',
+    countryCode: '+91',
     phone: '',
     email: '',
     visitDate: null as Dayjs | null,
     visitTime: null as Dayjs | null,
     purpose: null as string | null,
-    facilityId: null as string | null,
-    hostName: null as string | null,
-    notes: ''
+    facilityId: null as string | null
 })
 
 const disabledDate = (current: Dayjs) => {
     return current && current < dayjs().startOf('day')
+}
+
+const disabledTime = () => {
+    const now = dayjs()
+    const isToday = formState.visitDate?.isSame(now, 'day')
+
+    if (!isToday) {
+        return { disabledHours: () => [], disabledMinutes: () => [] }
+    }
+
+    const disabledHours: number[] = []
+    
+    for (let h = 0; h < now.hour(); h++) {
+        disabledHours.push(h)
+    }
+
+    return {
+        disabledHours: () => disabledHours,
+        disabledMinutes: (hour: number) => {
+            if (hour === now.hour()) {
+                const mins: number[] = []
+                for (let m = 0; m < now.minute(); m++) {
+                    mins.push(m)
+                }
+                return mins
+            }
+            return []
+        }
+    }
 }
 
 const filterOption = (input: string, option: any) => {
@@ -176,41 +195,38 @@ const filterOption = (input: string, option: any) => {
 
 const resetForm = () => {
     formState.name = ''
+    formState.countryCode = '+91'
     formState.phone = ''
     formState.email = ''
     formState.visitDate = null
     formState.visitTime = null
     formState.purpose = null
     formState.facilityId = null
-    formState.hostName = null
-    formState.notes = ''
 }
 
 const handleSubmit = async () => {
     try {
         const data = {
             name: formState.name,
-            phone: formState.phone,
+            phone: formState.countryCode + formState.phone,
             email: formState.email || undefined,
             visitDate: formState.visitDate?.format('YYYY-MM-DD'),
             visitTime: formState.visitTime ? formState.visitTime.format('HH:mm') : undefined,
             purpose: formState.purpose || 'General Visit',
             facility_id: formState.facilityId || undefined,
-            purpose_of_visit_id: formState.purpose || undefined,
-            hostName: formState.hostName || undefined
+            purpose_of_visit_id: formState.purpose || undefined
         }
 
         const visitor = await store.inviteVisitor(data)
         lastInvited.value = visitor
         showSuccess.value = true
         resetForm()
-    } catch (err) {
-        message.error('Failed to send invitation')
+    } catch (err: any) {
+        message.error(error.value || 'Failed to send invitation')
     }
 }
 
 onMounted(async () => {
-    store.fetchEmployees()
     await Promise.all([
         store.fetchPurposesOfVisit(),
         store.fetchFacilities()

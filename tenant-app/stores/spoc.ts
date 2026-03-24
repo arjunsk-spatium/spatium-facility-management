@@ -211,7 +211,10 @@ export const useSpocStore = defineStore('spoc', {
                     return newVisitor
                 }
             } catch (err: any) {
-                this.error = err?.data?.message || err?.message || 'Failed to invite visitor'
+                this.error = err?.response?.data?.error?.details?.appointment_date?.[0] 
+                    || err?.response?.data?.message 
+                    || err?.message 
+                    || 'Failed to invite visitor'
                 throw err
             } finally {
                 this.loading = false
