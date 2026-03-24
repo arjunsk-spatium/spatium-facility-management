@@ -218,6 +218,20 @@ export const usePublicVisitorService = () => {
         }
     };
 
+    const getFacilities = async (): Promise<FacilityInfo[]> => {
+        try {
+            const response = await publicFetch<ApiResponse<{ results: FacilityInfo[] }>>(
+                `/api/portal/facilities/public/facilities/`,
+            );
+            if (response.success && response.data?.results) {
+                return response.data.results;
+            }
+            return [];
+        } catch {
+            return [];
+        }
+    };
+
     const createWalkIn = async (formData: FormData): Promise<any> => {
         const response = await publicFetch<ApiResponse<any>>(
             "/api/portal/visitors/public/walk-in/",
@@ -260,6 +274,7 @@ export const usePublicVisitorService = () => {
         getCompanies,
         getCompanyUsers,
         getFacility,
+        getFacilities,
         createWalkIn,
         preInvite,
     };

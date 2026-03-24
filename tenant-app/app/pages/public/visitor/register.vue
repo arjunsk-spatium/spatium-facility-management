@@ -9,9 +9,70 @@
         </div>
 
         <!-- Step 0: Visitor Type Selection -->
-        <div v-if="step === 0" class="space-y-8 animate-fade-in pt-8">
-            <div class="text-center space-y-2 mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 leading-tight">
+        <div v-if="step === 0" class="space-y-5 animate-fade-in pt-6">
+            <!-- No Facility Selected - Show Facility List -->
+            <div v-if="!facilityId && facilityList.length > 0">
+                <div class="text-center space-y-1 mb-4">
+                    <h1 class="text-2xl font-bold text-gray-900 leading-tight">
+                        Select Facility
+                    </h1>
+                    <p class="text-gray-500 text-sm max-w-xs mx-auto">
+                        Choose a facility to continue.
+                    </p>
+                </div>
+                <div class="space-y-3">
+                    <NuxtLink v-for="fac in facilityList" :key="fac.id"
+                        :to="`/public/visitor/register?facility_id=${fac.id}&tenant=${tenantId}`"
+                        class="block group">
+                        <div class="bg-white p-4 rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-md transition-all flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                                <img v-if="fac.image_url" :src="fac.image_url" :alt="fac.name" class="w-full h-full object-cover" />
+                                <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
+                                    <HomeOutlined class="text-xl" />
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-base font-bold text-gray-900 truncate">{{ fac.name }}</h3>
+                            </div>
+                            <div class="w-8 h-8 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
+                                <RightOutlined />
+                            </div>
+                        </div>
+                    </NuxtLink>
+                </div>
+            </div>
+
+            <div v-else-if="loadingFacilities" class="flex flex-col items-center justify-center py-12">
+                <LoadingOutlined class="text-2xl text-blue-600 mb-2" />
+                <p class="text-gray-500 text-sm">Loading facilities...</p>
+            </div>
+
+            <div v-else-if="!facilityId && facilityList.length === 0" class="text-center py-12">
+                <p class="text-gray-500 text-sm">No facilities available.</p>
+            </div>
+
+            <div v-else-if="loadingSingleFacility" class="flex flex-col items-center justify-center py-12">
+                <LoadingOutlined class="text-2xl text-blue-600 mb-2" />
+                <p class="text-gray-500 text-sm">Loading facility...</p>
+            </div>
+
+            <div v-else-if="facilityLoadFailed" class="text-center py-12 space-y-2">
+                <p class="text-gray-500 text-sm">Failed to load facility.</p>
+                <NuxtLink to="/public/visitor/register" class="text-blue-600 text-sm">Select a facility</NuxtLink>
+            </div>
+
+            <!-- Hero Section + Registration Options (when facility is selected) -->
+            <template v-else-if="facility">
+                <div class="relative w-full h-52 rounded-2xl overflow-hidden border border-gray-100 mb-4">
+                    <img :src="facility.image_url || 'https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'"
+                        :alt="facility.name" class="w-full h-full object-cover" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
+                        <div class="text-white text-xl font-bold">{{ facility.name }}</div>
+                    </div>
+                </div>
+
+                <div class="text-center space-y-1 mb-5">
+                <h1 class="text-2xl font-bold text-gray-900 leading-tight">
                     Welcome to <br />
                     <span class="text-blue-600">{{ tenantStore.tenantName || 'Our Facility' }}</span>
                 </h1>
@@ -20,22 +81,22 @@
                 </p>
             </div>
 
-            <div class="space-y-4 max-w-sm mx-auto">
+            <div class="space-y-4 max-w-sm mx-auto flex flex-col gap-2">
                 <button @click="step = 1" class="w-full relative group block text-left">
                     <div
-                        class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:border-blue-100 hover:shadow-md transition-all flex items-center justify-between">
+                        class="bg-white p-5 rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-md transition-all flex items-center justify-between">
                         <div class="flex items-center gap-4">
                             <div
-                                class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                 <UserAddOutlined class="text-xl" />
                             </div>
                             <div>
-                                <h3 class="font-bold text-gray-900">Walk-in Visitor</h3>
-                                <p class="text-xs text-gray-500">Register at the front desk</p>
+                                <h3 class="text-base font-bold text-gray-900">Walk-in Visitor</h3>
+                                <p class="text-sm text-gray-500">Register at the front desk</p>
                             </div>
                         </div>
                         <div
-                            class="w-8 h-8 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
+                            class="w-9 h-9 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
                             <RightOutlined />
                         </div>
                     </div>
@@ -44,24 +105,25 @@
                 <NuxtLink :to="`/public/visitor/invite?facility_id=${facilityId}&tenant=${tenantId}`"
                     class="block w-full text-left group">
                     <div
-                        class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:border-purple-100 hover:shadow-md transition-all flex items-center justify-between">
+                        class="bg-white p-5 rounded-xl border border-gray-100 hover:border-purple-100 hover:shadow-md transition-all flex items-center justify-between">
                         <div class="flex items-center gap-4">
                             <div
-                                class="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                class="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
                                 <QrcodeOutlined class="text-xl" />
                             </div>
                             <div>
-                                <h3 class="font-bold text-gray-900">Pre-invited Visitor</h3>
-                                <p class="text-xs text-gray-500">Have an invite code?</p>
+                                <h3 class="text-base font-bold text-gray-900">Pre-invited Visitor</h3>
+                                <p class="text-sm text-gray-500">Have an invite code?</p>
                             </div>
                         </div>
                         <div
-                            class="w-8 h-8 rounded-full bg-gray-50 group-hover:bg-purple-50 flex items-center justify-center text-gray-400 group-hover:text-purple-500 transition-colors">
+                            class="w-9 h-9 rounded-full bg-gray-50 group-hover:bg-purple-50 flex items-center justify-center text-gray-400 group-hover:text-purple-500 transition-colors">
                             <RightOutlined />
                         </div>
                     </div>
                 </NuxtLink>
             </div>
+            </template>
         </div>
 
         <!-- Step 1: Phone Number -->
@@ -157,7 +219,8 @@
             <!-- Photo Upload -->
             <div class="text-center mb-6">
                 <div class="relative w-24 h-24 mx-auto mb-2" @click="showCamera = true">
-                    <div class="w-full h-full rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden">
+                    <div
+                        class="w-full h-full rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden">
                         <img v-if="profilePhotoPreview" :src="profilePhotoPreview" class="w-full h-full object-cover" />
                         <CameraFilled v-else class="text-2xl text-gray-400" />
                     </div>
@@ -305,8 +368,7 @@
 
         <!-- Camera Modal -->
         <Teleport to="body">
-            <div v-if="showCamera"
-                class="fixed inset-0 z-[9999] bg-black flex items-center justify-center">
+            <div v-if="showCamera" class="fixed inset-0 z-[9999] bg-black flex items-center justify-center">
                 <ClientOnly>
                     <CameraCapture @capture="handlePhotoCapture" @close="showCamera = false" />
                 </ClientOnly>
@@ -323,7 +385,7 @@ import {
     LeftOutlined, DownOutlined, CloseCircleFilled, LockFilled,
     CheckCircleFilled, CameraFilled, PlusOutlined, UserOutlined,
     MailOutlined, BankOutlined, LoadingOutlined, UserAddOutlined,
-    QrcodeOutlined, RightOutlined
+    QrcodeOutlined, RightOutlined, HomeOutlined
 } from '@ant-design/icons-vue'
 import CameraCapture from '../../../../components/common/CameraCapture.vue'
 
@@ -336,7 +398,7 @@ const router = useRouter()
 const tenantStore = useTenantStore()
 const {
     requestOtp, verifyOtp, getMe,
-    getPurposesOfVisit, getCompanies, getCompanyUsers, createWalkIn
+    getPurposesOfVisit, getCompanies, getCompanyUsers, createWalkIn, getFacility, getFacilities
 } = usePublicVisitorService()
 
 const facilityId = computed(() => (route.query.facility_id as string) || '')
@@ -388,6 +450,51 @@ const formState = reactive({
     purposeOfVisitId: '',
     companyId: '',
     hostUserId: '',
+})
+
+const facility = ref<{ id: string; name: string; image_url: string | null;[key: string]: any } | null>(null)
+const facilityList = ref<{ id: string; name: string; image_url: string | null }[]>([])
+const loadingFacilities = ref(false)
+const loadingSingleFacility = ref(false)
+const facilityLoadFailed = ref(false)
+
+const loadFacility = async () => {
+    if (facilityId.value) {
+        loadingSingleFacility.value = true
+        facilityLoadFailed.value = false
+        facility.value = null
+        try {
+            const result = await getFacility(facilityId.value)
+            if (result) {
+                facility.value = result
+            } else {
+                facilityLoadFailed.value = true
+            }
+        } catch (e) {
+            console.error('Failed to load facility', e)
+            facilityLoadFailed.value = true
+        } finally {
+            loadingSingleFacility.value = false
+        }
+    } else {
+        loadingFacilities.value = true
+        facility.value = null
+        try {
+            facilityList.value = await getFacilities()
+        } catch (e) {
+            console.error('Failed to load facilities', e)
+        } finally {
+            loadingFacilities.value = false
+        }
+    }
+}
+
+onMounted(() => {
+    loadFacility()
+})
+
+watch(facilityId, () => {
+    loadFacility()
 })
 
 const isFormValid = computed(() => {
@@ -542,14 +649,14 @@ const verifyOtpCode = async () => {
 // Photo handling
 const handlePhotoCapture = (imageDataUrl: string) => {
     profilePhotoPreview.value = imageDataUrl
-    
+
     // Convert data URL to File
     const base64Response = fetch(imageDataUrl)
         .then(res => res.blob())
         .then(blob => {
             profilePhotoFile.value = new File([blob], 'photo.jpg', { type: 'image/jpeg' })
         })
-    
+
     showCamera.value = false
 }
 

@@ -23,18 +23,27 @@ describe("Public Visitor Registration Page", () => {
         expect(wrapper.text()).toContain("Welcome");
     });
 
-    it("should have phone number input", async () => {
+    it("should have phone number input in step 1", async () => {
         const wrapper = await mountSuspended(VisitorRegisterPage, mountOptions);
+        await wrapper.vm.$nextTick();
+        (wrapper.vm as any).step = 1;
+        await wrapper.vm.$nextTick();
         expect(wrapper.text()).toContain("Phone");
     });
 
-    it("should show locked +91 country code", async () => {
+    it("should show locked +91 country code in step 1", async () => {
         const wrapper = await mountSuspended(VisitorRegisterPage, mountOptions);
+        await wrapper.vm.$nextTick();
+        (wrapper.vm as any).step = 1;
+        await wrapper.vm.$nextTick();
         expect(wrapper.text()).toContain("+91");
     });
 
-    it("should have verification code option", async () => {
+    it("should have verification code option in step 1", async () => {
         const wrapper = await mountSuspended(VisitorRegisterPage, mountOptions);
+        await wrapper.vm.$nextTick();
+        (wrapper.vm as any).step = 1;
+        await wrapper.vm.$nextTick();
         expect(wrapper.text()).toContain("Verification");
     });
 
