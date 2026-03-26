@@ -10,13 +10,12 @@
                 </a-button>
                 <div>
                     <div class="flex items-center gap-3 mb-1">
-                        <h1 class="text-2xl font-bold dark:text-white">{{ currentTicket.id }}</h1>
-                        <StatusBadge :status="currentTicket.status" />
-                        <a-tag :color="getPriorityColor(currentTicket.priority)">{{ currentTicket.priority }}</a-tag>
+                        <h1 class="text-2xl font-bold dark:text-white">{{ currentTicket.ticket_number }}</h1>
+                        <StatusBadge :status="currentTicket.state?.label || currentTicket.state?.key" />
+                        <a-tag :color="getPriorityColor(currentTicket.priority)">{{ currentTicket.priority?.label }}</a-tag>
                     </div>
                     <p class="text-gray-500 text-sm">
-                        Created on {{ new Date(currentTicket.createdAt).toLocaleString() }} by {{
-                            currentTicket.createdBy }}
+                        Created on {{ new Date(currentTicket.created_at).toLocaleString() }}
                     </p>
                 </div>
             </div>
@@ -24,9 +23,9 @@
             <div class="flex gap-2">
                 <a-dropdown>
                     <template #overlay>
-                        <a-menu>
-                            <a-menu-item key="1">Assign to Me</a-menu-item>
-                            <a-menu-item key="2">Change Priority</a-menu-item>
+                        <a-menu @click="handleMenuClick">
+                            <a-menu-item key="assign">Assign Ticket</a-menu-item>
+                            <a-menu-item key="changePriority">Change Priority</a-menu-item>
                         </a-menu>
                     </template>
                     <a-button>
@@ -37,14 +36,45 @@
 
                 <a-button type="primary">Update Status</a-button>
             </div>
+
+            <!-- Assign Modal -->
+            <a-modal
+                v-model:open="showAssignModal"
+                title="Assign Ticket"
+                :confirm-loading="assigning"
+                @ok="handleAssignTicket"
+                @cancel="showAssignModal = false"
+            >
+                <a-form layout="vertical" class="mt-4">
+                    <a-form-item label="Assign To">
+                        <a-select
+                            v-model:value="selectedAssignee"
+                            placeholder="Select assignee"
+                            :options="assigneeOptions"
+                            :loading="loadingUsers"
+                            show-search
+                            option-filter-prop="label"
+                            style="width: 100%"
+                        />
+                    </a-form-item>
+                    <a-form-item label="Notes">
+                        <a-textarea
+                            v-model:value="assignNotes"
+                            placeholder="Add notes (optional)"
+                            :rows="3"
+                        />
+                    </a-form-item>
+                </a-form>
+            </a-modal>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Content -->
             <div class="lg:col-span-2 space-y-6">
-                <!-- Description -->
-                <a-card title="Issue Description" >
-                    <div class="text-gray-700 dark:text-gray-300 whitespace-pre-line text-base">
+                <!-- Title -->
+                <a-card title="Issue" >
+                    <h2 class="text-lg font-semibold dark:text-white mb-2">{{ currentTicket.title }}</h2>
+                    <div class="text-gray-700 dark:text-gray-300 whitespace-pre-line">
                         {{ currentTicket.description }}
                     </div>
                 </a-card>
@@ -52,22 +82,9 @@
                 <!-- Remarks -->
                 <a-card title="Remarks & History" >
                     <a-timeline>
-                        <!-- Most recent logs would typically be mapped here -->
-                        <a-timeline-item v-for="remark in currentTicket.remarks" :key="remark.id">
-                            <template #dot>
-                                <MessageOutlined v-if="!remark.isInternal" />
-                                <LockOutlined v-else class="text-xs" />
-                            </template>
-                            <div class="flex justify-between items-start">
-                                <span class="font-medium text-gray-900 dark:text-white">{{ remark.by }}</span>
-                                <span class="text-xs text-gray-400">{{ new Date(remark.at).toLocaleString() }}</span>
-                            </div>
-                            <p class="text-gray-600 dark:text-gray-400 mb-0">{{ remark.text }}</p>
-                        </a-timeline-item>
-
                         <a-timeline-item color="green">
                             <span class="font-medium">Ticket Created</span> - {{ new
-                                Date(currentTicket.createdAt).toLocaleString() }}
+                                Date(currentTicket.created_at).toLocaleString() }}
                         </a-timeline-item>
                     </a-timeline>
 
@@ -76,50 +93,126 @@
                         <a-input-search placeholder="Add a remark..." enter-button="Send" size="large" />
                     </div>
                 </a-card>
+
+                <!-- Attachments -->
+                <a-card title="Attachments">
+                    <div v-if="ticketImages.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div 
+                            v-for="(img, idx) in ticketImages" 
+                            :key="idx"
+                            class="relative aspect-video rounded-lg overflow-hidden border"
+                        >
+                            <img 
+                                :src="img" 
+                                :alt="`Attachment ${idx + 1}`" 
+                                class="w-full h-full object-cover"
+                            />
+                        </div>
+                    </div>
+                    <a-empty v-else description="No attachments" :image="false" />
+                </a-card>
             </div>
 
             <!-- Sidebar -->
             <div class="space-y-6">
-                <!-- Details Card -->
-                <a-card title="Details" >
+                <!-- Basic Info Card -->
+                <a-card title="Basic Info">
                     <div class="space-y-4">
                         <div>
                             <span class="block text-xs text-gray-500 uppercase">Category</span>
                             <div class="flex items-center gap-2 mt-1">
                                 <TagsOutlined class="text-gray-400" />
-                                <span class="font-medium dark:text-white">{{ currentTicket.category }}</span>
+                                <span class="font-medium dark:text-white">{{ currentTicket.category_name }}</span>
                             </div>
                         </div>
 
-                        <div v-if="currentTicket.subCategory">
-                            <span class="block text-xs text-gray-500 uppercase">Subject</span>
-                            <div class="font-medium dark:text-white mt-1">{{ currentTicket.subCategory }}</div>
+                        <div v-if="currentTicket.subcategory_name">
+                            <span class="block text-xs text-gray-500 uppercase">Subcategory</span>
+                            <div class="font-medium dark:text-white mt-1">{{ currentTicket.subcategory_name }}</div>
                         </div>
 
                         <div>
-                            <span class="block text-xs text-gray-500 uppercase">Location</span>
-                            <div class="flex items-start gap-2 mt-1">
-                                <EnvironmentOutlined class="text-gray-400 mt-1" />
-                                <div>
-                                    <div class="font-medium dark:text-white">{{ currentTicket.facilityName }}</div>
-                                    <div class="text-sm text-gray-500">{{ currentTicket.locationDetails }}</div>
-                                </div>
-                            </div>
+                            <span class="block text-xs text-gray-500 uppercase">Priority</span>
+                            <div class="font-medium dark:text-white mt-1">{{ currentTicket.priority?.label }}</div>
                         </div>
 
-                        <div v-if="currentTicket.assignedTo">
-                            <span class="block text-xs text-gray-500 uppercase">Assigned To</span>
-                            <div class="flex items-center gap-2 mt-1">
-                                <UserOutlined class="text-gray-400" />
-                                <span class="font-medium dark:text-white">{{ currentTicket.assignedTo }}</span>
+                        <div>
+                            <span class="block text-xs text-gray-500 uppercase">Status</span>
+                            <div class="font-medium dark:text-white mt-1">{{ currentTicket.state?.label }}</div>
+                        </div>
+                    </div>
+                </a-card>
+
+                <!-- Location Card -->
+                <a-card title="Location">
+                    <div class="space-y-3">
+                        <div v-if="currentTicket.facility">
+                            <span class="block text-xs text-gray-500 uppercase">Facility</span>
+                            <div class="font-medium dark:text-white mt-1">{{ currentTicket.facility }}</div>
+                        </div>
+
+                        <div v-if="currentTicket.tower">
+                            <span class="block text-xs text-gray-500 uppercase">Tower</span>
+                            <div class="font-medium dark:text-white mt-1">{{ currentTicket.tower }}</div>
+                        </div>
+
+                        <div v-if="currentTicket.floor">
+                            <span class="block text-xs text-gray-500 uppercase">Floor</span>
+                            <div class="font-medium dark:text-white mt-1">{{ currentTicket.floor }}</div>
+                        </div>
+
+                        <div v-if="currentTicket.wing">
+                            <span class="block text-xs text-gray-500 uppercase">Wing</span>
+                            <div class="font-medium dark:text-white mt-1">{{ currentTicket.wing }}</div>
+                        </div>
+
+                        <div v-if="currentTicket.location_text">
+                            <span class="block text-xs text-gray-500 uppercase">Location Text</span>
+                            <div class="flex items-start gap-2 mt-1">
+                                <EnvironmentOutlined class="text-gray-400 mt-1" />
+                                <div class="font-medium dark:text-white">{{ currentTicket.location_text }}</div>
                             </div>
                         </div>
                     </div>
                 </a-card>
 
-                <!-- Attachments (Placeholder) -->
-                <a-card title="Attachments" >
-                    <a-empty description="No attachments" :image="false" />
+                <!-- Assignment Card -->
+                <a-card title="Assignment">
+                    <div class="space-y-4">
+                        <div v-if="currentTicket.assignee">
+                            <span class="block text-xs text-gray-500 uppercase">Assigned To</span>
+                            <div class="flex items-center gap-2 mt-1">
+                                <UserOutlined class="text-gray-400" />
+                                <span class="font-medium dark:text-white">{{ currentTicket.assignee }}</span>
+                            </div>
+                        </div>
+                        <div v-else class="text-gray-500">Not assigned</div>
+                    </div>
+                </a-card>
+
+                <!-- Additional Info Card -->
+                <a-card title="Additional Info">
+                    <div class="space-y-4">
+                        <div v-if="currentTicket.company">
+                            <span class="block text-xs text-gray-500 uppercase">Company</span>
+                            <div class="font-medium dark:text-white mt-1">{{ currentTicket.company }}</div>
+                        </div>
+
+                        <div v-if="currentTicket.updated_at">
+                            <span class="block text-xs text-gray-500 uppercase">Last Updated</span>
+                            <div class="font-medium dark:text-white mt-1">{{ new Date(currentTicket.updated_at).toLocaleString() }}</div>
+                        </div>
+
+                        <div v-if="currentTicket.force_close_notes">
+                            <span class="block text-xs text-gray-500 uppercase">Force Close Notes</span>
+                            <div class="text-sm dark:text-gray-300 mt-1">{{ currentTicket.force_close_notes }}</div>
+                        </div>
+
+                        <div v-if="currentTicket.reopen_notes">
+                            <span class="block text-xs text-gray-500 uppercase">Reopen Notes</span>
+                            <div class="text-sm dark:text-gray-300 mt-1">{{ currentTicket.reopen_notes }}</div>
+                        </div>
+                    </div>
                 </a-card>
             </div>
         </div>
@@ -137,10 +230,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useHelpdeskStore } from '../../../stores/helpdesk';
+import { useHelpdeskService } from '../../../composables/helpdeskService';
 import { storeToRefs } from 'pinia';
+import { message } from 'ant-design-vue';
 import StatusBadge from '../../../components/helpdesk/StatusBadge.vue';
 import {
     ArrowLeftOutlined,
@@ -163,12 +258,75 @@ const { currentTicket, loading } = storeToRefs(store);
 
 const ticketId = route.params.id as string;
 
-const getPriorityColor = (priority: string) => {
-    switch (priority?.toLowerCase()) {
-        case 'urgent': return 'red';
-        case 'high': return 'orange';
-        case 'medium': return 'blue';
-        case 'low': return 'green';
+const ticketImages = computed(() => {
+    if (!currentTicket.value) return [];
+    return [
+        currentTicket.value.image_1,
+        currentTicket.value.image_2,
+        currentTicket.value.image_3
+    ].filter(Boolean) as string[];
+});
+
+// Assign modal state
+const showAssignModal = ref(false);
+const selectedAssignee = ref<string | undefined>(undefined);
+const assignNotes = ref('');
+const assigning = ref(false);
+const loadingUsers = ref(false);
+const assignableUsers = ref<any[]>([]);
+
+const assigneeOptions = computed(() => 
+    assignableUsers.value.map(u => ({ label: u.full_name || u.email, value: u.id }))
+);
+
+const openAssignModal = async () => {
+    showAssignModal.value = true;
+    loadingUsers.value = true;
+    try {
+        const service = useHelpdeskService();
+        assignableUsers.value = await service.getAssignableUsers();
+    } catch (error) {
+        message.error('Failed to load users');
+    } finally {
+        loadingUsers.value = false;
+    }
+};
+
+const handleMenuClick = async ({ key }: { key: string }) => {
+    if (key === 'assign') {
+        await openAssignModal();
+    } else if (key === 'changePriority') {
+        message.info('Change priority coming soon');
+    }
+};
+
+const handleAssignTicket = async () => {
+    if (!selectedAssignee.value) {
+        message.error('Please select an assignee');
+        return;
+    }
+    
+    assigning.value = true;
+    try {
+        await store.assignTicket(ticketId, selectedAssignee.value, assignNotes.value);
+        message.success('Ticket assigned successfully');
+        showAssignModal.value = false;
+        selectedAssignee.value = undefined;
+        assignNotes.value = '';
+    } catch (error) {
+        message.error('Failed to assign ticket');
+    } finally {
+        assigning.value = false;
+    }
+};
+
+const getPriorityColor = (priority: any) => {
+    const key = priority?.key || priority;
+    switch (key?.toUpperCase()) {
+        case 'P1': return 'red';
+        case 'P2': return 'orange';
+        case 'P3': return 'blue';
+        case 'P4': return 'green';
         default: return 'default';
     }
 };
