@@ -131,6 +131,75 @@ export const useHelpdeskStore = defineStore('helpdesk', {
             } finally {
                 this.loading = false;
             }
+        },
+
+        async reassignTicket(ticketId: string, assignee: string, notes?: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+
+            try {
+                const updatedTicket = await service.reassignTicket(ticketId, assignee, notes);
+                const index = this.tickets.findIndex(t => t.id === ticketId);
+                if (index > -1) {
+                    this.tickets[index] = updatedTicket;
+                }
+                if (this.currentTicket?.id === ticketId) {
+                    this.currentTicket = updatedTicket;
+                }
+                return updatedTicket;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to reassign ticket';
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async confirmCloseTicket(ticketId: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+
+            try {
+                const updatedTicket = await service.confirmCloseTicket(ticketId);
+                const index = this.tickets.findIndex(t => t.id === ticketId);
+                if (index > -1) {
+                    this.tickets[index] = updatedTicket;
+                }
+                if (this.currentTicket?.id === ticketId) {
+                    this.currentTicket = updatedTicket;
+                }
+                return updatedTicket;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to close ticket';
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async updateTicket(ticketId: string, payload: { priority_id?: string; location_text?: string }) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+
+            try {
+                const updatedTicket = await service.updateTicket(ticketId, payload);
+                const index = this.tickets.findIndex(t => t.id === ticketId);
+                if (index > -1) {
+                    this.tickets[index] = updatedTicket;
+                }
+                if (this.currentTicket?.id === ticketId) {
+                    this.currentTicket = updatedTicket;
+                }
+                return updatedTicket;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to update ticket';
+                throw err;
+            } finally {
+                this.loading = false;
+            }
         }
     }
 });
