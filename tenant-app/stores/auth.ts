@@ -185,9 +185,19 @@ export const useAuthStore = defineStore("auth", {
         },
 
         async fetchModules() {
-            const { getUserModules } = useUserService();
+            const { getUserModules, getPortalUserList } = useUserService();
             try {
                 this.modules = await getUserModules();
+                
+                // Fetch portal user list on app load after auth
+                if (this.token) {
+                    try {
+                        const portalUsers = await getPortalUserList();
+                        console.log('Portal user list loaded:', portalUsers);
+                    } catch (err) {
+                        console.error('Failed to fetch portal user list:', err);
+                    }
+                }
             } catch (error) {
                 console.error("Failed to fetch modules", error);
                 this.modules = [];
