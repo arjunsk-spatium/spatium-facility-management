@@ -290,7 +290,7 @@ const updatingPriority = ref(false);
 const priorities = ref<any[]>([]);
 
 const priorityOptions = computed(() => 
-    priorities.value.map(p => ({ label: p.label, value: p.key }))
+    priorities.value.map(p => ({ label: p.label, value: p.id }))
 );
 
 const canCloseTicket = computed(() => {
@@ -331,11 +331,11 @@ const handleMenuClick = async ({ key }: { key: string }) => {
 
 const openPriorityModal = async () => {
     showPriorityModal.value = true;
-    selectedPriority.value = currentTicket.value?.priority?.key;
     if (priorities.value.length === 0) {
         const service = useHelpdeskService();
         priorities.value = await service.getPriorities();
     }
+    selectedPriority.value = priorities.value.find(p => p.key === currentTicket.value?.priority?.key)?.id;
 };
 
 const handleUpdatePriority = async () => {
@@ -346,7 +346,7 @@ const handleUpdatePriority = async () => {
     
     updatingPriority.value = true;
     try {
-        await store.updateTicket(ticketId, { priority_id: selectedPriority.value });
+        await store.updateTicket(ticketId, { priority: selectedPriority.value });
         message.success('Priority updated successfully');
         showPriorityModal.value = false;
     } catch (error) {

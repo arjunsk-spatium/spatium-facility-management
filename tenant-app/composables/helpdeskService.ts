@@ -601,7 +601,7 @@ export const useHelpdeskService = () => {
             }
         },
 
-        updateTicket: async (ticketId: string, payload: { priority_id?: string; location_text?: string }): Promise<Ticket> => {
+        updateTicket: async (ticketId: string, payload: { priority?: string; location_text?: string }): Promise<Ticket> => {
             try {
                 const response = await $api<ApiResponse<ApiResponse<Ticket>>>(
                     `/api/portal/helpdesk/tickets/${ticketId}/update/`,

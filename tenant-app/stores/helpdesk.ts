@@ -179,7 +179,7 @@ export const useHelpdeskStore = defineStore('helpdesk', {
             }
         },
 
-        async updateTicket(ticketId: string, payload: { priority_id?: string; location_text?: string }) {
+        async updateTicket(ticketId: string, payload: { priority?: string; location_text?: string }) {
             this.loading = true;
             this.error = null;
             const service = useHelpdeskService();
