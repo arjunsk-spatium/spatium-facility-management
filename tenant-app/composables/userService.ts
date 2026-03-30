@@ -69,6 +69,17 @@ export const useUserService = () => {
         return [...mockUsers]
     }
 
+    const getPortalUserList = async (): Promise<any> => {
+        const { authFetch } = useAuthFetch()
+        try {
+            const response = await authFetch<any>('/api/portal/modules/user/list')
+            return response
+        } catch (error) {
+            console.error('Failed to fetch portal user list:', error)
+            throw error
+        }
+    }
+
     const getUserById = async (id: number): Promise<User | undefined> => {
         await delay(200)
         return mockUsers.find(u => u.id === id)
@@ -126,6 +137,7 @@ export const useUserService = () => {
         createUser,
         updateUser,
         updateUserModules,
-        deleteUser
+        deleteUser,
+        getPortalUserList
     }
 }
