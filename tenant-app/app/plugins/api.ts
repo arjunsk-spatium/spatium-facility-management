@@ -9,6 +9,7 @@ interface ApiOptions {
     query?: Record<string, any>;
     body?: any;
     headers?: Record<string, string>;
+    responseType?: 'json' | 'blob' | 'text';
 }
 
 // Type augmentation for Nuxt
@@ -145,6 +146,12 @@ export default defineNuxtPlugin(() => {
                 error.statusCode = response.status;
                 error.data = errorData;
                 throw error;
+            }
+
+            if (options.responseType === 'blob') {
+                return response.blob() as unknown as T;
+            } else if (options.responseType === 'text') {
+                return response.text() as unknown as T;
             }
 
             return response.json();

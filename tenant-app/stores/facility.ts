@@ -188,5 +188,20 @@ export const useFacilityStore = defineStore("facility", {
         async goToPage(page: number) {
             await this.fetchFacilities({ page }, true);
         },
+
+        async generateFacilityQRCode(facilityId: string, facilityName: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useFacilityService();
+
+            try {
+                await service.generateFacilityQRCode(facilityId, facilityName);
+            } catch (err: any) {
+                this.error = err.message || "Failed to generate QR Code";
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        },
     },
 });

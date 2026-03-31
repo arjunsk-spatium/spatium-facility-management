@@ -79,6 +79,9 @@
                     <div class="flex justify-center w-full" @click.stop="navigateTo(`/facilities/${facility.id}`)">
                         <EyeOutlined class="mr-2" /> View
                     </div>
+                    <div class="flex justify-center w-full" @click.stop="handleGenerateQRCode(facility)">
+                        <QrcodeOutlined class="mr-2" /> QR Code
+                    </div>
                 </template>
             </a-card>
         </div>
@@ -100,8 +103,10 @@ import {
     HomeOutlined,
     EnvironmentOutlined,
     EditOutlined,
-    EyeOutlined
+    EyeOutlined,
+    QrcodeOutlined
 } from '@ant-design/icons-vue';
+import { message } from 'ant-design-vue';
 import buildingDrawing from '../../../assets/images/building-drawing.png';
 
 definePageMeta({
@@ -112,6 +117,15 @@ const facilityStore = useFacilityStore();
 
 const handlePageChange = (page: number) => {
     facilityStore.goToPage(page);
+};
+
+const handleGenerateQRCode = async (facility: any) => {
+    try {
+        await facilityStore.generateFacilityQRCode(facility.id, facility.name);
+        message.success('QR Code generated successfully');
+    } catch (error) {
+        message.error('Failed to generate QR Code');
+    }
 };
 
 onMounted(() => {

@@ -187,6 +187,7 @@ export interface UpdateWingPayload {
 
 export interface FacilityListParams {
     page?: number;
+    page_size?: number;
     search?: string;
 }
 
@@ -214,6 +215,7 @@ export interface IFacilityService {
     getWings(floorId: string): Promise<Wing[]>;
     createWing(payload: CreateWingPayload): Promise<Wing>;
     updateWing(id: string, payload: UpdateWingPayload): Promise<Wing>;
+    generateFacilityQRCode(facilityId: string, facilityName: string): Promise<void>;
 }
 
 export const useFacilityService = (): IFacilityService => {
@@ -469,6 +471,30 @@ export const useFacilityService = (): IFacilityService => {
             }
 
             return response.data;
+        },
+
+        generateFacilityQRCode: async (facilityId: string, facilityName: string) => {
+            const domain = window.location.origin;
+            const fullUrl = `${domain}/public/visitor?facility=${facilityId}`;
+            
+            const response = await $api<Blob>('/api/portal/visitors/client/qr-code/pdf/', {
+                method: 'POST',
+                body: {
+                    full_url: fullUrl,
+                    facility_name: facilityName
+                },
+                responseType: 'blob'
+            });
+            
+            // Trigger download
+            const url = window.URL.createObjectURL(response);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${facilityName}-qrcode.zip`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
         },
     };
 };

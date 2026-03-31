@@ -9,9 +9,14 @@
             </div>
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold dark:text-white">{{ facility?.name }}</h1>
-                <a-button v-if="facility" type="primary" @click="navigateTo(`/facilities/${facilityId}/edit`)">
-                    <EditOutlined /> Edit Facility
-                </a-button>
+                <div v-if="facility" class="flex gap-2">
+                    <a-button @click="handleGenerateQRCode" :loading="generatingQR">
+                        <QrcodeOutlined /> QR Code
+                    </a-button>
+                    <a-button type="primary" @click="navigateTo(`/facilities/${facilityId}/edit`)">
+                        <EditOutlined /> Edit Facility
+                    </a-button>
+                </div>
             </div>
         </div>
 
@@ -240,7 +245,7 @@ import { useHelpdeskService } from '../../../../composables/helpdeskService';
 import type { Tower } from '../../../../composables/facilityService';
 import AppLoader from '../../../../components/AppLoader.vue';
 import FacilitiesTowerStructureManager from '../../../../components/facilities/TowerStructureManager.vue';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { PlusOutlined, EditOutlined, DeleteOutlined, QrcodeOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import dayjs from 'dayjs';
 
@@ -273,6 +278,20 @@ const openTowerDrawer = (tower: Tower) => {
 
 
 const facility = computed(() => facilityStore.currentFacility);
+
+const generatingQR = ref(false);
+const handleGenerateQRCode = async () => {
+    if (!facility.value) return;
+    generatingQR.value = true;
+    try {
+        await facilityStore.generateFacilityQRCode(facility.value.id, facility.value.name);
+        message.success('QR Code generated successfully');
+    } catch (error) {
+        message.error('Failed to generate QR Code');
+    } finally {
+        generatingQR.value = false;
+    }
+};
 
 const totalFloorCount = computed(() => {
     return towers.value.reduce((acc, tower) => acc + (tower.floor_count || 0), 0);
