@@ -34,7 +34,7 @@
                 <template #cover>
                     <div class="h-32 bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center overflow-hidden">
                         <img :src="facility.image_url || buildingDrawing" :alt="facility.name"
-                            class="h-full w-full object-cover opacity-90 hover:scale-105 transition-transform duration-500" />
+                            class="h-full w-full object-cover opacity-90 scale-130 hover:scale-135 transition-transform duration-500" />
                     </div>
                 </template>
 
@@ -43,7 +43,7 @@
                         <div class="space-y-2 mt-2">
                             <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
                                 <EnvironmentOutlined class="mr-1.5" />
-                                {{ facility.city_details?.name || facility.location?.city || 'N/A' }}, 
+                                {{ facility.city_details?.name || facility.location?.city || 'N/A' }},
                                 {{ facility.country_details?.name || facility.location?.country || 'N/A' }}
                             </div>
 
@@ -85,13 +85,8 @@
 
         <!-- Pagination -->
         <div v-if="facilityStore.totalFacilities > 0" class="flex justify-center mt-6">
-            <a-pagination
-                :current="facilityStore.page"
-                :total="facilityStore.count"
-                :page-size="facilityStore.pageSize"
-                :show-size-changer="false"
-                @change="handlePageChange"
-            />
+            <a-pagination :current="facilityStore.page" :total="facilityStore.count" :page-size="facilityStore.pageSize"
+                :show-size-changer="false" @change="handlePageChange" />
         </div>
     </div>
 </template>

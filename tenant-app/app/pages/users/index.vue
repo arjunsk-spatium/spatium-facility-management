@@ -35,7 +35,7 @@
                     <!-- User Header -->
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                         <!-- User Info -->
-                        <div class="flex items-center gap-3 flex-1" @click="toggleUserExpand(user.id)">
+                        <div class="flex items-center gap-3 flex-1">
                             <a-avatar :size="48" class="bg-primary-100 text-primary-600">
                                 {{ user.name.charAt(0).toUpperCase() }}
                             </a-avatar>
@@ -47,15 +47,13 @@
                                     {{ user.role }}
                                 </span>
                             </div>
-                            <!-- Expand Toggle (Mobile) -->
-                            <div class="sm:hidden">
-                                <DownOutlined v-if="!expandedUsers.includes(user.id)" class="text-gray-400" />
-                                <UpOutlined v-else class="text-gray-400" />
-                            </div>
                         </div>
 
                         <!-- Actions (Desktop) -->
                         <div class="hidden sm:flex items-center gap-2">
+                            <a-button type="primary" ghost @click="openModuleModal(user)">
+                                Manage Access
+                            </a-button>
                             <a-button type="text" @click="openEditUserModal(user)">
                                 <EditOutlined />
                             </a-button>
@@ -68,77 +66,82 @@
                         </div>
                     </div>
 
-                    <!-- Module Assignment Area -->
-                    <div :class="[
-                        'mt-4 pt-4 border-t border-gray-200 dark:border-gray-700',
-                        { 'hidden': !expandedUsers.includes(user.id) && isMobile }
-                    ]">
-                        <div class="flex items-center justify-between mb-3">
-                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Module Access:</p>
-                            <a-button v-if="hasModuleChanges(user)" type="primary" size="small"
-                                :loading="savingUserId === user.id" @click="saveUserModules(user)">
-                                Save Changes
+                    <!-- Mobile Actions -->
+                    <div class="mt-4 flex gap-2 sm:hidden">
+                        <a-button size="small" type="primary" ghost @click="openModuleModal(user)">
+                            Access
+                        </a-button>
+                        <a-button size="small" @click="openEditUserModal(user)">
+                            <EditOutlined /> Edit
+                        </a-button>
+                        <a-popconfirm title="Delete this user?" ok-text="Yes" cancel-text="No"
+                            @confirm="handleDeleteUser(user.id)">
+                            <a-button size="small" danger>
+                                <DeleteOutlined /> Delete
                             </a-button>
-                        </div>
-
-                        <!-- Modules Grid -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div v-for="mod in systemModules" :key="mod.id" 
-                                class="module-card p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="font-medium text-gray-900 dark:text-white">{{ mod.module }}</span>
-                                    <a-checkbox 
-                                        :checked="isModuleFullyAssigned(user, mod)" 
-                                        :indeterminate="isModulePartiallyAssigned(user, mod)"
-                                        @change="toggleModuleAll(user, mod)"
-                                    >
-                                        All
-                                    </a-checkbox>
-                                </div>
-                                <div class="space-y-2">
-                                    <div v-for="submod in mod.submodules" :key="submod.id" class="submodule-item">
-                                        <div class="flex items-center gap-2 text-sm">
-                                            <a-checkbox 
-                                                :checked="isSubmoduleFullyAssigned(user, submod)"
-                                                :indeterminate="isSubmodulePartiallyAssigned(user, submod)"
-                                                @change="toggleSubmoduleAll(user, submod, mod)"
-                                            >
-                                                {{ submod.name }}
-                                            </a-checkbox>
-                                        </div>
-                                        <div class="ml-6 mt-1 flex flex-wrap gap-1">
-                                            <span v-for="perm in submod.permissions" :key="perm.id"
-                                                :class="[
-                                                    'text-xs px-1.5 py-0.5 rounded cursor-pointer',
-                                                    isPermissionAssigned(user, perm.id) 
-                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
-                                                ]"
-                                                @click="togglePermission(user, perm.id)">
-                                                {{ perm.name }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Mobile Actions -->
-                        <div class="mt-4 flex gap-2 sm:hidden">
-                            <a-button size="small" @click="openEditUserModal(user)">
-                                <EditOutlined /> Edit
-                            </a-button>
-                            <a-popconfirm title="Delete this user?" ok-text="Yes" cancel-text="No"
-                                @confirm="handleDeleteUser(user.id)">
-                                <a-button size="small" danger>
-                                    <DeleteOutlined /> Delete
-                                </a-button>
-                            </a-popconfirm>
-                        </div>
+                        </a-popconfirm>
                     </div>
                 </a-card>
             </div>
         </div>
+
+        <!-- Module Management Modal -->
+        <a-modal v-model:open="moduleModalVisible" 
+            :title="`Manage Access - ${activeModuleUser?.name}`"
+            width="900px"
+            style="top: 20px;"
+            :destroyOnClose="true"
+            @cancel="closeModuleModal">
+            <template #footer>
+                <a-button @click="closeModuleModal">Cancel</a-button>
+                <a-button v-if="activeModuleUser && hasModuleChanges(activeModuleUser)" type="primary" :loading="savingUserId === activeModuleUser.id" @click="saveUserModules(activeModuleUser)">
+                    Save Changes
+                </a-button>
+            </template>
+            
+            <div v-if="activeModuleUser" class="mt-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div v-for="mod in systemModules" :key="mod.id" 
+                        class="module-card p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-gray-900 dark:text-white">{{ mod.module }}</span>
+                            <a-checkbox 
+                                :checked="isModuleFullyAssigned(activeModuleUser, mod)" 
+                                :indeterminate="isModulePartiallyAssigned(activeModuleUser, mod)"
+                                @change="toggleModuleAll(activeModuleUser, mod)"
+                            >
+                                All
+                            </a-checkbox>
+                        </div>
+                        <div class="space-y-2">
+                            <div v-for="submod in mod.submodules" :key="submod.id" class="submodule-item">
+                                <div class="flex items-center gap-2 text-sm">
+                                    <a-checkbox 
+                                        :checked="isSubmoduleFullyAssigned(activeModuleUser, submod)"
+                                        :indeterminate="isSubmodulePartiallyAssigned(activeModuleUser, submod)"
+                                        @change="toggleSubmoduleAll(activeModuleUser, submod, mod)"
+                                    >
+                                        {{ submod.name }}
+                                    </a-checkbox>
+                                </div>
+                                <div class="ml-6 mt-1 flex flex-wrap gap-1">
+                                    <span v-for="perm in submod.permissions" :key="perm.id"
+                                        :class="[
+                                            'text-xs px-1.5 py-0.5 rounded cursor-pointer',
+                                            isPermissionAssigned(activeModuleUser, perm.id) 
+                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
+                                        ]"
+                                        @click="togglePermission(activeModuleUser, perm.id)">
+                                        {{ perm.name }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a-modal>
 
         <!-- Add/Edit User Modal -->
         <a-modal v-model:open="userModalVisible" :title="editingUser ? 'Edit User' : 'Add User'"
@@ -192,8 +195,11 @@ const systemModules = ref<SystemModule[]>([])
 const userAssignedPermissions = ref<Record<string, Set<string>>>({})
 const originalUserPermissions = ref<Record<string, Set<string>>>({})
 const searchQuery = ref('')
-const expandedUsers = ref<string[]>([])
 const savingUserId = ref<string | null>(null)
+
+// Module Modal
+const moduleModalVisible = ref(false)
+const activeModuleUser = ref<User | null>(null)
 
 // User Modal
 const userModalVisible = ref(false)
@@ -241,16 +247,7 @@ const fetchData = async () => {
     }
 }
 
-const toggleUserExpand = (userId: string) => {
-    if (isMobile.value) {
-        const index = expandedUsers.value.indexOf(userId)
-        if (index > -1) {
-            expandedUsers.value.splice(index, 1)
-        } else {
-            expandedUsers.value.push(userId)
-        }
-    }
-}
+// Methods - Fetch and Utility
 
 const isModuleFullyAssigned = (user: User, mod: SystemModule): boolean => {
     const userPerms = userAssignedPermissions.value[user.id]
@@ -356,11 +353,23 @@ const saveUserModules = async (user: User) => {
         
         originalUserPermissions.value[user.id] = new Set(userPerms)
         message.success('Modules updated successfully')
+        closeModuleModal()
     } catch (error) {
         message.error('Failed to update modules')
     } finally {
         savingUserId.value = null
     }
+}
+
+// Module Modal Methods
+const openModuleModal = (user: User) => {
+    activeModuleUser.value = user
+    moduleModalVisible.value = true
+}
+
+const closeModuleModal = () => {
+    moduleModalVisible.value = false
+    activeModuleUser.value = null
 }
 
 // User Modal Methods
