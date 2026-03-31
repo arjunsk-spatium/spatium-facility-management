@@ -274,7 +274,7 @@ const isSubmoduleFullyAssigned = (user: User, submod: any): boolean => {
     if (!userPerms) return false
     
     const allPerms = submod.permissions.map((p: any) => p.id)
-    return allPerms.length > 0 && allPerms.every(p => userPerms.has(p))
+    return allPerms.length > 0 && allPerms.every((p: string) => userPerms.has(p))
 }
 
 const isSubmodulePartiallyAssigned = (user: User, submod: any): boolean => {
@@ -282,7 +282,7 @@ const isSubmodulePartiallyAssigned = (user: User, submod: any): boolean => {
     if (!userPerms) return false
     
     const allPerms = submod.permissions.map((p: any) => p.id)
-    const assignedCount = allPerms.filter(p => userPerms.has(p)).length
+    const assignedCount = allPerms.filter((p: string) => userPerms.has(p)).length
     return assignedCount > 0 && assignedCount < allPerms.length
 }
 
@@ -309,13 +309,13 @@ const toggleSubmoduleAll = (user: User, submod: any, mod: SystemModule) => {
     const userPerms = userAssignedPermissions.value[user.id]
     if (!userPerms) return
     
-    const allPerms = submod.permissions.map((p: any) => p.id)
-    const allAssigned = allPerms.every(p => userPerms.has(p))
+    const allPerms: string[] = submod.permissions.map((p: any) => p.id)
+    const allAssigned = allPerms.every((p: string) => userPerms.has(p))
     
     if (allAssigned) {
-        allPerms.forEach(p => userPerms.delete(p))
+        allPerms.forEach((p: string) => userPerms.delete(p))
     } else {
-        allPerms.forEach(p => userPerms.add(p))
+        allPerms.forEach((p: string) => userPerms.add(p))
     }
 }
 
@@ -353,6 +353,7 @@ const saveUserModules = async (user: User) => {
         const permissionArray = Array.from(userPerms || [])
         
         await assignModulesToUser(user.id, permissionArray)
+        
         originalUserPermissions.value[user.id] = new Set(userPerms)
         message.success('Modules updated successfully')
     } catch (error) {
@@ -397,8 +398,11 @@ const handleUserSubmit = async () => {
         if (editingUser.value) {
             await updateUser(editingUser.value.id, userForm.value)
             const index = users.value.findIndex(u => u.id === editingUser.value!.id)
-            if (index > -1) {
-                users.value[index] = { ...users.value[index], ...userForm.value }
+            if (index > -1 && users.value[index]) {
+                users.value[index]!.name = userForm.value.name
+                users.value[index]!.email = userForm.value.email
+                users.value[index]!.phone = userForm.value.phone
+                users.value[index]!.role = userForm.value.role
             }
             message.success('User updated successfully')
         } else {

@@ -302,9 +302,33 @@ export const useUserService = () => {
     const getUserAssignedModules = async (userId: string): Promise<string[]> => {
         try {
             const { $api } = useNuxtApp()
-            const response = await $api<any>(`/api/portal/modules/user/?user_id=${userId}`)
-            if (response?.data?.data?.results) {
-                return response.data.data.results.map((p: any) => p.submodule_permission)
+            const response = await $api<any>(`/api/portal/modules/user/?user_id=${userId}&page_size=9999`)
+            
+            // The API response might be in response.data.data.results or response.data.results or response.data.data
+            let results = response?.data?.data?.results || response?.data?.results || response?.data?.data
+            if (Array.isArray(results)) {
+                if (results.length > 0) {
+                    if (results[0].submodule_permission) {
+                        // Old flat mapping format
+                        return results.map((p: any) => p.submodule_permission)
+                    } else if (results[0].submodules || results[0].module) {
+                        // New nested format: modules > submodules > permissions
+                        const permIds: string[] = []
+                        results.forEach((m: any) => {
+                            if (m.submodules && Array.isArray(m.submodules)) {
+                                m.submodules.forEach((sm: any) => {
+                                    if (sm.permissions && Array.isArray(sm.permissions)) {
+                                        sm.permissions.forEach((p: any) => {
+                                            if (p.id) permIds.push(p.id)
+                                        })
+                                    }
+                                })
+                            }
+                        })
+                        return permIds
+                    }
+                }
+                return []
             }
             return []
         } catch (error) {
