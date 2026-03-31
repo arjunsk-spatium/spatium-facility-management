@@ -48,7 +48,7 @@ export const useUserService = () => {
     };
 
     const deleteUser = async (id: string) => {
-        return request(`/api/portal/users/${id}/`, {
+        return request(`/api/platform/users/admin/${id}/delete/`, {
             method: "DELETE",
         });
     };

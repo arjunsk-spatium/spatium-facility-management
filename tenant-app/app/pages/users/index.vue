@@ -68,83 +68,72 @@
                         </div>
                     </div>
 
-                    <!-- Module Assignment Area (Expanded or Always visible on desktop) -->
+                    <!-- Module Assignment Area -->
                     <div :class="[
                         'mt-4 pt-4 border-t border-gray-200 dark:border-gray-700',
                         { 'hidden': !expandedUsers.includes(user.id) && isMobile }
                     ]">
-                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Module Access:</p>
-
-                        <!-- Desktop: Two-column drag zones -->
-                        <div class="hidden md:grid md:grid-cols-2 gap-4">
-                            <!-- Available Modules -->
-                            <div class="module-zone available-zone p-3 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 min-h-[120px]"
-                                @dragover.prevent @drop="handleDrop($event, user.id, 'available')">
-                                <p class="text-xs font-medium text-gray-500 mb-2">Available Modules</p>
-                                <div class="flex flex-wrap gap-2">
-                                    <div v-for="mod in getAvailableModules(user)" :key="mod.key"
-                                        class="module-chip available" draggable="true"
-                                        @dragstart="handleDragStart($event, mod.key, user.id)">
-                                        {{ mod.label }}
-                                    </div>
-                                    <span v-if="getAvailableModules(user).length === 0" class="text-xs text-gray-400">
-                                        All modules assigned
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Assigned Modules -->
-                            <div class="module-zone assigned-zone p-3 rounded-lg border-2 border-dashed border-primary-300 dark:border-primary-600 bg-primary-50/50 dark:bg-primary-900/10 min-h-[120px]"
-                                @dragover.prevent @drop="handleDrop($event, user.id, 'assigned')">
-                                <p class="text-xs font-medium text-primary-600 dark:text-primary-400 mb-2">Assigned
-                                    Modules <span class="text-xs font-normal">(drag to reorder)</span></p>
-                                <div class="flex flex-wrap gap-2">
-                                    <div v-for="(mod, index) in getAssignedModules(user)" :key="mod.key"
-                                        class="module-chip assigned" draggable="true"
-                                        @dragstart="handleDragStart($event, mod.key, user.id, index)"
-                                        @dragover.prevent="handleDragOver($event, user.id, index)"
-                                        @drop.stop="handleReorder($event, user.id, index)">
-                                        {{ mod.label }}
-                                    </div>
-                                    <span v-if="getAssignedModules(user).length === 0" class="text-xs text-gray-400">
-                                        No modules assigned
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Mobile: Tap to toggle chips -->
-                        <div class="md:hidden space-y-3">
-                            <div class="flex flex-wrap gap-2">
-                                <div v-for="mod in tenantModules" :key="mod.key" :class="[
-                                    'module-chip-mobile cursor-pointer',
-                                    user.modules.includes(mod.key) ? 'assigned' : 'available'
-                                ]" @click="toggleModule(user, mod.key)">
-                                    <CheckOutlined v-if="user.modules.includes(mod.key)" class="text-xs mr-1" />
-                                    {{ mod.label }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Save Button -->
-                        <div class="mt-3 flex justify-between items-center">
-                            <!-- Mobile Actions -->
-                            <div class="flex gap-2 sm:hidden">
-                                <a-button size="small" @click="openEditUserModal(user)">
-                                    <EditOutlined /> Edit
-                                </a-button>
-                                <a-popconfirm title="Delete this user?" ok-text="Yes" cancel-text="No"
-                                    @confirm="handleDeleteUser(user.id)">
-                                    <a-button size="small" danger>
-                                        <DeleteOutlined /> Delete
-                                    </a-button>
-                                </a-popconfirm>
-                            </div>
-                            <div class="flex-1"></div>
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Module Access:</p>
                             <a-button v-if="hasModuleChanges(user)" type="primary" size="small"
                                 :loading="savingUserId === user.id" @click="saveUserModules(user)">
                                 Save Changes
                             </a-button>
+                        </div>
+
+                        <!-- Modules Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div v-for="mod in systemModules" :key="mod.id" 
+                                class="module-card p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ mod.module }}</span>
+                                    <a-checkbox 
+                                        :checked="isModuleFullyAssigned(user, mod)" 
+                                        :indeterminate="isModulePartiallyAssigned(user, mod)"
+                                        @change="toggleModuleAll(user, mod)"
+                                    >
+                                        All
+                                    </a-checkbox>
+                                </div>
+                                <div class="space-y-2">
+                                    <div v-for="submod in mod.submodules" :key="submod.id" class="submodule-item">
+                                        <div class="flex items-center gap-2 text-sm">
+                                            <a-checkbox 
+                                                :checked="isSubmoduleFullyAssigned(user, submod)"
+                                                :indeterminate="isSubmodulePartiallyAssigned(user, submod)"
+                                                @change="toggleSubmoduleAll(user, submod, mod)"
+                                            >
+                                                {{ submod.name }}
+                                            </a-checkbox>
+                                        </div>
+                                        <div class="ml-6 mt-1 flex flex-wrap gap-1">
+                                            <span v-for="perm in submod.permissions" :key="perm.id"
+                                                :class="[
+                                                    'text-xs px-1.5 py-0.5 rounded cursor-pointer',
+                                                    isPermissionAssigned(user, perm.id) 
+                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
+                                                ]"
+                                                @click="togglePermission(user, perm.id)">
+                                                {{ perm.name }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Actions -->
+                        <div class="mt-4 flex gap-2 sm:hidden">
+                            <a-button size="small" @click="openEditUserModal(user)">
+                                <EditOutlined /> Edit
+                            </a-button>
+                            <a-popconfirm title="Delete this user?" ok-text="Yes" cancel-text="No"
+                                @confirm="handleDeleteUser(user.id)">
+                                <a-button size="small" danger>
+                                    <DeleteOutlined /> Delete
+                                </a-button>
+                            </a-popconfirm>
                         </div>
                     </div>
                 </a-card>
@@ -184,27 +173,27 @@ import {
     EditOutlined,
     DeleteOutlined,
     DownOutlined,
-    UpOutlined,
-    CheckOutlined
+    UpOutlined
 } from '@ant-design/icons-vue'
-import { useUserService, type User, type Module } from '../../../composables/userService'
+import { useUserService, type User, type SystemModule } from '../../../composables/userService'
 import { useSidebar } from '../../../composables/useSidebar'
 
 definePageMeta({
     middleware: 'auth'
 })
 
-const { getUsers, getTenantModules, updateUserModules, createUser, updateUser, deleteUser } = useUserService()
+const { getUsers, getAllSystemModules, getUserAssignedModules, assignModulesToUser, createUser, updateUser, deleteUser } = useUserService()
 const { isMobile } = useSidebar()
 
 // State
 const loading = ref(true)
 const users = ref<User[]>([])
-const tenantModules = ref<Module[]>([])
+const systemModules = ref<SystemModule[]>([])
+const userAssignedPermissions = ref<Record<string, Set<string>>>({})
+const originalUserPermissions = ref<Record<string, Set<string>>>({})
 const searchQuery = ref('')
-const expandedUsers = ref<number[]>([])
-const originalUserModules = ref<Record<number, string[]>>({})
-const savingUserId = ref<number | null>(null)
+const expandedUsers = ref<string[]>([])
+const savingUserId = ref<string | null>(null)
 
 // User Modal
 const userModalVisible = ref(false)
@@ -233,14 +222,18 @@ const fetchData = async () => {
     try {
         const [usersData, modulesData] = await Promise.all([
             getUsers(),
-            getTenantModules()
+            getAllSystemModules()
         ])
         users.value = usersData
-        tenantModules.value = modulesData
-        // Store original modules for change detection
-        usersData.forEach(u => {
-            originalUserModules.value[u.id] = [...u.modules]
-        })
+        systemModules.value = modulesData
+        
+        // Load assigned permissions for each user
+        for (const user of usersData) {
+            const assignedPerms = await getUserAssignedModules(user.id)
+            const permissions = new Set(assignedPerms)
+            userAssignedPermissions.value[user.id] = permissions
+            originalUserPermissions.value[user.id] = new Set(permissions)
+        }
     } catch (error) {
         message.error('Failed to load data')
     } finally {
@@ -248,7 +241,7 @@ const fetchData = async () => {
     }
 }
 
-const toggleUserExpand = (userId: number) => {
+const toggleUserExpand = (userId: string) => {
     if (isMobile.value) {
         const index = expandedUsers.value.indexOf(userId)
         if (index > -1) {
@@ -259,105 +252,108 @@ const toggleUserExpand = (userId: number) => {
     }
 }
 
-const getAvailableModules = (user: User) => {
-    return tenantModules.value.filter(m => !user.modules.includes(m.key))
+const isModuleFullyAssigned = (user: User, mod: SystemModule): boolean => {
+    const userPerms = userAssignedPermissions.value[user.id]
+    if (!userPerms) return false
+    
+    const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
+    return allPerms.length > 0 && allPerms.every(p => userPerms.has(p))
 }
 
-const getAssignedModules = (user: User) => {
-    // Preserve the order from user.modules
-    return user.modules
-        .map(key => tenantModules.value.find(m => m.key === key))
-        .filter((m): m is Module => m !== undefined)
+const isModulePartiallyAssigned = (user: User, mod: SystemModule): boolean => {
+    const userPerms = userAssignedPermissions.value[user.id]
+    if (!userPerms) return false
+    
+    const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
+    const assignedCount = allPerms.filter(p => userPerms.has(p)).length
+    return assignedCount > 0 && assignedCount < allPerms.length
 }
 
-// Drag and Drop
-const draggedModuleIndex = ref<number | null>(null)
-
-const handleDragStart = (event: DragEvent, moduleKey: string, userId: number, index?: number) => {
-    const target = event.target as HTMLElement
-
-    // Set the drag image to the actual element for pill shape
-    if (event.dataTransfer && target) {
-        event.dataTransfer.effectAllowed = 'move'
-        // Create a clone for the drag image
-        const clone = target.cloneNode(true) as HTMLElement
-        clone.style.position = 'absolute'
-        clone.style.top = '-1000px'
-        clone.style.opacity = '0.9'
-        document.body.appendChild(clone)
-        event.dataTransfer.setDragImage(clone, target.offsetWidth / 2, target.offsetHeight / 2)
-        // Remove the clone after drag starts
-        setTimeout(() => document.body.removeChild(clone), 0)
-    }
-
-    event.dataTransfer?.setData('moduleKey', moduleKey)
-    event.dataTransfer?.setData('userId', userId.toString())
-    if (index !== undefined) {
-        event.dataTransfer?.setData('sourceIndex', index.toString())
-        draggedModuleIndex.value = index
-    }
+const isSubmoduleFullyAssigned = (user: User, submod: any): boolean => {
+    const userPerms = userAssignedPermissions.value[user.id]
+    if (!userPerms) return false
+    
+    const allPerms = submod.permissions.map((p: any) => p.id)
+    return allPerms.length > 0 && allPerms.every(p => userPerms.has(p))
 }
 
-const handleDragOver = (event: DragEvent, userId: number, targetIndex: number) => {
-    event.preventDefault()
+const isSubmodulePartiallyAssigned = (user: User, submod: any): boolean => {
+    const userPerms = userAssignedPermissions.value[user.id]
+    if (!userPerms) return false
+    
+    const allPerms = submod.permissions.map((p: any) => p.id)
+    const assignedCount = allPerms.filter(p => userPerms.has(p)).length
+    return assignedCount > 0 && assignedCount < allPerms.length
 }
 
-const handleReorder = (event: DragEvent, userId: number, targetIndex: number) => {
-    const moduleKey = event.dataTransfer?.getData('moduleKey')
-    const sourceUserId = parseInt(event.dataTransfer?.getData('userId') || '0')
-    const sourceIndex = parseInt(event.dataTransfer?.getData('sourceIndex') || '-1')
-
-    if (!moduleKey || sourceUserId !== userId || sourceIndex === -1) return
-    if (sourceIndex === targetIndex) return
-
-    const user = users.value.find((u: User) => u.id === userId)
-    if (!user) return
-
-    // Reorder: remove from source and insert at target
-    const modules = [...user.modules]
-    const [removed] = modules.splice(sourceIndex, 1)
-    modules.splice(targetIndex, 0, removed)
-    user.modules = modules
-    draggedModuleIndex.value = null
+const isPermissionAssigned = (user: User, permissionId: string): boolean => {
+    const userPerms = userAssignedPermissions.value[user.id]
+    return userPerms ? userPerms.has(permissionId) : false
 }
 
-const handleDrop = (event: DragEvent, userId: number, zone: 'available' | 'assigned') => {
-    const moduleKey = event.dataTransfer?.getData('moduleKey')
-    const sourceUserId = parseInt(event.dataTransfer?.getData('userId') || '0')
-
-    if (!moduleKey || sourceUserId !== userId) return
-
-    const user = users.value.find((u: User) => u.id === userId)
-    if (!user) return
-
-    if (zone === 'assigned' && !user.modules.includes(moduleKey)) {
-        user.modules.push(moduleKey)
-    } else if (zone === 'available' && user.modules.includes(moduleKey)) {
-        user.modules = user.modules.filter((m: string) => m !== moduleKey)
-    }
-    draggedModuleIndex.value = null
-}
-
-// Mobile: Tap to toggle
-const toggleModule = (user: User, moduleKey: string) => {
-    if (user.modules.includes(moduleKey)) {
-        user.modules = user.modules.filter(m => m !== moduleKey)
+const toggleModuleAll = (user: User, mod: SystemModule) => {
+    const userPerms = userAssignedPermissions.value[user.id]
+    if (!userPerms) return
+    
+    const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
+    const allAssigned = allPerms.every(p => userPerms.has(p))
+    
+    if (allAssigned) {
+        allPerms.forEach(p => userPerms.delete(p))
     } else {
-        user.modules.push(moduleKey)
+        allPerms.forEach(p => userPerms.add(p))
     }
 }
 
-const hasModuleChanges = (user: User) => {
-    const original = originalUserModules.value[user.id] || []
-    if (original.length !== user.modules.length) return true
-    return !original.every(m => user.modules.includes(m))
+const toggleSubmoduleAll = (user: User, submod: any, mod: SystemModule) => {
+    const userPerms = userAssignedPermissions.value[user.id]
+    if (!userPerms) return
+    
+    const allPerms = submod.permissions.map((p: any) => p.id)
+    const allAssigned = allPerms.every(p => userPerms.has(p))
+    
+    if (allAssigned) {
+        allPerms.forEach(p => userPerms.delete(p))
+    } else {
+        allPerms.forEach(p => userPerms.add(p))
+    }
+}
+
+const togglePermission = (user: User, permissionId: string) => {
+    const userPerms = userAssignedPermissions.value[user.id]
+    if (!userPerms) return
+    
+    if (userPerms.has(permissionId)) {
+        userPerms.delete(permissionId)
+    } else {
+        userPerms.add(permissionId)
+    }
+}
+
+const hasModuleChanges = (user: User): boolean => {
+    const original = originalUserPermissions.value[user.id]
+    const current = userAssignedPermissions.value[user.id]
+    
+    if (!original || !current) return false
+    if (original.size !== current.size) return true
+    
+    for (const p of original) {
+        if (!current.has(p)) return true
+    }
+    for (const p of current) {
+        if (!original.has(p)) return true
+    }
+    return false
 }
 
 const saveUserModules = async (user: User) => {
     savingUserId.value = user.id
     try {
-        await updateUserModules(user.id, user.modules)
-        originalUserModules.value[user.id] = [...user.modules]
+        const userPerms = userAssignedPermissions.value[user.id]
+        const permissionArray = Array.from(userPerms || [])
+        
+        await assignModulesToUser(user.id, permissionArray)
+        originalUserPermissions.value[user.id] = new Set(userPerms)
         message.success('Modules updated successfully')
     } catch (error) {
         message.error('Failed to update modules')
@@ -408,10 +404,11 @@ const handleUserSubmit = async () => {
         } else {
             const newUser = await createUser({
                 ...userForm.value,
-                modules: ['dashboard']
+                modules: ['Hub']
             })
             users.value.push(newUser)
-            originalUserModules.value[newUser.id] = ['dashboard']
+            userAssignedPermissions.value[newUser.id] = new Set()
+            originalUserPermissions.value[newUser.id] = new Set()
             message.success('User created successfully')
         }
         closeUserModal()
@@ -422,10 +419,12 @@ const handleUserSubmit = async () => {
     }
 }
 
-const handleDeleteUser = async (userId: number) => {
+const handleDeleteUser = async (userId: string) => {
     try {
         await deleteUser(userId)
         users.value = users.value.filter(u => u.id !== userId)
+        delete userAssignedPermissions.value[userId]
+        delete originalUserPermissions.value[userId]
         message.success('User deleted successfully')
     } catch (error) {
         message.error('Failed to delete user')
@@ -436,74 +435,25 @@ onMounted(fetchData)
 </script>
 
 <style scoped>
-.module-chip {
-    padding: 0.375rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: grab;
-    user-select: none;
+.module-card {
+    background-color: #fafafa;
     transition: all 0.15s ease;
 }
 
-.module-chip.available {
-    background-color: #f3f4f6;
-    color: #374151;
-}
-
-.module-chip.available:hover {
-    background-color: #e5e7eb;
-}
-
-.module-chip.assigned {
-    background-color: var(--color-primary-100, #dbeafe);
-    color: var(--color-primary-700, #1d4ed8);
-}
-
-:global(.dark) .module-chip.available {
-    background-color: #374151;
-    color: #e5e7eb;
-}
-
-:global(.dark) .module-chip.available:hover {
-    background-color: #4b5563;
-}
-
-:global(.dark) .module-chip.assigned {
-    background-color: rgba(var(--color-primary-900-rgb, 30, 58, 138), 0.5);
-    color: var(--color-primary-300, #93c5fd);
-}
-
-.module-chip-mobile {
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.15s ease;
-    border: 1px solid;
-}
-
-.module-chip-mobile.available {
-    background-color: #f3f4f6;
-    color: #4b5563;
-    border-color: #e5e7eb;
-}
-
-.module-chip-mobile.assigned {
-    background-color: var(--color-primary-100, #dbeafe);
-    color: var(--color-primary-700, #1d4ed8);
-    border-color: var(--color-primary-300, #93c5fd);
-}
-
-:global(.dark) .module-chip-mobile.available {
+.dark .module-card {
     background-color: #1f2937;
-    color: #d1d5db;
-    border-color: #374151;
 }
 
-:global(.dark) .module-chip-mobile.assigned {
-    background-color: rgba(var(--color-primary-900-rgb, 30, 58, 138), 0.5);
-    color: var(--color-primary-300, #93c5fd);
-    border-color: var(--color-primary-700, #1d4ed8);
+.submodule-item {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.dark .submodule-item {
+    border-bottom-color: #374151;
+}
+
+.submodule-item:last-child {
+    border-bottom: none;
 }
 </style>
