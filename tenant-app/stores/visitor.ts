@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { useVisitorService, type Visitor, type VisitorStats, type VisitorListParams } from '../composables/visitorService'
 
+export type { Visitor, VisitorStats, VisitorListParams }
+
 export const useVisitorStore = defineStore('visitor', {
     state: () => ({
         visitors: [] as Visitor[],

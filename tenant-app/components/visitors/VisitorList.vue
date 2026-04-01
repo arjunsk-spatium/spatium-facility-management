@@ -40,7 +40,7 @@
                     </a-tag>
                 </template>
                 <template v-else-if="column.key === 'actions'">
-                    <div class="flex gap-2">
+                    <div v-if="showActions" class="flex gap-2">
                         <a-button v-if="record.status === 'Pending'" size="small" type="primary"
                             @click="$emit('update-status', record.id, 'Approved')">
                             Approve
@@ -174,19 +174,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import ResponsiveDataView from '../ResponsiveDataView.vue'
 import VisitorDetailsModal from './VisitorDetailsModal.vue'
-import type { Visitor } from '../../composables/visitorService'
+import { useVisitorStore, type Visitor } from '../../stores/visitor'
 
-defineProps<{
+const props = defineProps<{
     visitors: Visitor[],
-    loading: boolean
+    loading: boolean,
+    showActions?: boolean
 }>()
 
 defineEmits(['update-status'])
 
-const columns = [
+const baseColumns = [
     { title: '', key: 'photo', width: 60 },
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
@@ -196,8 +197,14 @@ const columns = [
     { title: 'Purpose', dataIndex: 'purpose_of_visit', key: 'purpose_of_visit' },
     { title: 'Facility', dataIndex: 'facility_name', key: 'facility_name' },
     { title: 'Status', key: 'status' },
-    { title: 'Actions', key: 'actions', width: 180 }
 ]
+
+const columns = computed(() => {
+    if (props.showActions) {
+        return [...baseColumns, { title: 'Actions', key: 'actions', width: 180 }]
+    }
+    return baseColumns
+})
 
 const showDetailsModal = ref(false)
 const selectedVisitor = ref<Visitor | null>(null)
