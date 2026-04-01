@@ -12,7 +12,7 @@
                     </template>
                     Insights
                 </a-button>
-                <a-button type="primary" @click="openCreateModal">
+                <a-button v-if="canCreate" type="primary" @click="openCreateModal">
                     <template #icon>
                         <PlusOutlined />
                     </template>
@@ -164,93 +164,117 @@
             </a-tab-pane>
         </a-tabs>
 
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                <a-input-search v-model:value="searchText" placeholder="Search tickets..." class="w-full md:w-64" />
+        <div v-if="canView">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <a-input-search v-model:value="searchText" placeholder="Search tickets..." class="w-full md:w-64" />
 
-                <a-select v-model:value="facilityFilter" placeholder="Filter by Facility" class="w-full md:w-48"
-                    allow-clear @change="handleFacilityFilterChange">
-                    <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">{{ fac.name
-                        }}</a-select-option>
-                </a-select>
+                    <a-select v-model:value="facilityFilter" placeholder="Filter by Facility" class="w-full md:w-48"
+                        allow-clear @change="handleFacilityFilterChange">
+                        <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">{{ fac.name
+                            }}</a-select-option>
+                    </a-select>
+                </div>
+
+                <a-button v-if="canAction" class="w-full md:w-auto">
+                    <template #icon>
+                        <ExportOutlined />
+                    </template>
+                    Export
+                </a-button>
             </div>
 
-            <a-button class="w-full md:w-auto">
-                <template #icon>
-                    <ExportOutlined />
+            <ResponsiveDataView :columns="columns" :data="filteredTickets" :loading="loading" row-key="id">
+                <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'ticket_number'">
+                        <a @click="navigateTo(`/helpdesk/${record.id}`)" class="font-medium hover:underline">{{
+                            record.ticket_number }}</a>
+                    </template>
+
+                    <template v-else-if="column.key === 'state'">
+                        <StatusBadge :status="record.state?.label || record.state?.key" />
+                    </template>
+
+                    <template v-else-if="column.key === 'priority'">
+                        <a-tag :color="getPriorityColor(record.priority)">{{ record.priority?.label || record.priority?.key }}</a-tag>
+                    </template>
+
+                    <template v-else-if="column.key === 'created_at'">
+                        {{ new Date(record.created_at).toLocaleDateString() }}
+                        <span class="text-xs text-gray-500 block">{{ new Date(record.created_at).toLocaleTimeString([],
+                            { hour: '2-digit', minute: '2-digit' }) }}</span>
+                    </template>
+
+                    <template v-else-if="column.key === 'actions'">
+                        <a-dropdown v-if="canAction">
+                            <a-button type="text" size="small">
+                                <template #icon>
+                                    <MoreOutlined />
+                                </template>
+                            </a-button>
+                            <template #overlay>
+                                <a-menu>
+                                    <a-menu-item key="view" @click="navigateTo(`/helpdesk/${record.id}`)">
+                                        <EyeOutlined /> View Details
+                                    </a-menu-item>
+                                    <a-menu-item v-if="canUpdate && record.state?.key !== 'closed'" key="close"
+                                        @click="handleCloseTicket(record)">
+                                        <CheckCircleOutlined /> Close Ticket
+                                    </a-menu-item>
+                                </a-menu>
+                            </template>
+                        </a-dropdown>
+                        <a-tooltip v-else title="View Details">
+                            <a-button type="text" shape="circle" @click="navigateTo(`/helpdesk/${record.id}`)">
+                                <template #icon>
+                                    <EyeOutlined />
+                                </template>
+                            </a-button>
+                        </a-tooltip>
+                    </template>
                 </template>
-                Export
-            </a-button>
+
+                <!-- Mobile Card View -->
+                <template #mobileCard="{ record }">
+                    <a-card
+                        class="mb-4 shadow-sm !border-neutral-200 dark:!border-neutral-700 hover:shadow-md transition-shadow"
+                        :bordered="true" :bodyStyle="{ padding: '16px' }">
+                        <div class="flex justify-between items-start mb-3">
+                            <StatusBadge :status="record.state?.label || record.state?.key" />
+                            <span class="text-xs text-gray-500 font-mono">#{{ record.ticket_number }}</span>
+                        </div>
+
+                        <h4 class="font-bold text-base mb-1 dark:text-white cursor-pointer hover:text-primary-500"
+                            @click="navigateTo(`/helpdesk/${record.id}`)">
+                            {{ record.title }}
+                        </h4>
+
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-3 flex flex-wrap gap-2">
+                            <span>{{ record.category_name }}</span>
+                            <span class="text-gray-300">•</span>
+                            <span>{{ record.subcategory_name }}</span>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
+                            <div class="flex items-center gap-2">
+                                <a-tag :color="getPriorityColor(record.priority)" class="!mr-0">{{ record.priority?.label
+                                    }}</a-tag>
+                                <span class="text-xs text-gray-400">{{ new Date(record.created_at).toLocaleDateString()
+                                    }}</span>
+                            </div>
+                            <a-button type="link" size="small" class="!px-0" @click="navigateTo(`/helpdesk/${record.id}`)">
+                                View Details
+                                <EyeOutlined />
+                            </a-button>
+                        </div>
+                    </a-card>
+                </template>
+            </ResponsiveDataView>
         </div>
 
-        <ResponsiveDataView :columns="columns" :data="filteredTickets" :loading="loading" row-key="id">
-            <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'ticket_number'">
-                    <a @click="navigateTo(`/helpdesk/${record.id}`)" class="font-medium hover:underline">{{
-                        record.ticket_number }}</a>
-                </template>
-
-                <template v-else-if="column.key === 'state'">
-                    <StatusBadge :status="record.state?.label || record.state?.key" />
-                </template>
-
-                <template v-else-if="column.key === 'priority'">
-                    <a-tag :color="getPriorityColor(record.priority)">{{ record.priority?.label || record.priority?.key }}</a-tag>
-                </template>
-
-                <template v-else-if="column.key === 'created_at'">
-                    {{ new Date(record.created_at).toLocaleDateString() }}
-                    <span class="text-xs text-gray-500 block">{{ new Date(record.created_at).toLocaleTimeString([],
-                        { hour: '2-digit', minute: '2-digit' }) }}</span>
-                </template>
-
-                <template v-else-if="column.key === 'actions'">
-                    <a-tooltip title="View Details">
-                        <a-button type="text" shape="circle" @click="navigateTo(`/helpdesk/${record.id}`)">
-                            <template #icon>
-                                <EyeOutlined />
-                            </template>
-                        </a-button>
-                    </a-tooltip>
-                </template>
-            </template>
-
-            <!-- Mobile Card View -->
-            <template #mobileCard="{ record }">
-                <a-card
-                    class="mb-4 shadow-sm !border-neutral-200 dark:!border-neutral-700 hover:shadow-md transition-shadow"
-                    :bordered="true" :bodyStyle="{ padding: '16px' }">
-                    <div class="flex justify-between items-start mb-3">
-                        <StatusBadge :status="record.state?.label || record.state?.key" />
-                        <span class="text-xs text-gray-500 font-mono">#{{ record.ticket_number }}</span>
-                    </div>
-
-                    <h4 class="font-bold text-base mb-1 dark:text-white cursor-pointer hover:text-primary-500"
-                        @click="navigateTo(`/helpdesk/${record.id}`)">
-                        {{ record.title }}
-                    </h4>
-
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-3 flex flex-wrap gap-2">
-                        <span>{{ record.category_name }}</span>
-                        <span class="text-gray-300">•</span>
-                        <span>{{ record.subcategory_name }}</span>
-                    </div>
-
-                    <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
-                        <div class="flex items-center gap-2">
-                            <a-tag :color="getPriorityColor(record.priority)" class="!mr-0">{{ record.priority?.label
-                                }}</a-tag>
-                            <span class="text-xs text-gray-400">{{ new Date(record.created_at).toLocaleDateString()
-                                }}</span>
-                        </div>
-                        <a-button type="link" size="small" class="!px-0" @click="navigateTo(`/helpdesk/${record.id}`)">
-                            View Details
-                            <EyeOutlined />
-                        </a-button>
-                    </div>
-                </a-card>
-            </template>
-        </ResponsiveDataView>
+        <div v-else class="text-center py-12 text-gray-500">
+            You don't have permission to view helpdesk tickets.
+        </div>
 
     </div>
 </template>
@@ -260,13 +284,16 @@ import { ref, computed, onMounted } from 'vue';
 import { useHelpdeskStore } from '../../../stores/helpdesk';
 import { useFacilityStore } from '../../../stores/facility';
 import { useFacilityService } from '../../../composables/facilityService';
+import { useAuthStore } from '../../../stores/auth';
 import { storeToRefs } from 'pinia';
 import { message } from 'ant-design-vue';
 import {
     PlusOutlined,
     BarChartOutlined,
     ExportOutlined,
-    EyeOutlined
+    EyeOutlined,
+    MoreOutlined,
+    CheckCircleOutlined
 } from '@ant-design/icons-vue';
 import StatusBadge from '../../../components/helpdesk/StatusBadge.vue';
 import ResponsiveDataView from '../../../components/ResponsiveDataView.vue';
@@ -278,8 +305,15 @@ definePageMeta({
 // Stores
 const helpdeskStore = useHelpdeskStore();
 const facilityStore = useFacilityStore();
+const authStore = useAuthStore();
 const { tickets, loading, categories, subCategories, priorities, creating } = storeToRefs(helpdeskStore);
 const { facilities } = storeToRefs(facilityStore);
+
+// Permission checks
+const canView = computed(() => authStore.hasPermission('helpdesk-tickets:view'))
+const canCreate = computed(() => authStore.hasPermission('helpdesk-tickets:create'))
+const canUpdate = computed(() => authStore.hasPermission('helpdesk-tickets:update'))
+const canAction = computed(() => authStore.hasPermission('helpdesk-tickets:action'))
 
 // Form state
 const showCreateModal = ref(false);
@@ -510,6 +544,16 @@ const getPriorityColor = (priority: any) => {
 const filteredTickets = computed(() => {
     return tickets.value;
 });
+
+const handleCloseTicket = async (record: any) => {
+    try {
+        await helpdeskStore.confirmCloseTicket(record.id)
+        message.success('Ticket closed successfully')
+        await fetchTicketsByFilter()
+    } catch (error) {
+        message.error('Failed to close ticket')
+    }
+}
 
 // Initialization
 onMounted(async () => {

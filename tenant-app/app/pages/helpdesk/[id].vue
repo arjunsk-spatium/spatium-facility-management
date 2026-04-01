@@ -22,7 +22,7 @@
             </div>
 
             <div class="flex gap-2">
-                <a-dropdown>
+                <a-dropdown v-if="canAction">
                     <template #overlay>
                         <a-menu @click="handleMenuClick">
                             <a-menu-item v-if="currentTicket?.assignee_name" key="reassign">Reassign Ticket</a-menu-item>
@@ -37,6 +37,7 @@
                 </a-dropdown>
 
                 <a-button 
+                    v-if="canUpdate"
                     type="primary" 
                     danger 
                     @click="handleCloseTicket"
@@ -237,6 +238,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useHelpdeskStore } from '../../../stores/helpdesk';
 import { useHelpdeskService } from '../../../composables/helpdeskService';
+import { useAuthStore } from '../../../stores/auth';
 import { storeToRefs } from 'pinia';
 import { message } from 'ant-design-vue';
 import StatusBadge from '../../../components/helpdesk/StatusBadge.vue';
@@ -257,7 +259,12 @@ definePageMeta({
 
 const route = useRoute();
 const store = useHelpdeskStore();
+const authStore = useAuthStore();
 const { currentTicket, loading } = storeToRefs(store);
+
+// Permission checks
+const canUpdate = computed(() => authStore.hasPermission('helpdesk-tickets:update'))
+const canAction = computed(() => authStore.hasPermission('helpdesk-tickets:action'))
 
 const ticketId = route.params.id as string;
 
