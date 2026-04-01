@@ -82,6 +82,16 @@
                     <div class="flex justify-center w-full" @click.stop="handleGenerateQRCode(facility)">
                         <QrcodeOutlined class="mr-2" /> QR Code
                     </div>
+                    <a-popconfirm
+                        title="Are you sure you want to delete this facility?"
+                        ok-text="Yes"
+                        cancel-text="No"
+                        @confirm="handleDeleteFacility(facility.id)"
+                    >
+                        <div class="flex justify-center w-full text-red-500" @click.stop>
+                            <DeleteOutlined class="mr-2" /> Delete
+                        </div>
+                    </a-popconfirm>
                 </template>
             </a-card>
         </div>
@@ -104,7 +114,8 @@ import {
     EnvironmentOutlined,
     EditOutlined,
     EyeOutlined,
-    QrcodeOutlined
+    QrcodeOutlined,
+    DeleteOutlined
 } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import buildingDrawing from '../../../assets/images/building-drawing.png';
@@ -125,6 +136,15 @@ const handleGenerateQRCode = async (facility: any) => {
         message.success('QR Code generated successfully');
     } catch (error) {
         message.error('Failed to generate QR Code');
+    }
+};
+
+const handleDeleteFacility = async (id: string) => {
+    try {
+        await facilityStore.deleteFacility(id);
+        message.success('Facility deleted successfully');
+    } catch (error) {
+        message.error('Failed to delete facility');
     }
 };
 
