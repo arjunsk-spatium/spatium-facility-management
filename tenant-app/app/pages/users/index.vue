@@ -36,16 +36,27 @@
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                         <!-- User Info -->
                         <div class="flex items-center gap-3 flex-1">
-                            <a-avatar :size="48" class="bg-primary-100 text-primary-600">
+                            <a-avatar :size="48" class="bg-primary-100 text-primary-600 flex-shrink-0">
                                 {{ user.name.charAt(0).toUpperCase() }}
                             </a-avatar>
                             <div class="flex-1 min-w-0">
-                                <h3 class="font-semibold text-gray-900 dark:text-white truncate">{{ user.name }}</h3>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold text-gray-900 dark:text-white truncate">{{ user.name }}</span>
+                                    <span v-if="user.status"
+                                        :class="[
+                                            'w-2 h-2 rounded-full flex-shrink-0',
+                                            user.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
+                                        ]"
+                                        :title="user.status">
+                                    </span>
+                                </div>
                                 <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ user.email }}</p>
-                                <span
-                                    class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                                    {{ user.role }}
-                                </span>
+                                <div class="flex flex-wrap gap-1 mt-1">
+                                    <span v-for="app in user.apps" :key="app"
+                                        class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                        {{ app }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
@@ -156,14 +167,14 @@
                 <a-form-item label="Phone">
                     <a-input v-model:value="userForm.phone" placeholder="Enter phone number" />
                 </a-form-item>
-                <a-form-item label="Role">
-                    <a-select v-model:value="userForm.role" placeholder="Select role">
-                        <a-select-option value="Admin">Admin</a-select-option>
-                        <a-select-option value="Manager">Manager</a-select-option>
-                        <a-select-option value="Staff">Staff</a-select-option>
-                    </a-select>
-                </a-form-item>
             </a-form>
+        </a-modal>
+
+        <!-- Existing User Confirmation Modal -->
+        <a-modal v-model:open="existingUserConfirmVisible" title="User Already Exists" :confirm-loading="existingUserSaving" @ok="handleConfirmExistingUser">
+            <p>User ID <strong>{{ existingUserId }}</strong> already exists.</p>
+            <p class="mt-2">{{ existingUserMessage }}</p>
+            <p class="mt-2 text-gray-600">Do you want to add this user to the org_portal app?</p>
         </a-modal>
     </div>
 </template>
@@ -205,11 +216,14 @@ const activeModuleUser = ref<User | null>(null)
 const userModalVisible = ref(false)
 const userModalLoading = ref(false)
 const editingUser = ref<User | null>(null)
+const existingUserConfirmVisible = ref(false)
+const existingUserSaving = ref(false)
+const existingUserId = ref('')
+const existingUserMessage = ref('')
 const userForm = ref({
     name: '',
     email: '',
-    phone: '',
-    role: 'Staff'
+    phone: ''
 })
 
 // Computed
@@ -375,7 +389,7 @@ const closeModuleModal = () => {
 // User Modal Methods
 const openAddUserModal = () => {
     editingUser.value = null
-    userForm.value = { name: '', email: '', phone: '', role: 'Staff' }
+    userForm.value = { name: '', email: '', phone: '' }
     userModalVisible.value = true
 }
 
@@ -392,7 +406,7 @@ const openEditUserModal = (user: User) => {
 
 const closeUserModal = () => {
     userModalVisible.value = false
-    userForm.value = { name: '', email: '', phone: '', role: 'Staff' }
+    userForm.value = { name: '', email: '', phone: '' }
     editingUser.value = null
 }
 
@@ -411,7 +425,6 @@ const handleUserSubmit = async () => {
                 users.value[index]!.name = userForm.value.name
                 users.value[index]!.email = userForm.value.email
                 users.value[index]!.phone = userForm.value.phone
-                users.value[index]!.role = userForm.value.role
             }
             message.success('User updated successfully')
         } else {
@@ -425,7 +438,18 @@ const handleUserSubmit = async () => {
             message.success('User created successfully')
         }
         closeUserModal()
-    } catch (error) {
+    } catch (err: any) {
+        if (err.data?.code === 'USER_CREATION_ERROR' && err.data?.error?.type === 'VALIDATION_ERROR') {
+            const userIdError = err.data?.error?.fields?.user_id?.[0]
+            const emailError = err.data?.error?.fields?.email?.[0]
+            if (userIdError) {
+                existingUserId.value = userIdError.message
+                existingUserMessage.value = emailError?.message || 'User already exists in another app.'
+                existingUserConfirmVisible.value = true
+                userModalLoading.value = false
+                return
+            }
+        }
         message.error('Failed to save user')
     } finally {
         userModalLoading.value = false
@@ -441,6 +465,30 @@ const handleDeleteUser = async (userId: string) => {
         message.success('User deleted successfully')
     } catch (error) {
         message.error('Failed to delete user')
+    }
+}
+
+const handleConfirmExistingUser = async () => {
+    existingUserSaving.value = true
+    existingUserConfirmVisible.value = false
+    try {
+        const { $api } = useNuxtApp()
+        await $api<any>(`/api/portal/users/org_portal/${existingUserId.value}/update/`, {
+            method: 'PATCH',
+            body: {
+                app_name: 'org_portal',
+                full_name: userForm.value.name,
+                email: userForm.value.email,
+                phone_number: userForm.value.phone,
+            }
+        })
+        message.success('User added successfully')
+        closeUserModal()
+        await fetchData()
+    } catch (error) {
+        message.error('Failed to add user to org_portal')
+    } finally {
+        existingUserSaving.value = false
     }
 }
 

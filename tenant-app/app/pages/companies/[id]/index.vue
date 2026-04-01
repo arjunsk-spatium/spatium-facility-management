@@ -806,7 +806,7 @@ const handleConfirmExistingUser = async () => {
     existingUserSaving.value = true
     existingUserConfirmVisible.value = false
     try {
-        await $api<any>(`/api/portal/users/${existingUserId.value}/update/`, {
+        await $api<any>(`/api/portal/users/org_portal/${existingUserId.value}/update/`, {
             method: 'PATCH',
             body: {
                 app_name: existingUserAppName.value,

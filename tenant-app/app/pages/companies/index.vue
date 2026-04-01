@@ -5,7 +5,7 @@
             class="flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Companies</h1>
             <NuxtLink to="/companies/create">
-                <a-button type="primary" size="medium">
+                <a-button type="primary" size="medium" :disabled="!canCreate">
                     <template #icon>
                         <PlusOutlined />
                     </template>
@@ -50,7 +50,7 @@
             <div class="flex items-center gap-3">
                 <a-input-search v-model:value="searchText" placeholder="Search companies..." style="width: 250px"
                     allow-clear />
-                <a-button @click="downloadExcel" :loading="downloading">
+                <a-button v-if="canView" @click="downloadExcel" :loading="downloading">
                     <template #icon>
                         <DownloadOutlined />
                     </template>
@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <ResponsiveDataView :columns="columns" :data="filteredCompanies" :loading="loading"
+        <ResponsiveDataView v-if="canView" :columns="columns" :data="filteredCompanies" :loading="loading"
             :row-key="(record: any) => record.id" :pagination="paginationConfig">
             <!-- Desktop Table Cells -->
             <template #bodyCell="{ column, record }">
@@ -71,10 +71,10 @@
                 </template>
                 <template v-if="column.key === 'action'">
                     <a-space>
-                        <NuxtLink :to="`/companies/${record.id}/edit`">
+                        <NuxtLink v-if="canUpdate" :to="`/companies/${record.id}/edit`">
                             <a-button type="link">Edit</a-button>
                         </NuxtLink>
-                        <a-popconfirm title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
+                        <a-popconfirm v-if="canDelete" title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
                             <a-button type="link" danger>Delete</a-button>
                         </a-popconfirm>
                     </a-space>
@@ -123,10 +123,10 @@
                         <!-- Actions -->
                         <div
                             class="flex justify-end gap-2 mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
-                            <NuxtLink :to="`/companies/${company.id}/edit`">
+                            <NuxtLink v-if="canUpdate" :to="`/companies/${company.id}/edit`">
                                 <a-button type="default" size="small">Edit</a-button>
                             </NuxtLink>
-                            <a-popconfirm title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
+                            <a-popconfirm v-if="canDelete" title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
                                 <a-button type="default" danger size="small">Delete</a-button>
                             </a-popconfirm>
                         </div>
@@ -141,6 +141,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { useCompanyStore } from '../../../stores/company'
+import { useAuthStore } from '../../../stores/auth'
 import {
     PlusOutlined,
     BankOutlined,
@@ -155,8 +156,15 @@ definePageMeta({
 })
 
 const store = useCompanyStore()
+const authStore = useAuthStore()
+
 const companies = computed(() => store.companies)
 const loading = computed(() => store.loading)
+
+const canView = computed(() => authStore.hasPermission('companies-list:view'))
+const canCreate = computed(() => authStore.hasPermission('companies-list:create'))
+const canUpdate = computed(() => authStore.hasPermission('companies-list:update'))
+const canDelete = computed(() => authStore.hasPermission('companies-list:delete'))
 
 // Search functionality
 const searchText = ref('')
@@ -258,7 +266,15 @@ const paginationConfig = computed(() => ({
 }))
 
 onMounted(() => {
-    store.fetchCompanies()
+    if (canView.value) {
+        store.fetchCompanies()
+    }
+})
+
+watch(canView, (newVal) => {
+    if (newVal) {
+        store.fetchCompanies()
+    }
 })
 </script>
 

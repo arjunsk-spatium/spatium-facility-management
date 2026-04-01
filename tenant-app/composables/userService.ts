@@ -12,6 +12,8 @@ export interface User {
     status?: string
     apps?: string[]
     tenant_id?: string
+    company_id?: string | null
+    facility_id?: string | null
 }
 
 export interface Permission {
@@ -79,7 +81,7 @@ export const useUserService = () => {
         }
     ]
 
-    const getUserModules = async (): Promise<string[]> => {
+    const getUserModules = async (): Promise<{ modules: string[], permissions: string[] }> => {
         try {
             const { $api } = useNuxtApp()
             const response = await $api<any>('/api/portal/modules/user/list')
@@ -97,6 +99,7 @@ export const useUserService = () => {
                 }
 
                 const userKeys: string[] = []
+                const permissions: string[] = []
                 
                 response.data.forEach((m: any) => {
                     const regKey = moduleNameMap[m.module] || m.module.toLowerCase().replace(/\s+/g, '_')
@@ -107,19 +110,40 @@ export const useUserService = () => {
                         if (regModule && regModule.children) {
                             m.submodules.forEach((sm: any) => {
                                 const regChild = regModule.children?.find(c => c.label === sm.name)
+                                const childKey = regChild ? regChild.key : sm.name.toLowerCase().replace(/\s+/g, '_')
                                 if (regChild) {
                                     userKeys.push(regChild.key)
+                                }
+                                
+                                if (sm.permissions && Array.isArray(sm.permissions)) {
+                                    sm.permissions.forEach((p: any) => {
+                                        if (p.key) {
+                                            permissions.push(`${childKey}:${p.key}`)
+                                        }
+                                    })
+                                }
+                            })
+                        } else {
+                            m.submodules.forEach((sm: any) => {
+                                const childKey = sm.name.toLowerCase().replace(/\s+/g, '_')
+                                userKeys.push(childKey)
+                                if (sm.permissions && Array.isArray(sm.permissions)) {
+                                    sm.permissions.forEach((p: any) => {
+                                        if (p.key) {
+                                            permissions.push(`${childKey}:${p.key}`)
+                                        }
+                                    })
                                 }
                             })
                         }
                     }
                 })
-                return userKeys
+                return { modules: userKeys, permissions }
             }
-            return []
+            return { modules: [], permissions: [] }
         } catch (error) {
             console.error('Failed to fetch user modules:', error)
-            return []
+            return { modules: [], permissions: [] }
         }
     }
 
@@ -143,6 +167,8 @@ export const useUserService = () => {
                     status: u.status,
                     apps: u.apps,
                     tenant_id: u.tenant_id,
+                    company_id: u.company_id,
+                    facility_id: u.facility_id,
                     createdAt: u.created_at
                 }))
             }
@@ -193,13 +219,14 @@ export const useUserService = () => {
     const createUser = async (data: Partial<User>): Promise<User> => {
         try {
             const { $api } = useNuxtApp()
-            const response = await $api<any>('/api/portal/users/org_portal/create/', {
+            const response = await $api<any>('/api/portal/users/org_portal/create/?app_name=org_portal', {
                 method: 'POST',
                 body: {
                     full_name: data.name,
                     email: data.email,
                     phone_number: data.phone,
-                    apps: data.modules || ['Hub']
+                    app_name: 'org_portal',
+                    apps: data.modules || ['Hub', 'org_portal']
                 }
             })
             if (response?.data) {

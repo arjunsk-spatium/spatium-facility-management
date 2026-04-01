@@ -26,6 +26,7 @@ export const useAuthStore = defineStore("auth", {
             token: savedToken as string | null,
             refreshToken: savedRefreshToken as string | null,
             modules: [] as string[],
+            permissions: [] as string[],
             isRefreshing: false,
         };
     },
@@ -33,6 +34,8 @@ export const useAuthStore = defineStore("auth", {
         isAuthenticated: (state) => !!state.token,
         hasModule: (state) => (module: string) =>
             state.modules.includes(module),
+        hasPermission: (state) => (permission: string) =>
+            state.permissions.includes(permission),
     },
     actions: {
         async requestOtp(email: string) {
@@ -170,6 +173,7 @@ export const useAuthStore = defineStore("auth", {
             this.token = null;
             this.refreshToken = null;
             this.modules = [];
+            this.permissions = [];
 
             // Clear from localStorage
             if (typeof window !== "undefined") {
@@ -187,10 +191,13 @@ export const useAuthStore = defineStore("auth", {
         async fetchModules() {
             const { getUserModules } = useUserService();
             try {
-                this.modules = await getUserModules();
+                const { modules, permissions } = await getUserModules();
+                this.modules = modules;
+                this.permissions = permissions;
             } catch (error) {
                 console.error("Failed to fetch modules", error);
                 this.modules = [];
+                this.permissions = [];
             }
         },
     },

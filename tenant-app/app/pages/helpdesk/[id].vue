@@ -92,11 +92,6 @@
                                 Date(currentTicket.created_at).toLocaleString() }}
                         </a-timeline-item>
                     </a-timeline>
-
-                    <div class="mt-6 flex gap-3">
-                        <a-avatar style="background-color: #87d068">U</a-avatar>
-                        <a-input-search placeholder="Add a remark..." enter-button="Send" size="large" />
-                    </div>
                 </a-card>
 
                 <!-- Attachments -->
