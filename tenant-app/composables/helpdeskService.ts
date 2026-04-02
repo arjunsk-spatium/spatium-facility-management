@@ -601,6 +601,52 @@ export const useHelpdeskService = () => {
             }
         },
 
+        reopenTicket: async (ticketId: string, assignee?: string, notes?: string): Promise<Ticket> => {
+            try {
+                const response = await $api<ApiResponse<ApiResponse<Ticket>>>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/reopen/`,
+                    { 
+                        method: "POST", 
+                        body: { 
+                            assignee: assignee || undefined,
+                            notes: notes || undefined 
+                        } 
+                    },
+                );
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to reopen ticket",
+                    );
+                }
+                return response.data.data;
+            } catch (error) {
+                console.error("Error reopening ticket:", error);
+                throw error;
+            }
+        },
+
+        forceCloseTicket: async (ticketId: string, notes?: string): Promise<Ticket> => {
+            try {
+                const response = await $api<ApiResponse<ApiResponse<Ticket>>>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/force-close/`,
+                    { method: "POST", body: notes ? { notes } : {} },
+                );
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to force close ticket",
+                    );
+                }
+                return response.data.data;
+            } catch (error) {
+                console.error("Error force closing ticket:", error);
+                throw error;
+            }
+        },
+
         updateTicket: async (ticketId: string, payload: { priority?: string; location_text?: string }): Promise<Ticket> => {
             try {
                 const response = await $api<ApiResponse<ApiResponse<Ticket>>>(

@@ -25,9 +25,11 @@
                 <a-dropdown v-if="canAction">
                     <template #overlay>
                         <a-menu @click="handleMenuClick">
-                            <a-menu-item v-if="currentTicket?.assignee_name" key="reassign">Reassign Ticket</a-menu-item>
-                            <a-menu-item v-else key="assign">Assign Ticket</a-menu-item>
+                            <a-menu-item v-if="canReassign" key="reassign">Reassign Ticket</a-menu-item>
+                            <a-menu-item v-if="canAssign" key="assign">Assign Ticket</a-menu-item>
                             <a-menu-item key="changePriority">Change Priority</a-menu-item>
+                            <a-menu-item v-if="canReopen" key="reopen">Reopen Ticket</a-menu-item>
+                            <a-menu-item v-if="canForceClose" key="forceClose">Force Close</a-menu-item>
                         </a-menu>
                     </template>
                     <a-button>
@@ -37,13 +39,13 @@
                 </a-dropdown>
 
                 <a-button 
-                    v-if="canUpdate"
+                    v-if="canConfirmClose"
                     type="primary" 
                     danger 
-                    @click="handleCloseTicket"
+                    @click="handleConfirmClose"
                     :loading="closing"
                 >
-                    Close Ticket
+                    Confirm Close
                 </a-button>
             </div>
 
@@ -72,6 +74,32 @@
                     </a-form-item>
                 </a-form>
             </a-modal>
+
+            <!-- Reopen Modal -->
+            <a-modal v-model:open="showReopenModal" title="Reopen Ticket" :confirm-loading="reopening"
+                @ok="handleReopenTicket" @cancel="showReopenModal = false">
+                <a-form layout="vertical" class="mt-4">
+                    <a-form-item label="Assign To">
+                        <a-select v-model:value="reopenAssignee" placeholder="Select assignee"
+                            :options="assigneeOptions" :loading="loadingUsers" show-search option-filter-prop="label"
+                            style="width: 100%" />
+                    </a-form-item>
+                    <a-form-item label="Reason" required>
+                        <a-textarea v-model:value="reopenNotes" placeholder="Enter reason for reopening" :rows="3" />
+                    </a-form-item>
+                </a-form>
+            </a-modal>
+
+            <!-- Force Close Modal -->
+            <a-modal v-model:open="showForceCloseModal" title="Force Close Ticket" :confirm-loading="forceClosing"
+                @ok="handleForceCloseTicket" @cancel="showForceCloseModal = false">
+                <a-alert type="warning" message="This action will force close the ticket immediately. This cannot be undone." class="mb-4" />
+                <a-form layout="vertical" class="mt-4">
+                    <a-form-item label="Notes" required>
+                        <a-textarea v-model:value="forceCloseNotes" placeholder="Enter notes" :rows="3" />
+                    </a-form-item>
+                </a-form>
+            </a-modal>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -85,25 +113,45 @@
                     </div>
                 </a-card>
 
-                <!-- Remarks -->
-                <a-card title="Remarks & History">
-                    <a-timeline>
-                        <a-timeline-item color="green">
-                            <span class="font-medium">Ticket Created</span> - {{ new
-                                Date(currentTicket.created_at).toLocaleString() }}
+                <!-- Timeline -->
+                <a-card title="Timeline">
+                    <a-timeline v-if="currentTicket.timeline && currentTicket.timeline.length">
+                        <a-timeline-item v-for="item in currentTicket.timeline" :key="item.id" :color="getTimelineColor(item.to_state)">
+                            <div class="mb-1">
+                                <span class="font-medium dark:text-white">{{ getStateLabel(item.to_state) }}</span>
+                                <span v-if="item.reason" class="text-gray-500 text-sm ml-2">- {{ item.reason }}</span>
+                            </div>
+                            <div class="text-xs text-gray-400 mb-2">
+                                {{ new Date(item.created_at).toLocaleString() }}
+                            </div>
+                            <div v-if="item.proofs && item.proofs.length" class="flex gap-2 flex-wrap">
+                                <a-image-preview-group>
+                                    <a-image 
+                                        v-for="img in item.proofs.flatMap(p => p.images)" 
+                                        :key="img.id"
+                                        :src="img.image" 
+                                        :alt="img.image_type"
+                                        :width="60"
+                                        :height="60"
+                                        class="!inline-block rounded cursor-pointer object-cover"
+                                        :preview="{ visible: false }"
+                                    />
+                                </a-image-preview-group>
+                            </div>
+                            <div v-if="item.proofs && item.proofs.length" class="text-xs text-gray-500 mt-1">
+                                <span v-for="(proof, idx) in item.proofs" :key="proof.id">
+                                    <span v-if="proof.geo_lat && proof.geo_lon">
+                                        <a :href="`https://www.google.com/maps/search/?api=1&query=${proof.geo_lat},${proof.geo_lon}`" 
+                                           target="_blank" 
+                                           class="text-blue-600 hover:underline">
+                                            📍 View on Map
+                                        </a>
+                                    </span>
+                                </span>
+                            </div>
                         </a-timeline-item>
                     </a-timeline>
-                </a-card>
-
-                <!-- Attachments -->
-                <a-card title="Attachments">
-                    <div v-if="ticketImages.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div v-for="(img, idx) in ticketImages" :key="idx"
-                            class="relative aspect-video rounded-lg overflow-hidden border">
-                            <img :src="img" :alt="`Attachment ${idx + 1}`" class="w-full h-full object-cover" />
-                        </div>
-                    </div>
-                    <a-empty v-else description="No attachments" :image="false" />
+                    <a-empty v-else description="No timeline available" :image="false" />
                 </a-card>
             </div>
 
@@ -189,6 +237,11 @@
                             </div>
                         </div>
                         <div v-else-if="!currentTicket.assignee_name" class="text-gray-500">Not assigned</div>
+
+                        <div v-if="currentTicket.assigned_at">
+                            <span class="block text-xs text-gray-500 uppercase">Assigned At</span>
+                            <div class="font-medium dark:text-white mt-1">{{ new Date(currentTicket.assigned_at).toLocaleString() }}</div>
+                        </div>
                     </div>
                 </a-card>
 
@@ -268,15 +321,6 @@ const canAction = computed(() => authStore.hasPermission('helpdesk-tickets:actio
 
 const ticketId = route.params.id as string;
 
-const ticketImages = computed(() => {
-    if (!currentTicket.value) return [];
-    return [
-        currentTicket.value.image_1,
-        currentTicket.value.image_2,
-        currentTicket.value.image_3
-    ].filter(Boolean) as string[];
-});
-
 // Assign modal state
 const showAssignModal = ref(false);
 const isReassign = ref(false);
@@ -300,6 +344,53 @@ const canCloseTicket = computed(() => {
     const state = currentTicket.value.state?.key;
     return state === 'RESOLVED' || state === 'PENDING_CONFIRMATION';
 });
+
+const canReopen = computed(() => {
+    if (!currentTicket.value) return false;
+    const state = currentTicket.value.state?.key;
+    return state === 'PENDING_CONFIRMATION' || state === 'DISPUTED';
+});
+
+const canReassign = computed(() => {
+    if (!currentTicket.value) return false;
+    const state = currentTicket.value.state?.key;
+    return canAction.value && ['ASSIGNED', 'ACKNOWLEDGED', 'REOPENED'].includes(state);
+});
+
+const canAssign = computed(() => {
+    if (!currentTicket.value) return false;
+    const state = currentTicket.value.state?.key;
+    return canAction.value && state === 'OPEN';
+});
+
+const canForceClose = computed(() => {
+    if (!currentTicket.value) return false;
+    return canAction.value;
+});
+
+const canConfirmClose = computed(() => {
+    if (!currentTicket.value) return false;
+    const state = currentTicket.value.state?.key;
+    return canUpdate.value && (state === 'PENDING_CONFIRMATION' || state === 'RESOLVED');
+});
+
+const ticketLocationUrl = computed(() => {
+    if (!currentTicket.value?.proofs?.length) return null;
+    const proofWithGeo = currentTicket.value.proofs.find(p => p.geo_lat && p.geo_lon);
+    if (proofWithGeo) {
+        return `https://www.google.com/maps/search/?api=1&query=${proofWithGeo.geo_lat},${proofWithGeo.geo_lon}`;
+    }
+    return null;
+});
+
+// Reopen & Force Close state
+const showReopenModal = ref(false);
+const showForceCloseModal = ref(false);
+const reopenNotes = ref('');
+const reopenAssignee = ref<string | undefined>(undefined);
+const forceCloseNotes = ref('');
+const reopening = ref(false);
+const forceClosing = ref(false);
 
 const assigneeOptions = computed(() =>
     assignableUsers.value.map(u => ({ label: u.full_name || u.email, value: u.id }))
@@ -328,6 +419,24 @@ const handleMenuClick = async ({ key }: { key: string }) => {
         await openAssignModal(true);
     } else if (key === 'changePriority') {
         await openPriorityModal();
+    } else if (key === 'reopen') {
+        await openReopenModal();
+    } else if (key === 'forceClose') {
+        showForceCloseModal.value = true;
+    }
+};
+
+const openReopenModal = async () => {
+    showReopenModal.value = true;
+    loadingUsers.value = true;
+    try {
+        const service = useHelpdeskService();
+        assignableUsers.value = await service.getAssignableUsers();
+        reopenAssignee.value = currentTicket.value?.assignee || undefined;
+    } catch (error) {
+        message.error('Failed to load users');
+    } finally {
+        loadingUsers.value = false;
     }
 };
 
@@ -383,15 +492,59 @@ const handleAssignTicket = async () => {
     }
 };
 
-const handleCloseTicket = async () => {
+const handleConfirmClose = async () => {
     closing.value = true;
     try {
         await store.confirmCloseTicket(ticketId);
         message.success('Ticket closed successfully');
+        await store.fetchTicketById(ticketId);
     } catch (error) {
         message.error('Failed to close ticket');
     } finally {
         closing.value = false;
+    }
+};
+
+const handleReopenTicket = async () => {
+    if (!reopenAssignee.value) {
+        message.error('Please select an assignee');
+        return;
+    }
+    if (!reopenNotes.value?.trim()) {
+        message.error('Please enter a reason for reopening');
+        return;
+    }
+    reopening.value = true;
+    try {
+        await store.reopenTicket(ticketId, reopenAssignee.value, reopenNotes.value);
+        message.success('Ticket reopened successfully');
+        showReopenModal.value = false;
+        reopenNotes.value = '';
+        reopenAssignee.value = undefined;
+        await store.fetchTicketById(ticketId);
+    } catch (error) {
+        message.error('Failed to reopen ticket');
+    } finally {
+        reopening.value = false;
+    }
+};
+
+const handleForceCloseTicket = async () => {
+    if (!forceCloseNotes.value?.trim()) {
+        message.error('Please enter notes for force close');
+        return;
+    }
+    forceClosing.value = true;
+    try {
+        await store.forceCloseTicket(ticketId, forceCloseNotes.value);
+        message.success('Ticket force closed successfully');
+        showForceCloseModal.value = false;
+        forceCloseNotes.value = '';
+        await store.fetchTicketById(ticketId);
+    } catch (error) {
+        message.error('Failed to force close ticket');
+    } finally {
+        forceClosing.value = false;
     }
 };
 
@@ -404,6 +557,29 @@ const getPriorityColor = (priority: any) => {
         case 'P4': return 'green';
         default: return 'default';
     }
+};
+
+const getTimelineColor = (state: string) => {
+    if (!state) return 'gray';
+    const s = state.toUpperCase();
+    if (['OPEN', 'ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(s)) return 'blue';
+    if (['PENDING_CONFIRMATION'].includes(s)) return 'orange';
+    if (['RESOLVED', 'CLOSED'].includes(s)) return 'green';
+    return 'gray';
+};
+
+const getStateLabel = (state: string) => {
+    if (!state) return 'Unknown';
+    const labels: Record<string, string> = {
+        'OPEN': 'Ticket Created',
+        'ASSIGNED': 'Assigned',
+        'ACKNOWLEDGED': 'Acknowledged',
+        'IN_PROGRESS': 'Work Started',
+        'PENDING_CONFIRMATION': 'Pending Confirmation',
+        'RESOLVED': 'Resolved',
+        'CLOSED': 'Closed'
+    };
+    return labels[state.toUpperCase()] || state;
 };
 
 onMounted(() => {

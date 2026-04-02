@@ -179,6 +179,52 @@ export const useHelpdeskStore = defineStore('helpdesk', {
             }
         },
 
+        async reopenTicket(ticketId: string, assignee?: string, notes?: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+
+            try {
+                const updatedTicket = await service.reopenTicket(ticketId, assignee, notes);
+                const index = this.tickets.findIndex(t => t.id === ticketId);
+                if (index > -1) {
+                    this.tickets[index] = updatedTicket;
+                }
+                if (this.currentTicket?.id === ticketId) {
+                    this.currentTicket = updatedTicket;
+                }
+                return updatedTicket;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to reopen ticket';
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async forceCloseTicket(ticketId: string, notes?: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+
+            try {
+                const updatedTicket = await service.forceCloseTicket(ticketId, notes);
+                const index = this.tickets.findIndex(t => t.id === ticketId);
+                if (index > -1) {
+                    this.tickets[index] = updatedTicket;
+                }
+                if (this.currentTicket?.id === ticketId) {
+                    this.currentTicket = updatedTicket;
+                }
+                return updatedTicket;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to force close ticket';
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        },
+
         async updateTicket(ticketId: string, payload: { priority?: string; location_text?: string }) {
             this.loading = true;
             this.error = null;
