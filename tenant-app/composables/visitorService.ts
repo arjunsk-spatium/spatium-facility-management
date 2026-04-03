@@ -167,9 +167,22 @@ export const useVisitorService = (): IVisitorService => {
                 if (!response.success) {
                     throw new Error(response.message || 'Failed to update visitor status')
                 }
+                
                 return response.data;
             }
-            // Fallback to PATCH for other status updates (e.g., Check In/Check Out)
+            // Fallback to PATCH for other status updates
+            if (status === 'Checked Out') {
+                const response = await $api<ApiResponse<any>>(
+                    `/api/portal/visitors/client/visitors/${id}/checkout/`,
+                    { method: 'POST' },
+                );
+                if (!response.success) {
+                    throw new Error(response.message || 'Failed to check out visitor')
+                }
+                
+                return response.data;
+            }
+            
             const response = await $api<ApiResponse<Visitor>>(
                 `/api/portal/visitors/client/visitors/${id}/`,
                 {

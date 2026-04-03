@@ -16,7 +16,7 @@
 
         <div v-if="canView">
             <!-- Filters -->
-            <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div class="flex flex-col sm:flex-row gap-3 sm:items-center mb-6">
                 <!-- Date Range Filter -->
                 <a-range-picker v-model:value="dateRange" format="YYYY-MM-DD" :allow-clear="true"
                     class="w-full sm:w-auto" @change="handleFilterChange" />
@@ -100,6 +100,7 @@ const handleFilterChange = async () => {
 }
 
 const handleStatusUpdate = async (id: string, status: any) => {
+    // Update status in store
     await store.updateStatus(id, status)
 }
 

@@ -49,9 +49,9 @@
                             @click="$emit('update-status', record.id, 'Rejected')">
                             Reject
                         </a-button>
-                        <a-button v-if="record.status === 'Approved'" size="small"
+                        <a-button v-if="record.status === 'Approved' && !record.check_out_time" size="small"
                             class="!bg-green-500 !text-white !border-green-500"
-                            @click="$emit('update-status', record.id, 'Check Out')">
+                            @click="$emit('update-status', record.id, 'Checked Out')">
                             Check Out
                         </a-button>
                     </div>
@@ -151,9 +151,9 @@
                             @click="$emit('update-status', record.id, 'Rejected')">
                             Reject
                         </a-button>
-                        <a-button v-if="record.status === 'Approved' && !record.is_on_premises" size="small"
+                        <a-button v-if="record.status === 'Approved' && !record.check_out_time" size="small"
                             class="!bg-green-500 !text-white !border-green-500" block
-                            @click="$emit('update-status', record.id, 'Check Out')">
+                            @click="$emit('update-status', record.id, 'Checked Out')">
                             Check Out
                         </a-button>
                     </div>

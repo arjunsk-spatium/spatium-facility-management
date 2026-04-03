@@ -22,11 +22,12 @@
                 </div>
                 <div class="space-y-3">
                     <NuxtLink v-for="fac in facilityList" :key="fac.id"
-                        :to="`/public/visitor/register?facility_id=${fac.id}&tenant=${tenantId}`"
-                        class="block group">
-                        <div class="bg-white p-4 rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-md transition-all flex items-center gap-4">
+                        :to="`/public/visitor/register?facility_id=${fac.id}&tenant=${tenantId}`" class="block group">
+                        <div
+                            class="bg-white p-4 rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-md transition-all flex items-center gap-4">
                             <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                                <img v-if="fac.image_url" :src="fac.image_url" :alt="fac.name" class="w-full h-full object-cover" />
+                                <img v-if="fac.image_url" :src="fac.image_url" :alt="fac.name"
+                                    class="w-full h-full object-cover" />
                                 <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
                                     <HomeOutlined class="text-xl" />
                                 </div>
@@ -34,7 +35,8 @@
                             <div class="flex-1 min-w-0">
                                 <h3 class="text-base font-bold text-gray-900 truncate">{{ fac.name }}</h3>
                             </div>
-                            <div class="w-8 h-8 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
                                 <RightOutlined />
                             </div>
                         </div>
@@ -66,63 +68,64 @@
                 <div class="relative w-full h-52 rounded-2xl overflow-hidden border border-gray-100 mb-4">
                     <img :src="facility.image_url || 'https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'"
                         :alt="facility.name" class="w-full h-full object-cover" />
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
                         <div class="text-white text-xl font-bold">{{ facility.name }}</div>
                     </div>
                 </div>
 
                 <div class="text-center space-y-1 mb-5">
-                <h1 class="text-2xl font-bold text-gray-900 leading-tight">
-                    Welcome to <br />
-                    <span class="text-blue-600">{{ tenantStore.tenantName || 'Our Facility' }}</span>
-                </h1>
-                <p class="text-gray-500 text-sm max-w-xs mx-auto">
-                    Please select an option below to begin your check-in process.
-                </p>
-            </div>
+                    <h1 class="text-2xl font-bold text-gray-900 leading-tight">
+                        Welcome to <br />
+                        <span class="text-blue-600">{{ tenantStore.tenantName || 'Our Facility' }}</span>
+                    </h1>
+                    <p class="text-gray-500 text-sm max-w-xs mx-auto">
+                        Please select an option below to begin your check-in process.
+                    </p>
+                </div>
 
-            <div class="space-y-4 max-w-sm mx-auto flex flex-col gap-2">
-                <button @click="step = 1" class="w-full relative group block text-left">
-                    <div
-                        class="bg-white p-5 rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-md transition-all flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <div
-                                class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                <UserAddOutlined class="text-xl" />
-                            </div>
-                            <div>
-                                <h3 class="text-base font-bold text-gray-900">Walk-in Visitor</h3>
-                                <p class="text-sm text-gray-500">Register at the front desk</p>
-                            </div>
-                        </div>
+                <div class="space-y-4 max-w-sm mx-auto flex flex-col gap-2">
+                    <button @click="showConsentModal = true" class="w-full relative group block text-left">
                         <div
-                            class="w-9 h-9 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
-                            <RightOutlined />
+                            class="bg-white p-5 rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-md transition-all flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <UserAddOutlined class="text-xl" />
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold text-gray-900">Walk-in Visitor</h3>
+                                    <p class="text-sm text-gray-500">Register at the front desk</p>
+                                </div>
+                            </div>
+                            <div
+                                class="w-9 h-9 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
+                                <RightOutlined />
+                            </div>
                         </div>
-                    </div>
-                </button>
+                    </button>
 
-                <NuxtLink :to="`/public/visitor/invite?facility_id=${facilityId}&tenant=${tenantId}`"
-                    class="block w-full text-left group">
-                    <div
-                        class="bg-white p-5 rounded-xl border border-gray-100 hover:border-purple-100 hover:shadow-md transition-all flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <div
-                                class="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                                <QrcodeOutlined class="text-xl" />
-                            </div>
-                            <div>
-                                <h3 class="text-base font-bold text-gray-900">Pre-invited Visitor</h3>
-                                <p class="text-sm text-gray-500">Have an invite code?</p>
-                            </div>
-                        </div>
+                    <NuxtLink :to="`/public/visitor/invite?facility_id=${facilityId}&tenant=${tenantId}`"
+                        class="block w-full text-left group">
                         <div
-                            class="w-9 h-9 rounded-full bg-gray-50 group-hover:bg-purple-50 flex items-center justify-center text-gray-400 group-hover:text-purple-500 transition-colors">
-                            <RightOutlined />
+                            class="bg-white p-5 rounded-xl border border-gray-100 hover:border-purple-100 hover:shadow-md transition-all flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                    <QrcodeOutlined class="text-xl" />
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold text-gray-900">Pre-invited Visitor</h3>
+                                    <p class="text-sm text-gray-500">Have an invite code?</p>
+                                </div>
+                            </div>
+                            <div
+                                class="w-9 h-9 rounded-full bg-gray-50 group-hover:bg-purple-50 flex items-center justify-center text-gray-400 group-hover:text-purple-500 transition-colors">
+                                <RightOutlined />
+                            </div>
                         </div>
-                    </div>
-                </NuxtLink>
-            </div>
+                    </NuxtLink>
+                </div>
             </template>
         </div>
 
@@ -374,6 +377,108 @@
                 </ClientOnly>
             </div>
         </Teleport>
+
+        <!-- Consent Modal -->
+        <Teleport to="body">
+            <div v-if="showConsentModal"
+                class="fixed inset-0 z-[9998] bg-black/50 flex items-center justify-center p-4">
+                <div
+                    class="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-in">
+                    <!-- Modal Header -->
+                    <div class="p-6 pb-4 border-b border-gray-100">
+                        <div
+                            class="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
+                            <SafetyOutlined class="text-2xl" />
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900 text-center">
+                            Privacy & Consent Notice
+                        </h2>
+                    </div>
+
+                    <!-- Modal Content -->
+                    <div class="p-6 space-y-4">
+                        <p class="text-gray-700 text-sm leading-relaxed">
+                            Welcome to <span class="font-semibold">{{ tenantStore.tenantName }}</span>.
+                            To ensure your safety and provide you with the best experience, we collect and process
+                            certain personal information when you visit our facility.
+                        </p>
+
+                        <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+                            <h3 class="font-bold text-gray-900 text-sm">What We Collect:</h3>
+                            <ul class="space-y-2 text-sm text-gray-600">
+                                <li class="flex items-start gap-2">
+                                    <CheckCircleOutlined class="text-blue-600 mt-0.5 shrink-0" />
+                                    <span>Your name, contact details, and photograph</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <CheckCircleOutlined class="text-blue-600 mt-0.5 shrink-0" />
+                                    <span>Visit purpose and host information</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <CheckCircleOutlined class="text-blue-600 mt-0.5 shrink-0" />
+                                    <span>Entry and exit timestamps</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-blue-50 rounded-xl p-4 space-y-3">
+                            <h3 class="font-bold text-gray-900 text-sm">How We Use Your Data:</h3>
+                            <ul class="space-y-2 text-sm text-gray-600">
+                                <li class="flex items-start gap-2">
+                                    <InfoCircleOutlined class="text-blue-600 mt-0.5 shrink-0" />
+                                    <span>Security and emergency management</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <InfoCircleOutlined class="text-blue-600 mt-0.5 shrink-0" />
+                                    <span>Facility access control and visitor tracking</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <InfoCircleOutlined class="text-blue-600 mt-0.5 shrink-0" />
+                                    <span>Compliance with legal and regulatory requirements</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <p class="text-gray-700 text-sm leading-relaxed">
+                            Your data is stored securely and retained only as long as necessary.
+                            We do not share your information with third parties except as required by law.
+                        </p>
+
+                        <!-- Consent Checkbox -->
+                        <div class="flex items-start gap-3 pt-2">
+                            <input type="checkbox" id="consent-checkbox" v-model="consentAccepted"
+                                class="w-5 h-5 mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                            <label for="consent-checkbox" class="text-sm text-gray-700 cursor-pointer select-none">
+                                I have read and agree to the collection and processing of my personal data
+                                as described above.
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="p-6 pt-4 border-t border-gray-100">
+                        <div class="flex flex-col gap-3">
+                            <button @click="handleConsentSubmit" :disabled="!consentAccepted"
+                                class="w-full h-12 rounded-xl font-bold text-lg flex items-center justify-center transition-all shadow-lg
+                                    bg-blue-600 !text-white shadow-blue-500/20 hover:bg-blue-700
+                                    disabled:bg-gray-100 disabled:!text-gray-400 disabled:shadow-none disabled:cursor-not-allowed">
+                                <span v-if="loading">
+                                    <LoadingOutlined class="text-inherit" />
+                                </span>
+                                <span v-else class="flex items-center">
+                                    Accept & Continue
+                                    <RightOutlined class="ml-1 text-inherit" />
+                                </span>
+                            </button>
+                            <button @click="showConsentModal = false"
+                                class="w-full h-11 rounded-xl font-semibold border border-gray-400 !text-gray-500 hover:bg-gray-200 transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Teleport>
     </div>
 </template>
 
@@ -385,7 +490,8 @@ import {
     LeftOutlined, DownOutlined, CloseCircleFilled, LockFilled,
     CheckCircleFilled, CameraFilled, PlusOutlined, UserOutlined,
     MailOutlined, BankOutlined, LoadingOutlined, UserAddOutlined,
-    QrcodeOutlined, RightOutlined, HomeOutlined
+    QrcodeOutlined, RightOutlined, HomeOutlined,
+    CheckCircleOutlined, InfoCircleOutlined, SafetyOutlined
 } from '@ant-design/icons-vue'
 import CameraCapture from '../../../../components/common/CameraCapture.vue'
 
@@ -412,6 +518,8 @@ const otpInputs = ref<HTMLInputElement[]>([])
 const profilePhotoFile = ref<File | null>(null)
 const profilePhotoPreview = ref<string | null>(null)
 const showCamera = ref(false)
+const showConsentModal = ref(false)
+const consentAccepted = ref(false)
 
 // Dropdown data
 const purposes = ref<PurposeOfVisit[]>([])
@@ -658,6 +766,14 @@ const handlePhotoCapture = (imageDataUrl: string) => {
         })
 
     showCamera.value = false
+}
+
+const handleConsentSubmit = () => {
+    if (!consentAccepted.value) return
+    showConsentModal.value = false
+    step.value = 1
+    // Reset consent for next session
+    consentAccepted.value = false
 }
 
 const clearForm = () => {
