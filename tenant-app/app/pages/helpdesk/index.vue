@@ -138,9 +138,9 @@
 
 
         <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
-            <a-tab-pane key="all">
+            <a-tab-pane key="priority">
                 <template #tab>
-                    All <a-badge :count="ticketCounts.all" :number-style="{ backgroundColor: '#6b7280' }"
+                    Priority <a-badge :count="ticketCounts.priority" :number-style="{ backgroundColor: '#ef4444' }"
                         :offset="[6, 0]" />
                 </template>
             </a-tab-pane>
@@ -150,15 +150,27 @@
                         :offset="[6, 0]" />
                 </template>
             </a-tab-pane>
-            <a-tab-pane key="active">
+            <a-tab-pane key="inprogress">
                 <template #tab>
-                    Active <a-badge :count="ticketCounts.active" :number-style="{ backgroundColor: '#f59e0b' }"
+                    In Progress <a-badge :count="ticketCounts.inprogress" :number-style="{ backgroundColor: '#f59e0b' }"
+                        :offset="[6, 0]" />
+                </template>
+            </a-tab-pane>
+            <a-tab-pane key="pending">
+                <template #tab>
+                    Pending <a-badge :count="ticketCounts.pending" :number-style="{ backgroundColor: '#8b5cf6' }"
                         :offset="[6, 0]" />
                 </template>
             </a-tab-pane>
             <a-tab-pane key="closed">
                 <template #tab>
                     Closed <a-badge :count="ticketCounts.closed" :number-style="{ backgroundColor: '#10b981' }"
+                        :offset="[6, 0]" />
+                </template>
+            </a-tab-pane>
+            <a-tab-pane key="all">
+                <template #tab>
+                    All <a-badge :count="ticketCounts.all" :number-style="{ backgroundColor: '#6b7280' }"
                         :offset="[6, 0]" />
                 </template>
             </a-tab-pane>
@@ -306,7 +318,7 @@ definePageMeta({
 const helpdeskStore = useHelpdeskStore();
 const facilityStore = useFacilityStore();
 const authStore = useAuthStore();
-const { tickets, loading, categories, subCategories, priorities, creating } = storeToRefs(helpdeskStore);
+const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, pendingCount, closedCount, allCount } = storeToRefs(helpdeskStore);
 const { facilities } = storeToRefs(facilityStore);
 
 // Permission checks
@@ -495,11 +507,14 @@ const columns = [
 
 // Ticket counts per status for tab badges
 const ticketCounts = computed(() => {
-    const all = tickets.value.length;
-    const open = tickets.value.filter(t => t.state?.key === 'OPEN').length;
-    const active = tickets.value.filter(t => t.state?.key === 'INPROGRESS').length;
-    const closed = tickets.value.filter(t => ['CLOSED', 'PENDING_CONFIRMATION'].includes(t.state?.key || '')).length;
-    return { all, open, active, closed };
+    return { 
+        priority: priorityCount.value, 
+        open: openCount.value, 
+        inprogress: inprogressCount.value, 
+        pending: pendingCount.value, 
+        closed: closedCount.value,
+        all: allCount.value
+    };
 });
 
 // Methods
@@ -512,14 +527,21 @@ const handleFacilityFilterChange = async () => {
 };
 
 const fetchTicketsByFilter = async () => {
-    const params: { state?: string; facility_id?: string } = {};
+    const params: { states?: string; facility_id?: string } = {};
     
-    if (activeTab.value === 'open') {
-        params.state = 'open';
-    } else if (activeTab.value === 'active') {
-        params.state = 'inprogress';
+    if (activeTab.value === 'priority') {
+        await helpdeskStore.fetchPriorityTickets(1, 20, facilityFilter.value);
+        return;
+    } else if (activeTab.value === 'open') {
+        params.states = 'open';
+    } else if (activeTab.value === 'inprogress') {
+        params.states = 'inprogress';
+    } else if (activeTab.value === 'pending') {
+        params.states = 'pending_confirmation';
     } else if (activeTab.value === 'closed') {
-        params.state = 'closed';
+        params.states = 'closed';
+    } else if (activeTab.value === 'all') {
+        // Fetch all tickets without state filter
     }
     
     if (facilityFilter.value) {
@@ -559,6 +581,7 @@ const handleCloseTicket = async (record: any) => {
 onMounted(async () => {
     await Promise.all([
         fetchTicketsByFilter(),
+        helpdeskStore.fetchTicketCounts(),
         facilityStore.fetchFacilities()
     ]);
 });

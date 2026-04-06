@@ -481,6 +481,28 @@ export const useHelpdeskService = () => {
             };
         },
 
+        getPriorityTickets: async (page = 1, pageSize = 20, facilityId?: string): Promise<Ticket[]> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<PaginatedResponse<Ticket>>>
+                >("/api/portal/helpdesk/tickets/priority-tickets/", {
+                    method: "GET",
+                    query: { page, page_size: pageSize, facility_id: facilityId },
+                });
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to fetch priority tickets",
+                    );
+                }
+                return response.data.data.results;
+            } catch (error) {
+                console.error("Error fetching priority tickets:", error);
+                throw error;
+            }
+        },
+
         getTicketsByStatusData: async () => {
             const tickets = await this.getTickets();
             const statusCounts = tickets.reduce(
