@@ -72,7 +72,8 @@ export const useAuthFetch = () => {
                     return retryResponse;
                 }
 
-                // If refresh failed, the store will handle logout
+                // Refresh failed, logout
+                authStore.logout();
                 throw error;
             }
 
