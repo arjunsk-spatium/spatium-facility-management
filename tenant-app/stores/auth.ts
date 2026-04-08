@@ -185,7 +185,7 @@ export const useAuthStore = defineStore("auth", {
 
             // Redirect to login
             const router = useRouter();
-            router.push("/login");
+            navigateTo('/login');
         },
 
         async fetchModules() {

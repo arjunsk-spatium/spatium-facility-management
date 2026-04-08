@@ -16,6 +16,22 @@ export default defineEventHandler(async (event) => {
     const incomingHeaders = getHeaders(event);
     const forwardHeaders: Record<string, string> = {};
 
+    if (!incomingHeaders["authorization"]) {
+        setResponseStatus(event, 401);
+        setResponseHeaders(event, { "content-type": "application/json" });
+        return JSON.stringify({
+            success: false,
+            code: "UNAUTHORIZED",
+            message: "Unauthorized: Bearer token required",
+            data: null,
+            error: "Missing authorization token",
+            meta: {
+                request_id: "",
+                timestamp: new Date().toISOString(),
+            },
+        });
+    }
+
     if (incomingHeaders["x-tenant-id"]) {
         forwardHeaders["X-TENANT-ID"] = incomingHeaders["x-tenant-id"];
     }

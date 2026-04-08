@@ -139,7 +139,7 @@ export default defineNuxtPlugin(() => {
                     console.log(
                         "[API] Token refresh failed, redirecting to login...",
                     );
-                    // Auth store handles logout
+                    authStore.logout();
                     throw new Error("Authentication failed");
                 }
             }
