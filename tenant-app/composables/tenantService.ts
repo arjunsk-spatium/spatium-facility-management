@@ -55,27 +55,37 @@ export const useTenantService = () => {
         return "tenant-c";
     };
 
-    const getTenantByDomain = async (domain: string): Promise<Tenant | null> => {
-        const response = await $api<any>("/api/portal/tenants/public/domain/", {
-            method: "POST",
-            body: { domain },
-        });
+    const getTenantByDomain = async (domain: string): Promise<{ tenant: Tenant | null; notRegistered: boolean }> => {
+        try {
+            const response = await $api<any>("/api/portal/tenants/public/domain/", {
+                method: "POST",
+                body: { domain },
+            });
 
-        if (response && response.success && response.data) {
-            const data = response.data;
-            const branding = data.branding || {};
-            return {
-                id: data.tenant_id || "00000000-0000-0000-0000-000000000000",
-                name: data.name,
-                logoUrl: branding.logo_url || "",
-                faviconUrl: branding.favicon_url || "/favicon.ico",
-                colors: {
-                    primary: branding.primary_color || "#0499E4",
-                    secondary: branding.secondary_color || "#64748b",
-                },
-            };
+            if (response && response.success && response.data) {
+                const data = response.data;
+                const branding = data.branding || {};
+                return {
+                    tenant: {
+                        id: data.tenant_id || "00000000-0000-0000-0000-000000000000",
+                        name: data.name,
+                        logoUrl: branding.logo_url || "",
+                        faviconUrl: branding.favicon_url || "/favicon.ico",
+                        colors: {
+                            primary: branding.primary_color || "#0499E4",
+                            secondary: branding.secondary_color || "#64748b",
+                        },
+                    },
+                    notRegistered: false,
+                };
+            }
+            return { tenant: null, notRegistered: true };
+        } catch (error: any) {
+            if (error?.statusCode === 404) {
+                return { tenant: null, notRegistered: true };
+            }
+            throw error;
         }
-        return null;
     };
 
     const updateTenantConfig = async (

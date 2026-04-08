@@ -3,6 +3,12 @@
     <div
       class="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300">
       <AppLoader v-if="isLoading" />
+      <div v-else-if="tenantStore.error" class="flex flex-col items-center justify-center min-h-screen p-4">
+        <div class="text-center">
+          <h1 class="text-2xl font-bold text-red-600 mb-2">Tenant Not Registered</h1>
+          <p class="text-gray-600">{{ tenantStore.error }}</p>
+        </div>
+      </div>
       <NuxtLayout v-else>
         <NuxtPage />
       </NuxtLayout>
@@ -21,7 +27,7 @@ const tenantStore = useTenantStore();
 // Local reactive ref for dark mode - ensures immediate reactivity
 const isDarkMode = ref(false);
 
-const isLoading = computed(() => tenantStore.loading || !tenantStore.tenant);
+const isLoading = computed(() => tenantStore.loading);
 
 // Watch the colorMode and isDark from the composable to sync local state
 watch(
