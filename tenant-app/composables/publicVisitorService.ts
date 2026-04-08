@@ -266,6 +266,19 @@ export const usePublicVisitorService = () => {
         return response.data;
     };
 
+    const getVisitorStatus = async (visitorId: string): Promise<any> => {
+        const response = await publicFetch<ApiResponse<any>>(
+            `/api/portal/visitors/public/visitors/${visitorId}/status/`,
+            { method: "GET" },
+        );
+        if (!response.success) {
+            throw new Error(
+                response.message || "Failed to get visitor status",
+            );
+        }
+        return response.data;
+    };
+
     return {
         requestOtp,
         verifyOtp,
@@ -277,5 +290,6 @@ export const usePublicVisitorService = () => {
         getFacilities,
         createWalkIn,
         preInvite,
+        getVisitorStatus,
     };
 };

@@ -803,7 +803,8 @@ const handleSubmit = async () => {
         if (formState.fromCompany) fd.append('from_company', formState.fromCompany)
         if (profilePhotoFile.value) fd.append('image', profilePhotoFile.value)
 
-        await createWalkIn(fd)
+        const response = await createWalkIn(fd)
+        localStorage.setItem('visitor_id', response.id)
         message.success('Registration submitted successfully!')
         step.value = 4
     } catch (e: any) {
