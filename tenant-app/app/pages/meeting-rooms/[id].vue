@@ -21,7 +21,11 @@
             </div>
 
             <div class="flex gap-2">
-                <a-button danger>
+                <a-button v-if="canUpdate" type="primary" @click="navigateTo(`/meeting-rooms/${roomId}/edit`)">
+                    <template #icon><EditOutlined /></template>
+                    Edit
+                </a-button>
+                <a-button v-if="canDelete" danger>
                     <a-popconfirm title="Delete this room?" @confirm="handleDelete" ok-text="Yes" cancel-text="No">
                         <template #icon><DeleteOutlined /></template>
                         Delete
@@ -131,10 +135,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { message } from 'ant-design-vue';
 import { useMeetingRoomStore } from '../../../stores/meetingRoom';
+import { useAuthStore } from '../../../stores/auth';
 import { useMeetingRoomService } from '../../../composables/meetingRoomService';
 import { storeToRefs } from 'pinia';
 import RoomStatusBadge from '../../../components/meeting-rooms/RoomStatusBadge.vue';
@@ -147,7 +152,8 @@ import {
     ThunderboltOutlined,
     PlusOutlined,
     CloseOutlined,
-    DeleteOutlined
+    DeleteOutlined,
+    EditOutlined
 } from '@ant-design/icons-vue';
 
 definePageMeta({
@@ -156,10 +162,19 @@ definePageMeta({
 
 const route = useRoute();
 const store = useMeetingRoomStore();
+const authStore = useAuthStore();
 const service = useMeetingRoomService();
 const { currentRoom, loading } = storeToRefs(store);
 
 const roomId = route.params.id as string;
+
+const canView = computed(() => authStore.hasPermission('meeting-rooms-list:view'))
+const canUpdate = computed(() => authStore.hasPermission('meeting-rooms-list:update'))
+const canDelete = computed(() => authStore.hasPermission('meeting-rooms-list:delete'))
+
+if (!canView.value) {
+    navigateTo('/meeting-rooms');
+}
 
 const handleImageUpload = async (file: File) => {
     try {

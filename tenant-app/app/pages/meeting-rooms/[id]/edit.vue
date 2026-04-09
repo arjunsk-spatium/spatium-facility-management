@@ -2,8 +2,8 @@
     <div class="space-y-6">
         <div class="flex items-center gap-4 mb-6">
             <div>
-                <h1 class="text-2xl-white">Add New Room</h1 font-bold dark:text>
-                <p class="text-gray-600 dark:text-gray-400">Create a new meeting room configuration.</p>
+                <h1 class="text-2xl font-bold dark:text-white">Edit Room</h1>
+                <p class="text-gray-600 dark:text-gray-400">Update meeting room configuration.</p>
             </div>
         </div>
         <div class="flex justify-center">
@@ -63,12 +63,12 @@
                 </div>
 
                 <div class="flex justify-end gap-3 mt-6 pt-4 border-t dark:border-neutral-700">
-                    <a-button @click="navigateTo('/meeting-rooms')">Cancel</a-button>
+                    <a-button @click="navigateTo(`/meeting-rooms/${roomId}`)">Cancel</a-button>
                     <a-button type="primary" html-type="submit" :loading="loading">
                         <template #icon>
-                            <PlusOutlined />
+                            <SaveOutlined />
                         </template>
-                        Create Room
+                        Save Changes
                     </a-button>
                 </div>
             </a-form>
@@ -79,10 +79,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useNuxtApp } from '#app'
 import { message } from 'ant-design-vue'
 import type { FormInstance } from 'ant-design-vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { SaveOutlined } from '@ant-design/icons-vue'
 import { useMeetingRoomStore } from '../../../stores/meetingRoom'
 import { useFacilityStore } from '../../../stores/facility'
 import { useAuthStore } from '../../../stores/auth'
@@ -93,16 +94,19 @@ definePageMeta({
     middleware: 'auth'
 })
 
+const route = useRoute()
+const roomId = route.params.id as string
+
 const { $api } = useNuxtApp()
 const facilityStore = useFacilityStore()
 const roomStore = useMeetingRoomStore()
 const authStore = useAuthStore()
 const { facilities } = storeToRefs(facilityStore)
 
-const canCreate = computed(() => authStore.hasPermission('meeting-rooms-list:create'))
+const canUpdate = computed(() => authStore.hasPermission('meeting-rooms-list:update'))
 
-if (!canCreate.value) {
-    navigateTo('/meeting-rooms');
+if (!canUpdate.value) {
+    navigateTo(`/meeting-rooms/${roomId}`);
 }
 
 const formRef = ref<FormInstance>()
@@ -130,7 +134,7 @@ const rules = {
     status: [{ required: true, message: 'Please select status' }]
 }
 
-const { createRoom } = useMeetingRoomService()
+const { updateRoom } = useMeetingRoomService()
 
 const fetchDropdowns = async () => {
     try {
@@ -145,32 +149,48 @@ const fetchDropdowns = async () => {
             amenitiesList.value = amResult.data.results || []
         }
     } catch (e) {
-        console.error('Failed to fetch dropdowns:', e)
+        console.error('Failed to load dropdowns', e)
+    }
+}
+
+const fetchRoomData = async () => {
+    try {
+        await roomStore.fetchRoomById(roomId)
+        const room = roomStore.currentRoom
+        if (room) {
+            formState.name = room.name || ''
+            formState.room_type = room.room_type || undefined
+            formState.pax = room.pax || undefined
+            formState.facility = room.facility || undefined
+            formState.price = room.price || undefined
+            formState.credits = room.credits || undefined
+            formState.status = room.status || 'ACTIVE'
+            formState.amenities = room.amenities?.map((a: any) => a.id || a) || []
+        }
+    } catch (e) {
+        console.error('Failed to load room', e)
+        message.error('Failed to load room data')
     }
 }
 
 const handleSubmit = async () => {
-    loading.value = true
     try {
-        const roomData = {
+        loading.value = true
+        await updateRoom(roomId, {
             name: formState.name,
-            pax: formState.pax,
             room_type: formState.room_type,
+            pax: formState.pax,
             facility: formState.facility,
-            price: String(formState.price || ''),
-            credits: formState.credits || 0,
+            price: formState.price,
+            credits: formState.credits,
             status: formState.status,
             amenities: formState.amenities
-        }
-
-        await createRoom(roomData)
-        message.success('Room created successfully!')
-
-        await roomStore.fetchRooms(true)
-
-        navigateTo('/meeting-rooms')
-    } catch (e) {
-        message.error('Failed to create room')
+        })
+        message.success('Room updated successfully')
+        navigateTo(`/meeting-rooms/${roomId}`)
+    } catch (e: any) {
+        console.error('Failed to update room', e)
+        message.error(e.message || 'Failed to update room')
     } finally {
         loading.value = false
     }
@@ -178,8 +198,8 @@ const handleSubmit = async () => {
 
 onMounted(async () => {
     await Promise.all([
-        facilityStore.fetchFacilities(),
-        fetchDropdowns()
+        fetchDropdowns(),
+        fetchRoomData()
     ])
 })
 </script>
