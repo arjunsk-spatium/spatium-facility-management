@@ -187,6 +187,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useFacilityService, type Facility } from '../../../../composables/facilityService';
+import { useAuthStore } from '../../../../stores/auth';
 import { useLocationService, type Country, type State, type City, type Zone } from '../../../../composables/locationService';
 import { message } from 'ant-design-vue';
 import { UploadOutlined } from '@ant-design/icons-vue';
@@ -198,7 +199,14 @@ definePageMeta({
 const route = useRoute();
 const facilityId = route.params.id as string;
 const facilityService = useFacilityService();
+const authStore = useAuthStore();
 const locationService = useLocationService();
+
+const canUpdate = computed(() => authStore.hasPermission('facilities-list:update'))
+
+if (!canUpdate.value) {
+    navigateTo(`/facilities/${facilityId}`);
+}
 
 const currentStep = ref(0);
 const saving = ref(false);

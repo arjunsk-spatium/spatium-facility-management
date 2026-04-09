@@ -13,7 +13,7 @@
                     <a-button @click="handleGenerateQRCode" :loading="generatingQR">
                         <QrcodeOutlined /> QR Code
                     </a-button>
-                    <a-button type="primary" @click="navigateTo(`/facilities/${facilityId}/edit`)">
+                    <a-button v-if="canUpdate" type="primary" @click="navigateTo(`/facilities/${facilityId}/edit`)">
                         <EditOutlined /> Edit Facility
                     </a-button>
                 </div>
@@ -252,6 +252,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useFacilityStore } from '../../../../stores/facility';
+import { useAuthStore } from '../../../../stores/auth';
 import { useHelpdeskService } from '../../../../composables/helpdeskService';
 import type { Tower } from '../../../../composables/facilityService';
 import AppLoader from '../../../../components/AppLoader.vue';
@@ -266,7 +267,17 @@ definePageMeta({
 
 const route = useRoute();
 const facilityId = route.params.id as string;
+
 const facilityStore = useFacilityStore();
+const authStore = useAuthStore();
+
+const canView = computed(() => authStore.hasPermission('facilities-list:view'))
+const canUpdate = computed(() => authStore.hasPermission('facilities-list:update'))
+const canDelete = computed(() => authStore.hasPermission('facilities-list:delete'))
+
+if (!canView.value) {
+    navigateTo('/facilities');
+}
 
 const loading = ref(true);
 const towers = ref<Tower[]>([]);

@@ -182,6 +182,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useFacilityStore } from '../../../stores/facility';
+import { useAuthStore } from '../../../stores/auth';
 import { useLocationService, type Country, type State, type City, type Zone } from '../../../composables/locationService';
 import { message } from 'ant-design-vue';
 import { UploadOutlined } from '@ant-design/icons-vue';
@@ -191,7 +192,14 @@ definePageMeta({
 });
 
 const facilityStore = useFacilityStore();
+const authStore = useAuthStore();
 const locationService = useLocationService();
+
+const canCreate = computed(() => authStore.hasPermission('facilities-list:create'))
+
+if (!canCreate.value) {
+    navigateTo('/facilities');
+}
 
 const currentStep = ref(0);
 const submitting = ref(false);

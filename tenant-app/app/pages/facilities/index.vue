@@ -1,12 +1,16 @@
 <template>
     <div class="space-y-6">
+        <div v-if="!canView" class="text-center py-12">
+            <p class="text-gray-500">You don't have permission to view facilities.</p>
+        </div>
+        <template v-else>
         <!-- Header -->
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-2xl font-bold dark:text-white">Facilities</h1>
                 <p class="text-gray-500 dark:text-gray-400">Manage building and facility structures.</p>
             </div>
-            <a-button type="primary" @click="navigateTo('/facilities/create')">
+            <a-button v-if="canCreate" type="primary" @click="navigateTo('/facilities/create')">
                 <template #icon>
                     <PlusOutlined />
                 </template>
@@ -24,7 +28,7 @@
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No Facilities Found</h3>
             <p class="text-gray-500 max-w-sm text-center mb-6">Get started by creating your first facility structure.
             </p>
-            <a-button type="primary" @click="navigateTo('/facilities/create')">Create Facility</a-button>
+            <a-button v-if="canCreate" type="primary" @click="navigateTo('/facilities/create')">Create Facility</a-button>
         </div>
 
         <!-- Grid Layout -->
@@ -73,7 +77,7 @@
                 </a-card-meta>
 
                 <template #actions>
-                    <div class="flex justify-center w-full" @click.stop="navigateTo(`/facilities/${facility.id}/edit`)">
+                    <div v-if="canUpdate" class="flex justify-center w-full" @click.stop="navigateTo(`/facilities/${facility.id}/edit`)">
                         <EditOutlined class="mr-2" /> Edit
                     </div>
                     <div class="flex justify-center w-full" @click.stop="navigateTo(`/facilities/${facility.id}`)">
@@ -83,6 +87,7 @@
                         <QrcodeOutlined class="mr-2" /> QR Code
                     </div>
                     <a-popconfirm
+                        v-if="canDelete"
                         title="Are you sure you want to delete this facility?"
                         ok-text="Yes"
                         cancel-text="No"
@@ -101,12 +106,14 @@
             <a-pagination :current="facilityStore.page" :total="facilityStore.count" :page-size="facilityStore.pageSize"
                 :show-size-changer="false" @change="handlePageChange" />
         </div>
+        </template>
     </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, computed } from 'vue';
 import { useFacilityStore } from '../../../stores/facility';
+import { useAuthStore } from '../../../stores/auth';
 import AppLoader from '../../../components/AppLoader.vue';
 import {
     PlusOutlined,
@@ -125,6 +132,12 @@ definePageMeta({
 });
 
 const facilityStore = useFacilityStore();
+const authStore = useAuthStore();
+
+const canView = computed(() => authStore.hasPermission('facilities-list:view'))
+const canCreate = computed(() => authStore.hasPermission('facilities-list:create'))
+const canUpdate = computed(() => authStore.hasPermission('facilities-list:update'))
+const canDelete = computed(() => authStore.hasPermission('facilities-list:delete'))
 
 const handlePageChange = (page: number) => {
     facilityStore.goToPage(page);
