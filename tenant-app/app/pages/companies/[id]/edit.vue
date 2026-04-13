@@ -35,6 +35,7 @@ import CompanyForm from '../../../../components/companies/CompanyForm.vue'
 interface FormInitialValues {
     name: string
     status: 'active' | 'inactive'
+    email_domain: string
     logo: string | null
     contactName: string
     email: string
@@ -57,6 +58,7 @@ const formInitialValues = computed<FormInitialValues>(() => {
         return {
             name: '',
             status: 'active',
+            email_domain: '',
             logo: null,
             contactName: '',
             email: '',
@@ -69,6 +71,7 @@ const formInitialValues = computed<FormInitialValues>(() => {
     return {
         name: company.name,
         status: company.status,
+        email_domain: company.email_domain || '',
         logo: company.logo || null,
         contactName: contact.contact_name || '',
         email: contact.email || '',

@@ -11,6 +11,7 @@ export interface Company {
     id: string;
     name: string;
     status: "active" | "inactive";
+    email_domain?: string;
     logo?: string;
     contacts: CompanyContact[];
 }
@@ -82,6 +83,7 @@ const MOCK_COMPANIES: Company[] = [
 export interface CreateCompanyPayload {
     name: string;
     status: "active" | "inactive";
+    email_domain?: string;
     logo?: File;
     contacts: {
         contact_name: string;
@@ -144,6 +146,7 @@ export const useCompanyService = () => {
         formData.append("name", data.name);
         formData.append("status", data.status);
         formData.append("contacts", JSON.stringify(data.contacts));
+        if (data.email_domain) formData.append("email_domain", data.email_domain);
 
         if (data.logo) {
             formData.append("logo", data.logo);
@@ -165,6 +168,7 @@ export const useCompanyService = () => {
         const formData = new FormData();
         if (data.name !== undefined) formData.append("name", data.name);
         if (data.status !== undefined) formData.append("status", data.status);
+        if (data.email_domain !== undefined) formData.append("email_domain", data.email_domain);
         if (data.contacts !== undefined)
             formData.append("contacts", JSON.stringify(data.contacts));
         if (data.logo instanceof File) formData.append("logo", data.logo);

@@ -13,6 +13,12 @@
             </a-select>
         </a-form-item>
 
+        <!-- Email Domain -->
+        <a-form-item label="Email Domain" name="email_domain"
+            extra="e.g. acme.com — used to auto-match employees">
+            <a-input v-model:value="formState.email_domain" placeholder="Enter email domain" :maxlength="100" />
+        </a-form-item>
+
         <!-- Company Logo -->
         <a-form-item label="Company Logo" name="logo">
             <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" :max-count="1" list-type="picture-card"
@@ -79,6 +85,7 @@ import type { UploadProps } from 'ant-design-vue'
 interface FormState {
     name: string
     status: 'active' | 'inactive'
+    email_domain: string
     logo: string | File | null
     contactName: string
     email: string
@@ -105,6 +112,7 @@ const formRef = ref<FormInstance>()
 const formState = ref<FormState>({
     name: '',
     status: 'active',
+    email_domain: '',
     logo: null,
     contactName: '',
     email: '',
@@ -116,6 +124,7 @@ const formState = ref<FormState>({
 const rules: FormRules = {
     name: [{ required: true, message: 'Please input company name!' }],
     status: [{ required: true, message: 'Please select status!' }],
+    email_domain: [{ pattern: /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/, message: 'Please enter a valid domain (e.g. acme.com)!' }],
     contactName: [{ required: true, message: 'Please input contact name!' }],
     email: [
         { required: true, message: 'Please input email!' },
@@ -134,6 +143,7 @@ const populateForm = () => {
             ...formState.value,
             name: props.initialValues.name || '',
             status: props.initialValues.status || 'active',
+            email_domain: props.initialValues.email_domain || '',
             logo: props.initialValues.logo || null,
             contactName: props.initialValues.contactName || '',
             email: props.initialValues.email || '',
@@ -167,6 +177,7 @@ const handleSubmit = async () => {
         const formData: any = {
             name: formState.value.name,
             status: formState.value.status,
+            email_domain: formState.value.email_domain || undefined,
             contacts: {
                 contact_name: formState.value.contactName,
                 email: formState.value.email,
