@@ -695,14 +695,13 @@ const handleEmployeeOk = async () => {
             message.success('Employee updated successfully')
         } else {
             // Create
-            await $api<any>('/api/portal/users/create/', {
+            await $api<any>('/api/portal/users/org_portal/create/', {
                 method: 'POST',
                 body: {
                     app_name: 'hub',
                     full_name: employeeForm.full_name,
                     email: employeeForm.email,
                     phone_number: employeeForm.phone_number,
-                    tenant_id: tenantId,
                     company_id: companyId
                 }
             })
