@@ -140,19 +140,18 @@ export const useCompanyService = () => {
     ): Promise<Company> => {
         const url = buildUrl("/api/portal/companies/");
 
-        const body: any = {
-            name: data.name,
-            status: data.status,
-            contacts: data.contacts,
-        };
+        const formData = new FormData();
+        formData.append("name", data.name);
+        formData.append("status", data.status);
+        formData.append("contacts", JSON.stringify(data.contacts));
 
         if (data.logo) {
-            body.logo = data.logo;
+            formData.append("logo", data.logo);
         }
 
         const response = await $api<Company>(url, {
             method: "POST",
-            body,
+            body: formData,
         });
         return response;
     };
@@ -161,32 +160,20 @@ export const useCompanyService = () => {
         id: string,
         data: Partial<CreateCompanyPayload>,
     ): Promise<Company | null> => {
-        await delay(500);
         const url = buildUrl(`/api/portal/companies/${id}/`);
-        const index = MOCK_COMPANIES.findIndex((c) => c.id === id);
-        const existingCompany = MOCK_COMPANIES[index];
-        if (index === -1 || !existingCompany) return null;
 
-        const updatedCompany: Company = {
-            id: existingCompany.id,
-            name: data.name ?? existingCompany.name,
-            status: data.status ?? existingCompany.status,
-            logo: data.logo
-                ? URL.createObjectURL(data.logo)
-                : existingCompany.logo,
-            contacts: {
-                contact_name:
-                    data.contacts?.contact_name ??
-                    existingCompany.contacts.contact_name,
-                email: data.contacts?.email ?? existingCompany.contacts.email,
-                address:
-                    data.contacts?.address ?? existingCompany.contacts.address,
-                phone: data.contacts?.phone ?? existingCompany.contacts.phone,
-                gstin: data.contacts?.gstin ?? existingCompany.contacts.gstin,
-            },
-        };
-        MOCK_COMPANIES[index] = updatedCompany;
-        return updatedCompany;
+        const formData = new FormData();
+        if (data.name !== undefined) formData.append("name", data.name);
+        if (data.status !== undefined) formData.append("status", data.status);
+        if (data.contacts !== undefined)
+            formData.append("contacts", JSON.stringify(data.contacts));
+        if (data.logo instanceof File) formData.append("logo", data.logo);
+
+        const response = await $api<Company>(url, {
+            method: "PATCH",
+            body: formData,
+        });
+        return response;
     };
 
     const getInsights = async (): Promise<CompanyInsights> => {
