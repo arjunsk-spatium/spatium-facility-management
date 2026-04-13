@@ -9,6 +9,7 @@ interface ApiOptions {
     query?: Record<string, any>;
     body?: any;
     headers?: Record<string, string>;
+    responseType?: 'json' | 'blob' | 'text';
 }
 
 // Type augmentation for Nuxt
@@ -127,11 +128,18 @@ export default defineNuxtPlugin(() => {
                     // Retry with new token
                     response = await makeRequest(getAuthHeaders());
                     console.log("[API] Retry response status:", response.status);
+
+                    // If retry also returns 401, refresh failed - throw error
+                    if (response.status === 401) {
+                        console.log("[API] Retry also returned 401, logout required");
+                        authStore.logout();
+                        throw new Error("Authentication failed");
+                    }
                 } else {
                     console.log(
                         "[API] Token refresh failed, redirecting to login...",
                     );
-                    // Auth store handles logout
+                    authStore.logout();
                     throw new Error("Authentication failed");
                 }
             }
@@ -145,6 +153,12 @@ export default defineNuxtPlugin(() => {
                 error.statusCode = response.status;
                 error.data = errorData;
                 throw error;
+            }
+
+            if (options.responseType === 'blob') {
+                return response.blob() as unknown as T;
+            } else if (options.responseType === 'text') {
+                return response.text() as unknown as T;
             }
 
             return response.json();

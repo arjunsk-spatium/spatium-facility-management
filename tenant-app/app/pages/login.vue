@@ -138,7 +138,7 @@ definePageMeta({
   layout: 'auth'
 })
 
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore } from '../../stores/auth';
 
 // Types
 interface Quote {

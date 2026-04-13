@@ -1,6 +1,9 @@
 <template>
     <div class="space-y-6">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div v-if="!canView" class="text-center py-12">
+            <p class="text-gray-500">You don't have permission to view bookings.</p>
+        </div>
+        <div v-else class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Room Bookings</h1>
                 <p class="text-gray-600 dark:text-gray-400">View and manage meeting room reservations.</p>
@@ -12,7 +15,7 @@
                     </template>
                     Rooms
                 </a-button>
-                <a-button type="primary" @click="showBookingModal = true">
+                <a-button v-if="canCreate" type="primary" @click="showBookingModal = true">
                     <template #icon>
                         <PlusOutlined />
                     </template>
@@ -302,6 +305,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useMeetingRoomStore } from '../../../stores/meetingRoom';
+import { useAuthStore } from '../../../stores/auth';
 import { useCompanyService } from '../../../composables/companyService';
 import { useFacilityService } from '../../../composables/facilityService';
 import { storeToRefs } from 'pinia';
@@ -322,7 +326,16 @@ definePageMeta({
 
 // Stores
 const roomStore = useMeetingRoomStore();
+const authStore = useAuthStore();
 const { bookings, loading, rooms, timeSlots } = storeToRefs(roomStore);
+
+const canView = computed(() => authStore.hasPermission('meeting-rooms-bookings:view'))
+const canCreate = computed(() => authStore.hasPermission('meeting-rooms-bookings:create'))
+const canAction = computed(() => authStore.hasPermission('meeting-rooms-bookings:action'))
+
+if (!canView.value) {
+    navigateTo('/meeting-rooms');
+}
 
 // Services
 const companyService = useCompanyService();

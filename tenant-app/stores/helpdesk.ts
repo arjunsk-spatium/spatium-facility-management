@@ -13,7 +13,13 @@ export const useHelpdeskStore = defineStore('helpdesk', {
         loading: false,
         creating: false,
         error: null as string | null,
-        init: false
+        init: false,
+        priorityCount: 0,
+        openCount: 0,
+        inprogressCount: 0,
+        pendingCount: 0,
+        closedCount: 0,
+        allCount: 0
     }),
 
     getters: {
@@ -35,6 +41,41 @@ export const useHelpdeskStore = defineStore('helpdesk', {
                 this.error = err.message || 'Failed to fetch tickets';
             } finally {
                 this.loading = false;
+            }
+        },
+
+        async fetchPriorityTickets(page = 1, pageSize = 20, facilityId?: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+            
+            try {
+                this.tickets = await service.getPriorityTickets(page, pageSize, facilityId);
+                this.priorityCount = this.tickets.length;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to fetch priority tickets';
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async fetchTicketCounts() {
+            const service = useHelpdeskService();
+            try {
+                const [allTickets, open, inprogress, pending, closed] = await Promise.all([
+                    service.getTickets({}),
+                    service.getTickets({ states: 'open' }),
+                    service.getTickets({ states: 'inprogress' }),
+                    service.getTickets({ states: 'pending_confirmation' }),
+                    service.getTickets({ states: 'closed' })
+                ]);
+                this.allCount = allTickets.length;
+                this.openCount = open.length;
+                this.inprogressCount = inprogress.length;
+                this.pendingCount = pending.length;
+                this.closedCount = closed.length;
+            } catch (err) {
+                console.error('Failed to fetch ticket counts', err);
             }
         },
 
@@ -173,6 +214,52 @@ export const useHelpdeskStore = defineStore('helpdesk', {
                 return updatedTicket;
             } catch (err: any) {
                 this.error = err.message || 'Failed to close ticket';
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async reopenTicket(ticketId: string, assignee?: string, notes?: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+
+            try {
+                const updatedTicket = await service.reopenTicket(ticketId, assignee, notes);
+                const index = this.tickets.findIndex(t => t.id === ticketId);
+                if (index > -1) {
+                    this.tickets[index] = updatedTicket;
+                }
+                if (this.currentTicket?.id === ticketId) {
+                    this.currentTicket = updatedTicket;
+                }
+                return updatedTicket;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to reopen ticket';
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async forceCloseTicket(ticketId: string, notes?: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+
+            try {
+                const updatedTicket = await service.forceCloseTicket(ticketId, notes);
+                const index = this.tickets.findIndex(t => t.id === ticketId);
+                if (index > -1) {
+                    this.tickets[index] = updatedTicket;
+                }
+                if (this.currentTicket?.id === ticketId) {
+                    this.currentTicket = updatedTicket;
+                }
+                return updatedTicket;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to force close ticket';
                 throw err;
             } finally {
                 this.loading = false;

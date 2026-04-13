@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { useVisitorService, type Visitor, type VisitorStats, type VisitorListParams } from '../composables/visitorService'
 
+export type { Visitor, VisitorStats, VisitorListParams }
+
 export const useVisitorStore = defineStore('visitor', {
     state: () => ({
         visitors: [] as Visitor[],
@@ -110,24 +112,37 @@ export const useVisitorStore = defineStore('visitor', {
         },
 
         async updateStatus(id: string, status: string) {
-            this.loading = true
-            try {
-                const { updateVisitorStatus } = useVisitorService()
-                const updated = await updateVisitorStatus(id, status)
-                const index = this.visitors.findIndex(v => v.id === id)
-                if (index !== -1) {
-                    this.visitors[index] = updated
+            const { updateVisitorStatus } = useVisitorService()
+            const updated = await updateVisitorStatus(id, status)
+            const index = this.visitors.findIndex(v => v.id === id)
+            
+            if (index !== -1) {
+                if (updated) {
+                    const cleanedUpdate = Object.fromEntries(
+                        Object.entries(updated).filter(([_, v]) => v !== null && v !== '')
+                    )
+                    this.visitors[index] = { ...this.visitors[index]!, ...cleanedUpdate, status: status as any }
+                } else {
+                    this.visitors[index]!.status = status as any
                 }
-                if (this.currentVisitor?.id === id) {
-                    this.currentVisitor = updated
+                if (status === 'Checked Out') {
+                    this.visitors[index]!.check_out_time = new Date().toISOString()
                 }
-                await this.fetchStats()
-            } catch (err: any) {
-                this.error = err.message || 'Failed to update status'
-                throw err
-            } finally {
-                this.loading = false
             }
+            if (this.currentVisitor && this.currentVisitor.id === id) {
+                if (updated) {
+                    const cleanedUpdate = Object.fromEntries(
+                        Object.entries(updated).filter(([_, v]) => v !== null && v !== '')
+                    )
+                    this.currentVisitor = { ...this.currentVisitor, ...cleanedUpdate, status: status as any }
+                } else {
+                    this.currentVisitor.status = status as any
+                }
+                if (status === 'Checked Out') {
+                    this.currentVisitor.check_out_time = new Date().toISOString()
+                }
+            }
+            await this.fetchStats()
         },
 
         async registerWalkIn(data: Partial<Visitor>) {

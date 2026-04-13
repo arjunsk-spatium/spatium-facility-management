@@ -38,9 +38,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { DownloadOutlined } from '@ant-design/icons-vue';
 import { useMeetingRoomStore } from '../../../stores/meetingRoom';
+import { useAuthStore } from '../../../stores/auth';
 import { storeToRefs } from 'pinia';
 import type { Dayjs } from 'dayjs';
 
@@ -55,7 +56,15 @@ definePageMeta({
 });
 
 const store = useMeetingRoomStore();
+const authStore = useAuthStore();
 const { stats } = storeToRefs(store);
+
+const canView = computed(() => authStore.hasPermission('meeting-rooms-insights:view') || authStore.hasPermission('meeting-rooms-list:view'))
+
+if (!canView.value) {
+    navigateTo('/meeting-rooms');
+}
+
 const dateRange = ref<[Dayjs, Dayjs]>();
 
 onMounted(() => {

@@ -9,9 +9,14 @@
             </div>
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold dark:text-white">{{ facility?.name }}</h1>
-                <a-button v-if="facility" type="primary" @click="navigateTo(`/facilities/${facilityId}/edit`)">
-                    <EditOutlined /> Edit Facility
-                </a-button>
+                <div v-if="facility" class="flex gap-2">
+                    <a-button @click="handleGenerateQRCode" :loading="generatingQR">
+                        <QrcodeOutlined /> QR Code
+                    </a-button>
+                    <a-button v-if="canUpdate" type="primary" @click="navigateTo(`/facilities/${facilityId}/edit`)">
+                        <EditOutlined /> Edit Facility
+                    </a-button>
+                </div>
             </div>
         </div>
 
@@ -167,16 +172,21 @@
                                     </a-tag>
                                 </template>
                                 <template v-else-if="column.key === 'actions'">
-                                    <a-popconfirm
-                                        title="Are you sure you want to delete this staff?"
-                                        ok-text="Yes"
-                                        cancel-text="No"
-                                        @confirm="handleDeleteStaff(record.id)"
-                                    >
-                                        <a-button type="text" danger size="small">
-                                            <DeleteOutlined />
+                                    <a-space>
+                                        <a-button type="text" size="small" @click="openEditStaffModal(record)">
+                                            <EditOutlined />
                                         </a-button>
-                                    </a-popconfirm>
+                                        <a-popconfirm
+                                            title="Are you sure you want to delete this staff?"
+                                            ok-text="Yes"
+                                            cancel-text="No"
+                                            @confirm="handleDeleteStaff(record.id)"
+                                        >
+                                            <a-button type="text" danger size="small">
+                                                <DeleteOutlined />
+                                            </a-button>
+                                        </a-popconfirm>
+                                    </a-space>
                                 </template>
                             </template>
                         </a-table>
@@ -203,12 +213,12 @@
             @refresh="fetchFacilityDetails" 
         />
 
-        <!-- Add Staff Modal -->
+        <!-- Add/Edit Staff Modal -->
         <a-modal
             v-model:open="isAddStaffModalOpen"
-            title="Add Staff"
+            :title="editingStaffId ? 'Edit Staff' : 'Add Staff'"
             :confirm-loading="submittingStaff"
-            @ok="handleAddStaff"
+            @ok="editingStaffId ? handleEditStaff() : handleAddStaff()"
             @cancel="isAddStaffModalOpen = false"
         >
             <a-form layout="vertical" class="mt-4">
@@ -221,12 +231,18 @@
                 <a-form-item label="Phone Number">
                     <a-input v-model:value="staffForm.phone_number" placeholder="Enter phone number" />
                 </a-form-item>
-                <a-form-item label="Username" required>
-                    <a-input v-model:value="staffForm.username" placeholder="Enter username" />
+                <a-form-item label="Role">
+                    <a-select v-model:value="staffForm.role_id" placeholder="Select role"
+                        :options="roleOptions" :loading="rolesLoading" allow-clear />
                 </a-form-item>
-                <a-form-item label="Password" required>
-                    <a-input-password v-model:value="staffForm.password" placeholder="Enter password" />
-                </a-form-item>
+                <template v-if="!editingStaffId">
+                    <a-form-item label="Username" required>
+                        <a-input v-model:value="staffForm.username" placeholder="Enter username" />
+                    </a-form-item>
+                    <a-form-item label="Password" required>
+                        <a-input-password v-model:value="staffForm.password" placeholder="Enter password" />
+                    </a-form-item>
+                </template>
             </a-form>
         </a-modal>
     </div>
@@ -236,11 +252,12 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useFacilityStore } from '../../../../stores/facility';
+import { useAuthStore } from '../../../../stores/auth';
 import { useHelpdeskService } from '../../../../composables/helpdeskService';
 import type { Tower } from '../../../../composables/facilityService';
 import AppLoader from '../../../../components/AppLoader.vue';
 import FacilitiesTowerStructureManager from '../../../../components/facilities/TowerStructureManager.vue';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { PlusOutlined, EditOutlined, DeleteOutlined, QrcodeOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import dayjs from 'dayjs';
 
@@ -250,7 +267,17 @@ definePageMeta({
 
 const route = useRoute();
 const facilityId = route.params.id as string;
+
 const facilityStore = useFacilityStore();
+const authStore = useAuthStore();
+
+const canView = computed(() => authStore.hasPermission('facilities-list:view'))
+const canUpdate = computed(() => authStore.hasPermission('facilities-list:update'))
+const canDelete = computed(() => authStore.hasPermission('facilities-list:delete'))
+
+if (!canView.value) {
+    navigateTo('/facilities');
+}
 
 const loading = ref(true);
 const towers = ref<Tower[]>([]);
@@ -273,6 +300,20 @@ const openTowerDrawer = (tower: Tower) => {
 
 
 const facility = computed(() => facilityStore.currentFacility);
+
+const generatingQR = ref(false);
+const handleGenerateQRCode = async () => {
+    if (!facility.value) return;
+    generatingQR.value = true;
+    try {
+        await facilityStore.generateFacilityQRCode(facility.value.id, facility.value.name);
+        message.success('QR Code generated successfully');
+    } catch (error) {
+        message.error('Failed to generate QR Code');
+    } finally {
+        generatingQR.value = false;
+    }
+};
 
 const totalFloorCount = computed(() => {
     return towers.value.reduce((acc, tower) => acc + (tower.floor_count || 0), 0);
@@ -359,15 +400,42 @@ const staffForm = ref({
     email: '',
     phone_number: '',
     username: '',
-    password: ''
+    password: '',
+    role_id: undefined as string | undefined
 });
+const editingStaffId = ref<string | null>(null);
+
+// Roles
+const roles = ref<any[]>([]);
+const rolesLoading = ref(false);
+const roleOptions = computed(() =>
+    roles.value.map(r => ({ label: r.name, value: r.id }))
+);
+
+const fetchRoles = async () => {
+    rolesLoading.value = true;
+    try {
+        const { $api } = useNuxtApp();
+        const response = await $api<any>('/api/portal/helpdesk/roles/');
+        const data = response?.data?.data || response?.data;
+        if (data?.results) {
+            roles.value = data.results;
+        } else if (Array.isArray(data)) {
+            roles.value = data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch roles:', error);
+    } finally {
+        rolesLoading.value = false;
+    }
+};
 
 const staffColumns = [
     { title: 'Name', dataIndex: 'full_name', key: 'full_name' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Phone', dataIndex: 'phone_number', key: 'phone_number' },
     { title: 'Status', dataIndex: 'status', key: 'status' },
-    { title: 'Actions', key: 'actions', width: 80 }
+    { title: 'Actions', key: 'actions', width: 120 }
 ];
 
 const fetchStaff = async () => {
@@ -383,12 +451,27 @@ const fetchStaff = async () => {
 };
 
 const openAddStaffModal = () => {
+    editingStaffId.value = null;
     staffForm.value = {
         full_name: '',
         email: '',
         phone_number: '',
         username: '',
-        password: ''
+        password: '',
+        role_id: undefined
+    };
+    isAddStaffModalOpen.value = true;
+};
+
+const openEditStaffModal = (record: any) => {
+    editingStaffId.value = record.id;
+    staffForm.value = {
+        full_name: record.full_name || '',
+        email: record.email || '',
+        phone_number: record.phone_number || '',
+        username: '',
+        password: '',
+        role_id: record.role_id || undefined
     };
     isAddStaffModalOpen.value = true;
 };
@@ -404,7 +487,8 @@ const handleAddStaff = async () => {
         const service = useHelpdeskService();
         await service.createStaff({
             ...staffForm.value,
-            facility_id: facilityId
+            facility_id: facilityId,
+            ...(staffForm.value.role_id && { role_id: staffForm.value.role_id })
         });
         message.success('Staff added successfully');
         isAddStaffModalOpen.value = false;
@@ -412,6 +496,35 @@ const handleAddStaff = async () => {
     } catch (e) {
         console.error('Failed to add staff', e);
         message.error('Failed to add staff');
+    } finally {
+        submittingStaff.value = false;
+    }
+};
+
+const handleEditStaff = async () => {
+    if (!staffForm.value.full_name || !staffForm.value.email) {
+        message.error('Please fill in required fields');
+        return;
+    }
+
+    submittingStaff.value = true;
+    try {
+        const { $api } = useNuxtApp();
+        await $api<any>(`/api/portal/users/opstrack/${editingStaffId.value}/update/`, {
+            method: 'PATCH',
+            body: {
+                full_name: staffForm.value.full_name,
+                email: staffForm.value.email,
+                phone_number: staffForm.value.phone_number,
+                ...(staffForm.value.role_id && { role_id: staffForm.value.role_id })
+            }
+        });
+        message.success('Staff updated successfully');
+        isAddStaffModalOpen.value = false;
+        await fetchStaff();
+    } catch (e) {
+        console.error('Failed to update staff', e);
+        message.error('Failed to update staff');
     } finally {
         submittingStaff.value = false;
     }
@@ -434,6 +547,7 @@ const activeTab = ref('structure');
 watch(activeTab, (newTab) => {
     if (newTab === 'staff') {
         fetchStaff();
+        if (roles.value.length === 0) fetchRoles();
     }
 });
 

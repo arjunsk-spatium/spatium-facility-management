@@ -9,6 +9,7 @@
             <a-tab-pane key="roomTypes" tab="Room Types">
                 <div class="py-4">
                     <ConfigTable title="Room Types" :columns="roomTypeColumns" :data="roomTypes" :loading="loading"
+                        :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete"
                         @add="handleAddRoomType" @edit="handleEditRoomType" @delete="handleDeleteRoomType" />
                 </div>
             </a-tab-pane>
@@ -16,14 +17,16 @@
             <a-tab-pane key="pax" tab="PAX (Capacity)">
                 <div class="py-4">
                     <ConfigTable title="PAX Values" :columns="paxColumns" :data="paxValues" :loading="loading"
-                        :fields="paxFields" @add="handleAddPax" @edit="handleEditPax" @delete="handleDeletePax" />
+                        :fields="paxFields" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete"
+                        @add="handleAddPax" @edit="handleEditPax" @delete="handleDeletePax" />
                 </div>
             </a-tab-pane>
 
             <a-tab-pane key="amenities" tab="Amenities">
                 <div class="py-4">
                     <ConfigTable title="Amenities" :columns="amenityColumns" :data="amenities" :loading="loading"
-                        :fields="amenityFields" @add="handleAddAmenity" @edit="handleEditAmenity" @delete="handleDeleteAmenity" />
+                        :fields="amenityFields" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete"
+                        @add="handleAddAmenity" @edit="handleEditAmenity" @delete="handleDeleteAmenity" />
                 </div>
             </a-tab-pane>
         </a-tabs>
@@ -35,6 +38,12 @@ import { ref, onMounted } from 'vue'
 import { useNuxtApp } from '#app'
 import { message } from 'ant-design-vue'
 import ConfigTable from './ConfigTable.vue'
+
+defineProps<{
+    canCreate?: boolean
+    canUpdate?: boolean
+    canDelete?: boolean
+}>()
 
 const { $api } = useNuxtApp()
 

@@ -481,6 +481,28 @@ export const useHelpdeskService = () => {
             };
         },
 
+        getPriorityTickets: async (page = 1, pageSize = 20, facilityId?: string): Promise<Ticket[]> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<PaginatedResponse<Ticket>>>
+                >("/api/portal/helpdesk/tickets/priority-tickets/", {
+                    method: "GET",
+                    query: { page, page_size: pageSize, facility_id: facilityId },
+                });
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to fetch priority tickets",
+                    );
+                }
+                return response.data.data.results;
+            } catch (error) {
+                console.error("Error fetching priority tickets:", error);
+                throw error;
+            }
+        },
+
         getTicketsByStatusData: async () => {
             const tickets = await this.getTickets();
             const statusCounts = tickets.reduce(
@@ -597,6 +619,52 @@ export const useHelpdeskService = () => {
                 return response.data.data;
             } catch (error) {
                 console.error("Error closing ticket:", error);
+                throw error;
+            }
+        },
+
+        reopenTicket: async (ticketId: string, assignee?: string, notes?: string): Promise<Ticket> => {
+            try {
+                const response = await $api<ApiResponse<ApiResponse<Ticket>>>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/reopen/`,
+                    { 
+                        method: "POST", 
+                        body: { 
+                            assignee: assignee || undefined,
+                            notes: notes || undefined 
+                        } 
+                    },
+                );
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to reopen ticket",
+                    );
+                }
+                return response.data.data;
+            } catch (error) {
+                console.error("Error reopening ticket:", error);
+                throw error;
+            }
+        },
+
+        forceCloseTicket: async (ticketId: string, notes?: string): Promise<Ticket> => {
+            try {
+                const response = await $api<ApiResponse<ApiResponse<Ticket>>>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/force-close/`,
+                    { method: "POST", body: notes ? { notes } : {} },
+                );
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to force close ticket",
+                    );
+                }
+                return response.data.data;
+            } catch (error) {
+                console.error("Error force closing ticket:", error);
                 throw error;
             }
         },

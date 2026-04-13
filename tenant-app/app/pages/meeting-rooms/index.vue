@@ -1,24 +1,28 @@
 <template>
     <div class="space-y-6">
+        <div v-if="!canView" class="text-center py-12">
+            <p class="text-gray-500">You don't have permission to view meeting rooms.</p>
+        </div>
+        <template v-else>
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Meeting Rooms</h1>
                 <p class="text-gray-600 dark:text-gray-400">Manage meeting spaces and configurations.</p>
             </div>
             <div class="flex items-center gap-3">
-                <a-button @click="navigateTo('/meeting-rooms/bookings')">
+                <a-button v-if="canViewBookings" @click="navigateTo('/meeting-rooms/bookings')">
                     <template #icon>
                         <CalendarOutlined />
                     </template>
                     Bookings
                 </a-button>
-                <a-button @click="navigateTo('/meeting-rooms/insights')">
+                <a-button v-if="canViewInsights" @click="navigateTo('/meeting-rooms/insights')">
                     <template #icon>
                         <BarChartOutlined />
                     </template>
                     Insights
                 </a-button>
-                <a-button type="primary" @click="navigateTo('/meeting-rooms/create')">
+                <a-button v-if="canCreate" type="primary" @click="navigateTo('/meeting-rooms/create')">
                     <template #icon>
                         <PlusOutlined />
                     </template>
@@ -83,7 +87,7 @@
                 </template>
 
                 <template v-if="column.key === 'actions'">
-                    <a-tooltip title="Edit Configuration">
+                    <a-tooltip v-if="canUpdate" title="Edit Configuration">
                         <a-button type="text" shape="circle" @click="navigateTo(`/meeting-rooms/${record.id}`)">
                             <template #icon>
                                 <SettingOutlined />
@@ -141,6 +145,7 @@
             </template>
         </ResponsiveDataView>
 
+        </template>
     </div>
 </template>
 
@@ -148,6 +153,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useMeetingRoomStore } from '../../../stores/meetingRoom';
 import { useFacilityStore } from '../../../stores/facility';
+import { useAuthStore } from '../../../stores/auth';
 import { storeToRefs } from 'pinia';
 import {
     PlusOutlined,
@@ -167,8 +173,16 @@ definePageMeta({
 // Stores
 const roomStore = useMeetingRoomStore();
 const facilityStore = useFacilityStore();
+const authStore = useAuthStore();
 const { rooms, loading } = storeToRefs(roomStore);
 const { facilities } = storeToRefs(facilityStore);
+
+const canView = computed(() => authStore.hasPermission('meeting-rooms-list:view'))
+const canCreate = computed(() => authStore.hasPermission('meeting-rooms-list:create'))
+const canUpdate = computed(() => authStore.hasPermission('meeting-rooms-list:update'))
+const canDelete = computed(() => authStore.hasPermission('meeting-rooms-list:delete'))
+const canViewInsights = computed(() => authStore.hasPermission('meeting-rooms-insights:view'))
+const canViewBookings = computed(() => authStore.hasPermission('meeting-rooms-bookings:view'))
 
 // State
 const searchText = ref('');

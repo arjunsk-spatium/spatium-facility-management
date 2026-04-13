@@ -13,6 +13,9 @@
                         :columns="categoryColumns" 
                         :data="categories" 
                         :loading="loading"
+                        :canCreate="canCreate"
+                        :canUpdate="canUpdate"
+                        :canDelete="canDelete"
                         @add="handleAddCategory" 
                         @edit="handleEditCategory" 
                         @delete="handleDeleteCategory" 
@@ -36,6 +39,9 @@
                         :parent-options="categoryOptions" 
                         parent-label="Category"
                         :fields="subcategoryFields"
+                        :canCreate="canCreate"
+                        :canUpdate="canUpdate"
+                        :canDelete="canDelete"
                         @add="handleAddSubcategory" 
                         @edit="handleEditSubcategory" 
                         @delete="handleDeleteSubcategory" 
@@ -51,6 +57,12 @@ import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { useHelpdeskService, type HelpdeskCategory, type HelpdeskSubCategory } from '../../composables/helpdeskService'
 import ConfigTable from './ConfigTable.vue'
+
+defineProps<{
+    canCreate?: boolean
+    canUpdate?: boolean
+    canDelete?: boolean
+}>()
 
 const activeSubTab = ref('category')
 const loading = ref(false)

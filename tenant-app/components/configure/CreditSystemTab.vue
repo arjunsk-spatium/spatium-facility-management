@@ -16,12 +16,15 @@
                     <h3 class="text-base font-medium">Enable Credit System</h3>
                     <p class="text-gray-500 text-sm">Allow tenants to use credit for payments</p>
                 </div>
-                <a-switch :checked="creditSystemEnabled" @change="handleSystemToggle" :loading="saving" />
+                <a-switch v-if="canUpdate" :checked="creditSystemEnabled" @change="handleSystemToggle" :loading="saving" />
+                <span v-else class="text-sm font-medium" :class="creditSystemEnabled ? 'text-green-600' : 'text-gray-500'">
+                    {{ creditSystemEnabled ? 'Enabled' : 'Disabled' }}
+                </span>
             </div>
         </a-card>
 
         <!-- Module Configuration -->
-        <a-card :loading="loadingModules" title="Module Configuration" v-if="creditSystemEnabled">
+        <a-card :loading="loadingModules" title="Module Configuration" v-if="creditSystemEnabled && canUpdate">
             <p class="mb-4 text-gray-500">Configure payment modes for individual modules.</p>
             
             <a-table :dataSource="modules" :columns="moduleColumns" :pagination="false" rowKey="id">
@@ -50,6 +53,12 @@ import { ref, onMounted } from 'vue'
 import { useNuxtApp } from '#app'
 import { message } from 'ant-design-vue'
 import { useTenantService, type TenantConfig } from '../../composables/tenantService'
+
+defineProps<{
+    canCreate?: boolean
+    canUpdate?: boolean
+    canDelete?: boolean
+}>()
 
 const { $api } = useNuxtApp()
 const { getCurrentTenantId, updateTenantConfig, getTenantConfig, updateModuleConfig } = useTenantService()

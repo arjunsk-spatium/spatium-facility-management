@@ -29,7 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useAuthStore } from '../../../stores/auth';
 import OccupancyWidget from '../../../components/facilities/widgets/OccupancyWidget.vue';
 import MaintenanceWidget from '../../../components/facilities/widgets/MaintenanceWidget.vue';
 import EnergyWidget from '../../../components/facilities/widgets/EnergyWidget.vue';
@@ -38,6 +39,13 @@ import { Dayjs } from 'dayjs';
 definePageMeta({
     middleware: 'auth'
 });
+
+const authStore = useAuthStore();
+const canView = computed(() => authStore.hasPermission('facilities-insights:view') || authStore.hasPermission('facilities-list:view'))
+
+if (!canView.value) {
+    navigateTo('/facilities');
+}
 
 const dateRange = ref<[Dayjs, Dayjs]>();
 </script>

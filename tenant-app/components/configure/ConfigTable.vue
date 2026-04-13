@@ -1,15 +1,15 @@
 <template>
     <div class="space-y-4">
-        <!-- Header with Add Button -->
-        <div class="flex justify-between items-center">
-            <h3 class="text-lg font-medium dark:text-white">{{ title }}</h3>
-            <a-button type="primary" @click="openAddModal">
-                <template #icon>
-                    <PlusOutlined />
-                </template>
-                Add
-            </a-button>
-        </div>
+    <!-- Header with Add Button -->
+    <div class="flex justify-between items-center">
+        <h3 class="text-lg font-medium dark:text-white">{{ title }}</h3>
+        <a-button v-if="canCreate" type="primary" @click="openAddModal">
+            <template #icon>
+                <PlusOutlined />
+            </template>
+            Add
+        </a-button>
+    </div>
 
         <!-- Responsive Data Table -->
         <div class="overflow-x-auto">
@@ -18,10 +18,10 @@
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'action'">
                         <a-space>
-                            <a-button type="link" size="small" @click="openEditModal(record)">
+                            <a-button v-if="canUpdate" type="link" size="small" @click="openEditModal(record)">
                                 <EditOutlined />
                             </a-button>
-                            <a-popconfirm title="Are you sure you want to delete this item?" ok-text="Yes" cancel-text="No"
+                            <a-popconfirm v-if="canDelete" title="Are you sure you want to delete this item?" ok-text="Yes" cancel-text="No"
                                 @confirm="handleDelete(record)">
                                 <a-button type="link" size="small" danger>
                                     <DeleteOutlined />
@@ -52,10 +52,10 @@
                         </div>
                         <!-- Actions -->
                         <div class="flex gap-2">
-                            <a-button type="text" size="small" @click="openEditModal(record)">
+                            <a-button v-if="canUpdate" type="text" size="small" @click="openEditModal(record)">
                                 <EditOutlined />
                             </a-button>
-                            <a-popconfirm title="Delete this item?" ok-text="Yes" cancel-text="No"
+                            <a-popconfirm v-if="canDelete" title="Delete this item?" ok-text="Yes" cancel-text="No"
                                 @confirm="handleDelete(record)">
                                 <a-button type="text" size="small" danger>
                                     <DeleteOutlined />
@@ -140,6 +140,9 @@ const props = defineProps<{
     parentOptions?: ParentOption[]
     parentLabel?: string
     fields?: Field[]
+    canCreate?: boolean
+    canUpdate?: boolean
+    canDelete?: boolean
 }>()
 
 const emit = defineEmits<{

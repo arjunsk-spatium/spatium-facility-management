@@ -36,10 +36,6 @@ import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { DownloadOutlined } from '@ant-design/icons-vue'
 
-import VisitorStatsWidget from '../../components/visitors/widgets/VisitorStatsWidget.vue'
-import VisitorChartWidget from '../../components/visitors/widgets/VisitorChartWidget.vue'
-import VisitorPurposeWidget from '../../components/visitors/widgets/VisitorPurposeWidget.vue'
-
 definePageMeta({
     middleware: 'auth'
 })

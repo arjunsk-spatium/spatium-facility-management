@@ -1,12 +1,16 @@
 <template>
     <div class="space-y-6">
+        <div v-if="!canView" class="text-center py-12">
+            <p class="text-gray-500">You don't have permission to view facilities.</p>
+        </div>
+        <template v-else>
         <!-- Header -->
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-2xl font-bold dark:text-white">Facilities</h1>
                 <p class="text-gray-500 dark:text-gray-400">Manage building and facility structures.</p>
             </div>
-            <a-button type="primary" @click="navigateTo('/facilities/create')">
+            <a-button v-if="canCreate" type="primary" @click="navigateTo('/facilities/create')">
                 <template #icon>
                     <PlusOutlined />
                 </template>
@@ -24,7 +28,7 @@
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No Facilities Found</h3>
             <p class="text-gray-500 max-w-sm text-center mb-6">Get started by creating your first facility structure.
             </p>
-            <a-button type="primary" @click="navigateTo('/facilities/create')">Create Facility</a-button>
+            <a-button v-if="canCreate" type="primary" @click="navigateTo('/facilities/create')">Create Facility</a-button>
         </div>
 
         <!-- Grid Layout -->
@@ -34,7 +38,7 @@
                 <template #cover>
                     <div class="h-32 bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center overflow-hidden">
                         <img :src="facility.image_url || buildingDrawing" :alt="facility.name"
-                            class="h-full w-full object-cover opacity-90 hover:scale-105 transition-transform duration-500" />
+                            class="h-full w-full object-cover opacity-90 scale-130 hover:scale-135 transition-transform duration-500" />
                     </div>
                 </template>
 
@@ -43,7 +47,7 @@
                         <div class="space-y-2 mt-2">
                             <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
                                 <EnvironmentOutlined class="mr-1.5" />
-                                {{ facility.city_details?.name || facility.location?.city || 'N/A' }}, 
+                                {{ facility.city_details?.name || facility.location?.city || 'N/A' }},
                                 {{ facility.country_details?.name || facility.location?.country || 'N/A' }}
                             </div>
 
@@ -73,40 +77,54 @@
                 </a-card-meta>
 
                 <template #actions>
-                    <div class="flex justify-center w-full" @click.stop="navigateTo(`/facilities/${facility.id}/edit`)">
+                    <div v-if="canUpdate" class="flex justify-center w-full" @click.stop="navigateTo(`/facilities/${facility.id}/edit`)">
                         <EditOutlined class="mr-2" /> Edit
                     </div>
                     <div class="flex justify-center w-full" @click.stop="navigateTo(`/facilities/${facility.id}`)">
                         <EyeOutlined class="mr-2" /> View
                     </div>
+                    <div class="flex justify-center w-full" @click.stop="handleGenerateQRCode(facility)">
+                        <QrcodeOutlined class="mr-2" /> QR Code
+                    </div>
+                    <a-popconfirm
+                        v-if="canDelete"
+                        title="Are you sure you want to delete this facility?"
+                        ok-text="Yes"
+                        cancel-text="No"
+                        @confirm="handleDeleteFacility(facility.id)"
+                    >
+                        <div class="flex justify-center w-full text-red-500" @click.stop>
+                            <DeleteOutlined class="mr-2" /> Delete
+                        </div>
+                    </a-popconfirm>
                 </template>
             </a-card>
         </div>
 
         <!-- Pagination -->
         <div v-if="facilityStore.totalFacilities > 0" class="flex justify-center mt-6">
-            <a-pagination
-                :current="facilityStore.page"
-                :total="facilityStore.count"
-                :page-size="facilityStore.pageSize"
-                :show-size-changer="false"
-                @change="handlePageChange"
-            />
+            <a-pagination :current="facilityStore.page" :total="facilityStore.count" :page-size="facilityStore.pageSize"
+                :show-size-changer="false" @change="handlePageChange" />
         </div>
+        </template>
     </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, computed } from 'vue';
 import { useFacilityStore } from '../../../stores/facility';
+import { useAuthStore } from '../../../stores/auth';
 import AppLoader from '../../../components/AppLoader.vue';
 import {
     PlusOutlined,
     HomeOutlined,
     EnvironmentOutlined,
     EditOutlined,
-    EyeOutlined
+    EyeOutlined,
+    QrcodeOutlined,
+    DeleteOutlined
 } from '@ant-design/icons-vue';
+import { message } from 'ant-design-vue';
 import buildingDrawing from '../../../assets/images/building-drawing.png';
 
 definePageMeta({
@@ -114,9 +132,33 @@ definePageMeta({
 });
 
 const facilityStore = useFacilityStore();
+const authStore = useAuthStore();
+
+const canView = computed(() => authStore.hasPermission('facilities-list:view'))
+const canCreate = computed(() => authStore.hasPermission('facilities-list:create'))
+const canUpdate = computed(() => authStore.hasPermission('facilities-list:update'))
+const canDelete = computed(() => authStore.hasPermission('facilities-list:delete'))
 
 const handlePageChange = (page: number) => {
     facilityStore.goToPage(page);
+};
+
+const handleGenerateQRCode = async (facility: any) => {
+    try {
+        await facilityStore.generateFacilityQRCode(facility.id, facility.name);
+        message.success('QR Code generated successfully');
+    } catch (error) {
+        message.error('Failed to generate QR Code');
+    }
+};
+
+const handleDeleteFacility = async (id: string) => {
+    try {
+        await facilityStore.deleteFacility(id);
+        message.success('Facility deleted successfully');
+    } catch (error) {
+        message.error('Failed to delete facility');
+    }
 };
 
 onMounted(() => {

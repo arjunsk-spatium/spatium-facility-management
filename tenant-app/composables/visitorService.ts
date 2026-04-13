@@ -149,19 +149,51 @@ export const useVisitorService = (): IVisitorService => {
         },
 
         updateVisitorStatus: async (id: string, status: string) => {
+            // For approve/reject actions, the backend expects a POST with an 'action' field.
+            // Map status strings to corresponding actions.
+            const actionMap: Record<string, string> = {
+                Approved: 'approve',
+                Rejected: 'reject',
+            };
+            const action = actionMap[status];
+            if (action) {
+                const response = await $api<ApiResponse<Visitor>>(
+                    `/api/portal/visitors/client/frontdesk/visitors/${id}/`,
+                    {
+                        method: 'POST',
+                        body: { action },
+                    },
+                );
+                if (!response.success) {
+                    throw new Error(response.message || 'Failed to update visitor status')
+                }
+                
+                return response.data;
+            }
+            // Fallback to PATCH for other status updates
+            if (status === 'Checked Out') {
+                const response = await $api<ApiResponse<any>>(
+                    `/api/portal/visitors/client/visitors/${id}/checkout/`,
+                    { method: 'POST' },
+                );
+                if (!response.success) {
+                    throw new Error(response.message || 'Failed to check out visitor')
+                }
+                
+                return response.data;
+            }
+            
             const response = await $api<ApiResponse<Visitor>>(
                 `/api/portal/visitors/client/visitors/${id}/`,
                 {
                     method: 'PATCH',
                     body: { status },
                 },
-            )
-
+            );
             if (!response.success) {
                 throw new Error(response.message || 'Failed to update visitor status')
             }
-
-            return response.data
+            return response.data;
         },
 
         verifyOtp: async (phone: string, otp: string): Promise<boolean> => {

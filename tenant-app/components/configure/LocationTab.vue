@@ -2,7 +2,7 @@
     <div class="space-y-6">
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <h2 class="text-xl font-semibold dark:text-white">Zone Settings</h2>
-            <a-button type="primary" @click="showAddModal = true">
+            <a-button v-if="canCreate" type="primary" @click="showAddModal = true">
                 <template #icon><PlusOutlined /></template>
                 Add Zone
             </a-button>
@@ -148,6 +148,12 @@ import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
 import { useLocationService, type Country, type State, type City, type Zone } from '../../composables/locationService'
+
+defineProps<{
+    canCreate?: boolean
+    canUpdate?: boolean
+    canDelete?: boolean
+}>()
 
 const locationService = useLocationService()
 
