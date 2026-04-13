@@ -604,22 +604,19 @@ const fetchEmployees = async () => {
     const companyId = route.params.id as string
     employeesLoading.value = true
     try {
-        const result = await $api<any>(`/api/portal/users/client_portal/list/?company_id=${companyId}`)
+        const result = await $api<any>(`/api/portal/users/org_portal/list/?app_name=hub&company_id=${companyId}`)
         let users: any[] = []
         if (result.success && Array.isArray(result.data)) {
             users = result.data
         } else if (result.success && result.data?.results) {
             users = result.data.results
         }
-        // Filter users who don't have client_portal (only hub) - these are employees
-        employees.value = users
-            .filter((u: any) => !u.apps || !u.apps.includes('client_portal'))
-            .map((u: any) => ({
-                id: u.id,
-                full_name: u.full_name || u.email?.split('@')[0] || 'Unknown',
-                email: u.email,
-                phone_number: u.phone_number
-            }))
+        employees.value = users.map((u: any) => ({
+            id: u.id,
+            full_name: u.full_name || u.email?.split('@')[0] || 'Unknown',
+            email: u.email,
+            phone_number: u.phone_number
+        }))
     } catch (err) {
         console.error('Failed to fetch employees:', err)
     } finally {
