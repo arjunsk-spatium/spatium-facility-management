@@ -11,12 +11,18 @@ export default defineEventHandler(async (event) => {
     // Inject X-TENANT-ID from cookie if the header is missing or empty
     const extraHeaders: Record<string, string> = {};
     const existingTenantId = getRequestHeader(event, "x-tenant-id");
-    if (!existingTenantId) {
+    let tenantId = existingTenantId;
+    
+    if (!tenantId) {
         const cookieHeader = getRequestHeader(event, "cookie") || "";
         const match = cookieHeader.match(/(?:^|;\s*)tenant_id=([^;]+)/);
         if (match?.[1]) {
-            extraHeaders["x-tenant-id"] = match[1];
+            tenantId = match[1];
         }
+    }
+    
+    if (tenantId) {
+        extraHeaders["x-tenant-id"] = tenantId;
     }
 
     const backendUrl = process.env.BACKEND_URL || "https://api.nexspace.app";
