@@ -628,7 +628,7 @@ const fetchSpocs = async () => {
     const companyId = route.params.id as string
     spocsLoading.value = true
     try {
-        const result = await $api<any>(`/api/portal/users/client_portal/list/?company_id=${companyId}`)
+        const result = await $api<any>(`/api/portal/users/org_portal/list/?app_name=client_portal&company_id=${companyId}`)
         let users: any[] = []
         if (result.success && Array.isArray(result.data)) {
             users = result.data
@@ -637,7 +637,7 @@ const fetchSpocs = async () => {
         }
         // Filter only users who have client_portal in their apps array
         spocs.value = users
-            .filter((u: any) => u.apps && u.apps.includes('client_portal'))
+            .filter((u: any) => u.apps && u.apps.some((app: string) => app.toLowerCase() === 'client portal'))
             .map((u: any) => ({
                 id: u.id,
                 name: u.full_name || u.email?.split('@')[0] || 'Unknown',

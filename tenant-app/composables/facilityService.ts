@@ -209,7 +209,10 @@ export interface IFacilityService {
     deleteFacility(id: string): Promise<void>;
     getTowers(facilityId?: string): Promise<Tower[]>;
     createTower(payload: CreateTowerPayload): Promise<Tower>;
-    updateTower(id: string, payload: Partial<CreateTowerPayload>): Promise<Tower>;
+    updateTower(
+        id: string,
+        payload: Partial<CreateTowerPayload>,
+    ): Promise<Tower>;
     deleteTower(id: string): Promise<void>;
     getFloors(towerId: string): Promise<Floor[]>;
     createFloor(payload: CreateFloorPayload): Promise<Floor>;
@@ -219,7 +222,10 @@ export interface IFacilityService {
     createWing(payload: CreateWingPayload): Promise<Wing>;
     updateWing(id: string, payload: UpdateWingPayload): Promise<Wing>;
     deleteWing(id: string): Promise<void>;
-    generateFacilityQRCode(facilityId: string, facilityName: string): Promise<void>;
+    generateFacilityQRCode(
+        facilityId: string,
+        facilityName: string,
+    ): Promise<void>;
 }
 
 export const useFacilityService = (): IFacilityService => {
@@ -382,7 +388,10 @@ export const useFacilityService = (): IFacilityService => {
             return response.data;
         },
 
-        updateTower: async (id: string, payload: Partial<CreateTowerPayload>) => {
+        updateTower: async (
+            id: string,
+            payload: Partial<CreateTowerPayload>,
+        ) => {
             const response = await $api<ApiResponse<Tower>>(
                 `/api/portal/facilities-towers/${id}/`,
                 {
@@ -532,22 +541,29 @@ export const useFacilityService = (): IFacilityService => {
             }
         },
 
-        generateFacilityQRCode: async (facilityId: string, facilityName: string) => {
+        generateFacilityQRCode: async (
+            facilityId: string,
+            facilityName: string,
+            tenantId: string,
+        ) => {
             const domain = window.location.origin;
-            const fullUrl = `${domain}/public/visitor?facility=${facilityId}`;
-            
-            const response = await $api<Blob>('/api/portal/visitors/client/qr-code/pdf/', {
-                method: 'POST',
-                body: {
-                    full_url: fullUrl,
-                    facility_name: facilityName
+            const fullUrl = `${domain}/public/visitor/register?facility_id=${facilityId}`;
+
+            const response = await $api<Blob>(
+                "/api/portal/visitors/client/qr-code/pdf/",
+                {
+                    method: "POST",
+                    body: {
+                        full_url: fullUrl,
+                        facility_name: facilityName,
+                    },
+                    responseType: "blob",
                 },
-                responseType: 'blob'
-            });
-            
+            );
+
             // Trigger download
             const url = window.URL.createObjectURL(response);
-            const a = document.createElement('a');
+            const a = document.createElement("a");
             a.href = url;
             a.download = `${facilityName}-qrcode.zip`;
             document.body.appendChild(a);

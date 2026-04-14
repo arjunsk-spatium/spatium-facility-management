@@ -58,7 +58,7 @@
             </a-card>
 
             <!-- Content Area -->
-            <a-card class="flex-1" :bodyStyle="{ padding: '16px 24px' }">
+            <a-card class="flex-1 min-w-0" :bodyStyle="{ padding: '16px 24px' }">
                 <LocationTab v-if="activeTab === 'location'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
                 <HelpdeskTab v-if="activeTab === 'helpdesk'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
                 <RoomMetaTab v-if="activeTab === 'roomMeta'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
