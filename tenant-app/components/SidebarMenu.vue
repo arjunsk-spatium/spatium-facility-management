@@ -5,7 +5,7 @@
             :style="{ borderColor: isDark ? '#333333' : '#e5e5e5' }">
             <div class="flex items-center gap-3">
                 <!-- Tenant Logo -->
-                <img v-if="tenantStore.tenantLogo" :src="tenantStore.tenantLogo" :alt="tenantStore.tenantName"
+                <img v-if="currentLogo" :src="currentLogo" :alt="tenantStore.tenantName"
                     class="h-8 w-auto object-contain" />
 
                 <!-- Fallback Icon -->
@@ -17,7 +17,7 @@
                 </div>
 
                 <!-- Tenant Name -->
-                <div v-if="!collapsed" class="flex flex-col leading-none truncate max-w-[160px]">
+                <div v-if="!collapsed && !currentLogo" class="flex flex-col leading-none truncate max-w-[160px]">
                     <span class="text-lg font-bold text-neutral-900 dark:text-white truncate"
                         :title="tenantStore.tenantName">
                         {{ tenantStore.tenantName }}
@@ -137,6 +137,9 @@ const isDark = computed(() => {
 // Use modules from auth store to filter which modules user has access to
 const authStore = useAuthStore();
 const userModuleKeys = computed(() => authStore.modules);
+
+// Theme-aware logo
+const currentLogo = computed(() => isDark.value ? tenantStore.darkLogo : tenantStore.tenantLogo);
 
 // Filter modules based on user's access
 const filteredModules = computed(() => {

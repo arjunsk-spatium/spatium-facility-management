@@ -62,13 +62,13 @@
                                     class="p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
                                     <img :src="tenant.branding.logo" class="h-12 w-auto object-contain"
                                         alt="Light Logo" />
-                                    <p class="text-xs text-center text-gray-400 mt-2">Light Logo</p>
+                                    <p class="text-xs text-center text-gray-400 mt-9">Light Background Logo</p>
                                 </div>
                                 <div v-if="tenant.branding?.dark_logo"
                                     class="p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-gray-900">
                                     <img :src="tenant.branding.dark_logo" class="h-12 w-auto object-contain"
                                         alt="Dark Logo" />
-                                    <p class="text-xs text-center text-gray-500 mt-2">Dark Logo</p>
+                                    <p class="text-xs text-center text-gray-500 mt-9">Dark Background Logo</p>
                                 </div>
                                 <div v-if="tenant.branding?.favicon"
                                     class="p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 w-24 flex flex-col items-center">

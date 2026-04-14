@@ -54,7 +54,7 @@ const avatarStyle = computed(() => ({
     backgroundColor: tenantStore.primaryColor || '#3378ff',
     color: 'white'
 }));
-const displayUser = computed(() => authStore.user?.name || userEmail.value.split('@')[0]);
+const displayUser = computed(() => authStore.user?.name || authStore.user?.email || 'User');
 
 const userInitial = computed(() => {
     const name = authStore.user?.name || userEmail.value;

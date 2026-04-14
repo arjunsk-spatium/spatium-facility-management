@@ -34,9 +34,9 @@
                 <!-- Logo & Header -->
                 <div class="text-center">
                     <!-- Logo -->
-                    <div v-if="tenantStore.tenantLogo"
+                    <div v-if="currentLogo"
                         class="mx-auto mb-6 flex h-16 w-auto items-center justify-center">
-                        <img :src="tenantStore.tenantLogo" :alt="tenantStore.tenantName"
+                        <img :src="currentLogo" :alt="tenantStore.tenantName"
                             class="h-12 w-auto object-contain" />
                     </div>
                     <div v-else
@@ -48,7 +48,7 @@
                         </svg>
                     </div>
 
-                    <h2 class="mt-2 text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                    <h2 v-if="!currentLogo" class="mt-2 text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
                         {{ tenantStore.tenantName }}
                     </h2>
                     <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
@@ -73,7 +73,7 @@
                             </div>
 
                             <!-- Submit Button -->
-                            <div>
+                            <div class="mb-6">
                                 <button type="submit"
                                     class="btn btn-primary w-full shadow-lg shadow-primary-500/20 !text-white"
                                     :disabled="loading">
@@ -104,7 +104,7 @@
                             </div>
 
                             <!-- Submit Button -->
-                            <div>
+                            <div class="mb-6">
                                 <button type="submit"
                                     class="btn btn-primary w-full shadow-lg shadow-primary-500/20 !text-white"
                                     :disabled="loading">
@@ -121,7 +121,7 @@
                         {{ errorMsg }}
                     </div>
 
-                    <p class="mt-6 text-center text-xs text-neutral-500 dark:text-neutral-500">
+                    <p class="mt-12 text-center text-xs text-neutral-500 dark:text-neutral-500">
                         Having trouble signing in? Contact your Spatium administrator.
                     </p>
                 </div>
@@ -145,6 +145,7 @@ const loading = ref(false)
 const isImageLoading = ref(true)
 const tenantStore = useTenantStore()
 const authStore = useAuthStore()
+const { isDark } = useTheme()
 const config = useRuntimeConfig()
 const errorMsg = ref('')
 
@@ -175,6 +176,7 @@ const quotes: Quote[] = [
 
 const currentImage = ref('')
 const currentQuote = ref<Quote>({ text: '', author: '' })
+const currentLogo = computed(() => isDark.value ? tenantStore.darkLogo : tenantStore.tenantLogo);
 
 // Methods
 const onImageLoad = () => {
