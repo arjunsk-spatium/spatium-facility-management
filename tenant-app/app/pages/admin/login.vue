@@ -124,6 +124,12 @@
                     <p class="mt-12 text-center text-xs text-neutral-500 dark:text-neutral-500">
                         Having trouble signing in? Contact your administrator.
                     </p>
+                    <p class="mt-2 text-center text-xs text-neutral-500 dark:text-neutral-500">
+                        Are you a company user?
+                        <NuxtLink to="/login" class="text-primary-600 hover:text-primary-700 font-medium">
+                            Sign in here
+                        </NuxtLink>
+                    </p>
                 </div>
             </div>
         </div>
