@@ -628,7 +628,7 @@ const fetchSpocs = async () => {
     const companyId = route.params.id as string
     spocsLoading.value = true
     try {
-        const result = await $api<any>(`/api/portal/users/client_portal/list/?company_id=${companyId}`)
+        const result = await $api<any>(`/api/portal/users/org_portal/list/?app_name=client_portal&company_id=${companyId}`)
         let users: any[] = []
         if (result.success && Array.isArray(result.data)) {
             users = result.data
