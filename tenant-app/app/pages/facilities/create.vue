@@ -7,8 +7,8 @@
         <div class="flex justify-center">
         <a-card class="w-full sm:max-w-4xl" :bodyStyle="{ padding: '16px 24px' }">
             <a-steps :current="currentStep" class="mb-8">
-                <a-step title="Basic Info" description="Name & Address" />
-                <a-step title="Location" description="Country, State, City" />
+                <a-step title="Basic Info" description="Name & Image" />
+                <a-step title="Location" description="Address, Country, City" />
                 <a-step title="Review" description="Confirm Details" />
             </a-steps>
 
@@ -16,21 +16,15 @@
             <div v-show="currentStep === 0" class="max-w-3xl mx-auto space-y-8 py-8">
                 <a-form layout="vertical" :model="formData">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Left Column (Name & Postal Code) -->
+                        <!-- Left Column (Name & Image) -->
                         <div class="space-y-6">
                             <a-form-item label="Facility Name" required>
                                 <a-input v-model:value="formData.name" placeholder="e.g. Headquarters" size="large" />
                             </a-form-item>
-                            <a-form-item label="Postal Code">
-                                <a-input v-model:value="formData.postal_code" placeholder="Postal/ZIP Code" size="large" />
-                            </a-form-item>
                         </div>
 
-                        <!-- Right Column (Address & Image) -->
+                        <!-- Right Column (Image) -->
                         <div class="space-y-6">
-                            <a-form-item label="Address" required>
-                                <a-textarea v-model:value="formData.address" placeholder="Street Address" :rows="3" />
-                            </a-form-item>
                             <a-form-item label="Facility Image">
                                 <a-upload
                                     :before-upload="handleBeforeUpload"
@@ -69,6 +63,14 @@
             <div v-show="currentStep === 1" class="max-w-3xl mx-auto space-y-8 py-8">
                 <a-form layout="vertical" :model="formData">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Address & Postal Code -->
+                        <a-form-item label="Address" required class="md:col-span-2">
+                            <a-textarea v-model:value="formData.address" placeholder="Street Address" :rows="3" />
+                        </a-form-item>
+                        <a-form-item label="Postal Code">
+                            <a-input v-model:value="formData.postal_code" placeholder="Postal/ZIP Code" size="large" />
+                        </a-form-item>
+
                         <!-- Country Dropdown -->
                         <a-form-item label="Country" required>
                             <a-select
@@ -357,17 +359,15 @@ const handleCityChange = async (cityId: string) => {
 
 const handleNextStep = () => {
     if (currentStep.value === 0) {
-        // Validate step 1
         if (!formData.name) {
             message.error('Please enter a facility name');
             return;
         }
+    } else if (currentStep.value === 1) {
         if (!formData.address) {
             message.error('Please enter an address');
             return;
         }
-    } else if (currentStep.value === 1) {
-        // Validate step 2
         if (!formData.country) {
             message.error('Please select a country');
             return;
