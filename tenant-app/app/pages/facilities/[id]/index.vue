@@ -86,7 +86,21 @@
                                     <template #title>
                                         <div class="flex justify-between items-center">
                                             <span class="font-medium">{{ tower.name }}</span>
-                                            <EditOutlined class="text-blue-500" />
+                                            <a-space>
+                                                <a-button type="text" size="small" @click.stop="openEditTowerModal(tower)">
+                                                    <EditOutlined class="text-blue-500" />
+                                                </a-button>
+                                                <a-popconfirm
+                                                    title="Are you sure you want to delete this tower? All floors and wings inside will be lost."
+                                                    ok-text="Yes"
+                                                    cancel-text="No"
+                                                    @confirm="handleDeleteTower(tower.id)"
+                                                >
+                                                    <a-button type="text" size="small" @click.stop>
+                                                        <DeleteOutlined class="text-red-500" />
+                                                    </a-button>
+                                                </a-popconfirm>
+                                            </a-space>
                                         </div>
                                     </template>
                                     <div class="space-y-3">
@@ -196,12 +210,12 @@
             </a-tabs>
         </div>
 
-        <!-- Add Tower Modal -->
-        <a-modal v-model:open="isAddTowerModalOpen" title="Add Tower" @ok="handleAddTower"
+        <!-- Add/Edit Tower Modal -->
+        <a-modal v-model:open="isAddTowerModalOpen" :title="editingTowerId ? 'Edit Tower' : 'Add Tower'" @ok="editingTowerId ? handleUpdateTower() : handleAddTower()"
             :confirmLoading="submitting">
             <a-form layout="vertical">
                 <a-form-item label="Tower Name" required>
-                    <a-input v-model:value="towerForm.name" placeholder="e.g. Tower A" />
+                    <a-input v-model:value="towerForm.name" placeholder="e.g. Tower A" @pressEnter="editingTowerId ? handleUpdateTower() : handleAddTower()" />
                 </a-form-item>
             </a-form>
         </a-modal>
@@ -258,6 +272,7 @@ import { useHelpdeskService } from '../../../../composables/helpdeskService';
 import type { Tower } from '../../../../composables/facilityService';
 import AppLoader from '../../../../components/AppLoader.vue';
 import FacilitiesTowerStructureManager from '../../../../components/facilities/TowerStructureManager.vue';
+import FacilitiesTowerDetailsDrawer from '../../../../components/facilities/TowerDetailsDrawer.vue';
 import { PlusOutlined, EditOutlined, DeleteOutlined, QrcodeOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import dayjs from 'dayjs';
@@ -285,10 +300,23 @@ const towers = ref<Tower[]>([]);
 
 // Add Tower Modal
 const isAddTowerModalOpen = ref(false);
+const editingTowerId = ref<string | null>(null);
 const submitting = ref(false);
 const towerForm = ref({
     name: ''
 });
+
+const openAddTowerModal = () => {
+    editingTowerId.value = null;
+    towerForm.value.name = '';
+    isAddTowerModalOpen.value = true;
+};
+
+const openEditTowerModal = (tower: Tower) => {
+    editingTowerId.value = tower.id;
+    towerForm.value.name = tower.name;
+    isAddTowerModalOpen.value = true;
+};
 
 // Tower Drawer
 const isTowerDrawerOpen = ref(false);
@@ -338,11 +366,6 @@ const fetchFacilityDetails = async () => {
     }
 };
 
-const openAddTowerModal = () => {
-    towerForm.value.name = '';
-    isAddTowerModalOpen.value = true;
-};
-
 const handleAddTower = async () => {
     if (!towerForm.value.name) {
         message.error('Please enter a tower name');
@@ -367,6 +390,45 @@ const handleAddTower = async () => {
         message.error('Failed to add tower');
     } finally {
         submitting.value = false;
+    }
+};
+
+const handleUpdateTower = async () => {
+    if (!towerForm.value.name || !editingTowerId.value) return;
+
+    submitting.value = true;
+    try {
+        await facilityStore.updateTower(editingTowerId.value, {
+            facility: facilityId,
+            name: towerForm.value.name
+        });
+
+        // Refresh towers
+        await facilityStore.fetchTowers(facilityId);
+        towers.value = facilityStore.towers;
+
+        isAddTowerModalOpen.value = false;
+        message.success('Tower updated successfully');
+    } catch (e) {
+        console.error('Failed to update tower', e);
+        message.error('Failed to update tower');
+    } finally {
+        submitting.value = false;
+    }
+};
+
+const handleDeleteTower = async (id: string) => {
+    try {
+        await facilityStore.deleteTower(id);
+        
+        // Refresh towers
+        await facilityStore.fetchTowers(facilityId);
+        towers.value = facilityStore.towers;
+        
+        message.success('Tower deleted');
+    } catch (e) {
+        console.error('Failed to delete tower', e);
+        message.error('Failed to delete tower');
     }
 };
 

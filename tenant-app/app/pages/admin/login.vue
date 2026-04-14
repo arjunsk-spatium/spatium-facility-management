@@ -146,6 +146,7 @@ const isImageLoading = ref(true)
 const tenantStore = useTenantStore()
 const authStore = useAuthStore()
 const { isDark } = useTheme()
+const { sanitizeError } = useValidation()
 const config = useRuntimeConfig()
 const errorMsg = ref('')
 
@@ -195,8 +196,8 @@ const handleEmailSubmit = async () => {
         await authStore.requestOtp(form.email)
         step.value = 'otp'
     } catch (error: any) {
-        console.error('Error sending OTP:', error)
-        errorMsg.value = error?.data?.message || 'Failed to send OTP. Please try again.'
+        console.error('Error sending OTP:', sanitizeError(error))
+        errorMsg.value = sanitizeError(error)
     } finally {
         loading.value = false
     }
@@ -212,8 +213,8 @@ const handleLogin = async () => {
         await authStore.login(form.email, form.otp, config.public.tenantAdminAppId)
         navigateTo('/dashboard') // Or /admin/dashboard if it exists, but user said "same login page replica"
     } catch (error: any) {
-        console.error('Login failed', error)
-        errorMsg.value = error?.data?.message || 'Login failed. Please check your credentials.'
+        console.error('Login failed', sanitizeError(error))
+        errorMsg.value = sanitizeError(error)
     } finally {
         loading.value = false
     }

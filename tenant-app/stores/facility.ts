@@ -172,6 +172,42 @@ export const useFacilityStore = defineStore("facility", {
             }
         },
 
+        async updateTower(id: string, updates: Partial<CreateTowerPayload>) {
+            this.loading = true;
+            this.error = null;
+            const service = useFacilityService();
+
+            try {
+                const updated = await service.updateTower(id, updates);
+                const index = this.towers.findIndex((t) => t.id === id);
+                if (index !== -1) {
+                    this.towers[index] = updated;
+                }
+                return updated;
+            } catch (err: any) {
+                this.error = err.message || "Failed to update tower";
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async deleteTower(id: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useFacilityService();
+
+            try {
+                await service.deleteTower(id);
+                this.towers = this.towers.filter((t) => t.id !== id);
+            } catch (err: any) {
+                this.error = err.message || "Failed to delete tower";
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        },
+
         // Pagination helpers
         async nextPage() {
             if (this.hasNext) {

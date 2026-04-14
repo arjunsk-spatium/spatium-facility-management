@@ -208,7 +208,7 @@ const handleEmailSubmit = async () => {
     step.value = 'otp'
   } catch (error: any) {
     console.error('Error sending OTP:', sanitizeError(error))
-    errorMsg.value = error?.data?.message || 'Failed to send OTP. Please try again.'
+    errorMsg.value = sanitizeError(error)
   } finally {
     loading.value = false
   }
@@ -224,7 +224,7 @@ const handleLogin = async () => {
     navigateTo('/dashboard')
   } catch (error: any) {
     console.error('Login failed', sanitizeError(error))
-    errorMsg.value = error?.data?.message || 'Login failed. Please check your credentials.'
+    errorMsg.value = sanitizeError(error)
   } finally {
     loading.value = false
   }
