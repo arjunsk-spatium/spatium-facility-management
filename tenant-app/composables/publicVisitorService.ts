@@ -56,6 +56,8 @@ export interface FacilityInfo {
 export const usePublicVisitorService = () => {
     const route = useRoute();
 
+    const config = useRuntimeConfig();
+
     const getTenantId = (): string => {
         // Priority: URL query → Pinia store → localStorage → cookie
         const fromQuery = route.query.tenant as string;
@@ -71,8 +73,7 @@ export const usePublicVisitorService = () => {
         return '';
     };
 
-    // Same-origin fetch that goes through Nitro server proxy
-    // No Bearer token, only X-TENANT-ID header
+    // Use direct API fetch to bypass static hosting index.html fallback
     const publicFetch = async <T>(
         endpoint: string,
         options: {
@@ -85,8 +86,10 @@ export const usePublicVisitorService = () => {
         const isFormData =
             typeof FormData !== "undefined" && body instanceof FormData;
 
-        // Build URL — same-origin (no apiBaseUrl), goes to Nitro proxy
-        let url = endpoint;
+        // Build URL using configured target API
+        const baseUrl = config.public.apiBaseUrl;
+        let url = endpoint.startsWith("http") ? endpoint : `${baseUrl}${endpoint}`;
+        
         const finalQuery = { ...query };
         if (method === "GET") {
             finalQuery._t = Date.now();

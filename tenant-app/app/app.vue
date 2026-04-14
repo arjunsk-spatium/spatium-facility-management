@@ -71,6 +71,7 @@ watch(isDark, (newVal) => {
   isDarkMode.value = newVal;
   updateCssVariables();
 });
+console.log("v1");
 
 // Watch for tenant color changes
 watch(() => tenantStore.primaryColor, updateCssVariables);
