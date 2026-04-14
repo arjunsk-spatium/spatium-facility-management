@@ -87,9 +87,14 @@ export const usePublicVisitorService = () => {
 
         // Build URL — same-origin (no apiBaseUrl), goes to Nitro proxy
         let url = endpoint;
-        if (query) {
+        const finalQuery = { ...query };
+        if (method === "GET") {
+            finalQuery._t = Date.now();
+        }
+        
+        if (Object.keys(finalQuery).length > 0) {
             const params = new URLSearchParams();
-            Object.entries(query).forEach(([key, value]) => {
+            Object.entries(finalQuery).forEach(([key, value]) => {
                 if (value !== undefined && value !== null) {
                     params.append(key, String(value));
                 }
@@ -100,6 +105,9 @@ export const usePublicVisitorService = () => {
 
         const headers: Record<string, string> = {
             "X-TENANT-ID": getTenantId(),
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
         };
         if (!isFormData) {
             headers["Content-Type"] = "application/json";
@@ -110,7 +118,11 @@ export const usePublicVisitorService = () => {
             headers["Authorization"] = `Bearer ${token.value}`;
         }
 
-        const fetchOptions: RequestInit = { method, headers };
+        const fetchOptions: RequestInit = { 
+            method, 
+            headers,
+            cache: "no-store", 
+        };
         if (body && method !== "GET") {
             fetchOptions.body = isFormData ? body : JSON.stringify(body);
         }
