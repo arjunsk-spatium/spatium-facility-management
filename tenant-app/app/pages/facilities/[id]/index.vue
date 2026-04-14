@@ -335,7 +335,7 @@ const handleGenerateQRCode = async () => {
     if (!facility.value) return;
     generatingQR.value = true;
     try {
-        await facilityStore.generateFacilityQRCode(facility.value.id, facility.value.name);
+        await facilityStore.generateFacilityQRCode(facility.value.id, facility.value.name, facility.value.tenant);
         message.success('QR Code generated successfully');
     } catch (error) {
         message.error('Failed to generate QR Code');

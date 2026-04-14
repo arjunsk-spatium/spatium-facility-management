@@ -637,7 +637,7 @@ const fetchSpocs = async () => {
         }
         // Filter only users who have client_portal in their apps array
         spocs.value = users
-            .filter((u: any) => u.apps && u.apps.includes('client_portal'))
+            .filter((u: any) => u.apps && u.apps.some((app: string) => app.toLowerCase() === 'client portal'))
             .map((u: any) => ({
                 id: u.id,
                 name: u.full_name || u.email?.split('@')[0] || 'Unknown',
