@@ -59,31 +59,45 @@
 
             <!-- Content Area -->
             <a-card class="flex-1" :bodyStyle="{ padding: '16px 24px' }">
-                <LocationTab v-if="activeTab === 'location'" />
-                <HelpdeskTab v-if="activeTab === 'helpdesk'" />
-                <RoomMetaTab v-if="activeTab === 'roomMeta'" />
+                <LocationTab v-if="activeTab === 'location'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
+                <HelpdeskTab v-if="activeTab === 'helpdesk'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
+                <RoomMetaTab v-if="activeTab === 'roomMeta'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
+                <CreditSystemTab v-if="activeTab === 'creditSystem'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
             </a-card>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
     EnvironmentOutlined,
     CustomerServiceOutlined,
     AppstoreOutlined,
     LeftOutlined,
-    RightOutlined
+    RightOutlined,
+    CreditCardOutlined
 } from '@ant-design/icons-vue'
+import { useAuthStore } from '../../../stores/auth'
 
 import LocationTab from '../../../components/configure/LocationTab.vue'
 import HelpdeskTab from '../../../components/configure/HelpdeskTab.vue'
 import RoomMetaTab from '../../../components/configure/RoomMetaTab.vue'
+import CreditSystemTab from '../../../components/configure/CreditSystemTab.vue'
 
 definePageMeta({
     middleware: 'auth'
 })
+
+const authStore = useAuthStore()
+const canView = computed(() => authStore.hasPermission('configure:view'))
+const canCreate = computed(() => authStore.hasPermission('configure:create'))
+const canUpdate = computed(() => authStore.hasPermission('configure:update'))
+const canDelete = computed(() => authStore.hasPermission('configure:delete'))
+
+if (!canView.value) {
+    navigateTo('/dashboard');
+}
 
 const tenantStore = useTenantStore()
 const { isDark } = useTheme()
@@ -93,7 +107,8 @@ const activeTab = ref('location')
 const tabs = [
     { key: 'location', label: 'Location', icon: EnvironmentOutlined },
     { key: 'helpdesk', label: 'Helpdesk', icon: CustomerServiceOutlined },
-    { key: 'roomMeta', label: 'Room Meta', icon: AppstoreOutlined }
+    { key: 'roomMeta', label: 'Room Meta', icon: AppstoreOutlined },
+    { key: 'creditSystem', label: 'Credit System', icon: CreditCardOutlined }
 ]
 
 // Whitelabeled active tab style using tenant's primary color

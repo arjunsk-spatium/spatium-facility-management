@@ -1,118 +1,242 @@
+export interface CompanyContact {
+    id?: string;
+    contact_name: string;
+    email: string;
+    address: string;
+    gstin?: string;
+    phone: string;
+}
+
 export interface Company {
-    id: string
-    name: string
-    address: string
-    spoc_name: string
-    spoc_email: string
-    spoc_phone: string
-    gstin?: string
-    facility?: string
-    logo?: string
+    id: string;
+    name: string;
+    status: "active" | "inactive";
+    email_domain?: string;
+    logo?: string;
+    contacts: CompanyContact[];
 }
 
 export interface CompanyInsights {
-    totalCompanies: number
-    activeCompanies: number
-    inactiveCompanies: number
-    revenue: number
+    totalCompanies: number;
+    activeCompanies: number;
+    inactiveCompanies: number;
+    revenue: number;
+}
+
+export interface CompanyFacilityMapping {
+    id?: string;
+    company: string;
+    facility_id: string;
+    tower_id?: string;
+    floor_id?: string;
+    facility_name?: string;
+    tower_name?: string;
+    floor_name?: string;
+}
+
+export interface CreateCompanyFacilityMappingPayload {
+    company: string;
+    facility_id: string;
+    tower_id?: string;
+    floor_id?: string;
 }
 
 const MOCK_COMPANIES: Company[] = [
     {
-        id: '1',
-        name: 'Tech Corp',
-        address: '123 Tech Street, Bangalore',
-        spoc_name: 'John Smith',
-        spoc_email: 'john.smith@techcorp.com',
-        spoc_phone: '+91 98765 43210',
-        gstin: '29ABCDE1234F1ZH',
-        facility: 'Facility 1'
+        id: "1",
+        name: "Tech Corp",
+        status: "active",
+        contacts: {
+            contact_name: "John Smith",
+            email: "john.smith@techcorp.com",
+            address: "123 Tech Street, Bangalore",
+            phone: "+91 98765 43210",
+            gstin: "29ABCDE1234F1ZH",
+        },
     },
     {
-        id: '2',
-        name: 'Biz Solutions',
-        address: '456 Business Park, Mumbai',
-        spoc_name: 'Jane Doe',
-        spoc_email: 'jane.doe@bizsolutions.com',
-        spoc_phone: '+91 87654 32109',
-        gstin: '27FGHIJ5678K2ZP',
-        facility: 'Facility 2'
+        id: "2",
+        name: "Biz Solutions",
+        status: "active",
+        contacts: {
+            contact_name: "Jane Doe",
+            email: "jane.doe@bizsolutions.com",
+            address: "456 Business Park, Mumbai",
+            phone: "+91 87654 32109",
+            gstin: "27FGHIJ5678K2ZP",
+        },
     },
     {
-        id: '3',
-        name: 'Global Enterprises',
-        address: '789 Corporate Tower, Delhi',
-        spoc_name: 'Raj Kumar',
-        spoc_email: 'raj.kumar@globalent.com',
-        spoc_phone: '+91 76543 21098',
-        gstin: '07KLMNO9012L3ZQ',
-        facility: 'Facility 1'
-    }
-]
+        id: "3",
+        name: "Global Enterprises",
+        status: "active",
+        contacts: {
+            contact_name: "Raj Kumar",
+            email: "raj.kumar@globalent.com",
+            address: "789 Corporate Tower, Delhi",
+            phone: "+91 76543 21098",
+            gstin: "07KLMNO9012L3ZQ",
+        },
+    },
+];
+
+export interface CreateCompanyPayload {
+    name: string;
+    status: "active" | "inactive";
+    email_domain?: string;
+    logo?: File;
+    contacts: {
+        contact_name: string;
+        email: string;
+        address: string;
+        gstin?: string;
+        phone: string;
+    }[];
+}
 
 export const useCompanyService = () => {
-    
-    // Simulate API delay
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+    const { $api } = useNuxtApp();
+    const config = useRuntimeConfig();
+    const baseUrl = config.public.apiBaseUrl;
+
+    const delay = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
+
+    const buildUrl = (endpoint: string): string => {
+        const url = endpoint.startsWith("http")
+            ? endpoint
+            : `${baseUrl}${endpoint}`;
+        return url;
+    };
 
     const getCompanies = async (): Promise<Company[]> => {
-        await delay(300)
-        return [...MOCK_COMPANIES]
-    }
+        const url = buildUrl("/api/portal/companies/");
+        console.log("[CompanyService] Fetching companies from:", url);
+        const response = await $api<{
+            success: boolean;
+            data: { results: Company[] };
+        }>(url, { method: "GET" });
+        console.log(
+            "[CompanyService] Companies fetched:",
+            response.data?.results?.length || 0,
+        );
+        return response.data?.results || [];
+    };
 
     const getCompanyById = async (id: string): Promise<Company | null> => {
-        await delay(300)
-        return MOCK_COMPANIES.find(c => c.id === id) || null
-    }
-
-    const createCompany = async (data: Omit<Company, 'id'>): Promise<Company> => {
-        await delay(500)
-        const newCompany: Company = {
-            ...data,
-            id: Math.random().toString(36).substr(2, 9)
+        const url = buildUrl(`/api/portal/companies/${id}/`);
+        try {
+            const response = await $api<{ success: boolean; data: Company }>(
+                url,
+                { method: "GET" },
+            );
+            return response.data;
+        } catch (error: any) {
+            if (error.statusCode === 404) return null;
+            throw error;
         }
-        MOCK_COMPANIES.push(newCompany)
-        return newCompany
-    }
+    };
 
-    const updateCompany = async (id: string, data: Partial<Omit<Company, 'id'>>): Promise<Company | null> => {
-        await delay(500)
-        const index = MOCK_COMPANIES.findIndex(c => c.id === id)
-        const existingCompany = MOCK_COMPANIES[index]
-        if (index === -1 || !existingCompany) return null
-        
-        const updatedCompany: Company = {
-            id: existingCompany.id,
-            name: data.name ?? existingCompany.name,
-            address: data.address ?? existingCompany.address,
-            spoc_name: data.spoc_name ?? existingCompany.spoc_name,
-            spoc_email: data.spoc_email ?? existingCompany.spoc_email,
-            spoc_phone: data.spoc_phone ?? existingCompany.spoc_phone,
-            gstin: data.gstin ?? existingCompany.gstin,
-            facility: data.facility ?? existingCompany.facility,
-            logo: data.logo ?? existingCompany.logo
+    const createCompany = async (
+        data: CreateCompanyPayload,
+    ): Promise<Company> => {
+        const url = buildUrl("/api/portal/companies/");
+
+        const formData = new FormData();
+        formData.append("name", data.name);
+        formData.append("status", data.status);
+        formData.append("contacts", JSON.stringify(data.contacts));
+        if (data.email_domain) formData.append("email_domain", data.email_domain);
+
+        if (data.logo) {
+            formData.append("logo", data.logo);
         }
-        MOCK_COMPANIES[index] = updatedCompany
-        return updatedCompany
-    }
+
+        const response = await $api<Company>(url, {
+            method: "POST",
+            body: formData,
+        });
+        return response;
+    };
+
+    const updateCompany = async (
+        id: string,
+        data: Partial<CreateCompanyPayload>,
+    ): Promise<Company | null> => {
+        const url = buildUrl(`/api/portal/companies/${id}/`);
+
+        const formData = new FormData();
+        if (data.name !== undefined) formData.append("name", data.name);
+        if (data.status !== undefined) formData.append("status", data.status);
+        if (data.email_domain !== undefined) formData.append("email_domain", data.email_domain);
+        if (data.contacts !== undefined)
+            formData.append("contacts", JSON.stringify(data.contacts));
+        if (data.logo instanceof File) formData.append("logo", data.logo);
+
+        const response = await $api<Company>(url, {
+            method: "PATCH",
+            body: formData,
+        });
+        return response;
+    };
 
     const getInsights = async (): Promise<CompanyInsights> => {
-        await delay(300)
-        const total = MOCK_COMPANIES.length
-        // Mock insights without status field
-        return {
-            totalCompanies: total,
-            activeCompanies: total, // All companies are active by default
-            inactiveCompanies: 0,
-            revenue: total * 1000 // Mock revenue logic
+        try {
+            const url = buildUrl("/api/portal/companies/insights/");
+            const response = await $api<CompanyInsights>(url, {
+                method: "GET",
+            });
+            return response;
+        } catch (error) {
+            console.warn("Using mock insights data");
+            const total = MOCK_COMPANIES.length;
+            return {
+                totalCompanies: total,
+                activeCompanies: total,
+                inactiveCompanies: 0,
+                revenue: total * 1000,
+            };
         }
-    }
+    };
+
+    const getCompanyFacilities = async (companyId: string): Promise<CompanyFacilityMapping[]> => {
+        const url = buildUrl("/api/portal/companies/mappings/");
+        const response = await $api<{
+            success: boolean;
+            data: { results: CompanyFacilityMapping[] };
+        }>(url, { 
+            method: "GET",
+            query: { company: companyId }
+        });
+        return response.data?.results || [];
+    };
+
+    const createCompanyFacilityMapping = async (
+        data: CreateCompanyFacilityMappingPayload
+    ): Promise<CompanyFacilityMapping> => {
+        const url = buildUrl("/api/portal/companies/mappings/");
+        const response = await $api<CompanyFacilityMapping>(url, {
+            method: "POST",
+            body: data,
+        });
+        return response;
+    };
+
+    const deleteCompanyFacilityMapping = async (mappingId: string): Promise<void> => {
+        const url = buildUrl(`/api/portal/companies/mappings/${mappingId}/`);
+        await $api(url, {
+            method: "DELETE",
+        });
+    };
 
     return {
         getCompanies,
         getCompanyById,
         createCompany,
         updateCompany,
-        getInsights
-    }
-}
+        getInsights,
+        getCompanyFacilities,
+        createCompanyFacilityMapping,
+        deleteCompanyFacilityMapping,
+    };
+};

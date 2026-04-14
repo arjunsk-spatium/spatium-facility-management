@@ -115,7 +115,7 @@
                         <div class="flex flex-col gap-[5px]">
                             <span class="text-gray-500 font-medium text-sm">Contact Email</span>
                             <span v-if="tenant.pii?.email" class="text-gray-900 dark:text-gray-100">{{ tenant.pii.email
-                            }}</span>
+                                }}</span>
                             <span v-else class="text-gray-400">-</span>
                         </div>
 
@@ -123,7 +123,7 @@
                         <div class="flex flex-col gap-[5px]">
                             <span class="text-gray-500 font-medium text-sm">GSTIN / Tax ID</span>
                             <span class="font-mono text-gray-600 dark:text-gray-400">{{ tenant.pii?.gstin || '-'
-                            }}</span>
+                                }}</span>
                         </div>
 
                         <!-- Phone -->
@@ -352,8 +352,8 @@ const handleCreateUser = async () => {
         await createUser({
             ...userForm,
             tenant_id: tenantId,
-            app_name: 'tenant',
-            apps: ['tenant']
+            app_name: 'org_portal',
+            apps: ['org_portal']
         });
         message.success('User created successfully');
         showCreateUserModal.value = false;

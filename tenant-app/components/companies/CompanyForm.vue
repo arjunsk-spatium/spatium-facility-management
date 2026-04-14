@@ -1,65 +1,23 @@
 <template>
-    <a-form :model="form" layout="vertical" @finish="handleSubmit">
+    <a-form ref="formRef" :model="formState" layout="vertical" :rules="rules" @finish="handleSubmit">
         <!-- Company Name -->
-        <a-form-item label="Company Name" name="name"
-            :rules="[{ required: true, message: 'Please input company name!' }]">
-            <a-input v-model:value="form.name" placeholder="Enter company name" :maxlength="100" />
+        <a-form-item label="Company Name" name="name">
+            <a-input v-model:value="formState.name" placeholder="Enter company name" :maxlength="100" />
         </a-form-item>
 
-        <!-- Address -->
-        <a-form-item label="Address" name="address" :rules="[{ required: true, message: 'Please input address!' }]">
-            <a-textarea v-model:value="form.address" placeholder="Enter company address" :rows="3" :maxlength="500" />
+        <!-- Status -->
+        <a-form-item label="Status" name="status">
+            <a-select v-model:value="formState.status" placeholder="Select status">
+                <a-select-option value="active">Active</a-select-option>
+                <a-select-option value="inactive">Inactive</a-select-option>
+            </a-select>
         </a-form-item>
 
-        <!-- SPOC Details Section -->
-        <a-divider orientation="left">SPOC Details</a-divider>
-
-        <a-row :gutter="16">
-            <a-col :span="12">
-                <a-form-item label="SPOC Name" name="spoc_name"
-                    :rules="[{ required: true, message: 'Please input SPOC name!' }]">
-                    <a-input v-model:value="form.spoc_name" placeholder="Enter SPOC name" :maxlength="100" />
-                </a-form-item>
-            </a-col>
-            <a-col :span="12">
-                <a-form-item label="SPOC Email" name="spoc_email"
-                    :rules="[{ required: true, type: 'email', message: 'Please input a valid email!' }]">
-                    <a-input v-model:value="form.spoc_email" placeholder="Enter SPOC email" :maxlength="100" />
-                </a-form-item>
-            </a-col>
-        </a-row>
-
-        <a-form-item label="SPOC Phone" name="spoc_phone"
-            :rules="[
-                { required: true, message: 'Please input SPOC phone number!' },
-                { pattern: /^\d{10}$/, message: 'Please enter a valid 10-digit phone number!' }
-            ]">
-            <a-input v-model:value="form.spoc_phone" placeholder="Enter SPOC phone number" :maxlength="10" />
+        <!-- Email Domain -->
+        <a-form-item label="Email Domain" name="email_domain"
+            extra="e.g. acme.com — used to auto-match employees">
+            <a-input v-model:value="formState.email_domain" placeholder="Enter email domain" :maxlength="100" />
         </a-form-item>
-
-        <!-- Business Details Section -->
-        <a-divider orientation="left">Business Details</a-divider>
-
-        <a-row :gutter="16">
-            <a-col :span="12">
-                <a-form-item label="GSTIN" name="gstin"
-                    :rules="[
-                        { pattern: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, message: 'Please enter a valid GSTIN!' }
-                    ]">
-                    <a-input v-model:value="form.gstin" placeholder="Enter GSTIN" :maxlength="15" @input="form.gstin = form.gstin.toUpperCase()" />
-                </a-form-item>
-            </a-col>
-            <a-col :span="12">
-                <a-form-item label="Facility" name="facility"
-                    :rules="[{ required: true, message: 'Please select a facility!' }]">
-                    <a-select v-model:value="form.facility" placeholder="Select facility">
-                        <a-select-option value="Facility 1">Facility 1</a-select-option>
-                        <a-select-option value="Facility 2">Facility 2</a-select-option>
-                        <a-select-option value="Facility 3">Facility 3</a-select-option>
-                    </a-select>
-                </a-form-item>
-            </a-col>
-        </a-row>
 
         <!-- Company Logo -->
         <a-form-item label="Company Logo" name="logo">
@@ -71,6 +29,39 @@
                 </div>
             </a-upload>
         </a-form-item>
+
+        <!-- Contact Details Section -->
+        <a-divider orientation="left">Contact Details</a-divider>
+
+        <a-row :gutter="16">
+            <a-col :span="12">
+                <a-form-item label="Contact Name" name="contactName">
+                    <a-input v-model:value="formState.contactName" placeholder="Enter contact name" :maxlength="100" />
+                </a-form-item>
+            </a-col>
+            <a-col :span="12">
+                <a-form-item label="Email" name="email">
+                    <a-input v-model:value="formState.email" placeholder="Enter email" :maxlength="100" />
+                </a-form-item>
+            </a-col>
+        </a-row>
+
+        <a-form-item label="Address" name="address">
+            <a-textarea v-model:value="formState.address" placeholder="Enter address" :rows="3" :maxlength="500" />
+        </a-form-item>
+
+        <a-row :gutter="16">
+            <a-col :span="12">
+                <a-form-item label="Phone" name="phone">
+                    <a-input v-model:value="formState.phone" placeholder="Enter phone number" :maxlength="20" />
+                </a-form-item>
+            </a-col>
+            <a-col :span="12">
+                <a-form-item label="GSTIN" name="gstin">
+                    <a-input v-model:value="formState.gstin" placeholder="Enter GSTIN" :maxlength="15" @input="formState.gstin = formState.gstin?.toUpperCase()" />
+                </a-form-item>
+            </a-col>
+        </a-row>
 
         <!-- Actions -->
         <a-form-item>
@@ -87,11 +78,24 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import type { FormInstance, FormRules } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
 import type { UploadProps } from 'ant-design-vue'
 
+interface FormState {
+    name: string
+    status: 'active' | 'inactive'
+    email_domain: string
+    logo: string | File | null
+    contactName: string
+    email: string
+    address: string
+    phone: string
+    gstin: string
+}
+
 interface Props {
-    initialValues?: any
+    initialValues?: Partial<FormState>
     loading?: boolean
     submitText?: string
 }
@@ -103,26 +107,49 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits(['submit', 'cancel'])
+const formRef = ref<FormInstance>()
 
-const form = ref({
+const formState = ref<FormState>({
     name: '',
+    status: 'active',
+    email_domain: '',
+    logo: null,
+    contactName: '',
+    email: '',
     address: '',
-    spoc_name: '',
-    spoc_email: '',
-    spoc_phone: '',
-    gstin: '',
-    facility: null as string | null,
-    logo: ''
+    phone: '',
+    gstin: ''
 })
+
+const rules: FormRules = {
+    name: [{ required: true, message: 'Please input company name!' }],
+    status: [{ required: true, message: 'Please select status!' }],
+    email_domain: [{ pattern: /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/, message: 'Please enter a valid domain (e.g. acme.com)!' }],
+    contactName: [{ required: true, message: 'Please input contact name!' }],
+    email: [
+        { required: true, message: 'Please input email!' },
+        { type: 'email', message: 'Please input a valid email!' }
+    ],
+    address: [{ required: true, message: 'Please input address!' }],
+    phone: [{ required: true, message: 'Please input phone number!' }],
+    gstin: [{ pattern: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, message: 'Please enter a valid GSTIN!' }]
+}
 
 const fileList = ref<UploadProps['fileList']>([])
 
 const populateForm = () => {
     if (props.initialValues) {
-        form.value = { ...form.value, ...props.initialValues }
-        if (props.initialValues.logo) {
-            // If logo is a URL string, we can verify if we want to show it in fileList
-            // For now we just keep the form state
+        formState.value = {
+            ...formState.value,
+            name: props.initialValues.name || '',
+            status: props.initialValues.status || 'active',
+            email_domain: props.initialValues.email_domain || '',
+            logo: props.initialValues.logo || null,
+            contactName: props.initialValues.contactName || '',
+            email: props.initialValues.email || '',
+            address: props.initialValues.address || '',
+            phone: props.initialValues.phone || '',
+            gstin: props.initialValues.gstin || ''
         }
     }
 }
@@ -144,20 +171,34 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
     return false
 }
 
-const handleSubmit = () => {
-    const formData: any = { ...form.value }
+const handleSubmit = async () => {
+    try {
+        await formRef.value?.validate()
+        const formData: any = {
+            name: formState.value.name,
+            status: formState.value.status,
+            email_domain: formState.value.email_domain || undefined,
+            contacts: {
+                contact_name: formState.value.contactName,
+                email: formState.value.email,
+                address: formState.value.address,
+                phone: formState.value.phone,
+                gstin: formState.value.gstin
+            }
+        }
 
-    // Attach file if present
-    if (fileList.value && fileList.value.length > 0) {
-        formData.logoFile = fileList.value[0].originFileObj
+        if (fileList.value && fileList.value.length > 0) {
+            formData.logo = fileList.value[0].originFileObj
+        }
+
+        emit('submit', formData)
+    } catch (error) {
+        console.log('Validation failed')
     }
-
-    emit('submit', formData)
 }
 </script>
 
 <style scoped>
-/* Dark mode styles for dividers */
 :deep(.ant-divider) {
     border-color: #f0f0f0;
 }

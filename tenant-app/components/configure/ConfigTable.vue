@@ -1,34 +1,35 @@
 <template>
     <div class="space-y-4">
-        <!-- Header with Add Button -->
-        <div class="flex justify-between items-center">
-            <h3 class="text-lg font-medium dark:text-white">{{ title }}</h3>
-            <a-button type="primary" @click="openAddModal">
-                <template #icon>
-                    <PlusOutlined />
-                </template>
-                Add
-            </a-button>
-        </div>
+    <!-- Header with Add Button -->
+    <div class="flex justify-between items-center">
+        <h3 class="text-lg font-medium dark:text-white">{{ title }}</h3>
+        <a-button v-if="canCreate" type="primary" @click="openAddModal">
+            <template #icon>
+                <PlusOutlined />
+            </template>
+            Add
+        </a-button>
+    </div>
 
         <!-- Responsive Data Table -->
-        <ResponsiveDataView :columns="tableColumns" :data="data" :loading="loading"
-            :row-key="(record: any) => record.id" :pagination="{ pageSize: 10 }" :mobile-page-size="5">
-            <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'action'">
-                    <a-space>
-                        <a-button type="link" size="small" @click="openEditModal(record)">
-                            <EditOutlined />
-                        </a-button>
-                        <a-popconfirm title="Are you sure you want to delete this item?" ok-text="Yes" cancel-text="No"
-                            @confirm="handleDelete(record)">
-                            <a-button type="link" size="small" danger>
-                                <DeleteOutlined />
+        <div class="overflow-x-auto">
+            <ResponsiveDataView :columns="tableColumns" :data="data" :loading="loading"
+                :row-key="(record: any) => record.id" :pagination="{ pageSize: 10 }" :mobile-page-size="5">
+                <template #bodyCell="{ column, record }">
+                    <template v-if="column.key === 'action'">
+                        <a-space>
+                            <a-button v-if="canUpdate" type="link" size="small" @click="openEditModal(record)">
+                                <EditOutlined />
                             </a-button>
-                        </a-popconfirm>
-                    </a-space>
+                            <a-popconfirm v-if="canDelete" title="Are you sure you want to delete this item?" ok-text="Yes" cancel-text="No"
+                                @confirm="handleDelete(record)">
+                                <a-button type="link" size="small" danger>
+                                    <DeleteOutlined />
+                                </a-button>
+                            </a-popconfirm>
+                        </a-space>
+                    </template>
                 </template>
-            </template>
 
             <!-- Mobile Card View -->
             <template #mobileCard="{ record }">
@@ -51,10 +52,10 @@
                         </div>
                         <!-- Actions -->
                         <div class="flex gap-2">
-                            <a-button type="text" size="small" @click="openEditModal(record)">
+                            <a-button v-if="canUpdate" type="text" size="small" @click="openEditModal(record)">
                                 <EditOutlined />
                             </a-button>
-                            <a-popconfirm title="Delete this item?" ok-text="Yes" cancel-text="No"
+                            <a-popconfirm v-if="canDelete" title="Delete this item?" ok-text="Yes" cancel-text="No"
                                 @confirm="handleDelete(record)">
                                 <a-button type="text" size="small" danger>
                                     <DeleteOutlined />
@@ -65,6 +66,7 @@
                 </a-card>
             </template>
         </ResponsiveDataView>
+        </div>
 
         <!-- Add/Edit Modal -->
         <a-modal v-model:open="modalVisible" :title="isEditing ? `Edit ${singularTitle}` : `Add ${singularTitle}`"
@@ -81,6 +83,13 @@
                     <a-form-item v-for="field in fields" :key="field.name" :label="field.label">
                         <a-input-number v-if="field.type === 'number'" v-model:value="formData[field.name]"
                             :placeholder="`Enter ${field.label.toLowerCase()}`" style="width: 100%" />
+                        <a-upload v-else-if="field.type === 'file'" :before-upload="(file: File) => { formData[field.name] = file; return false }"
+                            :show-upload-list="false" accept="image/*">
+                            <a-button>
+                                <template #icon><UploadOutlined /></template>
+                                Select Icon
+                            </a-button>
+                        </a-upload>
                         <a-input v-else v-model:value="formData[field.name]"
                             :placeholder="`Enter ${field.label.toLowerCase()}`" />
                     </a-form-item>
@@ -102,7 +111,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../ResponsiveDataView.vue'
 
 interface Column {
@@ -115,7 +124,7 @@ interface Column {
 interface Field {
     name: string
     label: string
-    type: 'text' | 'number'
+    type: 'text' | 'number' | 'file'
 }
 
 interface ParentOption {
@@ -131,6 +140,9 @@ const props = defineProps<{
     parentOptions?: ParentOption[]
     parentLabel?: string
     fields?: Field[]
+    canCreate?: boolean
+    canUpdate?: boolean
+    canDelete?: boolean
 }>()
 
 const emit = defineEmits<{

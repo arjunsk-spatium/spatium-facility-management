@@ -60,7 +60,7 @@
             <div class="login-form-container">
                 <!-- Logo -->
                 <div class="logo-container">
-                    <img :src="isDark ? '/images/nexspace-logo-light.png' : '/images/nexspace-logo-dark.svg'" alt="Spatium Hub"
+                    <img :src="isDark ? '/images/nexspace-logo-light.png' : '/images/nexspace-logo-dark.svg'" alt="Nexspace"
                         class="logo-image" />
                 </div>
 
@@ -191,6 +191,18 @@ const refreshQuote = () => {
 }
 
 // Handlers
+const getErrorMessage = (error: any, defaultMsg: string) => {
+    if (error?.data?.error?.type === 'VALIDATION' && error.data.error.fields) {
+        const fields = error.data.error.fields;
+        for (const key in fields) {
+            if (Array.isArray(fields[key]) && fields[key].length > 0 && fields[key][0].message) {
+                return fields[key][0].message;
+            }
+        }
+    }
+    return error?.data?.message || defaultMsg;
+};
+
 const handleEmailSubmit = async () => {
     if (!form.email) return
     isLoading.value = true
@@ -200,7 +212,7 @@ const handleEmailSubmit = async () => {
         step.value = 'otp'
     } catch (error: any) {
         console.error('Error sending OTP:', error)
-        errorMessage.value = error?.data?.message || 'Failed to send OTP. Please try again.'
+        errorMessage.value = getErrorMessage(error, 'Failed to send OTP. Please try again.')
     } finally {
         isLoading.value = false
     }
@@ -215,7 +227,7 @@ const handleLogin = async () => {
         router.push('/dashboard')
     } catch (error: any) {
         console.error('Login failed:', error)
-        errorMessage.value = error?.data?.message || 'Invalid OTP. Please try again.'
+        errorMessage.value = getErrorMessage(error, 'Invalid OTP. Please try again.')
     } finally {
         isLoading.value = false
     }

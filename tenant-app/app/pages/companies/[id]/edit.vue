@@ -15,27 +15,71 @@
             <a-spin size="large" />
         </div>
 
-        <a-card v-else>
-            <CompanyForm :initial-values="currentCompany" submit-text="Save Changes" :loading="loading"
-                @submit="handleUpdate" @cancel="handleCancel" />
-        </a-card>
+        <div v-else-if="currentCompany" class="flex justify-center">
+            <a-card class="w-full sm:max-w-4xl" :bodyStyle="{ padding: '16px 24px' }">
+                <CompanyForm :initial-values="formInitialValues" submit-text="Save Changes" :loading="loading"
+                    @submit="handleUpdate" @cancel="handleCancel" />
+            </a-card>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCompanyStore } from '../../../../stores/company'
 import { message } from 'ant-design-vue'
 import { ArrowLeftOutlined } from '@ant-design/icons-vue'
 import CompanyForm from '../../../../components/companies/CompanyForm.vue'
 
+interface FormInitialValues {
+    name: string
+    status: 'active' | 'inactive'
+    email_domain: string
+    logo: string | null
+    contactName: string
+    email: string
+    address: string
+    phone: string
+    gstin: string
+}
+
 const router = useRouter()
 const route = useRoute()
 const store = useCompanyStore()
 
 const loading = computed(() => store.loading)
+
 const currentCompany = computed(() => store.currentCompany)
+
+const formInitialValues = computed<FormInitialValues>(() => {
+    const company = store.currentCompany
+    if (!company || !company.contacts) {
+        return {
+            name: '',
+            status: 'active',
+            email_domain: '',
+            logo: null,
+            contactName: '',
+            email: '',
+            address: '',
+            phone: '',
+            gstin: ''
+        }
+    }
+    const contact = (Array.isArray(company.contacts) ? company.contacts[0] : null) || {}
+    return {
+        name: company.name,
+        status: company.status,
+        email_domain: company.email_domain || '',
+        logo: company.logo || null,
+        contactName: contact.contact_name || '',
+        email: contact.email || '',
+        address: contact.address || '',
+        phone: contact.phone || '',
+        gstin: contact.gstin || ''
+    }
+})
 
 onMounted(async () => {
     const id = route.params.id as string

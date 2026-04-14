@@ -54,11 +54,33 @@ const avatarStyle = computed(() => ({
     backgroundColor: tenantStore.primaryColor || '#3378ff',
     color: 'white'
 }));
-const displayUser = computed(() => authStore.user?.name || authStore.user?.email || 'User');
+
+const displayUser = computed(() => {
+    console.log('DEBUG: User Profile Data:', authStore.user);
+    const user = authStore.user;
+    if (!user) return 'User';
+    
+    // Check all possible name fields
+    const fullName = user.full_name || user.fullName;
+    if (fullName) return fullName;
+    
+    const name = user.name;
+    if (name) return name;
+    
+    if (user.first_name || user.last_name || user.firstName || user.lastName) {
+        const first = user.first_name || user.firstName || '';
+        const last = user.last_name || user.lastName || '';
+        return `${first} ${last}`.trim();
+    }
+    
+    if (user.username) return user.username;
+    
+    return user.email?.split('@')[0] || 'User';
+});
 
 const userInitial = computed(() => {
-    const name = authStore.user?.name || userEmail.value;
-    return name.charAt(0).toUpperCase();
+    const name = displayUser.value;
+    return name ? name.charAt(0).toUpperCase() : 'U';
 });
 
 const handleLogout = () => {

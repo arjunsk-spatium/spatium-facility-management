@@ -64,7 +64,7 @@
 
           <div class="transition-all duration-300">
             <!-- Step 1: Email -->
-            <form v-if="step === 'email'" @submit.prevent="handleEmailSubmit" class="space-y-6" novalidate>
+            <form v-if="step === 'email'" @submit.prevent="handleEmailSubmit" class="space-y-4" novalidate>
               <!-- Email Input -->
               <div>
                 <label for="email" class="label">Email</label>
@@ -119,7 +119,13 @@
           </div>
 
           <p class="mt-12 text-center text-xs text-neutral-500 dark:text-neutral-500">
-            Having trouble signing in? Contact your Spatium administrator.
+            Having trouble signing in? Contact your administrator.
+          </p>
+          <p class="mt-2 text-center text-xs text-neutral-500 dark:text-neutral-500">
+            Are you a tenant administrator?
+            <NuxtLink to="/admin/login" class="text-primary-600 hover:text-primary-700 font-medium">
+              Sign in here
+            </NuxtLink>
           </p>
         </div>
       </div>
@@ -132,7 +138,7 @@ definePageMeta({
   layout: 'auth'
 })
 
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore } from '../../stores/auth';
 
 // Types
 interface Quote {

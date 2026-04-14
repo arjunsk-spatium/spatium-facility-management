@@ -18,7 +18,7 @@
                         class="text-lg cursor-pointer hover:text-primary-500 transition-colors"
                         :class="isDark ? 'text-neutral-300' : 'text-neutral-600'" @click="toggleMobileSidebar" />
                     <span class="text-lg font-semibold" :class="isDark ? 'text-neutral-100' : 'text-neutral-900'">
-                        Spatium Admin
+                        Nexspace Admin
                     </span>
                 </div>
 
@@ -40,7 +40,7 @@
 
             <a-layout-footer class="text-center text-neutral-500 dark:text-neutral-400 text-sm"
                 :style="{ background: isDark ? '#1a1a1a' : '#fafafa', padding: '12px 24px' }">
-                Spatium Admin Console ©2024
+                Nexspace Admin Console ©2026
             </a-layout-footer>
         </a-layout>
     </a-layout>

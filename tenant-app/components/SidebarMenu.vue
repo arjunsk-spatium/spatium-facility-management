@@ -143,7 +143,20 @@ const currentLogo = computed(() => isDark.value ? tenantStore.darkLogo : tenantS
 
 // Filter modules based on user's access
 const filteredModules = computed(() => {
-    return allModules.value.filter(m => userModuleKeys.value.includes(m.key));
+    return allModules.value.map(m => {
+        if (!userModuleKeys.value.includes(m.key)) return null;
+
+        const mod = { ...m };
+        if (mod.children) {
+            mod.children = mod.children.filter(c => userModuleKeys.value.includes(c.key));
+            
+            // If the module originally had children but none are assigned, hide the entire module
+            if (m.children && m.children.length > 0 && mod.children.length === 0) {
+                return null;
+            }
+        }
+        return mod;
+    }).filter(Boolean) as Module[];
 });
 
 // Map routes to menu keys

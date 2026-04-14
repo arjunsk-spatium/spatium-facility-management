@@ -37,6 +37,12 @@
                     </div>
                 </template>
 
+                <template v-if="column.key === 'role'">
+                    <a-tag :color="record.role === 'SPOC' ? 'purple' : 'blue'">
+                        {{ record.role }}
+                    </a-tag>
+                </template>
+
                 <template v-if="column.key === 'actions'">
                     <div class="flex items-center gap-1">
                         <a-button type="text" size="small" @click="handleEdit(record)">
@@ -64,28 +70,15 @@
                             </div>
                             <div>
                                 <p class="font-bold text-base dark:text-white">{{ record.name }}</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.designation ||
-                                    record.email }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.email }}</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1">
-                            <a-button type="text" size="small" @click="handleEdit(record)">
-                                <EditOutlined />
-                            </a-button>
-                            <a-popconfirm title="Are you sure delete this employee?" ok-text="Yes" cancel-text="No"
-                                @confirm="handleDelete(record.id)">
-                                <a-button type="text" danger size="small">
-                                    <DeleteOutlined />
-                                </a-button>
-                            </a-popconfirm>
-                        </div>
+                        <a-tag :color="record.role === 'SPOC' ? 'purple' : 'blue'">
+                            {{ record.role }}
+                        </a-tag>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 text-sm pt-3 border-t border-gray-100 dark:border-gray-800">
-                        <div>
-                            <p class="text-gray-400 dark:text-gray-500 text-xs">Department</p>
-                            <p class="text-gray-600 dark:text-gray-300">{{ record.department || '-' }}</p>
-                        </div>
                         <div>
                             <p class="text-gray-400 dark:text-gray-500 text-xs">Phone</p>
                             <p class="text-gray-600 dark:text-gray-300">{{ record.phone || '-' }}</p>
@@ -170,9 +163,9 @@ const newEmployee = reactive({
 // Table columns
 const columns = [
     { title: 'Employee', key: 'employee', dataIndex: 'name' },
-    { title: 'Department', dataIndex: 'department', key: 'department' },
-    { title: 'Designation', dataIndex: 'designation', key: 'designation' },
+    { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
+    { title: 'Role', dataIndex: 'role', key: 'role' },
     { title: '', key: 'actions', width: 50 }
 ]
 

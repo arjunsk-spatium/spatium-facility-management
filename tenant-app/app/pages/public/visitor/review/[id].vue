@@ -7,9 +7,19 @@
 
         <div class="flex-1 p-4 pb-24 overflow-y-auto space-y-4">
              <!-- Status Banner -->
-             <div class="bg-yellow-50 text-yellow-700 px-4 py-2 rounded-lg text-xs font-bold text-center border border-yellow-100 uppercase tracking-wide flex items-center justify-center gap-2">
-                <div class="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                Pending Approval
+             <div class="px-4 py-2 rounded-lg text-xs font-bold text-center border uppercase tracking-wide flex items-center justify-center gap-2"
+                :class="{
+                    'bg-yellow-50 text-yellow-700 border-yellow-100': visitor.status === 'Pending',
+                    'bg-green-50 text-green-700 border-green-100': visitor.status === 'Approved',
+                    'bg-red-50 text-red-700 border-red-100': visitor.status === 'Rejected' || visitor.status === 'Denied'
+                }">
+                <div class="w-2 h-2 rounded-full"
+                    :class="{
+                        'bg-yellow-400': visitor.status === 'Pending',
+                        'bg-green-400': visitor.status === 'Approved',
+                        'bg-red-400': visitor.status === 'Rejected' || visitor.status === 'Denied'
+                    }"></div>
+                {{ visitor.status }}
              </div>
 
              <!-- Visitor Profile Card -->
@@ -27,16 +37,16 @@
                  </div>
 
                  <h2 class="text-2xl font-bold text-gray-900 mb-1">{{ visitor.name }}</h2>
-                 <div class="text-sm font-medium text-blue-600">{{ visitor.company }}</div>
-                 <div class="text-xs text-gray-400 mt-1">{{ visitor.role || 'Sr. Security Consultant' }}</div>
+                 <div class="text-sm font-medium text-blue-600">{{ visitor.company || visitor.from_company }}</div>
+                 <div class="text-xs text-gray-400 mt-1">{{ visitor.role || 'Visitor' }}</div>
                  
                  <div class="grid grid-cols-2 gap-3 mt-6">
-                     <button class="h-10 rounded-xl bg-gray-50 border border-gray-100 text-gray-700 font-bold text-xs flex items-center justify-center gap-2 hover:bg-gray-100">
+                     <a :href="`mailto:${visitor.email}`" class="h-10 rounded-xl bg-gray-50 border border-gray-100 text-gray-700 font-bold text-xs flex items-center justify-center gap-2 hover:bg-gray-100">
                         <MailOutlined /> Email
-                     </button>
-                     <button class="h-10 rounded-xl bg-gray-50 border border-gray-100 text-gray-700 font-bold text-xs flex items-center justify-center gap-2 hover:bg-gray-100">
+                     </a>
+                     <a :href="`tel:${visitor.phone}`" class="h-10 rounded-xl bg-gray-50 border border-gray-100 text-gray-700 font-bold text-xs flex items-center justify-center gap-2 hover:bg-gray-100">
                         <PhoneOutlined /> Call
-                     </button>
+                     </a>
                  </div>
              </div>
 
@@ -50,9 +60,11 @@
                  <div>
                      <div class="text-xs text-gray-400 mb-0.5">Date & Time</div>
                      <div class="font-bold text-gray-900 text-sm">
-                        {{ new Date(visitor.visitDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) }}
+                        {{ visitor.checkin_date }}
                      </div>
-                     <div class="text-xs text-gray-500 mt-0.5">10:00 AM - 11:30 AM <span class="text-gray-300 ml-1">(90 min)</span></div>
+                     <div class="text-xs text-gray-500 mt-0.5">
+                        {{ visitor.checkin_time }}
+                     </div>
                  </div>
              </div>
 
@@ -63,16 +75,15 @@
                  </div>
                  <div>
                      <div class="text-xs text-gray-400 mb-0.5">Purpose</div>
-                     <div class="font-bold text-gray-900 text-sm">{{ visitor.visitPurpose || 'Meeting' }}</div>
+                     <div class="font-bold text-gray-900 text-sm">{{ visitor.purpose_of_visit || 'Meeting' }}</div>
                      <div class="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                        Meeting to discuss the security protocols for the upcoming release cycle.
+                        Meeting with {{ visitor.host_name }} at {{ visitor.facility_name }}.
                      </div>
                  </div>
              </div>
         </div>
 
-        <!-- Bottom Actions -->
-        <div class="fixed bottom-0 left-0 w-full bg-white p-4 border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex gap-4 z-20">
+        <div v-if="visitor.status === 'Pending'" class="fixed bottom-0 left-0 w-full bg-white p-4 border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex gap-4 z-20">
             <button @click="handleAction('reject')" :disabled="processing"
                 class="flex-1 h-12 rounded-xl border border-red-100 text-red-600 font-bold hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
                 <CloseOutlined class="text-sm" /> Reject
@@ -95,9 +106,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { 
     MailOutlined, PhoneOutlined, CalendarFilled, 
-    FileTextFilled, CloseOutlined, CheckOutlined, LoadingOutlined 
+    FileTextFilled, CloseOutlined, CheckOutlined, LoadingOutlined, SafetyCertificateFilled
 } from '@ant-design/icons-vue'
-import { useVisitorService, type Visitor } from '../../../../../composables/visitorService'
+import { useNuxtApp } from '#app'
 
 definePageMeta({
     layout: 'public'
@@ -105,31 +116,29 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
-const { getVisitors, updateVisitorStatus } = useVisitorService()
+const { $api } = useNuxtApp()
 
-const visitor = ref<Visitor | null>(null)
+const visitor = ref<any>(null)
 const processing = ref(false)
 
 onMounted(async () => {
-    // In a real app, we would getById. Here we fetch all and find
-    const visitors = await getVisitors()
-    const found = visitors.find(v => v.id === route.params.id)
-    if (found) {
-        visitor.value = found
-    } else {
-        message.error('Visitor request not found')
-        // Mock data for display if ID not found in mock list (since we generate random IDs)
-        visitor.value = {
-            id: route.params.id as string,
-            name: 'Sarah Connor',
-            email: 'sarah@example.com',
-            phone: '555-0123',
-            company: 'Cyberdyne Systems',
-            visitPurpose: 'Project SkyNet Review',
-            hostName: 'Miles Dyson',
-            status: 'pending',
-            visitDate: new Date().toISOString()
-        } as Visitor
+    try {
+        const id = route.params.id as string
+        const response = await $api<any>(`/api/portal/visitors/public/review/${id}/`)
+        
+        if (response.success) {
+            visitor.value = response.data
+            
+            // Auto action
+            const action = route.query.action as string
+            if (action === 'approve' || action === 'reject') {
+                await handleAction(action)
+            }
+        } else {
+            message.error(response.message || 'Visitor request not found')
+        }
+    } catch (e: any) {
+        message.error(e.message || 'Failed to load visitor details')
     }
 })
 
@@ -137,20 +146,28 @@ const handleAction = async (action: 'approve' | 'reject') => {
     if (!visitor.value) return
     processing.value = true
     try {
-        const newStatus = action === 'approve' ? 'approved' : 'rejected'
-        await updateVisitorStatus(visitor.value.id, newStatus)
-        // Redirect to success page
-        await router.push({
-            path: '/public/visitor/review/action-complete',
-            query: {
-                status: action === 'approve' ? 'approved' : 'rejected',
-                name: visitor.value.name,
-                company: visitor.value.company,
-                photo: visitor.value.photoUrl
-            }
+        const id = route.params.id as string
+        const response = await $api<any>(`/api/portal/visitors/public/review/${id}/`, {
+            method: 'GET',
+            query: { action }
         })
-    } catch (e) {
-        message.error('Action failed')
+        
+        if (response.success) {
+            // Redirect to success page
+            await router.push({
+                path: '/public/visitor/review/action-complete',
+                query: {
+                    status: action === 'approve' ? 'approved' : 'rejected',
+                    name: visitor.value.name,
+                    company: visitor.value.company || visitor.value.from_company,
+                    photo: visitor.value.photoUrl
+                }
+            })
+        } else {
+            message.error(response.message || 'Action failed')
+        }
+    } catch (e: any) {
+        message.error(e.message || 'Action failed')
     } finally {
         processing.value = false
     }

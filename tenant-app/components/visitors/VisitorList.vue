@@ -31,26 +31,27 @@
                 </template>
                 <template v-else-if="column.key === 'status'">
                     <a-tag :color="getStatusColor(record.status)">
-                        {{ record.status.toUpperCase() }}
+                        {{ record.status }}
+                    </a-tag>
+                </template>
+                <template v-else-if="column.key === 'visitor_type'">
+                    <a-tag :color="record.visitor_type === 'walk_in' ? 'blue' : 'purple'">
+                        {{ record.visitor_type === 'walk_in' ? 'Walk-in' : 'Pre-invite' }}
                     </a-tag>
                 </template>
                 <template v-else-if="column.key === 'actions'">
-                    <div class="flex gap-2">
-                        <a-button v-if="record.status === 'pending'" size="small" type="primary"
-                            @click="$emit('update-status', record.id, 'approved')">
+                    <div v-if="showActions" class="flex gap-2">
+                        <a-button v-if="record.status === 'Pending'" size="small" type="primary"
+                            @click="$emit('update-status', record.id, 'Approved')">
                             Approve
                         </a-button>
-                        <a-button v-if="record.status === 'pending'" size="small" danger
-                            @click="$emit('update-status', record.id, 'rejected')">
+                        <a-button v-if="record.status === 'Pending'" size="small" danger
+                            @click="$emit('update-status', record.id, 'Rejected')">
                             Reject
                         </a-button>
-                        <a-button v-if="record.status === 'approved'" size="small"
+                        <a-button v-if="record.status === 'Approved' && !record.check_out_time" size="small"
                             class="!bg-green-500 !text-white !border-green-500"
-                            @click="$emit('update-status', record.id, 'checked-in')">
-                            Check In
-                        </a-button>
-                        <a-button v-if="record.status === 'checked-in'" size="small"
-                            @click="$emit('update-status', record.id, 'checked-out')">
+                            @click="$emit('update-status', record.id, 'Checked Out')">
                             Check Out
                         </a-button>
                     </div>
@@ -90,44 +91,69 @@
                                     >
                                         {{ record.name }}
                                     </a>
-                                    <div class="text-sm text-gray-500">{{ record.company }}</div>
+                                    <div class="text-sm text-gray-500">{{ record.company_name || record.from_company || '-' }}</div>
                                 </div>
-                                <a-tag :color="getStatusColor(record.status)" class="ml-2 flex-shrink-0">{{ record.status }}</a-tag>
+                                <div class="flex flex-col items-end gap-1">
+                                    <a-tag :color="getStatusColor(record.status)" class="ml-2">{{ record.status }}</a-tag>
+                                    <a-tag :color="record.visitor_type === 'walk_in' ? 'blue' : 'purple'" class="ml-2 text-xs">
+                                        {{ record.visitor_type === 'walk_in' ? 'Walk-in' : 'Pre-invite' }}
+                                    </a-tag>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="space-y-2 text-sm text-gray-600 mb-4">
                         <div class="flex gap-2">
-                            <span class="font-medium w-20">Host:</span>
-                            <span>{{ record.hostName }}</span>
+                            <span class="font-medium w-20">Email:</span>
+                            <span class="truncate">{{ record.email || '-' }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="font-medium w-20">Company:</span>
+                            <span>{{ record.company_name || '-' }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="font-medium w-20">From:</span>
+                            <span>{{ record.from_company || '-' }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="font-medium w-20">Type:</span>
+                            <a-tag :color="record.visitor_type === 'walk_in' ? 'blue' : 'purple'" class="m-0">
+                                {{ record.visitor_type === 'walk_in' ? 'Walk-in' : 'Pre-invite' }}
+                            </a-tag>
                         </div>
                         <div class="flex gap-2">
                             <span class="font-medium w-20">Purpose:</span>
-                            <span>{{ record.visitPurpose }}</span>
+                            <span>{{ record.purpose_of_visit }}</span>
                         </div>
                         <div class="flex gap-2">
-                            <span class="font-medium w-20">Date:</span>
-                            <span>{{ new Date(record.visitDate).toLocaleDateString() }}</span>
+                            <span class="font-medium w-20">Facility:</span>
+                            <span>{{ record.facility_name }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="font-medium w-20">Check-in:</span>
+                            <span>{{ record.check_in_time ? formatDate(record.check_in_time) : '-' }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="font-medium w-20">On Premises:</span>
+                            <a-tag :color="record.is_on_premises ? 'green' : 'default'">
+                                {{ record.is_on_premises ? 'Yes' : 'No' }}
+                            </a-tag>
                         </div>
                     </div>
 
                     <div class="flex gap-2 border-t pt-3">
-                        <a-button v-if="record.status === 'pending'" size="small" type="primary" block
-                            @click="$emit('update-status', record.id, 'approved')">
+                        <a-button v-if="record.status === 'Pending'" size="small" type="primary" block
+                            @click="$emit('update-status', record.id, 'Approved')">
                             Approve
                         </a-button>
-                        <a-button v-if="record.status === 'pending'" size="small" danger block
-                            @click="$emit('update-status', record.id, 'rejected')">
+                        <a-button v-if="record.status === 'Pending'" size="small" danger block
+                            @click="$emit('update-status', record.id, 'Rejected')">
                             Reject
                         </a-button>
-                        <a-button v-if="record.status === 'approved'" size="small"
+                        <a-button v-if="record.status === 'Approved' && !record.check_out_time" size="small"
                             class="!bg-green-500 !text-white !border-green-500" block
-                            @click="$emit('update-status', record.id, 'checked-in')">
-                            Check In
-                        </a-button>
-                        <a-button v-if="record.status === 'checked-in'" size="small" block
-                            @click="$emit('update-status', record.id, 'checked-out')">
+                            @click="$emit('update-status', record.id, 'Checked Out')">
                             Check Out
                         </a-button>
                     </div>
@@ -140,27 +166,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import ResponsiveDataView from '../ResponsiveDataView.vue'
 import VisitorDetailsModal from './VisitorDetailsModal.vue'
-import type { Visitor } from '../../composables/visitorService'
+import { useVisitorStore, type Visitor } from '../../stores/visitor'
 
-defineProps<{
+const props = defineProps<{
     visitors: Visitor[],
-    loading: boolean
+    loading: boolean,
+    showActions?: boolean
 }>()
 
 defineEmits(['update-status'])
 
-const columns = [
+const baseColumns = [
     { title: '', key: 'photo', width: 60 },
     { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Company', dataIndex: 'company', key: 'company' },
-    { title: 'Host', dataIndex: 'hostName', key: 'hostName' },
-    { title: 'Purpose', dataIndex: 'visitPurpose', key: 'visitPurpose' },
+    { title: 'Email', dataIndex: 'email', key: 'email' },
+    { title: 'Company', dataIndex: 'company_name', key: 'company_name' },
+    { title: 'From', dataIndex: 'from_company', key: 'from_company' },
+    { title: 'Type', key: 'visitor_type' },
+    { title: 'Purpose', dataIndex: 'purpose_of_visit', key: 'purpose_of_visit' },
+    { title: 'Facility', dataIndex: 'facility_name', key: 'facility_name' },
     { title: 'Status', key: 'status' },
-    { title: 'Actions', key: 'actions' }
 ]
+
+const columns = computed(() => {
+    if (props.showActions) {
+        return [...baseColumns, { title: 'Actions', key: 'actions', width: 180 }]
+    }
+    return baseColumns
+})
 
 const showDetailsModal = ref(false)
 const selectedVisitor = ref<Visitor | null>(null)
@@ -187,12 +223,21 @@ const getInitials = (name: string) => {
 
 const getStatusColor = (status: string) => {
     switch (status) {
-        case 'approved': return 'green'
-        case 'pending': return 'orange'
-        case 'rejected': return 'red'
-        case 'checked-in': return 'blue'
-        case 'checked-out': return 'gray'
+        case 'Approved': return 'green'
+        case 'Pending': return 'orange'
+        case 'Rejected': return 'red'
         default: return 'default'
     }
+}
+
+const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-'
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    })
 }
 </script>

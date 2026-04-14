@@ -47,16 +47,7 @@ import { navigateTo } from '#app';
 const authStore = useAuthStore();
 
 const userEmail = computed(() => authStore.user?.email || 'Admin');
-const displayUser = computed(() => {
-    const user = authStore.user;
-    if (user?.name) return user.name;
-    if (user?.full_name) return user.full_name;
-    if (user?.first_name || user?.last_name) {
-        return `${user.first_name || ''} ${user.last_name || ''}`.trim();
-    }
-    if (user?.username) return user.username;
-    return userEmail.value.split('@')[0];
-});
+const displayUser = computed(() => authStore.userFullName || authStore.user?.email || 'Admin');
 
 const userInitial = computed(() => {
     const name = displayUser.value;

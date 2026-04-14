@@ -6,7 +6,7 @@
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Visitors Management</h1>
                 <p class="text-gray-600 dark:text-gray-400">Track and manage facility visitors.</p>
             </div>
-            <a-button type="primary" ghost>
+            <a-button v-if="canAction" type="primary" ghost>
                 <template #icon>
                     <ExportOutlined />
                 </template>
@@ -14,30 +14,40 @@
             </a-button>
         </div>
 
-        <!-- Filters -->
-        <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
-            <!-- Facility Filter -->
-            <a-select v-model:value="selectedFacility" placeholder="All Facilities" allow-clear style="min-width: 180px"
-                class="w-full sm:w-auto" @change="handleFilterChange">
-                <a-select-option v-for="facility in facilities" :key="facility.id" :value="facility.id">
-                    {{ facility.name }}
-                </a-select-option>
-            </a-select>
+        <div v-if="canView">
+            <!-- Filters -->
+            <div class="flex flex-col sm:flex-row gap-3 sm:items-center mb-6">
+                <!-- Date Range Filter -->
+                <a-range-picker v-model:value="dateRange" format="YYYY-MM-DD" :allow-clear="true"
+                    class="w-full sm:w-auto" @change="handleFilterChange" />
 
-            <!-- Company Filter -->
-            <a-select v-model:value="selectedCompany" placeholder="All Companies" allow-clear style="min-width: 180px"
-                class="w-full sm:w-auto" @change="handleFilterChange">
-                <a-select-option v-for="company in companies" :key="company.id" :value="company.id">
-                    {{ company.name }}
-                </a-select-option>
-            </a-select>
+                <!-- Facility Filter -->
+                <a-select v-model:value="selectedFacility" placeholder="All Facilities" allow-clear style="min-width: 180px"
+                    class="w-full sm:w-auto" @change="handleFilterChange">
+                    <a-select-option v-for="facility in facilities" :key="facility.id" :value="facility.id">
+                        {{ facility.name }}
+                    </a-select-option>
+                </a-select>
 
-            <!-- Search -->
-            <a-input-search v-model:value="searchQuery" placeholder="Search visitors..." allow-clear
-                class="flex-1 sm:max-w-xs" @search="handleFilterChange" />
+                <!-- Company Filter -->
+                <a-select v-model:value="selectedCompany" placeholder="All Companies" allow-clear style="min-width: 180px"
+                    class="w-full sm:w-auto" @change="handleFilterChange">
+                    <a-select-option v-for="company in companies" :key="company.id" :value="company.id">
+                        {{ company.name }}
+                    </a-select-option>
+                </a-select>
+
+                <!-- Search -->
+                <a-input-search v-model:value="searchQuery" placeholder="Search visitors..." allow-clear
+                    class="flex-1 sm:max-w-xs" @search="handleFilterChange" />
+            </div>
+
+            <VisitorList :visitors="filteredVisitors" :loading="loading" :showActions="canAction" @update-status="handleStatusUpdate" />
         </div>
 
-        <VisitorList :visitors="filteredVisitors" :loading="loading" @update-status="handleStatusUpdate" />
+        <div v-else class="text-center py-12 text-gray-500">
+            You don't have permission to view visitors.
+        </div>
     </div>
 </template>
 
@@ -45,57 +55,52 @@
 import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ExportOutlined } from '@ant-design/icons-vue'
+import type { Dayjs } from 'dayjs'
 
 import VisitorList from './VisitorList.vue'
+import { useAuthStore } from '../../stores/auth'
 
 const store = useVisitorStore()
 const companyStore = useCompanyStore()
 const facilityStore = useFacilityStore()
+const authStore = useAuthStore()
 
 const { visitors, loading } = storeToRefs(store)
 
+// Permission checks
+const canView = computed(() => authStore.hasPermission('visitors-list:view'))
+const canAction = computed(() => authStore.hasPermission('visitors-list:action'))
+
 // Filter state
-const selectedFacility = ref<number | null>(null)
-const selectedCompany = ref<number | null>(null)
+const selectedFacility = ref<string | null>(null)
+const selectedCompany = ref<string | null>(null)
 const searchQuery = ref('')
+const dateRange = ref<[Dayjs, Dayjs] | null>(null)
 
 // Facility and company lists
 const facilities = computed(() => facilityStore.facilities)
 const companies = computed(() => companyStore.companies)
 
 // Filtered visitors
-const filteredVisitors = computed(() => {
-    let result = visitors.value
+const filteredVisitors = computed(() => visitors.value)
 
-    // Filter by facility
-    if (selectedFacility.value) {
-        result = result.filter(v => v.facilityId === selectedFacility.value)
+const handleFilterChange = async () => {
+    const params: any = {
+        facility_id: selectedFacility.value || undefined,
+        company_id: selectedCompany.value || undefined,
+        search: searchQuery.value || undefined,
     }
-
-    // Filter by company
-    if (selectedCompany.value) {
-        result = result.filter(v => v.companyId === selectedCompany.value)
+    
+    if (dateRange.value && dateRange.value.length === 2) {
+        params.start_date = dateRange.value[0].format('YYYY-MM-DD')
+        params.end_date = dateRange.value[1].format('YYYY-MM-DD')
     }
-
-    // Filter by search query
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase()
-        result = result.filter(v =>
-            v.name.toLowerCase().includes(query) ||
-            v.company?.toLowerCase().includes(query) ||
-            v.hostName?.toLowerCase().includes(query) ||
-            v.visitPurpose?.toLowerCase().includes(query)
-        )
-    }
-
-    return result
-})
-
-const handleFilterChange = () => {
-    // Filters are reactive, no need for additional action
+    
+    await store.fetchVisitors(params)
 }
 
 const handleStatusUpdate = async (id: string, status: any) => {
+    // Update status in store
     await store.updateStatus(id, status)
 }
 
