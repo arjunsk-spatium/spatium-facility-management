@@ -60,11 +60,11 @@
             <div class="login-form-container">
                 <!-- Logo -->
                 <div class="logo-container">
-                    <img :src="isDark ? '/images/spatium-logo.png' : '/images/spatium-logo-light.png'" alt="Spatium Hub"
+                    <img :src="isDark ? '/images/nexspace-logo-light.png' : '/images/nexspace-logo-dark.svg'" alt="Nexspace"
                         class="logo-image" />
                 </div>
 
-                <p class="subtitle">SPATIUM OFFICES</p>
+                <p class="subtitle">NEXSPACE FACILITY MANAGEMENT</p>
                 <h1 class="welcome-text">Nice to see you again</h1>
 
                 <!-- Login Form -->
@@ -125,7 +125,7 @@
                     </div>
 
                     <!-- Help Text -->
-                    <p class="help-text">
+                    <p class="help-text mt-12">
                         Having trouble signing in? Contact your Spatium administrator.
                     </p>
                 </div>
@@ -534,7 +534,7 @@ const goBack = () => {
     font-size: 0.8125rem;
     color: var(--color-neutral-500);
     text-align: center;
-    margin-top: 1.5rem;
+    margin-top: 3rem;
     transition: color 300ms ease;
 }
 

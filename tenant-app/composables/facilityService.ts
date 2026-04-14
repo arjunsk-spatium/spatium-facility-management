@@ -209,12 +209,16 @@ export interface IFacilityService {
     deleteFacility(id: string): Promise<void>;
     getTowers(facilityId?: string): Promise<Tower[]>;
     createTower(payload: CreateTowerPayload): Promise<Tower>;
+    updateTower(id: string, payload: Partial<CreateTowerPayload>): Promise<Tower>;
+    deleteTower(id: string): Promise<void>;
     getFloors(towerId: string): Promise<Floor[]>;
     createFloor(payload: CreateFloorPayload): Promise<Floor>;
     updateFloor(id: string, payload: UpdateFloorPayload): Promise<Floor>;
+    deleteFloor(id: string): Promise<void>;
     getWings(floorId: string): Promise<Wing[]>;
     createWing(payload: CreateWingPayload): Promise<Wing>;
     updateWing(id: string, payload: UpdateWingPayload): Promise<Wing>;
+    deleteWing(id: string): Promise<void>;
     generateFacilityQRCode(facilityId: string, facilityName: string): Promise<void>;
 }
 
@@ -378,6 +382,35 @@ export const useFacilityService = (): IFacilityService => {
             return response.data;
         },
 
+        updateTower: async (id: string, payload: Partial<CreateTowerPayload>) => {
+            const response = await $api<ApiResponse<Tower>>(
+                `/api/portal/facilities-towers/${id}/`,
+                {
+                    method: "PATCH",
+                    body: payload,
+                },
+            );
+
+            if (!response.success) {
+                throw new Error(response.message || "Failed to update tower");
+            }
+
+            return response.data;
+        },
+
+        deleteTower: async (id: string) => {
+            const response = await $api<ApiResponse<null>>(
+                `/api/portal/facilities-towers/${id}/`,
+                {
+                    method: "DELETE",
+                },
+            );
+
+            if (!response.success) {
+                throw new Error(response.message || "Failed to delete tower");
+            }
+        },
+
         createFloor: async (payload: CreateFloorPayload) => {
             const response = await $api<ApiResponse<Floor>>(
                 `/api/portal/facilities-floors/`,
@@ -408,6 +441,19 @@ export const useFacilityService = (): IFacilityService => {
             }
 
             return response.data;
+        },
+
+        deleteFloor: async (id: string) => {
+            const response = await $api<ApiResponse<null>>(
+                `/api/portal/facilities-floors/${id}/`,
+                {
+                    method: "DELETE",
+                },
+            );
+
+            if (!response.success) {
+                throw new Error(response.message || "Failed to delete floor");
+            }
         },
 
         createWing: async (payload: CreateWingPayload) => {
@@ -471,6 +517,19 @@ export const useFacilityService = (): IFacilityService => {
             }
 
             return response.data;
+        },
+
+        deleteWing: async (id: string) => {
+            const response = await $api<ApiResponse<null>>(
+                `/api/portal/facilities-wings/${id}/`,
+                {
+                    method: "DELETE",
+                },
+            );
+
+            if (!response.success) {
+                throw new Error(response.message || "Failed to delete wing");
+            }
         },
 
         generateFacilityQRCode: async (facilityId: string, facilityName: string) => {

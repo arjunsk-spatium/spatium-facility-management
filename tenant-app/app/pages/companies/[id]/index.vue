@@ -80,7 +80,7 @@
                                         <BuildOutlined class="text-primary-500 text-lg" />
                                         <div>
                                             <div class="font-medium text-gray-900 dark:text-gray-100">{{
-                                                facility.facility_name || 'Facility' }}
+                                                facility.facility_name || facility.name || 'Facility' }}
                                             </div>
                                             <div class="text-xs text-gray-500">
                                                 <span v-if="facility.tower_name">{{ facility.tower_name }}</span>
@@ -628,7 +628,7 @@ const fetchSpocs = async () => {
     const companyId = route.params.id as string
     spocsLoading.value = true
     try {
-        const result = await $api<any>(`/api/portal/users/client_portal/list/?company_id=${companyId}`)
+        const result = await $api<any>(`/api/portal/users/org_portal/list/?app_name=client_portal&company_id=${companyId}`)
         let users: any[] = []
         if (result.success && Array.isArray(result.data)) {
             users = result.data
@@ -897,6 +897,7 @@ const handleFacilityOk = async () => {
         }
 
         await store.createCompanyFacilityMappingAction(payload)
+        await store.fetchCompanyFacilitiesAction(route.params.id as string)
         message.success('Facility added successfully')
         isFacilityModalVisible.value = false
     } catch (err) {

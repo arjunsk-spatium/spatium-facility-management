@@ -54,7 +54,7 @@
                     </div>
                 </template>
 
-                <div class="space-y-3">
+                <div class="flex flex-col gap-4">
                     <a-button block>
                         <SyncOutlined /> Sync All Tenants
                     </a-button>

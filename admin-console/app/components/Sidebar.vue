@@ -7,9 +7,8 @@
         <div class="flex flex-col h-full">
             <!-- Logo -->
             <div class="sidebar-logo" :class="{ collapsed }">
-                <div class="logo-icon">
-                    <AppstoreOutlined :style="{ fontSize: '24px', color: '#1677ff' }" />
-                </div>
+                <img :src="isDark ? '/images/nexspace-logo-light.png' : '/images/nexspace-logo-dark.svg'" 
+                    alt="Nexspace" class="logo-image-sidebar" />
                 <span v-if="!collapsed" class="logo-text">Admin Console</span>
             </div>
 
@@ -33,9 +32,8 @@
         :body-style="{ padding: 0, background: isDark ? '#141414' : '#ffffff' }">
         <!-- Logo -->
         <div class="sidebar-logo">
-            <div class="logo-icon">
-                <AppstoreOutlined :style="{ fontSize: '24px', color: '#1677ff' }" />
-            </div>
+            <img :src="isDark ? '/images/nexspace-logo-light.png' : '/images/nexspace-logo-dark.svg'" 
+                alt="Nexspace" class="logo-image-sidebar" />
             <span class="logo-text">Admin Console</span>
         </div>
 
@@ -69,13 +67,12 @@ const isDark = computed(() => {
 
 .sidebar-logo {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 8px 20px;
     border-bottom: 1px solid var(--color-neutral-200);
-    min-height: 64px;
     flex-shrink: 0;
-    /* Prevent logo from shrinking */
 }
 
 .dark .sidebar-logo {
@@ -83,33 +80,33 @@ const isDark = computed(() => {
 }
 
 .sidebar-logo.collapsed {
-    justify-content: center;
+    align-items: center;
     padding: 16px 8px;
 }
 
-.logo-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, #e6f4ff 0%, #bae0ff 100%);
-    border-radius: 10px;
+.logo-image-sidebar {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
+    transition: all 0.3s ease;
 }
 
-.dark .logo-icon {
-    background: linear-gradient(135deg, #111d2c 0%, #112a45 100%);
+.sidebar-logo.collapsed .logo-image-sidebar {
+    height: 24px;
 }
 
 .logo-text {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--color-neutral-900);
-    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-neutral-500);
+    padding-left: 31px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-top: -7px;
 }
 
 .dark .logo-text {
-    color: var(--color-neutral-100);
+    color: var(--color-neutral-400);
 }
 
 .sidebar-footer {

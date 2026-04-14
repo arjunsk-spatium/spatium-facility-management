@@ -47,10 +47,10 @@ import { navigateTo } from '#app';
 const authStore = useAuthStore();
 
 const userEmail = computed(() => authStore.user?.email || 'Admin');
-const displayUser = computed(() => authStore.user?.name || userEmail.value.split('@')[0]);
+const displayUser = computed(() => authStore.userFullName || authStore.user?.email || 'Admin');
 
 const userInitial = computed(() => {
-    const name = authStore.user?.name || userEmail.value;
+    const name = displayUser.value;
     return name ? name.charAt(0).toUpperCase() : 'A';
 });
 

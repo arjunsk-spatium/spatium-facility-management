@@ -32,9 +32,21 @@
                     <span class="font-medium">{{ floor.name }}</span>
                 </template>
                 <template #extra>
-                    <a-button type="text" size="small" @click.stop="openEditFloor(floor)">
-                        <EditOutlined />
-                    </a-button>
+                    <a-space @click.stop>
+                        <a-button type="text" size="small" @click.stop="openEditFloor(floor)">
+                            <EditOutlined class="text-blue-500" />
+                        </a-button>
+                        <a-popconfirm
+                            title="Are you sure you want to delete this floor?"
+                            ok-text="Yes"
+                            cancel-text="No"
+                            @confirm="handleDeleteFloor(floor.id)"
+                        >
+                            <a-button type="text" size="small" @click.stop>
+                                <DeleteOutlined class="text-red-500" />
+                            </a-button>
+                        </a-popconfirm>
+                    </a-space>
                 </template>
                 
                 <!-- Wings Section -->
@@ -57,9 +69,21 @@
                                     <span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
                                     {{ wing.name }}
                                 </div>
-                                <a-button type="text" size="small" class="opacity-0 group-hover:opacity-100" @click.stop="openEditWing(wing)">
-                                    <EditOutlined />
-                                </a-button>
+                                <a-space class="opacity-0 group-hover:opacity-100">
+                                    <a-button type="text" size="small" @click.stop="openEditWing(wing)">
+                                        <EditOutlined class="text-blue-500" />
+                                    </a-button>
+                                    <a-popconfirm
+                                        title="Are you sure you want to delete this wing?"
+                                        ok-text="Yes"
+                                        cancel-text="No"
+                                        @confirm="handleDeleteWing(wing.id)"
+                                    >
+                                        <a-button type="text" size="small" @click.stop>
+                                            <DeleteOutlined class="text-red-500" />
+                                        </a-button>
+                                    </a-popconfirm>
+                                </a-space>
                             </div>
                     </div>
                 </div>
@@ -106,7 +130,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import { PlusOutlined, EditOutlined } from '@ant-design/icons-vue';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { useFacilityService } from '../../composables/facilityService';
 import type { Floor, Wing } from '../../composables/facilityService';
@@ -215,6 +239,17 @@ const handleUpdateFloor = async () => {
     }
 };
 
+const handleDeleteFloor = async (id: string) => {
+    try {
+        await facilityService.deleteFloor(id);
+        message.success('Floor deleted');
+        fetchFloors();
+        emit('refresh');
+    } catch (e) {
+        message.error('Failed to delete floor');
+    }
+};
+
 const openAddWing = (floor: Floor) => {
     selectedFloor.value = floor;
     wingForm.value.name = '';
@@ -260,6 +295,16 @@ const handleUpdateWing = async () => {
         message.error('Failed to update wing');
     } finally {
         submitting.value = false;
+    }
+};
+
+const handleDeleteWing = async (id: string) => {
+    try {
+        await facilityService.deleteWing(id);
+        message.success('Wing deleted');
+        fetchFloors();
+    } catch (e) {
+        message.error('Failed to delete wing');
     }
 };
 </script>

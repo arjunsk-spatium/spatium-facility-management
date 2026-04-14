@@ -1,5 +1,5 @@
 <template>
-    <div class="space-y-6">
+    <div class="space-y-6 min-w-0 overflow-hidden">
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <h2 class="text-xl font-semibold dark:text-white">Helpdesk Settings</h2>
         </div>
@@ -48,6 +48,24 @@
                     />
                 </div>
             </a-tab-pane>
+
+            <a-tab-pane key="role" tab="Role">
+                <div class="py-4">
+                    <ConfigTable 
+                        title="Roles" 
+                        :columns="roleColumns" 
+                        :data="roles" 
+                        :loading="loadingRoles"
+                        :fields="roleFields"
+                        :canCreate="canCreate"
+                        :canUpdate="canUpdate"
+                        :canDelete="canDelete"
+                        @add="handleAddRole" 
+                        @edit="handleEditRole" 
+                        @delete="handleDeleteRole" 
+                    />
+                </div>
+            </a-tab-pane>
         </a-tabs>
     </div>
 </template>
@@ -55,7 +73,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { useHelpdeskService, type HelpdeskCategory, type HelpdeskSubCategory } from '../../composables/helpdeskService'
+import { useHelpdeskService, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskRole } from '../../composables/helpdeskService'
 import ConfigTable from './ConfigTable.vue'
 
 defineProps<{
@@ -67,6 +85,7 @@ defineProps<{
 const activeSubTab = ref('category')
 const loading = ref(false)
 const loadingSubcategories = ref(false)
+const loadingRoles = ref(false)
 
 const service = useHelpdeskService()
 
@@ -76,6 +95,9 @@ const selectedCategoryId = ref<string>()
 
 // Subcategory data
 const subcategories = ref<HelpdeskSubCategory[]>([])
+
+// Role data
+const roles = ref<HelpdeskRole[]>([])
 
 // Columns
 const categoryColumns = [
@@ -99,6 +121,21 @@ const subcategoryFields = [
     { name: 'key', label: 'Key', type: 'text' as const },
     { name: 'response_sla', label: 'Response SLA (hours)', type: 'number' as const },
     { name: 'resolution_sla', label: 'Resolution SLA (hours)', type: 'number' as const }
+]
+
+const roleColumns = [
+    { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: 'Key', dataIndex: 'key', key: 'key' },
+    { title: 'Description', dataIndex: 'description', key: 'description' },
+    { title: 'Display Order', dataIndex: 'display_order', key: 'display_order' },
+    { title: 'Action', key: 'action', width: 150 }
+]
+
+const roleFields = [
+    { name: 'name', label: 'Name', type: 'text' as const },
+    { name: 'key', label: 'Key', type: 'text' as const },
+    { name: 'description', label: 'Description', type: 'text' as const },
+    { name: 'display_order', label: 'Display Order', type: 'number' as const }
 ]
 
 // Computed options
@@ -142,10 +179,22 @@ const handleCategoryFilterChange = () => {
     fetchSubcategories()
 }
 
+const fetchRoles = async () => {
+    loadingRoles.value = true
+    try {
+        roles.value = await service.getRoles()
+    } catch (error) {
+        message.error('Failed to load roles')
+    } finally {
+        loadingRoles.value = false
+    }
+}
+
 // Initial load
 onMounted(async () => {
     await fetchCategories()
     await fetchSubcategories()
+    await fetchRoles()
 })
 
 // Category handlers
@@ -230,6 +279,47 @@ const handleDeleteSubcategory = async (record: HelpdeskSubCategory) => {
         message.success('Subcategory deleted successfully')
     } catch (error) {
         message.error('Failed to delete subcategory')
+    }
+}
+
+const handleAddRole = async (data: any) => {
+    try {
+        const newRole = await service.createRole({
+            key: data.key,
+            name: data.name,
+            description: data.description || '',
+            display_order: data.display_order || 1
+        })
+        roles.value.push(newRole)
+        message.success('Role added successfully')
+    } catch (error) {
+        message.error('Failed to add role')
+    }
+}
+
+const handleEditRole = async (record: HelpdeskRole, data: any) => {
+    try {
+        const updated = await service.updateRole(record.id, {
+            name: data.name,
+            key: data.key,
+            description: data.description,
+            display_order: data.display_order
+        })
+        const index = roles.value.findIndex(r => r.id === record.id)
+        if (index > -1) roles.value[index] = updated
+        message.success('Role updated successfully')
+    } catch (error) {
+        message.error('Failed to update role')
+    }
+}
+
+const handleDeleteRole = async (record: HelpdeskRole) => {
+    try {
+        await service.deleteRole(record.id)
+        roles.value = roles.value.filter(r => r.id !== record.id)
+        message.success('Role deleted successfully')
+    } catch (error) {
+        message.error('Failed to delete role')
     }
 }
 </script>

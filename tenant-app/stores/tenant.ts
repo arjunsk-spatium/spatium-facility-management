@@ -66,6 +66,7 @@ export const useTenantStore = defineStore("tenant", {
         secondaryColor: (state) => state.tenant?.colors.secondary || "#64748b",
         tenantName: (state) => state.tenant?.name || "Spatium Hub",
         tenantLogo: (state) => state.tenant?.logoUrl || "",
+        darkLogo: (state) => state.tenant?.darkLogoUrl || state.tenant?.logoUrl || "",
         faviconUrl: (state) => state.tenant?.faviconUrl || "/favicon.ico",
     },
 });

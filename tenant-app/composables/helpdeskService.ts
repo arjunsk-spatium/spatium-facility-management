@@ -153,6 +153,23 @@ export interface HelpdeskPriority {
     is_active: boolean;
 }
 
+export interface HelpdeskRole {
+    id: string;
+    key: string;
+    name: string;
+    description: string;
+    display_order: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CreateRolePayload {
+    key: string;
+    name: string;
+    description?: string;
+    display_order: number;
+}
+
 export interface PaginatedResponse<T> {
     count: number;
     next: string | null;
@@ -764,6 +781,93 @@ export const useHelpdeskService = () => {
                 }
             } catch (error) {
                 console.error("Error deleting staff:", error);
+                throw error;
+            }
+        },
+
+        getRoles: async (): Promise<HelpdeskRole[]> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<PaginatedResponse<HelpdeskRole>>>
+                >("/api/portal/helpdesk/roles/", { method: "GET" });
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to fetch roles",
+                    );
+                }
+                return response.data.data.results;
+            } catch (error) {
+                console.error("Error fetching roles:", error);
+                throw error;
+            }
+        },
+
+        createRole: async (
+            payload: CreateRolePayload,
+        ): Promise<HelpdeskRole> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<HelpdeskRole>>
+                >("/api/portal/helpdesk/roles/", {
+                    method: "POST",
+                    body: payload,
+                });
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to create role",
+                    );
+                }
+                return response.data.data;
+            } catch (error) {
+                console.error("Error creating role:", error);
+                throw error;
+            }
+        },
+
+        updateRole: async (
+            id: string,
+            payload: Partial<CreateRolePayload>,
+        ): Promise<HelpdeskRole> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<HelpdeskRole>>
+                >(`/api/portal/helpdesk/roles/${id}/`, {
+                    method: "PATCH",
+                    body: payload,
+                });
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to update role",
+                    );
+                }
+                return response.data.data;
+            } catch (error) {
+                console.error("Error updating role:", error);
+                throw error;
+            }
+        },
+
+        deleteRole: async (id: string): Promise<void> => {
+            try {
+                const response = await $api<ApiResponse<ApiResponse<null>>>(
+                    `/api/portal/helpdesk/roles/${id}/`,
+                    { method: "DELETE" },
+                );
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to delete role",
+                    );
+                }
+            } catch (error) {
+                console.error("Error deleting role:", error);
                 throw error;
             }
         },

@@ -28,6 +28,16 @@ export const useAuthStore = defineStore('auth', {
   },
   getters: {
     isAuthenticated: (state) => !!state.token,
+    userFullName: (state) => {
+      if (!state.user) return "";
+      if (state.user.full_name) return state.user.full_name;
+      if (state.user.name) return state.user.name;
+      if (state.user.first_name || state.user.last_name) {
+        return `${state.user.first_name || ""} ${state.user.last_name || ""}`.trim();
+      }
+      if (state.user.username) return state.user.username;
+      return state.user.email?.split("@")[0] || "Admin";
+    },
   },
   actions: {
     async requestOtp(email: string) {

@@ -5,7 +5,7 @@
         width="600"
         @close="$emit('close')"
     >
-        <FacilitiesTowerStructureManager 
+        <TowerStructureManager 
             v-if="tower?.id"
             :towerId="tower.id" 
             @refresh="$emit('refresh')" 
@@ -18,6 +18,7 @@
 
 <script setup lang="ts">
 import type { Tower } from '../../composables/facilityService';
+import TowerStructureManager from './TowerStructureManager.vue';
 
 defineProps<{
     open: boolean;

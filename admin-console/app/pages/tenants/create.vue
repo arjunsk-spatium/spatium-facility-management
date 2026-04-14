@@ -166,12 +166,12 @@
 
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <!-- Light Logo -->
-                                    <a-form-item label="Light Logo" class="mb-0">
+                                    <a-form-item label="Light background logo" class="mb-0">
                                         <div class="relative group cursor-pointer border border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 transition-all hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-white dark:bg-gray-800 h-64 flex flex-col items-center justify-center overflow-hidden"
                                             @click="$refs.lightLogoInput.click()">
 
                                             <input type="file" ref="lightLogoInput" style="display: none"
-                                                accept="image/*" @change="(e: any) => handleFileSelect(e, 'logo')" />
+                                                accept=".jpg,.jpeg,.png,.svg" @change="(e: any) => handleFileSelect(e, 'logo')" />
 
                                             <img v-if="brandingForm.logoPreview" :src="brandingForm.logoPreview"
                                                 class="h-32 w-auto object-contain mb-4 transition-transform group-hover:scale-105" />
@@ -185,7 +185,7 @@
                                                     {{ brandingForm.logo?.name || 'Choose Light Logo' }}
                                                 </p>
                                                 <p class="text-xs text-gray-400" v-if="!brandingForm.logo">JPG, PNG, or
-                                                    SVG
+                                                    SVG (Max 300KB)
                                                 </p>
                                             </div>
 
@@ -200,12 +200,12 @@
                                     </a-form-item>
 
                                     <!-- Dark Logo -->
-                                    <a-form-item label="Dark Logo" class="mb-0">
+                                    <a-form-item label="Dark background logo" class="mb-0">
                                         <div class="relative group cursor-pointer border border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 transition-all hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-white dark:bg-gray-800 h-64 flex flex-col items-center justify-center overflow-hidden"
                                             @click="$refs.darkLogoInput.click()">
 
                                             <input type="file" ref="darkLogoInput" style="display: none"
-                                                accept="image/*"
+                                                accept=".jpg,.jpeg,.png,.svg"
                                                 @change="(e: any) => handleFileSelect(e, 'dark_logo')" />
 
                                             <img v-if="brandingForm.darkLogoPreview" :src="brandingForm.darkLogoPreview"
@@ -221,7 +221,7 @@
                                                 </p>
                                                 <p class="text-xs text-gray-400" v-if="!brandingForm.dark_logo">JPG,
                                                     PNG, or
-                                                    SVG</p>
+                                                    SVG (Max 300KB)</p>
                                             </div>
 
                                             <div
@@ -239,7 +239,7 @@
                                         <div class="relative group cursor-pointer border border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 transition-all hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 bg-white dark:bg-gray-800 h-64 flex flex-col items-center justify-center overflow-hidden"
                                             @click="$refs.faviconInput.click()">
 
-                                            <input type="file" ref="faviconInput" style="display: none" accept="image/*"
+                                            <input type="file" ref="faviconInput" style="display: none" accept=".jpg,.jpeg,.png,.svg,.ico"
                                                 @change="(e: any) => handleFileSelect(e, 'favicon')" />
 
                                             <img v-if="brandingForm.faviconPreview" :src="brandingForm.faviconPreview"
@@ -253,7 +253,7 @@
                                                 <p class="font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                     {{ brandingForm.favicon?.name || 'Choose Favicon' }}
                                                 </p>
-                                                <p class="text-xs text-gray-400" v-if="!brandingForm.favicon">ICO or PNG
+                                                <p class="text-xs text-gray-400" v-if="!brandingForm.favicon">ICO or PNG (Max 300KB)
                                                 </p>
                                             </div>
 
@@ -595,6 +595,13 @@ const handleStep3 = async () => {
 const handleFileSelect = (event: any, field: 'logo' | 'dark_logo' | 'favicon') => {
     const file = event.target.files[0];
     if (file) {
+        // Validation: Max 300KB
+        if (file.size > 300 * 1024) {
+            message.error('File size too large. Maximum size is 300KB.');
+            event.target.value = ''; // Reset input
+            return;
+        }
+
         if (field === 'logo') {
             brandingForm.logo = file;
             brandingForm.logoPreview = URL.createObjectURL(file);

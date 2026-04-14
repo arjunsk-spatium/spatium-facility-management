@@ -2,6 +2,7 @@ export interface Tenant {
     id: string;
     name: string;
     logoUrl: string;
+    darkLogoUrl?: string;
     faviconUrl?: string;
     colors: {
         primary: string;
@@ -70,6 +71,7 @@ export const useTenantService = () => {
                         id: data.tenant_id || "00000000-0000-0000-0000-000000000000",
                         name: data.name,
                         logoUrl: branding.logo_url || "",
+                        darkLogoUrl: branding.dark_logo_url || branding.logo_url || "",
                         faviconUrl: branding.favicon_url || "/favicon.ico",
                         colors: {
                             primary: branding.primary_color || "#0499E4",

@@ -33,7 +33,7 @@
 
       <a-layout-footer class="text-center text-neutral-500 dark:text-neutral-400 text-sm"
         :style="{ background: isDark ? '#1a1a1a' : '#fafafa', padding: '12px 24px' }">
-        Spatium Facility Management ©2024
+        Nexspace ©2026
       </a-layout-footer>
     </a-layout>
   </a-layout>

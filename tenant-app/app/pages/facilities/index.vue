@@ -83,9 +83,6 @@
                     <div class="flex justify-center w-full" @click.stop="navigateTo(`/facilities/${facility.id}`)">
                         <EyeOutlined class="mr-2" /> View
                     </div>
-                    <div class="flex justify-center w-full" @click.stop="handleGenerateQRCode(facility)">
-                        <QrcodeOutlined class="mr-2" /> QR Code
-                    </div>
                     <a-popconfirm
                         v-if="canDelete"
                         title="Are you sure you want to delete this facility?"
@@ -121,7 +118,6 @@ import {
     EnvironmentOutlined,
     EditOutlined,
     EyeOutlined,
-    QrcodeOutlined,
     DeleteOutlined
 } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
@@ -143,14 +139,6 @@ const handlePageChange = (page: number) => {
     facilityStore.goToPage(page);
 };
 
-const handleGenerateQRCode = async (facility: any) => {
-    try {
-        await facilityStore.generateFacilityQRCode(facility.id, facility.name);
-        message.success('QR Code generated successfully');
-    } catch (error) {
-        message.error('Failed to generate QR Code');
-    }
-};
 
 const handleDeleteFacility = async (id: string) => {
     try {
