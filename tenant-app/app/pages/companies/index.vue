@@ -74,7 +74,7 @@
                         <NuxtLink v-if="canUpdate" :to="`/companies/${record.id}/edit`">
                             <a-button type="link">Edit</a-button>
                         </NuxtLink>
-                        <a-popconfirm v-if="canDelete" title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
+                        <a-popconfirm v-if="canDelete" title="Are you sure delete this company?" ok-text="Yes" cancel-text="No" @confirm="handleDelete(record.id)">
                             <a-button type="link" danger>Delete</a-button>
                         </a-popconfirm>
                     </a-space>
@@ -126,7 +126,7 @@
                             <NuxtLink v-if="canUpdate" :to="`/companies/${company.id}/edit`">
                                 <a-button type="default" size="small">Edit</a-button>
                             </NuxtLink>
-                            <a-popconfirm v-if="canDelete" title="Are you sure delete this company?" ok-text="Yes" cancel-text="No">
+                            <a-popconfirm v-if="canDelete" title="Are you sure delete this company?" ok-text="Yes" cancel-text="No" @confirm="handleDelete(company.id)">
                                 <a-button type="default" danger size="small">Delete</a-button>
                             </a-popconfirm>
                         </div>
@@ -142,6 +142,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useCompanyStore } from '../../../stores/company'
 import { useAuthStore } from '../../../stores/auth'
+import { message } from 'ant-design-vue'
 import {
     PlusOutlined,
     BankOutlined,
@@ -199,28 +200,30 @@ const downloadExcel = async () => {
         const data = filteredCompanies.value.map(company => ({
             'Company Name': company.name,
             'Status': company.status,
-            'Contact Name': company.contacts.contact_name,
-            'Email': company.contacts.email,
-            'Address': company.contacts.address,
-            'Phone': company.contacts.phone,
-            'GSTIN': company.contacts.gstin || ''
+            'Contact Name': company.contacts[0]?.contact_name || '',
+            'Email': company.contacts[0]?.email || '',
+            'Address': company.contacts[0]?.address || '',
+            'Phone': company.contacts[0]?.phone || '',
+            'GSTIN': company.contacts[0]?.gstin || ''
         }))
 
         const worksheet = XLSX.utils.json_to_sheet(data)
         const workbook = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Companies')
-
-        // Generate filename with date-time
-        const now = new Date()
-        const dateTime = now.toISOString().replace(/[:.]/g, '-').slice(0, 19)
-        const fileName = `companies-${dateTime}.xlsx`
-
-        // Use built-in download which handles browser compatibility better
-        XLSX.writeFile(workbook, fileName)
+        XLSX.writeFile(workbook, 'companies.xlsx')
     } catch (error) {
         console.error('Error exporting to Excel:', error)
     } finally {
         downloading.value = false
+    }
+}
+
+const handleDelete = async (id: string) => {
+    try {
+        await store.deleteCompanyAction(id)
+        message.success('Company deleted successfully')
+    } catch (error) {
+        message.error('Failed to delete company')
     }
 }
 

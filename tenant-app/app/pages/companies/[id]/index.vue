@@ -27,10 +27,6 @@
                         <a-card>
                             <template #title>
                                 <div class="flex items-center gap-3">
-                                    <a-avatar :src="company.logo" :size="40"
-                                        class="flex-shrink-0 bg-primary-100 text-primary-600">
-                                        {{ getInitials(company.name) }}
-                                    </a-avatar>
                                     <span class="font-semibold text-lg text-gray-900 dark:text-gray-100">Company
                                         Information</span>
                                 </div>
@@ -42,6 +38,26 @@
                                     </a-button>
                                 </NuxtLink>
                             </template>
+
+                            <!-- Logo Section -->
+                            <div class="flex items-center gap-4 mb-5 pb-5 border-b border-gray-100 dark:border-gray-700">
+                                <div v-if="company.logo"
+                                    class="w-20 h-20 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                    <img :src="company.logo" :alt="company.name"
+                                        class="w-full h-full object-contain p-1" />
+                                </div>
+                                <a-avatar v-else :size="64"
+                                    class="flex-shrink-0 bg-primary-100 text-primary-600 text-xl font-semibold">
+                                    {{ getInitials(company.name) }}
+                                </a-avatar>
+                                <div>
+                                    <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ company.name }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ company.email_domain }}</div>
+                                    <a-tag :color="company.status === 'active' ? 'green' : 'default'" class="mt-1">
+                                        {{ company.status }}
+                                    </a-tag>
+                                </div>
+                            </div>
 
                             <a-descriptions :column="{ xs: 1, sm: 2 }" bordered size="small">
                                 <a-descriptions-item label="Company Name">{{ company.name }}</a-descriptions-item>

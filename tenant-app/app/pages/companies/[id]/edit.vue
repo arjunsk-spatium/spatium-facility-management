@@ -96,8 +96,9 @@ const handleUpdate = async (formData: any) => {
     try {
         const id = route.params.id as string
         await store.updateCompanyAction(id, formData)
+        await store.fetchCompany(id)
         message.success('Company updated successfully')
-        router.push(`/companies/${id}`)
+        await router.push(`/companies/${id}`)
     } catch (e) {
         message.error('Failed to update company')
     }

@@ -73,6 +73,23 @@ export const useCompanyStore = defineStore('company', {
                 this.loading = false
             }
         },
+        async deleteCompanyAction(id: string) {
+            this.loading = true
+            this.error = null
+            try {
+                const { deleteCompany } = useCompanyService()
+                await deleteCompany(id)
+                this.companies = this.companies.filter(c => c.id !== id)
+                if (this.currentCompany?.id === id) {
+                    this.currentCompany = null
+                }
+            } catch (err) {
+                this.error = 'Failed to delete company'
+                throw err
+            } finally {
+                this.loading = false
+            }
+        },
         async fetchInsightsAction() {
             this.loading = true
             try {

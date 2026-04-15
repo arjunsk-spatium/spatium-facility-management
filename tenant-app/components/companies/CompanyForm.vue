@@ -151,6 +151,22 @@ const populateForm = () => {
             phone: props.initialValues.phone || '',
             gstin: props.initialValues.gstin || ''
         }
+
+        // Pre-populate the upload widget with the existing logo URL
+        const existingLogo = props.initialValues.logo
+        if (existingLogo && typeof existingLogo === 'string') {
+            fileList.value = [
+                {
+                    uid: '-1',
+                    name: 'current-logo',
+                    status: 'done',
+                    url: existingLogo,
+                    thumbUrl: existingLogo,
+                }
+            ]
+        } else {
+            fileList.value = []
+        }
     }
 }
 
@@ -178,13 +194,13 @@ const handleSubmit = async () => {
             name: formState.value.name,
             status: formState.value.status,
             email_domain: formState.value.email_domain || undefined,
-            contacts: {
+            contacts: [{
                 contact_name: formState.value.contactName,
                 email: formState.value.email,
                 address: formState.value.address,
                 phone: formState.value.phone,
                 gstin: formState.value.gstin
-            }
+            }]
         }
 
         if (fileList.value && fileList.value.length > 0) {

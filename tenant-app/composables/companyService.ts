@@ -229,11 +229,19 @@ export const useCompanyService = () => {
         });
     };
 
+    const deleteCompany = async (id: string): Promise<void> => {
+        const url = buildUrl(`/api/portal/companies/${id}/`);
+        await $api(url, {
+            method: "DELETE",
+        });
+    };
+
     return {
         getCompanies,
         getCompanyById,
         createCompany,
         updateCompany,
+        deleteCompany,
         getInsights,
         getCompanyFacilities,
         createCompanyFacilityMapping,
