@@ -1,6 +1,7 @@
 export interface Visitor {
     id: string
     name: string
+    phone_number: string | null
     email: string | null
     from_company: string | null
     visitor_type: 'walk_in' | 'pre_invite'
