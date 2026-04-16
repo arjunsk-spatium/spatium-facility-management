@@ -360,7 +360,7 @@
                 <a-form-item label="Email" required>
                     <a-input v-model:value="spocForm.email" />
                 </a-form-item>
-                <a-form-item label="Phone">
+                <a-form-item label="Phone" required>
                     <a-input v-model:value="spocForm.phone_number" />
                 </a-form-item>
             </a-form>
