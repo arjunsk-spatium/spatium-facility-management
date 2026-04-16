@@ -4,16 +4,26 @@ import { defineStore } from 'pinia'
 export interface SpocVisitor {
     id: string
     name: string
-    phone: string
-    email?: string
-    company?: string
+    phone_number: string
+    email?: string | null
+    from_company?: string | null
     visitDate: string
-    visitTime?: string
+    visitTime?: string | null
     purpose: string
-    status: 'pending' | 'approved' | 'checked_in' | 'checked_out' | 'rejected'
+    purpose_of_visit: string
+    status: 'Pending' | 'Approved' | 'Rejected'
+    facility_name: string
+    facility_id: string
+    company_name: string | null
     hostName?: string
     passcode?: string
-    createdAt?: string
+    created_at: string
+    image_url?: string | null
+    appointment_time?: string | null
+    check_in_time?: string | null
+    check_out_time?: string | null
+    is_on_premises: boolean
+    visitor_type?: 'walk_in' | 'pre_invite'
 }
 
 export interface SpocEmployee {
@@ -91,14 +101,26 @@ export const useSpocStore = defineStore('spoc', {
                     this.visitors = results.map((v: any) => ({
                         id: v.id,
                         name: v.name,
-                        phone: v.phone,
+                        phone_number: v.phone_number || v.phone || '',
                         email: v.email,
+                        from_company: v.from_company,
                         visitDate: v.created_at ? new Date(v.created_at).toISOString().split('T')[0] : '',
                         visitTime: v.appointment_time || '',
                         purpose: v.purpose_of_visit || '',
-                        status: v.status?.toLowerCase() || 'pending',
-                        hostName: '',
-                        passcode: ''
+                        purpose_of_visit: v.purpose_of_visit || '',
+                        status: v.status || 'Pending',
+                        facility_name: v.facility_name || '',
+                        facility_id: v.facility_id || '',
+                        company_name: v.company_name,
+                        hostName: v.created_by_id ? 'Host' : '',
+                        passcode: v.visitor_pass_url ? 'Generated' : '',
+                        created_at: v.created_at,
+                        image_url: v.image_url,
+                        appointment_time: v.appointment_time,
+                        check_in_time: v.check_in_time,
+                        check_out_time: v.check_out_time,
+                        is_on_premises: v.is_on_premises || false,
+                        visitor_type: v.visitor_type || 'pre_invite'
                     }))
                 } else {
                     this.visitors = []

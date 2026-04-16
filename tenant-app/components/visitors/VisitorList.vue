@@ -4,8 +4,8 @@
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'photo'">
                     <a-avatar 
-                        v-if="record.photoUrl" 
-                        :src="record.photoUrl" 
+                        v-if="record.image_url" 
+                        :src="record.image_url" 
                         :size="40" 
                         shape="square"
                         class="cursor-pointer"
@@ -64,8 +64,8 @@
                     <div class="flex gap-3 items-start mb-3">
                         <!-- Profile Picture -->
                         <a-avatar 
-                            v-if="record.photoUrl" 
-                            :src="record.photoUrl" 
+                            v-if="record.image_url" 
+                            :src="record.image_url" 
                             :size="48" 
                             shape="square"
                             class="cursor-pointer flex-shrink-0"
@@ -104,6 +104,10 @@
                     </div>
 
                     <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex gap-2">
+                            <span class="font-medium w-20">Phone:</span>
+                            <span>{{ record.phone_number || '-' }}</span>
+                        </div>
                         <div class="flex gap-2">
                             <span class="font-medium w-20">Email:</span>
                             <span class="truncate">{{ record.email || '-' }}</span>
@@ -182,6 +186,7 @@ defineEmits(['update-status'])
 const baseColumns = [
     { title: '', key: 'photo', width: 60 },
     { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: 'Phone', dataIndex: 'phone_number', key: 'phone_number' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Company', dataIndex: 'company_name', key: 'company_name' },
     { title: 'From', dataIndex: 'from_company', key: 'from_company' },

@@ -47,11 +47,9 @@
 
             <a-select v-model:value="selectedStatus" placeholder="All Status" allow-clear style="min-width: 150px"
                 class="w-full sm:w-auto">
-                <a-select-option value="pending">Pending</a-select-option>
-                <a-select-option value="approved">Approved</a-select-option>
-                <a-select-option value="checked_in">Checked In</a-select-option>
-                <a-select-option value="checked_out">Checked Out</a-select-option>
-                <a-select-option value="rejected">Rejected</a-select-option>
+                <a-select-option value="Pending">Pending</a-select-option>
+                <a-select-option value="Approved">Approved</a-select-option>
+                <a-select-option value="Rejected">Rejected</a-select-option>
             </a-select>
 
             <a-input-search v-model:value="searchQuery" placeholder="Search visitors..." allow-clear
@@ -63,8 +61,8 @@
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'photo'">
                     <a-avatar 
-                        v-if="record.photoUrl" 
-                        :src="record.photoUrl" 
+                        v-if="record.image_url" 
+                        :src="record.image_url" 
                         :size="40" 
                         shape="square"
                         class="cursor-pointer"
@@ -89,23 +87,23 @@
                         >
                             {{ record.name }}
                         </a>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone_number }}</p>
                     </div>
                 </template>
 
                 <template v-if="column.key === 'datetime'">
-                    <div>{{ formatDate(record.visitDate) }}</div>
-                    <div class="text-gray-400 text-xs">{{ record.visitTime }}</div>
+                    <div>{{ formatDate(record.appointment_time || record.created_at) }}</div>
+                    <div class="text-gray-400 text-xs">{{ formatTime(record.appointment_time) }}</div>
                 </template>
 
                 <template v-if="column.key === 'status'">
-                    <span :class="getStatusClass(record.status)" class="px-2 py-1 text-xs font-medium rounded-full">
-                        {{ getStatusLabel(record.status) }}
-                    </span>
+                    <a-tag :color="getStatusColor(record.status)">
+                        {{ record.status }}
+                    </a-tag>
                 </template>
 
                 <template v-if="column.key === 'passcode'">
-                    <span class="font-mono">{{ record.passcode || '-' }}</span>
+                    <span class="font-mono">{{ record.visitor_pass_url ? 'Generated' : '-' }}</span>
                 </template>
             </template>
 
@@ -115,8 +113,8 @@
                     <div class="flex gap-3 items-start mb-3">
                         <!-- Profile Picture -->
                         <a-avatar 
-                            v-if="record.photoUrl" 
-                            :src="record.photoUrl" 
+                            v-if="record.image_url" 
+                            :src="record.image_url" 
                             :size="48" 
                             shape="square"
                             class="cursor-pointer flex-shrink-0"
@@ -142,11 +140,11 @@
                                     >
                                         {{ record.name }}
                                     </a>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone }}</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone_number }}</p>
                                 </div>
-                                <span :class="getStatusClass(record.status)" class="px-2 py-1 text-xs font-medium rounded-full ml-2 flex-shrink-0">
-                                    {{ getStatusLabel(record.status) }}
-                                </span>
+                                <a-tag :color="getStatusColor(record.status)" class="ml-2 flex-shrink-0">
+                                    {{ record.status }}
+                                </a-tag>
                             </div>
                         </div>
                     </div>
@@ -154,20 +152,28 @@
                     <div class="grid grid-cols-2 gap-2 text-sm mb-3">
                         <div>
                             <p class="text-gray-400 dark:text-gray-500 text-xs">Date</p>
-                            <p class="text-gray-600 dark:text-gray-300">{{ formatDate(record.visitDate) }}</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ formatDate(record.appointment_time || record.created_at) }}</p>
                         </div>
                         <div>
                             <p class="text-gray-400 dark:text-gray-500 text-xs">Purpose</p>
-                            <p class="text-gray-600 dark:text-gray-300">{{ record.purpose }}</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ record.purpose_of_visit }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs">Facility</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ record.facility_name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs">From</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ record.from_company || '-' }}</p>
                         </div>
                     </div>
 
                     <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
                         <div class="flex items-center gap-2">
-                            <span class="text-xs text-gray-400">Host: {{ record.hostName || '-' }}</span>
+                            <span class="text-xs text-gray-400">Created: {{ formatDate(record.created_at) }}</span>
                         </div>
-                        <span v-if="record.passcode" class="font-mono text-sm text-gray-600 dark:text-gray-300">
-                            {{ record.passcode }}
+                        <span v-if="record.visitor_pass_url" class="font-mono text-sm text-gray-600 dark:text-gray-300">
+                            Pass Generated
                         </span>
                     </div>
                 </a-card>
@@ -184,7 +190,7 @@ import { storeToRefs } from 'pinia'
 import { PlusOutlined, BarChartOutlined, QrcodeOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
 import VisitorDetailsModal from '../../../../components/visitors/VisitorDetailsModal.vue'
-import type { Visitor } from '../../../../composables/visitorService'
+import type { SpocVisitor } from '../../../../stores/spoc'
 import { message } from 'ant-design-vue'
 import { useAuthStore } from '../../../../stores/auth'
 import { useCompanyStore } from '../../../../stores/company'
@@ -226,20 +232,20 @@ const generateQR = async () => {
 }
 
 const showDetailsModal = ref(false)
-const selectedVisitor = ref<Visitor | null>(null)
+const selectedVisitor = ref<SpocVisitor | null>(null)
 
 // Table columns
 const columns = [
     { title: '', key: 'photo', width: 60 },
     { title: 'Visitor', key: 'visitor', dataIndex: 'name' },
-    { title: 'Date & Time', key: 'datetime', dataIndex: 'visitDate', width: 150 },
-    { title: 'Purpose', dataIndex: 'purpose', key: 'purpose' },
-    { title: 'Host', dataIndex: 'hostName', key: 'host' },
+    { title: 'Date & Time', key: 'datetime', dataIndex: 'appointment_time', width: 150 },
+    { title: 'Purpose', dataIndex: 'purpose_of_visit', key: 'purpose' },
+    { title: 'Facility', dataIndex: 'facility_name', key: 'facility' },
     { title: 'Status', key: 'status', dataIndex: 'status', width: 120 },
-    { title: 'Passcode', key: 'passcode', dataIndex: 'passcode', width: 100 }
+    { title: 'Pass', key: 'passcode', dataIndex: 'visitor_pass_url', width: 100 }
 ]
 
-const openDetailsModal = (visitor: Visitor) => {
+const openDetailsModal = (visitor: SpocVisitor) => {
     selectedVisitor.value = visitor
     showDetailsModal.value = true
 }
@@ -263,46 +269,47 @@ const filteredVisitors = computed(() => {
     let result = visitors.value
 
     if (selectedStatus.value) {
-        result = result.filter(v => v.status === selectedStatus.value)
+        const statusMap: Record<string, string> = {
+            'pending': 'Pending',
+            'approved': 'Approved',
+            'checked_in': 'Approved',
+            'checked_out': 'Approved',
+            'rejected': 'Rejected'
+        }
+        result = result.filter(v => statusMap[v.status] === selectedStatus.value)
     }
 
     if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase()
         result = result.filter(v =>
             v.name.toLowerCase().includes(query) ||
-            v.phone.includes(query) ||
-            v.hostName?.toLowerCase().includes(query)
+            v.phone_number?.includes(query) ||
+            v.facility_name?.toLowerCase().includes(query)
         )
     }
 
     return result
 })
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '-'
     const date = new Date(dateStr)
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-const getStatusClass = (status: string) => {
-    const classes: Record<string, string> = {
-        'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-        'approved': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-        'checked_in': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-        'checked_out': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-        'rejected': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-    }
-    return classes[status] || classes['pending']
+const formatTime = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '-'
+    const date = new Date(dateStr)
+    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
 }
 
-const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-        'pending': 'Pending',
-        'approved': 'Approved',
-        'checked_in': 'Checked In',
-        'checked_out': 'Checked Out',
-        'rejected': 'Rejected'
+const getStatusColor = (status: string) => {
+    switch (status) {
+        case 'Approved': return 'green'
+        case 'Pending': return 'orange'
+        case 'Rejected': return 'red'
+        default: return 'default'
     }
-    return labels[status] || status
 }
 
 onMounted(async () => {

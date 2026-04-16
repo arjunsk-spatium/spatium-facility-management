@@ -264,10 +264,13 @@ const verify = async () => {
             message.success('Invite Verified')
             await startCamera()
         } else {
-            throw new Error(response.message || 'Invalid Passcode')
+            message.error(response.message || 'Invalid Passcode')
+            otpDigits.value = ['', '', '', '', '', '']
+            otpInputs.value[0]?.focus()
         }
     } catch (e: any) {
-        message.error(e?.response?.data?.message || 'Invalid or Expired Passcode')
+        const errorMsg = e?.response?.data?.message || e?.message || 'Invalid or Expired Passcode'
+        message.error(errorMsg)
         otpDigits.value = ['', '', '', '', '', '']
         otpInputs.value[0]?.focus()
     } finally {
