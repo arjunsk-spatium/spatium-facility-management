@@ -147,7 +147,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useVisitorStore } from '~/stores/visitor'
+import { useVisitorStore } from '../../../../stores/visitor'
 import { 
     CloseOutlined, ClockCircleFilled, 
     CheckCircleFilled, CloseCircleFilled,
