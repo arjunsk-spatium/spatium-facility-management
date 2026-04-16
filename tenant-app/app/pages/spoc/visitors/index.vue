@@ -35,6 +35,16 @@
                 </a-select-option>
             </a-select>
 
+            <a-button 
+                :disabled="!selectedFacility"
+                @click="generateQR" 
+                :loading="generatingQR"
+                title="Generate QR Code"
+                type="default">
+                <template #icon><QrcodeOutlined /></template>
+                <span class="hidden sm:inline">QR Code</span>
+            </a-button>
+
             <a-select v-model:value="selectedStatus" placeholder="All Status" allow-clear style="min-width: 150px"
                 class="w-full sm:w-auto">
                 <a-select-option value="pending">Pending</a-select-option>
@@ -171,25 +181,50 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
-import { PlusOutlined, BarChartOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, BarChartOutlined, QrcodeOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
 import VisitorDetailsModal from '../../../../components/visitors/VisitorDetailsModal.vue'
 import type { Visitor } from '../../../../composables/visitorService'
+import { message } from 'ant-design-vue'
+import { useAuthStore } from '../../../../stores/auth'
+import { useCompanyStore } from '../../../../stores/company'
 
 definePageMeta({
     middleware: 'auth'
 })
 
 const store = useSpocStore()
+const authStore = useAuthStore()
+const companyStore = useCompanyStore()
 const { visitors, loading, facilities } = storeToRefs(store)
 
 const selectedStatus = ref<string | null>(null)
 const selectedFacility = ref<string | null>(null)
 const searchQuery = ref('')
+const generatingQR = ref(false)
 
 const handleFacilityChange = () => {
     store.fetchVisitors(selectedFacility.value || undefined)
 }
+
+const generateQR = async () => {
+    if (!selectedFacility.value) return
+    const facility = facilities.value.find(f => f.id === selectedFacility.value)
+    if (!facility) return
+    
+    generatingQR.value = true
+    try {
+        const companyId = facility.companyId || authStore.user?.company_id || authStore.user?.tenant_id || ''
+        const companyName = authStore.user?.company_name || authStore.userFullName || 'Company'
+        await companyStore.generateCompanyQRCodeAction(companyId, companyName, facility.id)
+        message.success('QR Code generated successfully')
+    } catch (err) {
+        message.error('Failed to generate QR Code')
+    } finally {
+        generatingQR.value = false
+    }
+}
+
 const showDetailsModal = ref(false)
 const selectedVisitor = ref<Visitor | null>(null)
 

@@ -101,11 +101,13 @@
                     <video v-if="!capturedPhoto" ref="videoRef" class="w-full h-full object-cover" autoplay playsinline></video>
                     <img v-else :src="capturedPhoto" class="w-full h-full object-cover" />
                 </div>
-                <button v-if="!capturedPhoto" @click="capturePhoto" class="mt-4 w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto shadow-lg">
-                    <CameraOutlined class="text-xl" />
-                </button>
-                <div v-else class="mt-4 flex justify-center gap-3">
-                    <button @click="retakePhoto" class="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm">
+                <div v-if="!capturedPhoto" class="mt-4 flex justify-center w-full">
+                    <button @click="capturePhoto" class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors">
+                        <CameraOutlined class="text-xl" />
+                    </button>
+                </div>
+                <div v-else class="mt-4 flex justify-center gap-3 w-full">
+                    <button @click="retakePhoto" class="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 transition-colors">
                         Retake
                     </button>
                 </div>
@@ -114,10 +116,11 @@
             <div class="pt-4 w-full max-w-xs mx-auto">
                  <button 
                     class="w-full h-12 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                    :disabled="submitting"
+                    :class="!capturedPhoto ? 'bg-gray-200 text-gray-400' : 'bg-blue-600 text-white hover:bg-blue-700'"
+                    :disabled="submitting || !capturedPhoto"
                     @click="submitPhoto">
-                    <span v-if="submitting"><LoadingOutlined class="!text-white" /></span>
-                    <span v-else class="!text-white">Submit & Check In <ArrowRightOutlined class="ml-1 !text-white" /></span>
+                    <span v-if="submitting"><LoadingOutlined /></span>
+                    <span v-else>Submit & Check In <ArrowRightOutlined class="ml-1" /></span>
                 </button>
             </div>
         </template>
@@ -298,7 +301,11 @@ const submitPhoto = async () => {
         })
 
         if (response.success) {
-            store.currentVisitor = { ...verifiedVisitor.value, photoUrl: capturedPhoto.value }
+            store.currentVisitor = { 
+                ...verifiedVisitor.value, 
+                photoUrl: capturedPhoto.value,
+                visitor_pass_url: response.data?.visitor_pass_url 
+            }
             message.success('Check-in successful!')
             router.push('/public/visitor/pass')
         } else {
