@@ -1,75 +1,68 @@
-# Nuxt Minimal Starter
+# Spatium Facility Management
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+This is a monorepo containing the Frontend applications for the Spatium Facility Management system.
+
+## Project Structure
+
+The project consists of two main applications:
+
+- **Admin Console** (`/admin-console`): The administrative interface for managing the facility management system.
+- **Tenant App** (`/tenant-app`): The application used by tenants to interact with facility services.
+
+## Prerequisites
+
+- Node.js (Latest LTS recommended)
+- npm (or pnpm/yarn)
 
 ## Setup
 
-Make sure to install dependencies:
+Navigate to each application directory and install dependencies:
 
 ```bash
-# npm
+# Install dependencies for Admin Console
+cd admin-console
 npm install
 
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+# Install dependencies for Tenant App
+cd ../tenant-app
+npm install
 ```
 
-## Development Server
+## Running the Applications
 
-Start the development server on `http://localhost:3000`:
+### Concurrent Development (Recommended)
+
+You can run both applications simultaneously using the provided runner script:
 
 ```bash
-# npm
+node dev-runner.js
+```
+
+This will start:
+- **Tenant App** on `http://localhost:4000`
+- **Admin Console** on `http://localhost:5000`
+
+### Individual Execution
+
+You can also run each application separately:
+
+**Admin Console:**
+```bash
+cd admin-console
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
+# Runs on http://localhost:5000
 ```
 
-## Production
-
-Build the application for production:
-
+**Tenant App:**
 ```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+cd tenant-app
+npm run dev
+# Runs on http://localhost:4000
 ```
 
-Locally preview production build:
+## Technologies
 
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+- **Framework:** Nuxt 3
+- **State Management:** Pinia
+- **UI Framework:** Ant Design Vue
+- **Styling:** Tailwind CSS
