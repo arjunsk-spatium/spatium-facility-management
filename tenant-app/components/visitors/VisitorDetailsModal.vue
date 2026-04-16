@@ -31,8 +31,11 @@
                     
                     <!-- Tags -->
                     <div class="flex flex-wrap gap-2">
-                        <a-tag :color="visitor.visitor_type === 'walk_in' ? 'blue' : 'purple'" class="!m-0 !px-3 !py-1">
+                        <a-tag v-if="visitor.visitor_type" :color="visitor.visitor_type === 'walk_in' ? 'blue' : 'purple'" class="!m-0 !px-3 !py-1">
                             {{ visitor.visitor_type === 'walk_in' ? 'Walk-in' : 'Pre-invite' }}
+                        </a-tag>
+                        <a-tag v-else color="purple" class="!m-0 !px-3 !py-1">
+                            Pre-invite
                         </a-tag>
                         <a-tag color="green" class="!m-0 !px-3 !py-1">
                             {{ formatDateShort(visitor.appointment_time || visitor.created_at) }}
@@ -168,10 +171,13 @@ import {
     LogoutOutlined
 } from '@ant-design/icons-vue';
 import type { Visitor } from '../../composables/visitorService';
+import type { SpocVisitor } from '../../stores/spoc';
+
+type VisitorType = Visitor | SpocVisitor;
 
 const props = defineProps<{
     open: boolean;
-    visitor: Visitor | null;
+    visitor: VisitorType | null;
 }>();
 
 const emit = defineEmits<{
