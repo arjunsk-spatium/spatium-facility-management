@@ -29,6 +29,9 @@
                             </a-popconfirm>
                         </a-space>
                     </template>
+                    <template v-else-if="column.customRender">
+                        {{ getColumnValue(column, record) }}
+                    </template>
                 </template>
 
             <!-- Mobile Card View -->
@@ -81,7 +84,10 @@
                 <!-- Dynamic Fields -->
                 <template v-if="fields && fields.length > 0">
                     <a-form-item v-for="field in fields" :key="field.name" :label="field.label">
-                        <a-input-number v-if="field.type === 'number'" v-model:value="formData[field.name]"
+                        <a-switch v-if="field.type === 'switch'" v-model:checked="formData[field.name]" @change="handleFieldChange(field.name, $event)" />
+                        <a-select v-else-if="field.type === 'select'" v-model:value="formData[field.name]"
+                            :placeholder="`Select ${field.label.toLowerCase()}`" :options="field.options" @change="handleFieldChange(field.name, $event)" />
+                        <a-input-number v-else-if="field.type === 'number'" v-model:value="formData[field.name]"
                             :placeholder="`Enter ${field.label.toLowerCase()}`" style="width: 100%" />
                         <a-upload v-else-if="field.type === 'file'" :before-upload="(file: File) => { formData[field.name] = file; return false }"
                             :show-upload-list="false" accept="image/*">
@@ -110,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../ResponsiveDataView.vue'
 
@@ -124,7 +130,8 @@ interface Column {
 interface Field {
     name: string
     label: string
-    type: 'text' | 'number' | 'file'
+    type: 'text' | 'number' | 'file' | 'select' | 'switch'
+    options?: { label: string; value: string | number }[]
 }
 
 interface ParentOption {
@@ -149,6 +156,7 @@ const emit = defineEmits<{
     add: [data: any]
     edit: [record: any, data: any]
     delete: [record: any]
+    fieldChange: [field: string, value: any]
 }>()
 
 // Computed
@@ -177,6 +185,11 @@ const modalLoading = ref(false)
 const isEditing = ref(false)
 const editingRecord = ref<any>(null)
 const formData = ref<any>({})
+
+// Watch for form data changes to emit updates
+watch(() => formData.value, (newVal) => {
+    emit('fieldChange', newVal)
+}, { deep: true })
 
 // Methods
 const openAddModal = () => {
@@ -222,5 +235,16 @@ const handleSubmit = () => {
 
 const handleDelete = (record: any) => {
     emit('delete', record)
+}
+
+const handleFieldChange = (field: string, value: any) => {
+    emit('fieldChange', field, value)
+}
+
+const getColumnValue = (column: any, record: any) => {
+    if (column.customRender) {
+        return column.customRender(record[column.dataIndex], record)
+    }
+    return record[column.dataIndex]
 }
 </script>

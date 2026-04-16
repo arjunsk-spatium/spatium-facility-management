@@ -105,10 +105,16 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <a-button type="text" size="small" class="text-red-500"
-                                        @click="deleteFacility(facility.id!)">
-                                        <DeleteOutlined />
-                                    </a-button>
+                                    <div class="flex gap-2">
+                                        <a-button type="text" size="small" class="text-blue-500"
+                                            @click="generateQR(facility.facility_id, company.name)" title="Generate QR Code">
+                                            <QrcodeOutlined />
+                                        </a-button>
+                                        <a-button type="text" size="small" class="text-red-500"
+                                            @click="deleteFacility(facility.id!)" title="Remove Facility">
+                                            <DeleteOutlined />
+                                        </a-button>
+                                    </div>
                                 </div>
                             </div>
                         </a-card>
@@ -354,7 +360,7 @@
                 <a-form-item label="Email" required>
                     <a-input v-model:value="spocForm.email" />
                 </a-form-item>
-                <a-form-item label="Phone">
+                <a-form-item label="Phone" required>
                     <a-input v-model:value="spocForm.phone_number" />
                 </a-form-item>
             </a-form>
@@ -432,7 +438,8 @@ import {
     HistoryOutlined,
     DeleteOutlined,
     PlusOutlined,
-    BuildOutlined
+    BuildOutlined,
+    QrcodeOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
@@ -929,6 +936,16 @@ const deleteFacility = async (mappingId: string) => {
         message.success('Facility removed successfully')
     } catch (err) {
         message.error('Failed to remove facility')
+    }
+}
+
+const generateQR = async (facilityId: string, companyName: string) => {
+    try {
+        const companyId = route.params.id as string
+        await store.generateCompanyQRCodeAction(companyId, companyName, facilityId)
+        message.success('QR Code generated successfully')
+    } catch (err) {
+        message.error('Failed to generate QR Code')
     }
 }
 

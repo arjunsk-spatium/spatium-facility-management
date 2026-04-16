@@ -153,6 +153,14 @@ export interface HelpdeskPriority {
     is_active: boolean;
 }
 
+export interface HelpdeskAssignmentMode {
+    id: string;
+    key: string;
+    name: string;
+    description: string;
+    display_order: number;
+}
+
 export interface HelpdeskRole {
     id: string;
     key: string;
@@ -168,6 +176,28 @@ export interface CreateRolePayload {
     name: string;
     description?: string;
     display_order: number;
+}
+
+export interface DirectedEscalationRoleMapping {
+    id: string;
+    tenant_id: string;
+    assignment_mode: string;
+    assignment_mode_key: string;
+    role: string;
+    role_key: string;
+    role_name: string;
+    deadline_hours: number;
+    is_active: boolean;
+    is_archive: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CreateDirectedEscalationRoleMappingPayload {
+    assignment_mode: string;
+    role: string;
+    deadline_hours: number;
+    is_active: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -804,6 +834,44 @@ export const useHelpdeskService = () => {
             }
         },
 
+        getPriorities: async (): Promise<HelpdeskPriority[]> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<PaginatedResponse<HelpdeskPriority>>>
+                >("/api/portal/helpdesk/ticket-priorities/", { method: "GET" });
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to fetch priorities",
+                    );
+                }
+                return response.data.data.results;
+            } catch (error) {
+                console.error("Error fetching priorities:", error);
+                throw error;
+            }
+        },
+
+        getAssignmentModes: async (): Promise<HelpdeskAssignmentMode[]> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<PaginatedResponse<HelpdeskAssignmentMode>>>
+                >("/api/portal/helpdesk/assignment-modes/", { method: "GET" });
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to fetch assignment modes",
+                    );
+                }
+                return response.data.data.results;
+            } catch (error) {
+                console.error("Error fetching assignment modes:", error);
+                throw error;
+            }
+        },
+
         createRole: async (
             payload: CreateRolePayload,
         ): Promise<HelpdeskRole> => {
@@ -868,6 +936,93 @@ export const useHelpdeskService = () => {
                 }
             } catch (error) {
                 console.error("Error deleting role:", error);
+                throw error;
+            }
+        },
+
+        getDirectedEscalationRoleMappings: async (): Promise<DirectedEscalationRoleMapping[]> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<PaginatedResponse<DirectedEscalationRoleMapping>>>
+                >("/api/portal/helpdesk/directed-escalation-role-mappings/", { method: "GET" });
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to fetch directed escalation role mappings",
+                    );
+                }
+                return response.data.data.results;
+            } catch (error) {
+                console.error("Error fetching directed escalation role mappings:", error);
+                throw error;
+            }
+        },
+
+        createDirectedEscalationRoleMapping: async (
+            payload: CreateDirectedEscalationRoleMappingPayload,
+        ): Promise<DirectedEscalationRoleMapping> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<DirectedEscalationRoleMapping>>
+                >("/api/portal/helpdesk/directed-escalation-role-mappings/", {
+                    method: "POST",
+                    body: payload,
+                });
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to create directed escalation role mapping",
+                    );
+                }
+                return response.data.data;
+            } catch (error) {
+                console.error("Error creating directed escalation role mapping:", error);
+                throw error;
+            }
+        },
+
+        updateDirectedEscalationRoleMapping: async (
+            id: string,
+            payload: Partial<CreateDirectedEscalationRoleMappingPayload>,
+        ): Promise<DirectedEscalationRoleMapping> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<DirectedEscalationRoleMapping>>
+                >(`/api/portal/helpdesk/directed-escalation-role-mappings/${id}/`, {
+                    method: "PATCH",
+                    body: payload,
+                });
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to update directed escalation role mapping",
+                    );
+                }
+                return response.data.data;
+            } catch (error) {
+                console.error("Error updating directed escalation role mapping:", error);
+                throw error;
+            }
+        },
+
+        deleteDirectedEscalationRoleMapping: async (id: string): Promise<void> => {
+            try {
+                const response = await $api<ApiResponse<ApiResponse<null>>>(
+                    `/api/portal/helpdesk/directed-escalation-role-mappings/${id}/`,
+                    { method: "DELETE" },
+                );
+                if (!response.success || !response.data.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data.message ||
+                            "Failed to delete directed escalation role mapping",
+                    );
+                }
+            } catch (error) {
+                console.error("Error deleting directed escalation role mapping:", error);
                 throw error;
             }
         },

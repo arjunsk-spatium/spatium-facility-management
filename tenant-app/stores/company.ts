@@ -144,6 +144,20 @@ export const useCompanyStore = defineStore('company', {
             } finally {
                 this.loading = false
             }
+        },
+        async generateCompanyQRCodeAction(companyId: string, companyName: string, facilityId: string) {
+            this.loading = true;
+            this.error = null;
+            try {
+                const { generateCompanyQRCode } = useCompanyService();
+                await generateCompanyQRCode(companyId, companyName, facilityId);
+            } catch (err: any) {
+                console.error("[CompanyStore] Error generating company QR code:", err);
+                this.error = "Failed to generate company QR code: " + err.message;
+                throw err;
+            } finally {
+                this.loading = false;
+            }
         }
     }
 })
