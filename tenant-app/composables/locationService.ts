@@ -142,7 +142,10 @@ export const useLocationService = () => {
     // Get all zones
     const getAllZones = async (): Promise<Zone[]> => {
         try {
-            const response = await $api<ZoneApiResponse>(`/api/portal/zones/`, {
+            const response = await $api<{
+                success: boolean;
+                data: { results: Zone[] };
+            }>(`/api/portal/zones/`, {
                 method: "GET",
                 query: { page: 1, page_size: 999 },
             });
