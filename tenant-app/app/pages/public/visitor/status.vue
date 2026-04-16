@@ -59,8 +59,8 @@
             </div>
         </div>
 
-        <!-- QR Code / Pass -->
-        <div v-if="visitorStatus?.visitor_pass_url" class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+        <!-- QR Code / Pass - Only show when approved -->
+        <div v-if="visitorStatus?.visitor_pass_url && visitorStatus?.status === 'Approved'" class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
             <p class="text-gray-500 text-sm mb-3">Your Visitor Pass</p>
             <img :src="visitorStatus.visitor_pass_url" alt="Visitor Pass" class="max-w-[200px] mx-auto rounded-lg" />
             <a-button type="link" :href="visitorStatus.visitor_pass_url" target="_blank" class="mt-2">
@@ -138,11 +138,6 @@
             </div>
         </div>
 
-        <!-- Modify Button -->
-        <a-button block size="large" class="h-12 rounded-xl border border-gray-200 text-gray-600 font-bold hover:border-gray-300 hover:text-gray-900 flex items-center justify-center gap-2">
-            <EditOutlined /> Modify Request
-        </a-button>
-
         <div class="text-center mt-4">
              <a href="#" class="text-xs text-gray-400 font-medium">Need help? <span class="text-gray-500 underline">Contact Reception</span></a>
         </div>
@@ -152,11 +147,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useVisitorStore } from '~/stores/visitor'
 import { 
     CloseOutlined, ClockCircleFilled, 
     CheckCircleFilled, CloseCircleFilled,
-    CheckOutlined, LoadingOutlined, KeyOutlined,
-    EditOutlined
+    CheckOutlined, LoadingOutlined, KeyOutlined
 } from '@ant-design/icons-vue'
 
 
@@ -168,6 +163,7 @@ const { getVisitorStatus } = usePublicVisitorService()
 const visitorId = ref<string | null>(null)
 const visitorStatus = ref<any>(null)
 const loading = ref(true)
+const store = useVisitorStore()
 
 const statusColorClass = computed(() => {
     const status = visitorStatus.value?.status
@@ -181,6 +177,7 @@ onMounted(async () => {
     if (visitorId.value) {
         try {
             visitorStatus.value = await getVisitorStatus(visitorId.value)
+            store.currentVisitor = visitorStatus.value
         } catch (e) {
             console.error('Failed to fetch visitor status', e)
         }

@@ -67,32 +67,14 @@
                         </div>
                     </div>
 
-                    <!-- QR Code -->
-                     <div class="bg-gray-50 border border-gray-100 rounded-2xl p-6 mt-4 flex items-center justify-center relative group">
-                        <div class="absolute inset-0 bg-white/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm rounded-2xl cursor-pointer">
-                            <span class="font-bold text-gray-900">View Fullscreen</span>
-                        </div>
-                        <div class="bg-white p-2 rounded-xl shadow-sm">
-                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PASS-12345" class="w-32 h-32 rounded-lg" />
-                        </div>
-                     </div>
-                     <div class="text-center text-[10px] font-mono text-gray-400 tracking-widest">ID: 8823-9912-VIS</div>
+
                 </div>
             </div>
 
-            <!-- Add to Wallet Button -->
-            <button class="w-full bg-black text-white h-14 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-900 transition-transform active:scale-95 shadow-xl">
-                <AppleFilled class="text-xl" />
-                Add to Apple Wallet
-            </button>
-            <div class="flex gap-4 mt-4">
-                <button class="flex-1 h-12 rounded-xl bg-blue-50 text-blue-600 font-bold text-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
-                    <ShareAltOutlined /> Share Pass
-                </button>
-                 <button class="flex-1 h-12 rounded-xl bg-blue-50 text-blue-600 font-bold text-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
-                    <DownloadOutlined /> Save PDF
-                </button>
-            </div>
+            <!-- Save Pass button -->
+            <a :href="currentVisitor.visitor_pass_url" target="_blank" class="w-full h-12 rounded-xl bg-blue-50 text-blue-600 font-bold text-sm hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 no-underline">
+                <DownloadOutlined /> Save Pass
+            </a>
         </template>
 
          <template v-else>
@@ -105,12 +87,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { 
     CloseOutlined, CheckOutlined, SafetyCertificateFilled, 
-    BankFilled, ClockCircleFilled, AppleFilled, ShareAltOutlined,
+    BankFilled, ClockCircleFilled,
     DownloadOutlined, LoadingOutlined
 } from '@ant-design/icons-vue'
 
@@ -122,10 +104,10 @@ definePageMeta({
 const router = useRouter()
 const store = useVisitorStore()
 const { currentVisitor } = storeToRefs(store)
+const isApproved = computed(() => currentVisitor.value?.status === 'Approved')
 
 onMounted(() => {
-    if (!currentVisitor.value) {
-        // Redirect if no visitor data is present (prevent direct access)
+    if (!currentVisitor.value || !isApproved.value) {
        router.push('/public/visitor')
     }
 })

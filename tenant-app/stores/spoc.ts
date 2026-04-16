@@ -46,7 +46,7 @@ export const useSpocStore = defineStore('spoc', {
         employees: [] as SpocEmployee[],
         stats: null as SpocStats | null,
         purposes: [] as PurposeOfVisit[],
-        facilities: [] as { id: string; name: string }[],
+        facilities: [] as { id: string; name: string; companyId?: string }[],
         loading: false,
         error: null as string | null
     }),
@@ -246,15 +246,22 @@ export const useSpocStore = defineStore('spoc', {
             this.loading = true
             try {
                 const { $api } = useNuxtApp()
-                const response = await $api<any>('/api/portal/facilities/', {
+                const response = await $api<any>('/api/portal/companies/my-facilities/', {
                     method: 'GET',
                     query: { page_size: 100 }
                 })
                 
                 if (response.success && response.data?.results) {
                     this.facilities = response.data.results.map((f: any) => ({
-                        id: f.id,
-                        name: f.name
+                        id: f.facility_id || f.id,
+                        name: f.facility_name || f.name,
+                        companyId: f.company || f.company_id
+                    }))
+                } else if (response.success && Array.isArray(response.data)) {
+                    this.facilities = response.data.map((f: any) => ({
+                        id: f.facility_id || f.id,
+                        name: f.facility_name || f.name,
+                        companyId: f.company || f.company_id
                     }))
                 } else {
                     this.facilities = []
