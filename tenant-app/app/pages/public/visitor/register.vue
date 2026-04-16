@@ -296,7 +296,8 @@
                     <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Company to Visit</label>
                     <div class="relative">
                         <select v-model="formState.companyId"
-                            class="block w-full px-4 h-12 rounded-lg border border-gray-200 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all appearance-none">
+                            :disabled="!!companyIdQuery"
+                            class="block w-full px-4 h-12 rounded-lg border border-gray-200 bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all appearance-none disabled:bg-gray-50 disabled:text-gray-400">
                             <option :value="''" disabled selected>Select company...</option>
                             <option v-for="company in companies" :key="company.id" :value="company.id">
                                 {{ company.name }}
@@ -509,6 +510,7 @@ const {
 
 const facilityId = computed(() => (route.query.facility_id as string) || '')
 const tenantId = computed(() => (route.query.tenant as string) || '')
+const companyIdQuery = computed(() => (route.query.company_id as string) || '')
 
 const step = ref(0)
 const loading = ref(false)
@@ -724,6 +726,9 @@ const verifyOtpCode = async () => {
             try {
                 purposes.value = await getPurposesOfVisit()
                 companies.value = await getCompanies(facilityId.value || undefined)
+                if (companyIdQuery.value && companies.value.some(c => c.id === companyIdQuery.value)) {
+                    formState.companyId = companyIdQuery.value
+                }
             } catch (e) {
                 console.error('Failed to load dropdown data', e)
             }
@@ -737,7 +742,7 @@ const verifyOtpCode = async () => {
                     formState.email = v.email || ''
                     formState.fromCompany = v.from_company || ''
                     if (v.purpose_of_visit_id) formState.purposeOfVisitId = v.purpose_of_visit_id
-                    if (v.company_id) formState.companyId = v.company_id
+                    if (v.company_id && !companyIdQuery.value) formState.companyId = v.company_id
                 }
             } catch (e) {
                 console.error('Failed to load visitor profile', e)

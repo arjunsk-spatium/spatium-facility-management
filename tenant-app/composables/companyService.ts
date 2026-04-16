@@ -236,6 +236,36 @@ export const useCompanyService = () => {
         });
     };
 
+    const generateCompanyQRCode = async (
+        companyId: string,
+        companyName: string,
+        facilityId: string,
+    ): Promise<void> => {
+        const domain = window.location.origin;
+        const fullUrl = `${domain}/public/visitor/register?facility_id=${facilityId}&company_id=${companyId}`;
+
+        const response = await $api<Blob>(
+            "/api/portal/visitors/client/qr-code/pdf/",
+            {
+                method: "POST",
+                body: {
+                    full_url: fullUrl,
+                    facility_name: companyName,
+                },
+                responseType: "blob",
+            },
+        );
+
+        const url = window.URL.createObjectURL(response);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${companyName}-qrcode.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    };
+
     return {
         getCompanies,
         getCompanyById,
@@ -246,5 +276,6 @@ export const useCompanyService = () => {
         getCompanyFacilities,
         createCompanyFacilityMapping,
         deleteCompanyFacilityMapping,
+        generateCompanyQRCode,
     };
 };
