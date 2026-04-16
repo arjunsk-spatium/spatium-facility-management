@@ -12,6 +12,17 @@
                 <a-step title="Review" description="Confirm Details" />
             </a-steps>
 
+            <!-- Warning: No zones in system -->
+            <div v-if="zonesLoaded && zones.length === 0" class="mb-6 mt-6">
+                <a-alert
+                    type="warning"
+                    message="No zones in system"
+                    description="There are no zones added in the system yet. Please add zones first from the zone management page."
+                    show-icon
+                    closable
+                />
+            </div>
+
             <!-- Step 1: Basic Information -->
             <div v-show="currentStep === 0" class="max-w-3xl mx-auto space-y-8 py-8">
                 <a-form layout="vertical" :model="formData">
@@ -135,13 +146,12 @@
                                 show-search
                                 option-filter-prop="label"
                             >
-                                <a-select-option v-for="zone in zones" :key="zone.id" :value="zone.id" :label="zone.name">
+                                <a-select-option v-for="zone in filteredZones" :key="zone.id" :value="zone.id" :label="zone.name">
                                     {{ zone.name }}
                                 </a-select-option>
                             </a-select>
-                            <span v-if="formData.city && zones.length === 0 && !loadingZones" class="text-xs text-orange-500">
-                                No zones found for selected city
-                            </span>
+                            <div class="mt-2 mb-4">
+                            </div>
                         </a-form-item>
                     </div>
                 </a-form>
@@ -217,6 +227,7 @@ const loadingCountries = ref(false);
 const loadingStates = ref(false);
 const loadingCities = ref(false);
 const loadingZones = ref(false);
+const zonesLoaded = ref(false);
 
 const formData = reactive({
     name: '',
@@ -276,6 +287,12 @@ const selectedZoneName = computed(() => {
     return zone?.name || 'Not selected';
 });
 
+// Filter zones by selected city
+const filteredZones = computed(() => {
+    if (!formData.city) return zones.value;
+    return zones.value.filter(z => z.city === formData.city);
+});
+
 // Filter option for searchable selects
 const filterOption = (input: string, option: any) => {
     return option.children?.[0]?.children?.toLowerCase().includes(input.toLowerCase());
@@ -302,7 +319,7 @@ const handleCountryChange = async (countryId: string) => {
     formData.zone = '';
     states.value = [];
     cities.value = [];
-    zones.value = [];
+    // Don't reset zones - they're loaded on mount and filtered by city
 
     if (!countryId) return;
 
@@ -323,7 +340,7 @@ const handleStateChange = async (stateId: string) => {
     formData.city = '';
     formData.zone = '';
     cities.value = [];
-    zones.value = [];
+    // Don't reset zones - they're filtered by city
 
     if (!stateId) return;
 
@@ -338,23 +355,10 @@ const handleStateChange = async (stateId: string) => {
     }
 };
 
-// Handle city change - load zones
+// Handle city change - filter zones
 const handleCityChange = async (cityId: string) => {
-    // Reset dependent field
+    // Reset zone field when city changes
     formData.zone = '';
-    zones.value = [];
-
-    if (!cityId) return;
-
-    loadingZones.value = true;
-    try {
-        zones.value = await locationService.getZonesByCity(cityId);
-    } catch (e) {
-        console.error('Failed to load zones', e);
-        message.error('Failed to load zones');
-    } finally {
-        loadingZones.value = false;
-    }
 };
 
 const handleNextStep = () => {
@@ -413,5 +417,19 @@ const handleSubmit = async () => {
 
 onMounted(() => {
     loadCountries();
+    loadAllZones();
 });
+
+const loadAllZones = async () => {
+    loadingZones.value = true;
+    try {
+        zones.value = await locationService.getAllZones();
+    } catch (e) {
+        console.error('Failed to load zones', e);
+        zones.value = [];
+    } finally {
+        loadingZones.value = false;
+        zonesLoaded.value = true;
+    }
+};
 </script>
