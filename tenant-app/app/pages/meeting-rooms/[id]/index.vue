@@ -138,11 +138,11 @@
 import { onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { message } from 'ant-design-vue';
-import { useMeetingRoomStore } from '../../../stores/meetingRoom';
-import { useAuthStore } from '../../../stores/auth';
-import { useMeetingRoomService } from '../../../composables/meetingRoomService';
+import { useMeetingRoomStore } from '../../../../stores/meetingRoom';
+import { useAuthStore } from '../../../../stores/auth';
+import { useMeetingRoomService } from '../../../../composables/meetingRoomService';
 import { storeToRefs } from 'pinia';
-import RoomStatusBadge from '../../../components/meeting-rooms/RoomStatusBadge.vue';
+import RoomStatusBadge from '../../../../components/meeting-rooms/RoomStatusBadge.vue';
 import {
     ArrowLeftOutlined,
     EnvironmentOutlined,
