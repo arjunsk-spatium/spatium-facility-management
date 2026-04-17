@@ -7,73 +7,79 @@
             </div>
         </div>
         <div class="flex justify-center">
-        <a-card class="w-full sm:max-w-4xl" :bodyStyle="{ padding: '16px 24px' }">
-            <a-form :model="formState" :rules="rules" layout="vertical" @finish="handleSubmit" ref="formRef">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <a-form-item label="Room Name" name="name" class="col-span-2 md:col-span-1">
-                        <a-input v-model:value="formState.name" placeholder="e.g. Alpha Conference" size="large" />
-                    </a-form-item>
+            <a-card class="w-full sm:max-w-4xl" :bodyStyle="{ padding: '16px 24px' }">
+                <a-form :model="formState" :rules="rules" layout="vertical" @finish="handleSubmit" ref="formRef">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <a-form-item label="Room Name" name="name" class="col-span-2 md:col-span-1">
+                            <a-input v-model:value="formState.name" placeholder="e.g. Alpha Conference" size="large" />
+                        </a-form-item>
 
-                    <a-form-item label="Room Type" name="room_type">
-                        <a-select v-model:value="formState.room_type" placeholder="Select type" size="large">
-                            <a-select-option v-for="rt in roomTypes" :key="rt.id" :value="rt.id">
-                                {{ rt.name }}
-                            </a-select-option>
-                        </a-select>
-                    </a-form-item>
+                        <a-form-item label="Room Type" name="room_type">
+                            <a-select v-model:value="formState.room_type" placeholder="Select type" size="large">
+                                <a-select-option v-for="rt in roomTypes" :key="rt.id" :value="rt.id">
+                                    {{ rt.name }}
+                                </a-select-option>
+                            </a-select>
+                        </a-form-item>
 
-                    <a-form-item label="Capacity (PAX)" name="pax">
-                        <a-input-number v-model:value="formState.pax" :min="1" :max="100" class="w-full"
-                            size="large" placeholder="e.g. 12" />
-                    </a-form-item>
+                        <a-form-item label="Capacity (PAX)" name="pax">
+                            <a-input-number v-model:value="formState.pax" :min="1" :max="100" class="w-full"
+                                size="large" placeholder="e.g. 12" />
+                        </a-form-item>
 
-                    <a-form-item label="Facility" name="facility">
-                        <a-select v-model:value="formState.facility" placeholder="Select facility" size="large">
-                            <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">
-                                {{ fac.name }}
-                            </a-select-option>
-                        </a-select>
-                    </a-form-item>
+                        <a-form-item label="Facility" name="facility">
+                            <a-select v-model:value="formState.facility" placeholder="Select facility" size="large">
+                                <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">
+                                    {{ fac.name }}
+                                </a-select-option>
+                            </a-select>
+                        </a-form-item>
 
-                    <a-form-item label="Price (₹)" name="price">
-                        <a-input-number v-model:value="formState.price" :min="0" class="w-full" size="large"
-                            placeholder="e.g. 150" />
-                    </a-form-item>
+                        <a-form-item label="Price (₹)" name="price">
+                            <a-input-number v-model:value="formState.price" :min="0" class="w-full" size="large"
+                                placeholder="e.g. 150" />
+                        </a-form-item>
 
-                    <a-form-item label="Credits" name="credits">
-                        <a-input-number v-model:value="formState.credits" :min="0" class="w-full" size="large"
-                            placeholder="e.g. 15" />
-                    </a-form-item>
+                        <a-form-item label="Credits" name="credits">
+                            <a-input-number v-model:value="formState.credits" :min="0" class="w-full" size="large"
+                                placeholder="e.g. 15" />
+                        </a-form-item>
 
-                    <a-form-item label="Status" name="status">
-                        <a-select v-model:value="formState.status" size="large">
-                            <a-select-option value="ACTIVE">Active</a-select-option>
-                            <a-select-option value="INACTIVE">Inactive</a-select-option>
-                            <a-select-option value="MAINTENANCE">Maintenance</a-select-option>
-                        </a-select>
-                    </a-form-item>
+                        <a-form-item label="Status" name="status">
+                            <a-select v-model:value="formState.status" size="large">
+                                <a-select-option value="ACTIVE">Active</a-select-option>
+                                <a-select-option value="INACTIVE">Inactive</a-select-option>
+                                <a-select-option value="MAINTENANCE">Maintenance</a-select-option>
+                            </a-select>
+                        </a-form-item>
 
-                    <a-form-item label="Amenities" name="amenities">
-                        <a-select v-model:value="formState.amenities" mode="multiple" placeholder="Select amenities" size="large">
-                            <a-select-option v-for="amenity in amenitiesList" :key="amenity.id" :value="amenity.id">
-                                {{ amenity.name }}
-                            </a-select-option>
-                        </a-select>
-                    </a-form-item>
-                </div>
+                        <a-form-item label="Amenities" name="amenities">
+                            <a-select v-model:value="formState.amenities" mode="multiple" placeholder="Select amenities"
+                                size="large">
+                                <a-select-option v-for="amenity in amenitiesList" :key="amenity.id" :value="amenity.id">
+                                    {{ amenity.name }}
+                                </a-select-option>
+                            </a-select>
+                        </a-form-item>
 
-                <div class="flex justify-end gap-3 mt-6 pt-4 border-t dark:border-neutral-700">
-                    <a-button @click="navigateTo('/meeting-rooms')">Cancel</a-button>
-                    <a-button type="primary" html-type="submit" :loading="loading">
-                        <template #icon>
-                            <PlusOutlined />
-                        </template>
-                        Create Room
-                    </a-button>
-                </div>
-            </a-form>
-        </a-card>
-    </div>
+                        <a-form-item label="Access Point (Door ID)" name="access_point_id">
+                            <a-input v-model:value="formState.access_point_id" placeholder="Enter door ID"
+                                size="large" />
+                        </a-form-item>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6 pt-4 border-t dark:border-neutral-700">
+                        <a-button @click="navigateTo('/meeting-rooms')">Cancel</a-button>
+                        <a-button type="primary" html-type="submit" :loading="loading">
+                            <template #icon>
+                                <PlusOutlined />
+                            </template>
+                            Create Room
+                        </a-button>
+                    </div>
+                </a-form>
+            </a-card>
+        </div>
     </div>
 </template>
 
@@ -118,7 +124,8 @@ const formState = reactive({
     price: undefined as number | undefined,
     credits: undefined as number | undefined,
     status: 'ACTIVE' as string,
-    amenities: [] as string[]
+    amenities: [] as string[],
+    access_point_id: undefined as string | undefined
 })
 
 const rules = {
@@ -150,9 +157,10 @@ const fetchDropdowns = async () => {
 }
 
 const handleSubmit = async () => {
-    loading.value = true
     try {
-        const roomData = {
+        await formRef.value?.validate()
+        loading.value = true
+        const roomData: any = {
             name: formState.name,
             pax: formState.pax,
             room_type: formState.room_type,
@@ -162,15 +170,20 @@ const handleSubmit = async () => {
             status: formState.status,
             amenities: formState.amenities
         }
+        if (formState.access_point_id) {
+            roomData.access_point_id = formState.access_point_id
+        }
 
+        console.log('Creating room with data:', roomData)
         await createRoom(roomData)
         message.success('Room created successfully!')
 
         await roomStore.fetchRooms(true)
 
         navigateTo('/meeting-rooms')
-    } catch (e) {
-        message.error('Failed to create room')
+    } catch (e: any) {
+        console.error('Failed to create room', e)
+        message.error(e.message || 'Failed to create room')
     } finally {
         loading.value = false
     }

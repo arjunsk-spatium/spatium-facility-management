@@ -117,6 +117,11 @@
                             <span class="block text-xs text-gray-500 uppercase">Room ID</span>
                             <div class="font-mono text-gray-600 dark:text-gray-400 mt-1">{{ currentRoom.id }}</div>
                         </div>
+
+                        <div v-if="currentRoom.access_point_id">
+                            <span class="block text-xs text-gray-500 uppercase">Access Point ID</span>
+                            <div class="font-mono text-gray-600 dark:text-gray-400 mt-1">{{ currentRoom.access_point_id }}</div>
+                        </div>
                     </div>
                 </a-card>
             </div>
@@ -138,11 +143,11 @@
 import { onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { message } from 'ant-design-vue';
-import { useMeetingRoomStore } from '../../../stores/meetingRoom';
-import { useAuthStore } from '../../../stores/auth';
-import { useMeetingRoomService } from '../../../composables/meetingRoomService';
+import { useMeetingRoomStore } from '../../../../stores/meetingRoom';
+import { useAuthStore } from '../../../../stores/auth';
+import { useMeetingRoomService } from '../../../../composables/meetingRoomService';
 import { storeToRefs } from 'pinia';
-import RoomStatusBadge from '../../../components/meeting-rooms/RoomStatusBadge.vue';
+import RoomStatusBadge from '../../../../components/meeting-rooms/RoomStatusBadge.vue';
 import {
     ArrowLeftOutlined,
     EnvironmentOutlined,
