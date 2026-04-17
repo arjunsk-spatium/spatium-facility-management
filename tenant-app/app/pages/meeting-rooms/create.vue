@@ -66,6 +66,10 @@
                             <a-input v-model:value="formState.access_point_id" placeholder="Enter door ID"
                                 size="large" />
                         </a-form-item>
+
+                        <a-form-item label="Organization ID" name="organization_id">
+                            <a-input v-model:value="formState.organization_id" placeholder="Enter Organization ID (optional)" size="large" />
+                        </a-form-item>
                     </div>
 
                     <div class="flex justify-end gap-3 mt-6 pt-4 border-t dark:border-neutral-700">
@@ -125,7 +129,8 @@ const formState = reactive({
     credits: undefined as number | undefined,
     status: 'ACTIVE' as string,
     amenities: [] as string[],
-    access_point_id: undefined as string | undefined
+    access_point_id: undefined as string | undefined,
+    organization_id: undefined as string | undefined
 })
 
 const rules = {
@@ -172,6 +177,9 @@ const handleSubmit = async () => {
         }
         if (formState.access_point_id) {
             roomData.access_point_id = formState.access_point_id
+        }
+        if (formState.organization_id) {
+            roomData.organization_id = formState.organization_id
         }
 
         console.log('Creating room with data:', roomData)

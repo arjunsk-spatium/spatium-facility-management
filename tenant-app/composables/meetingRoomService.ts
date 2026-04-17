@@ -17,6 +17,7 @@ export interface MeetingRoom {
     price: string;
     credits: number;
     access_point_id?: string | null;
+    organization_id?: string | null;
     images: Array<{
         id: string;
         image: string;

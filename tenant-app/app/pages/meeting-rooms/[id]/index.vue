@@ -122,6 +122,11 @@
                             <span class="block text-xs text-gray-500 uppercase">Access Point ID</span>
                             <div class="font-mono text-gray-600 dark:text-gray-400 mt-1">{{ currentRoom.access_point_id }}</div>
                         </div>
+
+                        <div v-if="currentRoom.organization_id">
+                            <span class="block text-xs text-gray-500 uppercase">Organization ID</span>
+                            <div class="font-mono text-gray-600 dark:text-gray-400 mt-1">{{ currentRoom.organization_id }}</div>
+                        </div>
                     </div>
                 </a-card>
             </div>
