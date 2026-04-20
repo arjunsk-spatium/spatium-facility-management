@@ -159,6 +159,7 @@ definePageMeta({
     layout: 'public'
 })
 
+const { formatDisplayDateTime } = useDate()
 const { getVisitorStatus } = usePublicVisitorService()
 const visitorId = ref<string | null>(null)
 const visitorStatus = ref<any>(null)
@@ -186,10 +187,7 @@ onMounted(async () => {
 })
 
 const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', { 
-        dateStyle: 'medium', 
-        timeStyle: 'short' 
-    })
+    return formatDisplayDateTime(dateString)
 }
 </script>
 
