@@ -173,6 +173,8 @@ import {
 import type { Visitor } from '../../composables/visitorService';
 import type { SpocVisitor } from '../../stores/spoc';
 
+const { formatDisplayDate, formatDisplayDateTime, formatDisplayTime } = useDate()
+
 type VisitorType = Visitor | SpocVisitor;
 
 const props = defineProps<{
@@ -195,33 +197,15 @@ watch(isOpen, (val) => {
 });
 
 const formatDate = (dateStr: string) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-IN', { 
-        day: '2-digit', 
-        month: '2-digit',
-        year: 'numeric'
-    });
+    return formatDisplayDate(dateStr);
 };
 
 const formatDateShort = (dateStr: string) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-IN', { 
-        day: '2-digit', 
-        month: '2-digit',
-        year: 'numeric'
-    });
+    return formatDisplayDate(dateStr);
 };
 
 const formatTime = (dateStr: string) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString('en-IN', { 
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    });
+    return formatDisplayTime(dateStr);
 };
 
 const getInitials = (name: string) => {
@@ -249,15 +233,6 @@ const getStatusColor = (status: string) => {
 };
 
 const formatDateTime = (dateStr: string) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleString('en-IN', { 
-        day: '2-digit', 
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    });
+    return formatDisplayDateTime(dateStr)
 };
 </script>

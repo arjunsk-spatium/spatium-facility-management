@@ -199,6 +199,8 @@ definePageMeta({
     middleware: 'auth'
 })
 
+const { formatDisplayDate, formatDisplayTime } = useDate()
+
 const store = useSpocStore()
 const authStore = useAuthStore()
 const companyStore = useCompanyStore()
@@ -292,15 +294,11 @@ const filteredVisitors = computed(() => {
 })
 
 const formatDate = (dateStr: string | null | undefined) => {
-    if (!dateStr) return '-'
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    return formatDisplayDate(dateStr)
 }
 
 const formatTime = (dateStr: string | null | undefined) => {
-    if (!dateStr) return '-'
-    const date = new Date(dateStr)
-    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+    return formatDisplayTime(dateStr)
 }
 
 const getStatusColor = (status: string) => {

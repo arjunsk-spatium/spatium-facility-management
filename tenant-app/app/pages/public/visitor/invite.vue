@@ -132,6 +132,7 @@ definePageMeta({
     layout: 'public'
 })
 
+const { formatDisplayDateTime } = useDate()
 const router = useRouter()
 const store = useVisitorStore()
 const loading = ref(false)
@@ -146,14 +147,7 @@ const accessToken = ref<string>('')
 let mediaStream: MediaStream | null = null
 
 const formatTime = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
-    })
+    return formatDisplayDateTime(dateStr)
 }
 
 const startCamera = async () => {
@@ -298,10 +292,33 @@ const submitPhoto = async () => {
         })
 
         if (response.success) {
+            const visitorData = response.data
             store.currentVisitor = { 
-                ...verifiedVisitor.value, 
-                photoUrl: capturedPhoto.value,
-                visitor_pass_url: response.data?.visitor_pass_url 
+                id: visitorData.id,
+                name: visitorData.name,
+                phone_number: visitorData.phone_number,
+                email: visitorData.email,
+                from_company: visitorData.from_company,
+                visitor_type: visitorData.visitor_type,
+                status: visitorData.status,
+                facility_id: visitorData.facility_id,
+                facility_name: visitorData.facility_name,
+                company_id: visitorData.company_id,
+                company_name: visitorData.company_name,
+                purpose_of_visit_id: visitorData.purpose_of_visit_id,
+                purpose_of_visit: visitorData.purpose_of_visit,
+                appointment_time: visitorData.appointment_time,
+                check_in_time: visitorData.check_in_time,
+                check_out_time: visitorData.check_out_time,
+                is_on_premises: visitorData.is_on_premises,
+                creator_type: visitorData.creator_type,
+                created_by_id: visitorData.created_by_id,
+                approved_by_id: visitorData.approved_by_id,
+                rejected_by_id: visitorData.rejected_by_id,
+                created_at: visitorData.created_at,
+                updated_at: visitorData.updated_at,
+                image_url: capturedPhoto.value,
+                visitor_pass_url: visitorData.visitor_pass_url
             }
             message.success('Check-in successful!')
             router.push('/public/visitor/pass')

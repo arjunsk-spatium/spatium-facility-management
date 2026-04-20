@@ -116,7 +116,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { message } from 'ant-design-vue'
-import dayjs, { Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
 import {
     ArrowLeftOutlined,
     SendOutlined,
@@ -126,6 +126,8 @@ import {
 definePageMeta({
     middleware: 'auth'
 })
+
+const { toApiDate, toApiTime } = useDate()
 
 interface SpocVisitor {
     id: string
@@ -210,8 +212,8 @@ const handleSubmit = async () => {
             name: formState.name,
             phone: formState.countryCode + formState.phone,
             email: formState.email || undefined,
-            visitDate: formState.visitDate?.format('YYYY-MM-DD'),
-            visitTime: formState.visitTime ? formState.visitTime.format('HH:mm') : undefined,
+            visitDate: toApiDate(formState.visitDate),
+            visitTime: toApiTime(formState.visitTime) || undefined,
             purpose: formState.purpose || 'General Visit',
             facility_id: formState.facilityId || undefined,
             purpose_of_visit_id: formState.purpose || undefined
