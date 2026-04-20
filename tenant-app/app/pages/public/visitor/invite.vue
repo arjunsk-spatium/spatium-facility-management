@@ -34,11 +34,7 @@
                 </div>
             </div>
 
-            <div>
-                <button class="text-blue-600 font-bold text-sm hover:underline" @click="message.info('Code resent to your email')">
-                    Resend Code
-                </button>
-            </div>
+            
 
             <div class="pt-8 w-full max-w-xs mx-auto">
                  <button 
@@ -49,9 +45,7 @@
                     <span v-if="loading"><LoadingOutlined class="!text-white" /></span>
                     <span v-else class="!text-white">Check In <ArrowRightOutlined class="ml-1 !text-white" /></span>
                 </button>
-                <div class="mt-6 text-xs text-gray-400">
-                    Don't have a code? <NuxtLink to="/public/visitor/register" class="text-gray-500 underline decoration-gray-300">Search for host manually</NuxtLink>
-                </div>
+                
             </div>
         </template>
 
