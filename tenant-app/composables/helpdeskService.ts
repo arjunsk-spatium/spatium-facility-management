@@ -221,6 +221,53 @@ export interface ChartData {
     values: number[];
 }
 
+export interface HelpdeskInsights {
+    date_range: {
+        start_date: string;
+        end_date: string;
+    };
+    summary: {
+        total_tickets: number;
+        open: number;
+        in_progress: number;
+        resolved: number;
+        disputed: number;
+        reopened: number;
+        sla_breached: number;
+        near_sla_breach: number;
+        escalated: number;
+        avg_resolution_time_minutes: number;
+    };
+    tickets_over_time: Array<{
+        month: string;
+        month_key: string;
+        count: number;
+    }>;
+    status_distribution: Array<{
+        status: string;
+        count: number;
+        percentage: number;
+    }>;
+    top_facilities: Array<{
+        facility_id: string;
+        facility_name: string;
+        ticket_count: number;
+    }>;
+    top_categories: Array<{
+        category_id: string;
+        category_name: string;
+        ticket_count: number;
+    }>;
+    facility_sla_performance: Array<{
+        facility_id: string;
+        facility_name: string;
+        total_tickets: number;
+        sla_breached: number;
+        sla_met: number;
+        breach_rate_percentage: number;
+    }>;
+}
+
 export const useHelpdeskService = () => {
     const { $api } = useNuxtApp();
 
@@ -600,6 +647,26 @@ export const useHelpdeskService = () => {
                 name,
                 count,
             }));
+        },
+
+        getInsights: async (): Promise<HelpdeskInsights> => {
+            try {
+                const response = await $api<ApiResponse<HelpdeskInsights>>(
+                    "/api/portal/dashboard/helpdesk-insights/",
+                    {
+                        method: "GET",
+                    },
+                );
+                if (!response.success) {
+                    throw new Error(
+                        response.message || "Failed to fetch helpdesk insights",
+                    );
+                }
+                return response.data;
+            } catch (error) {
+                console.error("Error fetching helpdesk insights:", error);
+                throw error;
+            }
         },
 
         assignTicket: async (

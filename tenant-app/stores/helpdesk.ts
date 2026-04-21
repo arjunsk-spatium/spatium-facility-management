@@ -1,12 +1,13 @@
 
 import { defineStore } from 'pinia';
-import { useHelpdeskService, type Ticket, type HelpdeskStats, type CreateTicketPayload, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskPriority } from '../composables/helpdeskService';
+import { useHelpdeskService, type Ticket, type HelpdeskStats, type HelpdeskInsights, type CreateTicketPayload, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskPriority } from '../composables/helpdeskService';
 
 export const useHelpdeskStore = defineStore('helpdesk', {
     state: () => ({
         tickets: [] as Ticket[],
         currentTicket: null as Ticket | null,
         stats: null as HelpdeskStats | null,
+        insights: null as HelpdeskInsights | null,
         categories: [] as HelpdeskCategory[],
         subCategories: [] as HelpdeskSubCategory[],
         priorities: [] as HelpdeskPriority[],
@@ -105,6 +106,19 @@ export const useHelpdeskStore = defineStore('helpdesk', {
              } catch (err) {
                  console.error('Failed to fetch helpdesk stats', err);
              }
+        },
+
+        async fetchInsightsAction() {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+            try {
+                this.insights = await service.getInsights();
+            } catch (err: any) {
+                this.error = err.message || 'Failed to fetch helpdesk insights';
+            } finally {
+                this.loading = false;
+            }
         },
 
         async createTicket(payload: CreateTicketPayload) {
