@@ -445,6 +445,13 @@
                             We do not share your information with third parties except as required by law.
                         </p>
 
+                        <p class="text-sm">
+                            <a href="https://nexspace.spatiumoffices.com/privacy-policy" target="_blank"
+                                class="text-blue-600 hover:underline font-medium">
+                                Privacy Policy
+                            </a>
+                        </p>
+
                         <!-- Consent Checkbox -->
                         <div class="flex items-start gap-3 pt-2">
                             <input type="checkbox" id="consent-checkbox" v-model="consentAccepted"
