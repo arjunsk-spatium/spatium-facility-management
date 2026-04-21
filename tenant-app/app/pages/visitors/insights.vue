@@ -7,7 +7,7 @@
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <a-range-picker v-model:value="dateRange" @change="onDateChange" />
-                <a-button type="primary" @click="exportReport">
+                <a-button type="primary" :loading="exporting" @click="exportReport">
                     <template #icon>
                         <DownloadOutlined />
                     </template>
@@ -77,6 +77,7 @@ const { getVisitorInsights } = useDashboardService()
 
 const insights = ref<VisitorInsightsData | null>(null)
 const loading = ref(false)
+const exporting = ref(false)
 const error = ref<string | null>(null)
 
 // Default to last 7 days
@@ -198,74 +199,80 @@ const escapeCsv = (value: string | number | undefined): string => {
 }
 
 const exportReport = () => {
-    if (!insights.value) return
+    if (!insights.value || exporting.value) return
 
-    const rows: string[] = []
-    const dateFrom = dateRange.value[0].format('YYYY-MM-DD')
-    const dateTo = dateRange.value[1].format('YYYY-MM-DD')
-    const filename = `visitor-insights-${dateFrom}_to_${dateTo}.csv`
+    exporting.value = true
 
-    // Header
-    rows.push('Visitor Insights Report')
-    rows.push(`Date Range,${escapeCsv(dateFrom)} to ${escapeCsv(dateTo)}`)
-    rows.push('Generated At,' + escapeCsv(dayjs().format('YYYY-MM-DD HH:mm:ss')))
-    rows.push('')
+    try {
+        const rows: string[] = []
+        const dateFrom = dateRange.value[0].format('YYYY-MM-DD')
+        const dateTo = dateRange.value[1].format('YYYY-MM-DD')
+        const filename = `visitor-insights-${dateFrom}_to_${dateTo}.csv`
 
-    // Summary
-    rows.push('Summary')
-    rows.push('Metric,Value')
-    rows.push(`Total Visitors,${escapeCsv(insights.value.summary.total_visitors)}`)
-    rows.push(`Checked In,${escapeCsv(insights.value.summary.checked_in)}`)
-    rows.push(`Checked Out,${escapeCsv(insights.value.summary.checked_out)}`)
-    rows.push(`Pending,${escapeCsv(insights.value.summary.pending)}`)
-    rows.push(`Expected,${escapeCsv(insights.value.summary.expected)}`)
-    rows.push('')
+        // Header
+        rows.push('Visitor Insights Report')
+        rows.push(`Date Range,${escapeCsv(dateFrom)} to ${escapeCsv(dateTo)}`)
+        rows.push('Generated At,' + escapeCsv(dayjs().format('YYYY-MM-DD HH:mm:ss')))
+        rows.push('')
 
-    // Traffic
-    rows.push('Traffic by Date')
-    rows.push('Date,Count')
-    insights.value.traffic.forEach(t => {
-        rows.push(`${escapeCsv(t.date)},${escapeCsv(t.count)}`)
-    })
-    rows.push('')
+        // Summary
+        rows.push('Summary')
+        rows.push('Metric,Value')
+        rows.push(`Total Visitors,${escapeCsv(insights.value.summary.total_visitors)}`)
+        rows.push(`Checked In,${escapeCsv(insights.value.summary.checked_in)}`)
+        rows.push(`Checked Out,${escapeCsv(insights.value.summary.checked_out)}`)
+        rows.push(`Pending,${escapeCsv(insights.value.summary.pending)}`)
+        rows.push(`Expected,${escapeCsv(insights.value.summary.expected)}`)
+        rows.push('')
 
-    // Hourly traffic (if available)
-    if (insights.value.today_hourly_traffic && insights.value.today_hourly_traffic.length > 0) {
-        rows.push("Today's Hourly Traffic")
-        rows.push('Hour,Count')
-        insights.value.today_hourly_traffic.forEach(h => {
-            rows.push(`${escapeCsv(h.hour)},${escapeCsv(h.count)}`)
+        // Traffic
+        rows.push('Traffic by Date')
+        rows.push('Date,Count')
+        insights.value.traffic.forEach(t => {
+            rows.push(`${escapeCsv(t.date)},${escapeCsv(t.count)}`)
         })
         rows.push('')
+
+        // Hourly traffic (if available)
+        if (insights.value.today_hourly_traffic && insights.value.today_hourly_traffic.length > 0) {
+            rows.push("Today's Hourly Traffic")
+            rows.push('Hour,Count')
+            insights.value.today_hourly_traffic.forEach(h => {
+                rows.push(`${escapeCsv(h.hour)},${escapeCsv(h.count)}`)
+            })
+            rows.push('')
+        }
+
+        // Visit Purposes
+        rows.push('Visit Purposes')
+        rows.push('Purpose,Count,Percentage')
+        insights.value.visit_purposes.forEach(p => {
+            rows.push(`${escapeCsv(p.purpose)},${escapeCsv(p.count)},${escapeCsv(p.percentage)}%`)
+        })
+        rows.push('')
+
+        // Top Visiting Companies
+        rows.push('Top Visiting Companies')
+        rows.push('Rank,Company,Visitor Count')
+        insights.value.top_visiting_companies.forEach((c, index) => {
+            rows.push(`${escapeCsv(index + 1)},${escapeCsv(c.name)},${escapeCsv(c.count)}`)
+        })
+        rows.push('')
+
+        const csvContent = rows.join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        const url = URL.createObjectURL(blob)
+        link.setAttribute('href', url)
+        link.setAttribute('download', filename)
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+    } finally {
+        exporting.value = false
     }
-
-    // Visit Purposes
-    rows.push('Visit Purposes')
-    rows.push('Purpose,Count,Percentage')
-    insights.value.visit_purposes.forEach(p => {
-        rows.push(`${escapeCsv(p.purpose)},${escapeCsv(p.count)},${escapeCsv(p.percentage)}%`)
-    })
-    rows.push('')
-
-    // Top Visiting Companies
-    rows.push('Top Visiting Companies')
-    rows.push('Rank,Company,Visitor Count')
-    insights.value.top_visiting_companies.forEach((c, index) => {
-        rows.push(`${escapeCsv(index + 1)},${escapeCsv(c.name)},${escapeCsv(c.count)}`)
-    })
-    rows.push('')
-
-    const csvContent = rows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', filename)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
 }
 
 watch([mappedHourlyTraffic, loading], async () => {
