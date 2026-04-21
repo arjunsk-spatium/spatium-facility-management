@@ -50,7 +50,10 @@ describe('Company Service', () => {
     it('should fetch insights data', async () => {
         const insights = await getInsights()
         expect(insights).toBeDefined()
-        expect(insights.totalCompanies).toBeGreaterThanOrEqual(0)
-        expect(insights.activeCompanies).toBeGreaterThanOrEqual(0)
+        expect(insights.summary).toBeDefined()
+        expect(insights.summary.total_companies).toBeGreaterThanOrEqual(0)
+        expect(insights.summary.active_companies).toBeGreaterThanOrEqual(0)
+        expect(Array.isArray(insights.status_distribution)).toBe(true)
+        expect(Array.isArray(insights.revenue_trend)).toBe(true)
     })
 })

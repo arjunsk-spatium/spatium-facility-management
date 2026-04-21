@@ -6,6 +6,7 @@ import {
     type FacilityListParams,
     type CreateFacilityPayload,
     type CreateTowerPayload,
+    type FacilityInsights,
 } from "../composables/facilityService";
 
 export const useFacilityStore = defineStore("facility", {
@@ -22,6 +23,7 @@ export const useFacilityStore = defineStore("facility", {
         pageSize: 10,
         next: null as string | null,
         previous: null as string | null,
+        insights: null as FacilityInsights | null,
     }),
 
     getters: {
@@ -223,6 +225,20 @@ export const useFacilityStore = defineStore("facility", {
 
         async goToPage(page: number) {
             await this.fetchFacilities({ page }, true);
+        },
+
+        async fetchInsightsAction() {
+            this.loading = true;
+            this.error = null;
+            const service = useFacilityService();
+
+            try {
+                this.insights = await service.getInsights();
+            } catch (err: any) {
+                this.error = err.message || "Failed to fetch facility insights";
+            } finally {
+                this.loading = false;
+            }
         },
 
         async generateFacilityQRCode(facilityId: string, facilityName: string) {

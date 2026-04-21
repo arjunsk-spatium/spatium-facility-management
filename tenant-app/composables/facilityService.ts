@@ -193,6 +193,50 @@ export interface FacilityListParams {
 
 // ... existing interfaces ...
 
+export interface FacilityInsights {
+    summary: {
+        total_facilities: number;
+        total_towers: number;
+        total_floors: number;
+        total_wings: number;
+        total_meeting_rooms: number;
+        meeting_rooms_by_status: {
+            active: number;
+            inactive: number;
+            maintenance: number;
+        };
+    };
+    facilities: Array<{
+        facility_id: string;
+        name: string;
+        address: string;
+        city: string;
+        state: string;
+        country: string;
+        has_towers: boolean;
+        towers: number;
+        floors: number;
+        wings: number;
+        meeting_rooms: number;
+        visitors_on_premises_now: number;
+    }>;
+    top_facilities_by_visitors: Array<{
+        facility_id: string;
+        facility_name: string;
+        visitor_count: number;
+    }>;
+    top_facilities_by_tickets: Array<{
+        facility_id: string;
+        facility_name: string;
+        ticket_count: number;
+    }>;
+    top_facilities_by_bookings: Array<{
+        facility_id: string;
+        facility_name: string;
+        booking_count: number;
+    }>;
+}
+
 export interface IFacilityService {
     getFacilities(params?: FacilityListParams): Promise<{
         facilities: Facility[];
@@ -207,6 +251,7 @@ export interface IFacilityService {
         payload: Partial<CreateFacilityPayload>,
     ): Promise<Facility>;
     deleteFacility(id: string): Promise<void>;
+    getInsights(): Promise<FacilityInsights>;
     getTowers(facilityId?: string): Promise<Tower[]>;
     createTower(payload: CreateTowerPayload): Promise<Tower>;
     updateTower(
@@ -539,6 +584,23 @@ export const useFacilityService = (): IFacilityService => {
             if (!response.success) {
                 throw new Error(response.message || "Failed to delete wing");
             }
+        },
+
+        getInsights: async (): Promise<FacilityInsights> => {
+            const response = await $api<ApiResponse<FacilityInsights>>(
+                "/api/portal/dashboard/facility-insights/",
+                {
+                    method: "GET",
+                },
+            );
+
+            if (!response.success) {
+                throw new Error(
+                    response.message || "Failed to fetch facility insights",
+                );
+            }
+
+            return response.data;
         },
 
         generateFacilityQRCode: async (

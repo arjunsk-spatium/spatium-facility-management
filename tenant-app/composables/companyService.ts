@@ -17,10 +17,27 @@ export interface Company {
 }
 
 export interface CompanyInsights {
-    totalCompanies: number;
-    activeCompanies: number;
-    inactiveCompanies: number;
-    revenue: number;
+    summary: {
+        total_companies: number;
+        active_companies: number;
+        inactive_companies: number;
+        total_revenue: number;
+        new_last_30_days: number;
+    };
+    status_distribution: Array<{
+        status: string;
+        count: number;
+    }>;
+    revenue_trend: Array<{
+        month: string;
+        month_key: string;
+        revenue: number;
+        growth_percentage: number | null;
+    }>;
+    top_companies_by_tickets: Array<{
+        company_name: string;
+        ticket_count: number;
+    }>;
 }
 
 export interface CompanyFacilityMapping {
@@ -182,19 +199,35 @@ export const useCompanyService = () => {
 
     const getInsights = async (): Promise<CompanyInsights> => {
         try {
-            const url = buildUrl("/api/portal/companies/insights/");
-            const response = await $api<CompanyInsights>(url, {
+            const url = buildUrl("/api/portal/dashboard/company-insights/");
+            const response = await $api<{
+                success: boolean;
+                data: CompanyInsights;
+            }>(url, {
                 method: "GET",
             });
-            return response;
+            return response.data;
         } catch (error) {
             console.warn("Using mock insights data");
             const total = MOCK_COMPANIES.length;
             return {
-                totalCompanies: total,
-                activeCompanies: total,
-                inactiveCompanies: 0,
-                revenue: total * 1000,
+                summary: {
+                    total_companies: total,
+                    active_companies: total,
+                    inactive_companies: 0,
+                    total_revenue: total * 1000,
+                    new_last_30_days: 1,
+                },
+                status_distribution: [
+                    { status: "active", count: total },
+                    { status: "inactive", count: 0 },
+                ],
+                revenue_trend: [
+                    { month: "Jan 2026", month_key: "2026-01-01", revenue: 0, growth_percentage: 0 },
+                    { month: "Feb 2026", month_key: "2026-02-01", revenue: 0, growth_percentage: 0 },
+                    { month: "Mar 2026", month_key: "2026-03-01", revenue: 0, growth_percentage: 0 },
+                ],
+                top_companies_by_tickets: [],
             };
         }
     };
