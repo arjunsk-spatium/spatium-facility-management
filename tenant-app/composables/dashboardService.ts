@@ -146,6 +146,62 @@ export interface DashboardSummaryResponse {
     }
 }
 
+export interface VisitorInsightsDateRange {
+    start_date: string
+    end_date: string
+}
+
+export interface VisitorInsightsSummary {
+    total_visitors: number
+    checked_in: number
+    checked_out: number
+    pending: number
+    expected: number
+}
+
+export interface VisitorInsightsTrafficItem {
+    date: string
+    count: number
+}
+
+export interface VisitorInsightsHourlyItem {
+    hour: string
+    count: number
+}
+
+export interface VisitorInsightsPurpose {
+    purpose: string
+    count: number
+    percentage: number
+}
+
+export interface VisitorInsightsTopCompany {
+    company_id: string
+    name: string
+    count: number
+}
+
+export interface VisitorInsightsData {
+    date_range: VisitorInsightsDateRange
+    summary: VisitorInsightsSummary
+    traffic: VisitorInsightsTrafficItem[]
+    today_hourly_traffic: VisitorInsightsHourlyItem[]
+    visit_purposes: VisitorInsightsPurpose[]
+    top_visiting_companies: VisitorInsightsTopCompany[]
+}
+
+export interface VisitorInsightsResponse {
+    success: boolean
+    code: string
+    message: string
+    data: VisitorInsightsData
+    error: any | null
+    meta: {
+        request_id: string
+        timestamp: string
+    }
+}
+
 export const useDashboardService = () => {
     const { $api } = useNuxtApp()
 
@@ -158,6 +214,22 @@ export const useDashboardService = () => {
 
             if (!response.success) {
                 throw new Error(response.message || 'Failed to fetch dashboard summary')
+            }
+
+            return response.data
+        },
+
+        getVisitorInsights: async (startDate: string, endDate: string): Promise<VisitorInsightsData> => {
+            const response = await $api<VisitorInsightsResponse>(
+                '/api/portal/dashboard/visitor-insights/',
+                {
+                    method: 'GET',
+                    query: { start_date: startDate, end_date: endDate },
+                }
+            )
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to fetch visitor insights')
             }
 
             return response.data
