@@ -1,5 +1,5 @@
 <template>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
         <a-card >
             <div class="flex items-center gap-4">
                 <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -20,6 +20,18 @@
                 <div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">Checked In</div>
                     <div class="text-2xl font-bold dark:text-white">{{ stats?.checkedIn || 0 }}</div>
+                </div>
+            </div>
+        </a-card>
+
+        <a-card >
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                    <LogoutOutlined class="text-xl text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Checked Out</div>
+                    <div class="text-2xl font-bold dark:text-white">{{ stats?.checkedOut || 0 }}</div>
                 </div>
             </div>
         </a-card>
@@ -51,10 +63,17 @@
 </template>
 
 <script setup lang="ts">
-import { UsergroupAddOutlined, CheckCircleOutlined, ClockCircleOutlined, CalendarOutlined } from '@ant-design/icons-vue'
-import type { VisitorStats } from '../../composables/visitorService'
+import { UsergroupAddOutlined, CheckCircleOutlined, ClockCircleOutlined, CalendarOutlined, LogoutOutlined } from '@ant-design/icons-vue'
+
+interface VisitorInsightStats {
+    total: number
+    checkedIn: number
+    checkedOut: number
+    pending: number
+    expected: number
+}
 
 defineProps<{
-    stats: VisitorStats | null
+    stats: VisitorInsightStats | null
 }>()
 </script>

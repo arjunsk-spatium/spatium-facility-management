@@ -76,7 +76,7 @@
                         :data="directEscalationMappings" 
                         :loading="loadingDirectEscalation"
                         :fields="directEscalationFields"
-                        :canCreate="canCreate"
+                        :canCreate="canCreate && directEscalationMappings.length === 0"
                         :canUpdate="canUpdate"
                         :canDelete="canDelete"
                         @add="handleAddDirectEscalation" 
@@ -201,7 +201,6 @@ const roleFields = [
 
 const directEscalationColumns = [
     { title: 'Role', dataIndex: 'role_name', key: 'role_name' },
-    { title: 'Deadline (hours)', dataIndex: 'deadline_hours', key: 'deadline_hours' },
     { title: 'Status', dataIndex: 'is_active', key: 'is_active', customRender: (text: boolean) => text ? 'Active' : 'Inactive' },
     { title: 'Action', key: 'action', width: 150 }
 ]
@@ -217,7 +216,6 @@ const roleOptions = computed(() =>
 
 const directEscalationFields = [
     { name: 'role', label: 'Role', type: 'select' as const, options: roleOptions },
-    { name: 'deadline_hours', label: 'Deadline (hours)', type: 'number' as const },
     { name: 'is_active', label: 'Active', type: 'switch' as const }
 ]
 

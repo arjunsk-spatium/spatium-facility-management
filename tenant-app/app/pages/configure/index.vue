@@ -63,6 +63,7 @@
                 <HelpdeskTab v-if="activeTab === 'helpdesk'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
                 <RoomMetaTab v-if="activeTab === 'roomMeta'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
                 <CreditSystemTab v-if="activeTab === 'creditSystem'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
+                <VisitorTab v-if="activeTab === 'visitor'" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete" />
             </a-card>
         </div>
     </div>
@@ -76,7 +77,8 @@ import {
     AppstoreOutlined,
     LeftOutlined,
     RightOutlined,
-    CreditCardOutlined
+    CreditCardOutlined,
+    IdcardOutlined
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '../../../stores/auth'
 
@@ -84,6 +86,7 @@ import LocationTab from '../../../components/configure/LocationTab.vue'
 import HelpdeskTab from '../../../components/configure/HelpdeskTab.vue'
 import RoomMetaTab from '../../../components/configure/RoomMetaTab.vue'
 import CreditSystemTab from '../../../components/configure/CreditSystemTab.vue'
+import VisitorTab from '../../../components/configure/VisitorTab.vue'
 
 definePageMeta({
     middleware: 'auth'
@@ -108,7 +111,8 @@ const tabs = [
     { key: 'location', label: 'Location', icon: EnvironmentOutlined },
     { key: 'helpdesk', label: 'Helpdesk', icon: CustomerServiceOutlined },
     { key: 'roomMeta', label: 'Room Meta', icon: AppstoreOutlined },
-    { key: 'creditSystem', label: 'Credit System', icon: CreditCardOutlined }
+    { key: 'creditSystem', label: 'Credit System', icon: CreditCardOutlined },
+    { key: 'visitor', label: 'Visitor Management', icon: IdcardOutlined }
 ]
 
 // Whitelabeled active tab style using tenant's primary color

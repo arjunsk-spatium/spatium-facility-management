@@ -7,7 +7,7 @@ vi.mock("../composables/userService", () => ({
     useUserService: () => ({
         getUserModules: vi
             .fn()
-            .mockResolvedValue(["dashboard", "visitors", "companies"]),
+            .mockResolvedValue({ modules: ["dashboard", "visitors", "companies"], permissions: [] }),
     }),
 }));
 
@@ -106,6 +106,21 @@ describe("Auth Store", () => {
             expect(store.modules).toContain("dashboard");
             expect(store.modules).toContain("visitors");
             expect(store.modules).toContain("companies");
+        });
+
+        it("fetchModules should set SPOC modules when user is SPOC", async () => {
+            const store = useAuthStore();
+            store.user = { id: "1", email: "spoc@test.com", is_spoc: true };
+
+            await store.fetchModules();
+
+            expect(store.modules).toContain("spoc_dashboard");
+            expect(store.modules).toContain("spoc_visitors");
+            expect(store.modules).toContain("spoc_employees");
+            expect(store.modules).toContain("spoc-visitors-insights");
+            expect(store.modules).toContain("spoc-visitors-list");
+            expect(store.modules).toContain("spoc-visitors-invite");
+            expect(store.permissions).toEqual([]);
         });
     });
 });

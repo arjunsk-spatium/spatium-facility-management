@@ -4,6 +4,7 @@ import {
     type MeetingRoom,
     type Booking,
     type RoomStats,
+    type MeetingRoomInsights,
     type TimeSlot,
     type BookingListParams,
 } from "../composables/meetingRoomService";
@@ -17,6 +18,7 @@ export const useMeetingRoomStore = defineStore("meetingRoom", {
         bookingsPrevious: null as string | null,
         currentRoom: null as MeetingRoom | null,
         stats: null as RoomStats | null,
+        insights: null as MeetingRoomInsights | null,
         timeSlots: [] as TimeSlot[],
         loading: false,
         error: null as string | null,
@@ -87,6 +89,19 @@ export const useMeetingRoomStore = defineStore("meetingRoom", {
                 this.stats = await service.getStats();
             } catch (err) {
                 console.error(err);
+            }
+        },
+
+        async fetchInsightsAction(startDate?: string, endDate?: string) {
+            this.loading = true;
+            this.error = null;
+            try {
+                const service = useMeetingRoomService();
+                this.insights = await service.getInsights(startDate, endDate);
+            } catch (err: any) {
+                this.error = err.message || "Failed to fetch meeting room insights";
+            } finally {
+                this.loading = false;
             }
         },
 

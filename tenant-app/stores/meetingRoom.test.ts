@@ -17,7 +17,38 @@ vi.mock('../composables/meetingRoomService', () => ({
         getRoomById: vi.fn().mockImplementation((id) => Promise.resolve(
             id === '1' ? { id: '1', name: 'Conference Room A', capacity: 10, status: 'Active' } : null
         )),
-        getStats: vi.fn().mockResolvedValue({ totalRooms: 10, activeBookings: 5, todayBookings: 3 })
+        getStats: vi.fn().mockResolvedValue({ totalRooms: 10, activeBookings: 5, todayBookings: 3 }),
+        getInsights: vi.fn().mockResolvedValue({
+            date_range: { start_date: '2026-01-01', end_date: '2026-04-10' },
+            summary: {
+                total_bookings: 20,
+                total_revenue: 5000,
+                utilization_percentage: 45,
+                avg_daily_bookings: 2,
+                total_booked_hours: 80,
+                cancellation_rate_percentage: 5,
+                active_rooms: 8
+            },
+            bookings_trend: [
+                { month: 'Jan 2026', month_key: '2026-01-01', count: 5, revenue: 1000, revenue_growth_percentage: 0 },
+                { month: 'Feb 2026', month_key: '2026-02-01', count: 8, revenue: 2000, revenue_growth_percentage: 100 }
+            ],
+            status_distribution: [
+                { status: 'confirmed', count: 15, percentage: 75 },
+                { status: 'completed', count: 3, percentage: 15 },
+                { status: 'cancelled', count: 2, percentage: 10 }
+            ],
+            top_meeting_rooms: [
+                { room_id: '1', room_name: 'Conference A', booking_count: 10, revenue: 2500 }
+            ],
+            most_utilised_room: { room_id: '1', room_name: 'Conference A', total_hours: 40 },
+            top_companies: [
+                { company_id: '1', company_name: 'Tech Corp', booking_count: 8, total_hours: 32 }
+            ],
+            peak_booking_hours: [
+                { hour: '10:00', booking_count: 12 }
+            ]
+        })
     })
 }))
 
@@ -114,6 +145,14 @@ describe('Meeting Room Store', () => {
             await store.fetchStats()
             
             expect(store.stats).not.toBeNull()
+        })
+
+        it('fetchInsightsAction should populate insights', async () => {
+            const store = useMeetingRoomStore()
+            await store.fetchInsightsAction()
+            
+            expect(store.insights).not.toBeNull()
+            expect(store.insights?.summary.total_bookings).toBe(20)
         })
     })
 })

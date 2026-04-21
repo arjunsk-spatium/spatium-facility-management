@@ -10,42 +10,40 @@
             <NuxtLink to="/visitors" class="text-xs text-primary-600">View All</NuxtLink>
         </template>
 
-        <div v-if="loading" class="flex justify-center p-4">
+        <div v-if="dashboardStore.loading" class="flex justify-center p-4">
             <a-spin size="small" />
         </div>
         <template v-else>
             <div class="flex justify-between items-center mb-4">
                 <div>
-                    <div class="text-2xl font-bold">{{ stats?.expected || 0 }}</div>
-                    <div class="text-xs text-gray-500">Expected Today</div>
+                    <div class="text-2xl font-bold">{{ visitors?.today_count || 0 }}</div>
+                    <div class="text-xs text-gray-500">Visitors Today</div>
                 </div>
                 <div class="text-right">
-                    <div class="text-lg font-semibold text-blue-500">{{ stats?.checkedIn || 0 }}</div>
-                    <div class="text-xs text-gray-500">Checked In</div>
+                    <div class="text-lg font-semibold text-blue-500">{{ preInvites?.today_count || 0 }}</div>
+                    <div class="text-xs text-gray-500">Pre-invites Today</div>
                 </div>
             </div>
 
-            <a-progress :percent="checkInPercentage" :show-info="false" stroke-color="#8b5cf6" size="small" />
-            <div class="mt-2 text-xs text-gray-500 text-right">{{ checkInPercentage }}% Check-in rate</div>
+            <div class="text-xs text-gray-400">
+                <span class="text-gray-500">Last 7 days total: {{ last7DaysTotal }}</span>
+            </div>
         </template>
     </a-card>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { UsergroupAddOutlined } from '@ant-design/icons-vue';
-import { useVisitorStore } from '../../stores/visitor';
-import { storeToRefs } from 'pinia';
+import { useDashboardStore } from '../../stores/dashboard';
 
-const store = useVisitorStore();
-const { stats, loading } = storeToRefs(store);
+const dashboardStore = useDashboardStore();
 
-const checkInPercentage = computed(() => {
-    if (!stats.value || stats.value.expected === 0) return 0;
-    return Math.round((stats.value.checkedIn / stats.value.expected) * 100);
-});
+const visitors = computed(() => dashboardStore.summary?.visitors);
+const preInvites = computed(() => dashboardStore.summary?.pre_invites);
 
-onMounted(() => {
-    store.fetchStats();
+const last7DaysTotal = computed(() => {
+    const days = visitors.value?.last_7_days || [];
+    return days.reduce((sum, d) => sum + d.count, 0);
 });
 </script>
