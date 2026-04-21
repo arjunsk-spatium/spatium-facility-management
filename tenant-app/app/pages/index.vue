@@ -19,7 +19,8 @@ const moduleConfig: Record<string, any> = {
     facilities: { route: '/facilities/insights' },
     meeting_rooms: { route: '/meeting-rooms/insights' },
     users: { route: '/users' },
-    settings: { route: '/settings' }
+    settings: { route: '/settings' },
+    spoc_dashboard: { route: '/spoc' }
 };
 
 onMounted(async () => {
