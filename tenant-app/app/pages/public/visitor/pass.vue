@@ -23,7 +23,7 @@
                 <!-- Avatar & Info -->
                 <div class="text-center relative px-6 -mt-16 pb-6 border-b border-gray-100 border-dashed">
                     <div class="relative inline-block mb-3">
-                        <div class="w-28 h-28 rounded-full border-4 border-white shadow-md overflow-hidden bg-white">
+                        <div class="w-28 h-28 rounded-full border-4 border-white shadow-md overflow-hidden bg-white cursor-pointer" @click.stop="openImagePreview">
                             <img :src="currentVisitor.image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentVisitor.name}`" 
                                 class="w-full h-full object-cover" />
                         </div>
@@ -108,8 +108,10 @@
     </div>
 </template>
 
+<ImagePreviewModal v-model:open="showImagePreview" :src="previewImageUrl" alt="Visitor Photo" />
+
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { 
@@ -117,6 +119,7 @@ import {
     BankFilled, ClockCircleFilled, EnvironmentFilled, AimOutlined,
     DownloadOutlined, LoadingOutlined
 } from '@ant-design/icons-vue'
+import ImagePreviewModal from '~/components/visitors/ImagePreviewModal.vue'
 
 
 definePageMeta({
@@ -129,6 +132,14 @@ const router = useRouter()
 const store = useVisitorStore()
 const { currentVisitor } = storeToRefs(store)
 const isApproved = computed(() => currentVisitor.value?.status === 'Approved')
+
+const showImagePreview = ref(false)
+const previewImageUrl = ref('')
+
+const openImagePreview = () => {
+    previewImageUrl.value = currentVisitor.value?.image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentVisitor.value?.name}`
+    showImagePreview.value = true
+}
 
 const visitorTypeLabel = computed(() => {
     const type = currentVisitor.value?.visitor_type

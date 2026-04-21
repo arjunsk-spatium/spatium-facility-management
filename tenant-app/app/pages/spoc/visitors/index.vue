@@ -66,7 +66,7 @@
                         :size="40" 
                         shape="square"
                         class="cursor-pointer"
-                        @click="openDetailsModal(record)"
+                        @click.stop="openImagePreview(record.image_url)"
                     />
                     <a-avatar 
                         v-else 
@@ -118,7 +118,7 @@
                             :size="48" 
                             shape="square"
                             class="cursor-pointer flex-shrink-0"
-                            @click="openDetailsModal(record)"
+                            @click.stop="openImagePreview(record.image_url)"
                         />
                         <a-avatar 
                             v-else 
@@ -181,6 +181,8 @@
         </ResponsiveDataView>
 
         <VisitorDetailsModal v-model:open="showDetailsModal" :visitor="selectedVisitor" />
+
+        <ImagePreviewModal v-model:open="showImagePreview" :src="previewImageUrl" alt="Visitor Photo" />
     </div>
 </template>
 
@@ -190,6 +192,7 @@ import { storeToRefs } from 'pinia'
 import { PlusOutlined, BarChartOutlined, QrcodeOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
 import VisitorDetailsModal from '../../../../components/visitors/VisitorDetailsModal.vue'
+import ImagePreviewModal from '../../../../components/visitors/ImagePreviewModal.vue'
 import type { SpocVisitor } from '../../../../stores/spoc'
 import { message } from 'ant-design-vue'
 import { useAuthStore } from '../../../../stores/auth'
@@ -235,6 +238,8 @@ const generateQR = async () => {
 
 const showDetailsModal = ref(false)
 const selectedVisitor = ref<SpocVisitor | null>(null)
+const showImagePreview = ref(false)
+const previewImageUrl = ref('')
 
 // Table columns
 const columns = [
@@ -250,6 +255,11 @@ const columns = [
 const openDetailsModal = (visitor: SpocVisitor) => {
     selectedVisitor.value = visitor
     showDetailsModal.value = true
+}
+
+const openImagePreview = (url: string) => {
+    previewImageUrl.value = url
+    showImagePreview.value = true
 }
 
 const getInitials = (name: string) => {
