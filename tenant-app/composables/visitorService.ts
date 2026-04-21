@@ -22,6 +22,7 @@ export interface Visitor {
     rejected_by_id: string | null
     created_at: string
     updated_at: string
+    image_url?: string | null
     visitor_pass_url?: string | null
 }
 

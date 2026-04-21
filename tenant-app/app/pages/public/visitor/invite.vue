@@ -34,11 +34,7 @@
                 </div>
             </div>
 
-            <div>
-                <button class="text-blue-600 font-bold text-sm hover:underline" @click="message.info('Code resent to your email')">
-                    Resend Code
-                </button>
-            </div>
+            
 
             <div class="pt-8 w-full max-w-xs mx-auto">
                  <button 
@@ -49,9 +45,7 @@
                     <span v-if="loading"><LoadingOutlined class="!text-white" /></span>
                     <span v-else class="!text-white">Check In <ArrowRightOutlined class="ml-1 !text-white" /></span>
                 </button>
-                <div class="mt-6 text-xs text-gray-400">
-                    Don't have a code? <NuxtLink to="/public/visitor/register" class="text-gray-500 underline decoration-gray-300">Search for host manually</NuxtLink>
-                </div>
+                
             </div>
         </template>
 
@@ -138,6 +132,7 @@ definePageMeta({
     layout: 'public'
 })
 
+const { formatDisplayDateTime } = useDate()
 const router = useRouter()
 const store = useVisitorStore()
 const loading = ref(false)
@@ -152,14 +147,7 @@ const accessToken = ref<string>('')
 let mediaStream: MediaStream | null = null
 
 const formatTime = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
-    })
+    return formatDisplayDateTime(dateStr)
 }
 
 const startCamera = async () => {
@@ -264,10 +252,13 @@ const verify = async () => {
             message.success('Invite Verified')
             await startCamera()
         } else {
-            throw new Error(response.message || 'Invalid Passcode')
+            message.error(response.message || 'Invalid Passcode')
+            otpDigits.value = ['', '', '', '', '', '']
+            otpInputs.value[0]?.focus()
         }
     } catch (e: any) {
-        message.error(e?.response?.data?.message || 'Invalid or Expired Passcode')
+        const errorMsg = e?.response?.data?.message || e?.message || 'Invalid or Expired Passcode'
+        message.error(errorMsg)
         otpDigits.value = ['', '', '', '', '', '']
         otpInputs.value[0]?.focus()
     } finally {
@@ -301,10 +292,33 @@ const submitPhoto = async () => {
         })
 
         if (response.success) {
+            const visitorData = response.data
             store.currentVisitor = { 
-                ...verifiedVisitor.value, 
-                photoUrl: capturedPhoto.value,
-                visitor_pass_url: response.data?.visitor_pass_url 
+                id: visitorData.id,
+                name: visitorData.name,
+                phone_number: visitorData.phone_number,
+                email: visitorData.email,
+                from_company: visitorData.from_company,
+                visitor_type: visitorData.visitor_type,
+                status: visitorData.status,
+                facility_id: visitorData.facility_id,
+                facility_name: visitorData.facility_name,
+                company_id: visitorData.company_id,
+                company_name: visitorData.company_name,
+                purpose_of_visit_id: visitorData.purpose_of_visit_id,
+                purpose_of_visit: visitorData.purpose_of_visit,
+                appointment_time: visitorData.appointment_time,
+                check_in_time: visitorData.check_in_time,
+                check_out_time: visitorData.check_out_time,
+                is_on_premises: visitorData.is_on_premises,
+                creator_type: visitorData.creator_type,
+                created_by_id: visitorData.created_by_id,
+                approved_by_id: visitorData.approved_by_id,
+                rejected_by_id: visitorData.rejected_by_id,
+                created_at: visitorData.created_at,
+                updated_at: visitorData.updated_at,
+                image_url: capturedPhoto.value,
+                visitor_pass_url: visitorData.visitor_pass_url
             }
             message.success('Check-in successful!')
             router.push('/public/visitor/pass')
