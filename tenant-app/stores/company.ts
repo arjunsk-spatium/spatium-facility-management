@@ -90,11 +90,11 @@ export const useCompanyStore = defineStore('company', {
                 this.loading = false
             }
         },
-        async fetchInsightsAction() {
+        async fetchInsightsAction(startDate?: string, endDate?: string) {
             this.loading = true
             try {
                 const { getInsights } = useCompanyService()
-                this.insights = await getInsights()
+                this.insights = await getInsights(startDate, endDate)
             } catch (err) {
                 this.error = 'Failed to fetch insights'
             } finally {

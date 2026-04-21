@@ -13,7 +13,43 @@ vi.mock('../composables/helpdeskService', () => ({
         getTicketById: vi.fn().mockImplementation((id) => Promise.resolve(
             id === 'TKT-001' ? { id: 'TKT-001', category: 'IT', status: 'Open' } : null
         )),
-        getStats: vi.fn().mockResolvedValue({ total: 100, open: 20, resolved: 80 })
+        getStats: vi.fn().mockResolvedValue({ total: 100, open: 20, resolved: 80 }),
+        getInsights: vi.fn().mockResolvedValue({
+            date_range: { start_date: '2026-01-01', end_date: '2026-04-10' },
+            summary: {
+                total_tickets: 50,
+                open: 5,
+                in_progress: 10,
+                resolved: 30,
+                disputed: 2,
+                reopened: 3,
+                sla_breached: 4,
+                near_sla_breach: 1,
+                escalated: 8,
+                avg_resolution_time_minutes: 45
+            },
+            tickets_over_time: [
+                { month: 'Jan 2026', month_key: '2026-01-01', count: 5 },
+                { month: 'Feb 2026', month_key: '2026-02-01', count: 10 },
+                { month: 'Mar 2026', month_key: '2026-03-01', count: 15 }
+            ],
+            status_distribution: [
+                { status: 'open', count: 5, percentage: 10 },
+                { status: 'in_progress', count: 10, percentage: 20 },
+                { status: 'resolved', count: 30, percentage: 60 },
+                { status: 'disputed', count: 2, percentage: 4 },
+                { status: 'reopened', count: 3, percentage: 6 }
+            ],
+            top_facilities: [
+                { facility_id: '1', facility_name: 'HQ', ticket_count: 20 }
+            ],
+            top_categories: [
+                { category_id: '1', category_name: 'IT', ticket_count: 15 }
+            ],
+            facility_sla_performance: [
+                { facility_id: '1', facility_name: 'HQ', total_tickets: 20, sla_breached: 2, sla_met: 18, breach_rate_percentage: 10 }
+            ]
+        })
     })
 }))
 
@@ -118,6 +154,15 @@ describe('Helpdesk Store', () => {
             
             expect(store.stats).not.toBeNull()
             expect(store.stats?.total).toBe(100)
+        })
+
+        it('fetchInsightsAction should populate insights', async () => {
+            const store = useHelpdeskStore()
+            await store.fetchInsightsAction()
+            
+            expect(store.insights).not.toBeNull()
+            expect(store.insights?.summary.total_tickets).toBe(50)
+            expect(store.insights?.summary.open).toBe(5)
         })
     })
 })

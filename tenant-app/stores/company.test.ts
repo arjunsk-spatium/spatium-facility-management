@@ -14,6 +14,25 @@ const mockCompany = {
     facility: 'Facility 1'
 }
 
+const mockInsights = {
+    summary: {
+        total_companies: 10,
+        active_companies: 10,
+        inactive_companies: 0,
+        total_revenue: 10000,
+        new_last_30_days: 2
+    },
+    status_distribution: [
+        { status: 'active', count: 10 },
+        { status: 'inactive', count: 0 }
+    ],
+    revenue_trend: [
+        { month: 'Jan 2026', month_key: '2026-01-01', revenue: 5000, growth_percentage: 0 },
+        { month: 'Feb 2026', month_key: '2026-02-01', revenue: 5000, growth_percentage: 0 }
+    ],
+    top_companies_by_tickets: []
+}
+
 // Mocking the service to avoid real delays and logic
 vi.mock('../composables/companyService', () => ({
     useCompanyService: () => ({
@@ -21,12 +40,7 @@ vi.mock('../composables/companyService', () => ({
         getCompanyById: vi.fn(async (id) => ({ ...mockCompany, id })),
         createCompany: vi.fn(async (data) => ({ ...data, id: 'new-id' })),
         updateCompany: vi.fn(async (id, data) => ({ ...mockCompany, id, ...data })),
-        getInsights: vi.fn(async () => ({ 
-            totalCompanies: 10, 
-            activeCompanies: 10, 
-            inactiveCompanies: 0,
-            revenue: 10000 
-        }))
+        getInsights: vi.fn(async () => mockInsights)
     })
 }))
 
@@ -91,7 +105,7 @@ describe('Company Store', () => {
         await store.fetchInsightsAction()
         
         expect(store.insights).toBeDefined()
-        expect(store.insights?.totalCompanies).toBe(10)
-        expect(store.insights?.activeCompanies).toBe(10)
+        expect(store.insights?.summary.total_companies).toBe(10)
+        expect(store.insights?.summary.active_companies).toBe(10)
     })
 })

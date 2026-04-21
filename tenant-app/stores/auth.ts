@@ -199,6 +199,20 @@ export const useAuthStore = defineStore("auth", {
         },
 
         async fetchModules() {
+            // If user is SPOC, skip API call and use static SPOC modules
+            if (this.user?.is_spoc) {
+                this.modules = [
+                    'spoc_dashboard',
+                    'spoc_visitors',
+                    'spoc-visitors-insights',
+                    'spoc-visitors-list',
+                    'spoc-visitors-invite',
+                    'spoc_employees'
+                ];
+                this.permissions = [];
+                return;
+            }
+
             const { getUserModules } = useUserService();
             try {
                 const { modules, permissions } = await getUserModules();

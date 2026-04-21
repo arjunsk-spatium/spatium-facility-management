@@ -32,7 +32,8 @@ describe('Configuration Page', () => {
             }
         })
         
-        // Check for actual tab sections (Location, Helpdesk, Room Meta)
+        // Check for actual tab sections (Location, Helpdesk, Room Meta, Visitor Management)
         expect(wrapper.text()).toContain('Location')
+        expect(wrapper.text()).toContain('Visitor Management')
     })
 })

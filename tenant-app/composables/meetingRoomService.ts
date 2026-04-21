@@ -100,6 +100,55 @@ export interface RoomStats {
     avgDailyBookings: number;
 }
 
+export interface MeetingRoomInsights {
+    date_range: {
+        start_date: string;
+        end_date: string;
+    };
+    summary: {
+        total_bookings: number;
+        total_revenue: number;
+        utilization_percentage: number;
+        avg_daily_bookings: number;
+        total_booked_hours: number;
+        cancellation_rate_percentage: number;
+        active_rooms: number;
+    };
+    bookings_trend: Array<{
+        month: string;
+        month_key: string;
+        count: number;
+        revenue: number;
+        revenue_growth_percentage: number | null;
+    }>;
+    status_distribution: Array<{
+        status: string;
+        count: number;
+        percentage: number;
+    }>;
+    top_meeting_rooms: Array<{
+        room_id: string;
+        room_name: string;
+        booking_count: number;
+        revenue: number;
+    }>;
+    most_utilised_room: {
+        room_id: string | null;
+        room_name: string | null;
+        total_hours: number;
+    };
+    top_companies: Array<{
+        company_id: string;
+        company_name: string;
+        booking_count: number;
+        total_hours: number;
+    }>;
+    peak_booking_hours: Array<{
+        hour: string;
+        booking_count: number;
+    }>;
+}
+
 const BOOKING_API_BASE = "/api/portal/bookings/bookings";
 const API_BASE = "/api/portal/meeting-rooms/rooms";
 
@@ -362,5 +411,22 @@ export const useMeetingRoomService = () => {
         getBookingsByStatus: async () => [],
         getBookingsTrend: async () => ({ labels: [], values: [] }),
         getTopRooms: async () => [],
+        getInsights: async (startDate?: string, endDate?: string): Promise<MeetingRoomInsights> => {
+            const query: Record<string, string> = {}
+            if (startDate) query.start_date = startDate
+            if (endDate) query.end_date = endDate
+
+            const response = await $api<any>(
+                "/api/portal/dashboard/meeting-room-insights/",
+                {
+                    method: "GET",
+                    query,
+                },
+            );
+            if (response.success) {
+                return response.data;
+            }
+            throw new Error(response.message || "Failed to fetch meeting room insights");
+        },
     };
 };

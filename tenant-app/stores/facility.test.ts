@@ -3,7 +3,6 @@ import { setActivePinia, createPinia } from "pinia";
 import { useFacilityStore } from "./facility";
 
 // Mock the facilityService
-// Mock the facilityService
 vi.mock("../composables/facilityService", () => ({
     useFacilityService: () => ({
         getFacilities: vi.fn().mockResolvedValue({
@@ -30,6 +29,43 @@ vi.mock("../composables/facilityService", () => ({
             .mockResolvedValue({ id: "3", name: "New Building" }),
         deleteFacility: vi.fn().mockResolvedValue(true),
         getTowers: vi.fn().mockResolvedValue([]),
+        getInsights: vi.fn().mockResolvedValue({
+            summary: {
+                total_facilities: 2,
+                total_towers: 3,
+                total_floors: 10,
+                total_wings: 20,
+                total_meeting_rooms: 5,
+                meeting_rooms_by_status: {
+                    active: 4,
+                    inactive: 1,
+                    maintenance: 0,
+                },
+            },
+            facilities: [
+                {
+                    facility_id: "1",
+                    name: "HQ Building",
+                    address: "123 Main St",
+                    city: "Bengaluru",
+                    state: "Karnataka",
+                    country: "India",
+                    has_towers: true,
+                    towers: 2,
+                    floors: 5,
+                    wings: 10,
+                    meeting_rooms: 3,
+                    visitors_on_premises_now: 12,
+                },
+            ],
+            top_facilities_by_visitors: [
+                { facility_id: "1", facility_name: "HQ Building", visitor_count: 120 },
+            ],
+            top_facilities_by_tickets: [
+                { facility_id: "1", facility_name: "HQ Building", ticket_count: 15 },
+            ],
+            top_facilities_by_bookings: [],
+        }),
     }),
 }));
 
@@ -140,6 +176,16 @@ describe("Facility Store", () => {
             expect(store.facilities.length).toBe(1);
             expect(store.facilities[0].id).toBe("2");
             expect(store.count).toBe(1);
+        });
+
+        it("fetchInsightsAction should populate insights", async () => {
+            const store = useFacilityStore();
+            await store.fetchInsightsAction();
+
+            expect(store.insights).toBeDefined();
+            expect(store.insights?.summary.total_facilities).toBe(2);
+            expect(store.insights?.summary.total_towers).toBe(3);
+            expect(store.insights?.facilities.length).toBe(1);
         });
     });
 });
