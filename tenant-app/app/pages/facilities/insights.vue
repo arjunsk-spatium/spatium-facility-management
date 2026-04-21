@@ -1,8 +1,11 @@
 <template>
     <div class="space-y-6">
-        <div class="mb-8">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Facilities Insights</h1>
-            <p class="text-gray-600 dark:text-gray-400">Real-time analytics and performance metrics.</p>
+        <div class="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Facilities Insights</h1>
+                <p class="text-gray-600 dark:text-gray-400">Real-time analytics and performance metrics.</p>
+            </div>
+            <a-range-picker v-model:value="dateRange" @change="onDateChange" />
         </div>
 
         <div v-if="loading" class="flex justify-center p-12">
@@ -107,7 +110,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import dayjs, { type Dayjs } from 'dayjs'
 import { useFacilityStore } from '../../../stores/facility'
 
 definePageMeta({
@@ -118,6 +122,23 @@ const store = useFacilityStore()
 const insights = computed(() => store.insights)
 const loading = computed(() => store.loading)
 const error = computed(() => store.error)
+
+// Default to last 6 months
+const dateRange = ref<[Dayjs, Dayjs]>([
+    dayjs().subtract(6, 'month'),
+    dayjs()
+])
+
+const fetchInsights = () => {
+    if (!dateRange.value || dateRange.value.length !== 2) return
+    const startDate = dateRange.value[0].format('YYYY-MM-DD')
+    const endDate = dateRange.value[1].format('YYYY-MM-DD')
+    store.fetchInsightsAction(startDate, endDate)
+}
+
+const onDateChange = () => {
+    fetchInsights()
+}
 
 const facilitiesColumns = [
     {
@@ -202,6 +223,6 @@ const topBookingsColumns = [
 ]
 
 onMounted(() => {
-    store.fetchInsightsAction()
+    fetchInsights()
 })
 </script>

@@ -227,13 +227,13 @@ export const useFacilityStore = defineStore("facility", {
             await this.fetchFacilities({ page }, true);
         },
 
-        async fetchInsightsAction() {
+        async fetchInsightsAction(startDate?: string, endDate?: string) {
             this.loading = true;
             this.error = null;
             const service = useFacilityService();
 
             try {
-                this.insights = await service.getInsights();
+                this.insights = await service.getInsights(startDate, endDate);
             } catch (err: any) {
                 this.error = err.message || "Failed to fetch facility insights";
             } finally {

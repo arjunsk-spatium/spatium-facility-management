@@ -649,12 +649,17 @@ export const useHelpdeskService = () => {
             }));
         },
 
-        getInsights: async (): Promise<HelpdeskInsights> => {
+        getInsights: async (startDate?: string, endDate?: string): Promise<HelpdeskInsights> => {
             try {
+                const query: Record<string, string> = {}
+                if (startDate) query.start_date = startDate
+                if (endDate) query.end_date = endDate
+
                 const response = await $api<ApiResponse<HelpdeskInsights>>(
                     "/api/portal/dashboard/helpdesk-insights/",
                     {
                         method: "GET",
+                        query,
                     },
                 );
                 if (!response.success) {

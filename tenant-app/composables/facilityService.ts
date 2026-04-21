@@ -586,11 +586,16 @@ export const useFacilityService = (): IFacilityService => {
             }
         },
 
-        getInsights: async (): Promise<FacilityInsights> => {
+        getInsights: async (startDate?: string, endDate?: string): Promise<FacilityInsights> => {
+            const query: Record<string, string> = {}
+            if (startDate) query.start_date = startDate
+            if (endDate) query.end_date = endDate
+
             const response = await $api<ApiResponse<FacilityInsights>>(
                 "/api/portal/dashboard/facility-insights/",
                 {
                     method: "GET",
+                    query,
                 },
             );
 

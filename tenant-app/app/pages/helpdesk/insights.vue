@@ -6,6 +6,7 @@
                 <p class="text-gray-600 dark:text-gray-400">Overview of ticket performance and facility issues.</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
+                <a-range-picker v-model:value="dateRange" @change="onDateChange" />
                 <a-button type="primary" :loading="exporting" @click="exportReport">
                     <template #icon>
                         <DownloadOutlined />
@@ -149,7 +150,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { DownloadOutlined } from '@ant-design/icons-vue'
-import dayjs from 'dayjs'
+import dayjs, { type Dayjs } from 'dayjs'
 import { useHelpdeskStore } from '../../../stores/helpdesk'
 import { Line, Pie } from '@antv/g2plot'
 
@@ -162,6 +163,23 @@ const insights = computed(() => store.insights)
 const loading = computed(() => store.loading)
 const error = computed(() => store.error)
 const exporting = ref(false)
+
+// Default to last 6 months
+const dateRange = ref<[Dayjs, Dayjs]>([
+    dayjs().subtract(6, 'month'),
+    dayjs()
+])
+
+const fetchInsights = () => {
+    if (!dateRange.value || dateRange.value.length !== 2) return
+    const startDate = dateRange.value[0].format('YYYY-MM-DD')
+    const endDate = dateRange.value[1].format('YYYY-MM-DD')
+    store.fetchInsightsAction(startDate, endDate)
+}
+
+const onDateChange = () => {
+    fetchInsights()
+}
 
 const ticketsOverTimeContainer = ref<HTMLDivElement | null>(null)
 const statusDistributionContainer = ref<HTMLDivElement | null>(null)
@@ -343,8 +361,8 @@ const exportReport = () => {
     try {
         const rows: string[] = []
         const data = insights.value
-        const dateFrom = data.date_range.start_date
-        const dateTo = data.date_range.end_date
+        const dateFrom = dateRange.value?.[0]?.format('YYYY-MM-DD') || data.date_range.start_date
+        const dateTo = dateRange.value?.[1]?.format('YYYY-MM-DD') || data.date_range.end_date
         const filename = `helpdesk-insights-${dateFrom}_to_${dateTo}.csv`
 
         // Header
@@ -438,7 +456,7 @@ watch([insights, loading], async () => {
 }, { immediate: true })
 
 onMounted(() => {
-    store.fetchInsightsAction()
+    fetchInsights()
 })
 
 onBeforeUnmount(() => {

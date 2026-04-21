@@ -197,14 +197,18 @@ export const useCompanyService = () => {
         return response;
     };
 
-    const getInsights = async (): Promise<CompanyInsights> => {
+    const getInsights = async (startDate?: string, endDate?: string): Promise<CompanyInsights> => {
         try {
             const url = buildUrl("/api/portal/dashboard/company-insights/");
+            const query: Record<string, string> = {}
+            if (startDate) query.start_date = startDate
+            if (endDate) query.end_date = endDate
             const response = await $api<{
                 success: boolean;
                 data: CompanyInsights;
             }>(url, {
                 method: "GET",
+                query,
             });
             return response.data;
         } catch (error) {
