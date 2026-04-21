@@ -76,7 +76,7 @@
                         :data="directEscalationMappings" 
                         :loading="loadingDirectEscalation"
                         :fields="directEscalationFields"
-                        :canCreate="canCreate"
+                        :canCreate="canCreate && directEscalationMappings.length === 0"
                         :canUpdate="canUpdate"
                         :canDelete="canDelete"
                         @add="handleAddDirectEscalation" 
