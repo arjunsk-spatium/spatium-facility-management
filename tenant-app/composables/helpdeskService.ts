@@ -801,7 +801,7 @@ export const useHelpdeskService = () => {
         deleteStaff: async (id: string): Promise<void> => {
             try {
                 const response = await $api<ApiResponse<null>>(
-                    `/api/portal/users/opstrack/${id}/`,
+                    `/api/portal/users/opstrack/${id}/delete/`,
                     { method: "DELETE" },
                 );
                 if (!response.success) {

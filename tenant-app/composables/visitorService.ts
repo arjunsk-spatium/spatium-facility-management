@@ -71,7 +71,7 @@ export interface IVisitorService {
     }>
     getVisitorById(id: string): Promise<Visitor>
     registerWalkIn(data: Partial<Visitor>): Promise<Visitor>
-    updateVisitorStatus(id: string, status: string): Promise<Visitor>
+    updateVisitorStatus(id: string, status: string, frontdesk_remarks?: string): Promise<Visitor>
     verifyOtp(phone: string, otp: string): Promise<boolean>
     getVisitorByPasscode(passcode: string): Promise<Visitor | null>
     getStats(): Promise<VisitorStats>
@@ -151,7 +151,7 @@ export const useVisitorService = (): IVisitorService => {
             return response.data
         },
 
-        updateVisitorStatus: async (id: string, status: string) => {
+        updateVisitorStatus: async (id: string, status: string, frontdesk_remarks?: string) => {
             // For approve/reject actions, the backend expects a POST with an 'action' field.
             // Map status strings to corresponding actions.
             const actionMap: Record<string, string> = {
@@ -164,7 +164,7 @@ export const useVisitorService = (): IVisitorService => {
                     `/api/portal/visitors/client/frontdesk/visitors/${id}/`,
                     {
                         method: 'POST',
-                        body: { action },
+                        body: { action, ...(frontdesk_remarks && { frontdesk_remarks }) },
                     },
                 );
                 if (!response.success) {
