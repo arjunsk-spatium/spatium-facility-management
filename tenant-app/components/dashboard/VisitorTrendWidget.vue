@@ -1,10 +1,10 @@
 <template>
     <a-card title="Visitor Traffic (Last 7 Days)">
-        <div v-if="loading" class="flex justify-center items-center h-40">
+        <div v-if="dashboardStore.loading" class="flex justify-center items-center h-40">
             <a-spin />
         </div>
         <div v-else class="h-64 mt-4 overflow-hidden">
-            <div ref="chartContainer" v-if="chartData" class="w-full h-full"></div>
+            <div ref="chartContainer" v-if="chartData && chartData.length > 0" class="w-full h-full"></div>
             <div v-else class="flex items-center justify-center h-full text-gray-500">No data available</div>
         </div>
     </a-card>
@@ -13,24 +13,25 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, onBeforeUnmount, nextTick } from 'vue';
 import { Line } from '@antv/g2plot';
-import { useVisitorStore } from '../../stores/visitor';
-import { storeToRefs } from 'pinia';
+import { useDashboardStore } from '../../stores/dashboard';
 
-const store = useVisitorStore();
-const { trends, loading } = storeToRefs(store);
+const dashboardStore = useDashboardStore();
 const chartContainer = ref<HTMLDivElement | null>(null);
 let chartInstance: Line | null = null;
 
 const chartData = computed(() => {
-    if (!trends.value || trends.value.length === 0) return null;
-    return trends.value;
+    const days = dashboardStore.summary?.visitors?.last_7_days || [];
+    if (days.length === 0) return null;
+    return days.map(d => ({
+        day: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' }),
+        count: d.count,
+    }));
 });
 
 const createChart = async () => {
     await nextTick();
     if (!chartContainer.value || !chartData.value) return;
 
-    // Destroy existing chart if any
     if (chartInstance) {
         chartInstance.destroy();
     }
@@ -83,15 +84,11 @@ const createChart = async () => {
     chartInstance.render();
 };
 
-watch([chartData, loading], async () => {
-    if (!loading.value && chartData.value) {
+watch([chartData, () => dashboardStore.loading], async () => {
+    if (!dashboardStore.loading && chartData.value) {
         await createChart();
     }
 }, { immediate: true });
-
-onMounted(async () => {
-    store.fetchTrends();
-});
 
 onBeforeUnmount(() => {
     if (chartInstance) {
