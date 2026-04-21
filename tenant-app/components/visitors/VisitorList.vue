@@ -9,7 +9,7 @@
                         :size="40" 
                         shape="square"
                         class="cursor-pointer"
-                        @click="openDetailsModal(record)"
+                        @click.stop="openImagePreview(record.image_url)"
                     />
                     <a-avatar 
                         v-else 
@@ -69,7 +69,7 @@
                             :size="48" 
                             shape="square"
                             class="cursor-pointer flex-shrink-0"
-                            @click="openDetailsModal(record)"
+                            @click.stop="openImagePreview(record.image_url)"
                         />
                         <a-avatar 
                             v-else 
@@ -166,6 +166,8 @@
         </ResponsiveDataView>
 
         <VisitorDetailsModal v-model:open="showDetailsModal" :visitor="selectedVisitor" />
+
+        <ImagePreviewModal v-model:open="showImagePreview" :src="previewImageUrl" alt="Visitor Photo" />
     </div>
 </template>
 
@@ -173,6 +175,7 @@
 import { ref, computed } from 'vue'
 import ResponsiveDataView from '../ResponsiveDataView.vue'
 import VisitorDetailsModal from './VisitorDetailsModal.vue'
+import ImagePreviewModal from './ImagePreviewModal.vue'
 import { useVisitorStore, type Visitor } from '../../stores/visitor'
 
 const props = defineProps<{
@@ -205,10 +208,17 @@ const columns = computed(() => {
 
 const showDetailsModal = ref(false)
 const selectedVisitor = ref<Visitor | null>(null)
+const showImagePreview = ref(false)
+const previewImageUrl = ref('')
 
 const openDetailsModal = (visitor: Visitor) => {
     selectedVisitor.value = visitor
     showDetailsModal.value = true
+}
+
+const openImagePreview = (url: string) => {
+    previewImageUrl.value = url
+    showImagePreview.value = true
 }
 
 const getInitials = (name: string) => {
