@@ -111,9 +111,9 @@ export const useVisitorStore = defineStore('visitor', {
             }
         },
 
-        async updateStatus(id: string, status: string) {
+        async updateStatus(id: string, status: string, frontdesk_remarks?: string) {
             const { updateVisitorStatus } = useVisitorService()
-            const updated = await updateVisitorStatus(id, status)
+            const updated = await updateVisitorStatus(id, status, frontdesk_remarks)
             const index = this.visitors.findIndex(v => v.id === id)
             
             if (index !== -1) {

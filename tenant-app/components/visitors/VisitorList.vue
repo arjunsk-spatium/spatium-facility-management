@@ -42,11 +42,11 @@
                 <template v-else-if="column.key === 'actions'">
                     <div v-if="showActions" class="flex gap-2">
                         <a-button v-if="record.status === 'Pending'" size="small" type="primary"
-                            @click="$emit('update-status', record.id, 'Approved')">
+                            @click="openRemarksModal(record.id, 'Approved')">
                             Approve
                         </a-button>
                         <a-button v-if="record.status === 'Pending'" size="small" danger
-                            @click="$emit('update-status', record.id, 'Rejected')">
+                            @click="openRemarksModal(record.id, 'Rejected')">
                             Reject
                         </a-button>
                         <a-button v-if="record.status === 'Approved' && !record.check_out_time" size="small"
@@ -148,11 +148,11 @@
 
                     <div class="flex gap-2 border-t pt-3">
                         <a-button v-if="record.status === 'Pending'" size="small" type="primary" block
-                            @click="$emit('update-status', record.id, 'Approved')">
+                            @click="openRemarksModal(record.id, 'Approved')">
                             Approve
                         </a-button>
                         <a-button v-if="record.status === 'Pending'" size="small" danger block
-                            @click="$emit('update-status', record.id, 'Rejected')">
+                            @click="openRemarksModal(record.id, 'Rejected')">
                             Reject
                         </a-button>
                         <a-button v-if="record.status === 'Approved' && !record.check_out_time" size="small"
@@ -168,6 +168,30 @@
         <VisitorDetailsModal v-model:open="showDetailsModal" :visitor="selectedVisitor" />
 
         <ImagePreviewModal v-model:open="showImagePreview" :src="previewImageUrl" alt="Visitor Photo" />
+
+        <!-- Remarks Modal -->
+        <a-modal
+            v-model:open="showRemarksModal"
+            :title="remarksAction === 'Approved' ? 'Approve Visitor' : 'Reject Visitor'"
+            :ok-text="remarksAction === 'Approved' ? 'Approve' : 'Reject'"
+            :ok-button-props="{ type: remarksAction === 'Approved' ? 'primary' : 'primary', danger: remarksAction === 'Rejected' }"
+            cancel-text="Cancel"
+            @ok="submitStatusUpdate"
+            @cancel="cancelRemarksModal"
+        >
+            <div class="py-2">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Add a remark for this {{ remarksAction === 'Approved' ? 'approval' : 'rejection' }} (optional).
+                </p>
+                <a-textarea
+                    v-model:value="frontdeskRemarks"
+                    placeholder="Enter frontdesk remarks..."
+                    :auto-size="{ minRows: 3, maxRows: 5 }"
+                    :maxlength="500"
+                    show-count
+                />
+            </div>
+        </a-modal>
     </div>
 </template>
 
@@ -184,7 +208,32 @@ const props = defineProps<{
     showActions?: boolean
 }>()
 
-defineEmits(['update-status'])
+const emit = defineEmits<{
+    'update-status': [id: string, status: string, frontdeskRemarks?: string]
+}>()
+
+// Remarks modal state
+const showRemarksModal = ref(false)
+const remarksTargetId = ref('')
+const remarksAction = ref<'Approved' | 'Rejected'>('Approved')
+const frontdeskRemarks = ref('')
+
+const openRemarksModal = (id: string, action: 'Approved' | 'Rejected') => {
+    remarksTargetId.value = id
+    remarksAction.value = action
+    frontdeskRemarks.value = ''
+    showRemarksModal.value = true
+}
+
+const submitStatusUpdate = () => {
+    emit('update-status', remarksTargetId.value, remarksAction.value, frontdeskRemarks.value || undefined)
+    showRemarksModal.value = false
+}
+
+const cancelRemarksModal = () => {
+    showRemarksModal.value = false
+    frontdeskRemarks.value = ''
+}
 
 const baseColumns = [
     { title: '', key: 'photo', width: 60 },

@@ -99,9 +99,9 @@ const handleFilterChange = async () => {
     await store.fetchVisitors(params)
 }
 
-const handleStatusUpdate = async (id: string, status: any) => {
-    // Update status in store
-    await store.updateStatus(id, status)
+const handleStatusUpdate = async (id: string, status: string, frontdeskRemarks?: string) => {
+    // Update status in store, passing optional frontdesk_remarks
+    await store.updateStatus(id, status, frontdeskRemarks)
 }
 
 onMounted(async () => {
