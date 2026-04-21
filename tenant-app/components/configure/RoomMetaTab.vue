@@ -14,14 +14,6 @@
                 </div>
             </a-tab-pane>
 
-            <a-tab-pane key="pax" tab="PAX (Capacity)">
-                <div class="py-4">
-                    <ConfigTable title="PAX Values" :columns="paxColumns" :data="paxValues" :loading="loading"
-                        :fields="paxFields" :canCreate="canCreate" :canUpdate="canUpdate" :canDelete="canDelete"
-                        @add="handleAddPax" @edit="handleEditPax" @delete="handleDeletePax" />
-                </div>
-            </a-tab-pane>
-
             <a-tab-pane key="amenities" tab="Amenities">
                 <div class="py-4">
                     <ConfigTable title="Amenities" :columns="amenityColumns" :data="amenities" :loading="loading"
