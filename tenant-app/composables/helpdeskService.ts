@@ -268,17 +268,30 @@ export interface HelpdeskInsights {
     }>;
 }
 
+export interface TicketListParams {
+    page?: number;
+    page_size?: number;
+    states?: string;
+    facility_id?: string;
+    search?: string;
+}
+
 export const useHelpdeskService = () => {
     const { $api } = useNuxtApp();
 
     return {
-        getTickets: async (filters?: any): Promise<Ticket[]> => {
+        getTickets: async (params: TicketListParams = {}): Promise<{
+            tickets: Ticket[];
+            count: number;
+            next: string | null;
+            previous: string | null;
+        }> => {
             try {
                 const response = await $api<
                     ApiResponse<ApiResponse<PaginatedResponse<Ticket>>>
                 >("/api/portal/helpdesk/tickets/", {
                     method: "GET",
-                    query: filters,
+                    query: params,
                 });
                 if (!response.success || !response.data.success) {
                     throw new Error(
@@ -287,7 +300,12 @@ export const useHelpdeskService = () => {
                             "Failed to fetch tickets",
                     );
                 }
-                return response.data.data.results;
+                return {
+                    tickets: response.data.data.results,
+                    count: response.data.data.count,
+                    next: response.data.data.next,
+                    previous: response.data.data.previous,
+                };
             } catch (error) {
                 console.error("Error fetching tickets:", error);
                 throw error;
@@ -564,9 +582,9 @@ export const useHelpdeskService = () => {
         },
 
         getStats: async (): Promise<HelpdeskStats> => {
-            const tickets = await this.getTickets();
+            const { tickets, count } = await this.getTickets({ page_size: 1 });
             return {
-                total: tickets.length,
+                total: count,
                 open: tickets.filter((t) => t.status === "Open").length,
                 inProgress: tickets.filter((t) => t.status === "In Progress")
                     .length,
@@ -575,7 +593,12 @@ export const useHelpdeskService = () => {
             };
         },
 
-        getPriorityTickets: async (page = 1, pageSize = 20, facilityId?: string): Promise<Ticket[]> => {
+        getPriorityTickets: async (page = 1, pageSize = 20, facilityId?: string): Promise<{
+            tickets: Ticket[];
+            count: number;
+            next: string | null;
+            previous: string | null;
+        }> => {
             try {
                 const response = await $api<
                     ApiResponse<ApiResponse<PaginatedResponse<Ticket>>>
@@ -590,7 +613,12 @@ export const useHelpdeskService = () => {
                             "Failed to fetch priority tickets",
                     );
                 }
-                return response.data.data.results;
+                return {
+                    tickets: response.data.data.results,
+                    count: response.data.data.count,
+                    next: response.data.data.next,
+                    previous: response.data.data.previous,
+                };
             } catch (error) {
                 console.error("Error fetching priority tickets:", error);
                 throw error;

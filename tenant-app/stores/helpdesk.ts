@@ -1,6 +1,6 @@
 
 import { defineStore } from 'pinia';
-import { useHelpdeskService, type Ticket, type HelpdeskStats, type HelpdeskInsights, type CreateTicketPayload, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskPriority } from '../composables/helpdeskService';
+import { useHelpdeskService, type Ticket, type HelpdeskStats, type HelpdeskInsights, type CreateTicketPayload, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskPriority, type TicketListParams } from '../composables/helpdeskService';
 
 export const useHelpdeskStore = defineStore('helpdesk', {
     state: () => ({
@@ -15,6 +15,12 @@ export const useHelpdeskStore = defineStore('helpdesk', {
         creating: false,
         error: null as string | null,
         init: false,
+        // Pagination
+        count: 0,
+        page: 1,
+        pageSize: 10,
+        next: null as string | null,
+        previous: null as string | null,
         priorityCount: 0,
         openCount: 0,
         inprogressCount: 0,
@@ -22,6 +28,11 @@ export const useHelpdeskStore = defineStore('helpdesk', {
         closedCount: 0,
         allCount: 0
     }),
+    getters: {
+        totalTickets: (state) => state.count,
+        hasNext: (state) => state.next !== null,
+        hasPrevious: (state) => state.previous !== null,
+    },
 
     getters: {
         getTicketById: (state) => (id: string) => state.tickets.find(t => t.id === id),
@@ -31,13 +42,24 @@ export const useHelpdeskStore = defineStore('helpdesk', {
     },
 
     actions: {
-        async fetchTickets(params: { state?: string; facility_id?: string } = {}, force = false) {
+        async fetchTickets(params: TicketListParams = {}, force = false) {
+            if (this.init && !force && Object.keys(params).length === 0) return;
+
             this.loading = true;
             this.error = null;
             const service = useHelpdeskService();
             
             try {
-                this.tickets = await service.getTickets(params);
+                const page = params.page ?? this.page;
+                const page_size = params.page_size ?? this.pageSize;
+                const result = await service.getTickets({ ...params, page, page_size });
+                this.tickets = result.tickets;
+                this.count = result.count;
+                this.next = result.next;
+                this.previous = result.previous;
+                this.page = page;
+                this.pageSize = page_size;
+                this.init = true;
             } catch (err: any) {
                 this.error = err.message || 'Failed to fetch tickets';
             } finally {
@@ -51,8 +73,14 @@ export const useHelpdeskStore = defineStore('helpdesk', {
             const service = useHelpdeskService();
             
             try {
-                this.tickets = await service.getPriorityTickets(page, pageSize, facilityId);
-                this.priorityCount = this.tickets.length;
+                const result = await service.getPriorityTickets(page, pageSize, facilityId);
+                this.tickets = result.tickets;
+                this.count = result.count;
+                this.next = result.next;
+                this.previous = result.previous;
+                this.page = page;
+                this.pageSize = pageSize;
+                this.priorityCount = result.count;
             } catch (err: any) {
                 this.error = err.message || 'Failed to fetch priority tickets';
             } finally {
@@ -63,21 +91,25 @@ export const useHelpdeskStore = defineStore('helpdesk', {
         async fetchTicketCounts() {
             const service = useHelpdeskService();
             try {
-                const [allTickets, open, inprogress, pending, closed] = await Promise.all([
-                    service.getTickets({}),
-                    service.getTickets({ states: 'open' }),
-                    service.getTickets({ states: 'inprogress' }),
-                    service.getTickets({ states: 'pending_confirmation' }),
-                    service.getTickets({ states: 'closed' })
+                const [allResult, openResult, inprogressResult, pendingResult, closedResult] = await Promise.all([
+                    service.getTickets({ page_size: 1 }),
+                    service.getTickets({ states: 'open', page_size: 1 }),
+                    service.getTickets({ states: 'inprogress', page_size: 1 }),
+                    service.getTickets({ states: 'pending_confirmation', page_size: 1 }),
+                    service.getTickets({ states: 'closed', page_size: 1 })
                 ]);
-                this.allCount = allTickets.length;
-                this.openCount = open.length;
-                this.inprogressCount = inprogress.length;
-                this.pendingCount = pending.length;
-                this.closedCount = closed.length;
+                this.allCount = allResult.count;
+                this.openCount = openResult.count;
+                this.inprogressCount = inprogressResult.count;
+                this.pendingCount = pendingResult.count;
+                this.closedCount = closedResult.count;
             } catch (err) {
                 console.error('Failed to fetch ticket counts', err);
             }
+        },
+
+        async goToPage(page: number, pageSize?: number) {
+            await this.fetchTickets({ page, ...(pageSize ? { page_size: pageSize } : {}) });
         },
 
         async fetchTicketById(id: string) {
