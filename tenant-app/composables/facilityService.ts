@@ -282,12 +282,17 @@ export const useFacilityService = (): IFacilityService => {
             const query: any = {};
             if (params.page) query.page = params.page;
             if (params.search) query.search = params.search;
+            if (params.page_size) query.page_size = params.page_size;
 
             const response = await $api<
                 ApiResponse<PaginatedResponse<Facility>>
             >("/api/portal/facilities/", {
                 method: "GET",
-                query,
+                query: {
+                    ...params,
+                    page: params.page || 1,
+                    page_size: params.page_size || 10,
+                },
             });
 
             if (!response.success) {
@@ -586,10 +591,13 @@ export const useFacilityService = (): IFacilityService => {
             }
         },
 
-        getInsights: async (startDate?: string, endDate?: string): Promise<FacilityInsights> => {
-            const query: Record<string, string> = {}
-            if (startDate) query.start_date = startDate
-            if (endDate) query.end_date = endDate
+        getInsights: async (
+            startDate?: string,
+            endDate?: string,
+        ): Promise<FacilityInsights> => {
+            const query: Record<string, string> = {};
+            if (startDate) query.start_date = startDate;
+            if (endDate) query.end_date = endDate;
 
             const response = await $api<ApiResponse<FacilityInsights>>(
                 "/api/portal/dashboard/facility-insights/",
