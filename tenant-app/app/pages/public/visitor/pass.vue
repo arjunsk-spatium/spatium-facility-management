@@ -119,9 +119,6 @@ import {
     BankFilled, ClockCircleFilled, EnvironmentFilled, AimOutlined,
     DownloadOutlined, LoadingOutlined
 } from '@ant-design/icons-vue'
-import ImagePreviewModal from '~/components/visitors/ImagePreviewModal.vue'
-
-
 definePageMeta({
     layout: 'public'
 })
