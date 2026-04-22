@@ -92,6 +92,8 @@ const paginationConfig = computed(() => ({
     total: count.value,
     current: page.value,
     pageSize: pageSize.value,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
     onChange: handlePageChange,
 }))
 
@@ -116,9 +118,10 @@ const handleFilterChange = async () => {
     await store.fetchVisitors({ ...params, page: 1 })
 }
 
-const handlePageChange = async (pageNum: number) => {
+const handlePageChange = async (pageNum: number, newPageSize?: number) => {
     const params = buildParams()
-    await store.fetchVisitors({ ...params, page: pageNum })
+    const size = newPageSize || pageSize.value
+    await store.fetchVisitors({ ...params, page: pageNum, page_size: size })
 }
 
 const handleStatusUpdate = async (id: string, status: string, frontdeskRemarks?: string) => {

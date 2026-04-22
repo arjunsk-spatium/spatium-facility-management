@@ -90,8 +90,8 @@ export const useVisitorStore = defineStore('visitor', {
             }
         },
 
-        async goToPage(page: number) {
-            await this.fetchVisitors({ page })
+        async goToPage(page: number, pageSize?: number) {
+            await this.fetchVisitors({ page, ...(pageSize ? { page_size: pageSize } : {}) })
         },
 
         async fetchVisitorById(id: string) {
