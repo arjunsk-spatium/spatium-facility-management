@@ -6,7 +6,7 @@
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Visitors Management</h1>
                 <p class="text-gray-600 dark:text-gray-400">Track and manage facility visitors.</p>
             </div>
-            <a-button v-if="canAction" type="primary" ghost>
+            <a-button v-if="canAction" type="primary" ghost :loading="exporting" @click="exportLog">
                 <template #icon>
                     <ExportOutlined />
                 </template>
@@ -73,6 +73,8 @@ const authStore = useAuthStore()
 
 const { visitors, loading, count, page, pageSize } = storeToRefs(store)
 
+const exporting = ref(false)
+
 // Permission checks
 const canView = computed(() => authStore.hasPermission('visitors-list:view'))
 const canAction = computed(() => authStore.hasPermission('visitors-list:action'))
@@ -127,6 +129,99 @@ const handlePageChange = async (pageNum: number, newPageSize?: number) => {
 const handleStatusUpdate = async (id: string, status: string, frontdeskRemarks?: string) => {
     // Update status in store, passing optional frontdesk_remarks
     await store.updateStatus(id, status, frontdeskRemarks)
+}
+
+const escapeCsv = (value: string | number | boolean | undefined | null): string => {
+    if (value == null) return ''
+    const str = String(value)
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`
+    }
+    return str
+}
+
+const formatDateTime = (dateStr: string | null): string => {
+    if (!dateStr) return ''
+    const date = new Date(dateStr)
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    })
+}
+
+const exportLog = () => {
+    if (visitors.value.length === 0 || exporting.value) return
+
+    exporting.value = true
+
+    try {
+        const rows: string[] = []
+        const now = new Date().toISOString().slice(0, 19).replace('T', '_')
+        const filename = `visitor-log-${now}.csv`
+
+        // Header
+        rows.push('Visitor Log')
+        rows.push(`Exported At,${escapeCsv(new Date().toLocaleString('en-US'))}`)
+        rows.push(`Total Records,${escapeCsv(visitors.value.length)}`)
+        rows.push('')
+
+        // Column headers
+        rows.push([
+            'Name',
+            'Phone',
+            'Email',
+            'Company',
+            'From Company',
+            'Visitor Type',
+            'Purpose',
+            'Facility',
+            'Status',
+            'Check-in Time',
+            'Check-out Time',
+            'On Premises',
+            'Created At'
+        ].join(','))
+
+        // Data rows
+        visitors.value.forEach(v => {
+            rows.push([
+                escapeCsv(v.name),
+                escapeCsv(v.phone_number),
+                escapeCsv(v.email),
+                escapeCsv(v.company_name),
+                escapeCsv(v.from_company),
+                escapeCsv(v.visitor_type === 'walk_in' ? 'Walk-in' : 'Pre-invite'),
+                escapeCsv(v.purpose_of_visit),
+                escapeCsv(v.facility_name),
+                escapeCsv(v.status),
+                escapeCsv(formatDateTime(v.check_in_time)),
+                escapeCsv(formatDateTime(v.check_out_time)),
+                escapeCsv(v.is_on_premises ? 'Yes' : 'No'),
+                escapeCsv(formatDateTime(v.created_at))
+            ].join(','))
+        })
+
+        const csvContent = rows.join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        const url = URL.createObjectURL(blob)
+        link.setAttribute('href', url)
+        link.setAttribute('download', filename)
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+    } catch (err) {
+        console.error('Export failed:', err)
+    } finally {
+        exporting.value = false
+    }
 }
 
 onMounted(async () => {
