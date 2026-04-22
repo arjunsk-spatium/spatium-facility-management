@@ -42,7 +42,13 @@
                     class="flex-1 sm:max-w-xs" @search="handleFilterChange" />
             </div>
 
-            <VisitorList :visitors="filteredVisitors" :loading="loading" :showActions="canAction" @update-status="handleStatusUpdate" />
+            <VisitorList
+                :visitors="visitors"
+                :loading="loading"
+                :showActions="canAction"
+                :pagination="paginationConfig"
+                @update-status="handleStatusUpdate"
+            />
         </div>
 
         <div v-else class="text-center py-12 text-gray-500">
@@ -65,7 +71,7 @@ const companyStore = useCompanyStore()
 const facilityStore = useFacilityStore()
 const authStore = useAuthStore()
 
-const { visitors, loading } = storeToRefs(store)
+const { visitors, loading, count, page, pageSize } = storeToRefs(store)
 
 // Permission checks
 const canView = computed(() => authStore.hasPermission('visitors-list:view'))
@@ -81,22 +87,38 @@ const dateRange = ref<[Dayjs, Dayjs] | null>(null)
 const facilities = computed(() => facilityStore.facilities)
 const companies = computed(() => companyStore.companies)
 
-// Filtered visitors
-const filteredVisitors = computed(() => visitors.value)
+// Pagination config for table
+const paginationConfig = computed(() => ({
+    total: count.value,
+    current: page.value,
+    pageSize: pageSize.value,
+    onChange: handlePageChange,
+}))
 
-const handleFilterChange = async () => {
+const buildParams = (): any => {
     const params: any = {
         facility_id: selectedFacility.value || undefined,
         company_id: selectedCompany.value || undefined,
         search: searchQuery.value || undefined,
     }
-    
+
     if (dateRange.value && dateRange.value.length === 2) {
         params.start_date = dateRange.value[0].format('YYYY-MM-DD')
         params.end_date = dateRange.value[1].format('YYYY-MM-DD')
     }
-    
-    await store.fetchVisitors(params)
+
+    return params
+}
+
+const handleFilterChange = async () => {
+    // Reset to page 1 when filters change
+    const params = buildParams()
+    await store.fetchVisitors({ ...params, page: 1 })
+}
+
+const handlePageChange = async (pageNum: number) => {
+    const params = buildParams()
+    await store.fetchVisitors({ ...params, page: pageNum })
 }
 
 const handleStatusUpdate = async (id: string, status: string, frontdeskRemarks?: string) => {

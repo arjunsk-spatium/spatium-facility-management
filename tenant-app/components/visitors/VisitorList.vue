@@ -1,6 +1,6 @@
 <template>
     <div>
-        <ResponsiveDataView :data="visitors" :columns="columns" :loading="loading" :mobilePageSize="5">
+        <ResponsiveDataView :data="visitors" :columns="columns" :loading="loading" :mobilePageSize="5" :pagination="pagination">
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'photo'">
                     <a-avatar 
@@ -206,6 +206,7 @@ const props = defineProps<{
     visitors: Visitor[],
     loading: boolean,
     showActions?: boolean
+    pagination?: any
 }>()
 
 const emit = defineEmits<{

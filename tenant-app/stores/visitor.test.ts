@@ -5,10 +5,15 @@ import { useVisitorStore } from './visitor'
 // Mock the visitorService
 vi.mock('../composables/visitorService', () => ({
     useVisitorService: () => ({
-        getVisitors: vi.fn().mockResolvedValue([
-            { id: '1', name: 'John Visitor', status: 'checked_in', passcode: '123456' },
-            { id: '2', name: 'Jane Guest', status: 'pending', passcode: '654321' }
-        ]),
+        getVisitors: vi.fn().mockResolvedValue({
+            visitors: [
+                { id: '1', name: 'John Visitor', status: 'checked_in', passcode: '123456' },
+                { id: '2', name: 'Jane Guest', status: 'pending', passcode: '654321' }
+            ],
+            count: 2,
+            next: null,
+            previous: null,
+        }),
         getStats: vi.fn().mockResolvedValue({ total: 100, checkedIn: 20, pending: 5 }),
         getTrends: vi.fn().mockResolvedValue([{ date: '2026-01-01', count: 10 }]),
         getPurposeStats: vi.fn().mockResolvedValue([{ purpose: 'Meeting', count: 50 }]),
@@ -47,15 +52,30 @@ describe('Visitor Store', () => {
             const store = useVisitorStore()
             expect(store.currentVisitor).toBeNull()
         })
+
+        it('should have default pagination values', () => {
+            const store = useVisitorStore()
+            expect(store.page).toBe(1)
+            expect(store.pageSize).toBe(10)
+            expect(store.count).toBe(0)
+        })
     })
 
     describe('Actions', () => {
-        it('fetchVisitors should populate visitors', async () => {
+        it('fetchVisitors should populate visitors and pagination', async () => {
             const store = useVisitorStore()
             await store.fetchVisitors()
             
             expect(store.visitors.length).toBe(2)
             expect(store.visitors[0].name).toBe('John Visitor')
+            expect(store.count).toBe(2)
+            expect(store.page).toBe(1)
+        })
+
+        it('goToPage should update page and fetch visitors', async () => {
+            const store = useVisitorStore()
+            await store.goToPage(2)
+            expect(store.page).toBe(2)
         })
 
         it('fetchStats should populate stats', async () => {
