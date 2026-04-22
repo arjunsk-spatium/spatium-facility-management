@@ -160,6 +160,13 @@ export interface BookingListParams {
     page_size?: number;
 }
 
+export interface RoomListParams {
+    page?: number;
+    page_size?: number;
+    search?: string;
+    facility_id?: string;
+}
+
 export interface PaginatedResponse<T> {
     results: T[];
     count: number;
@@ -170,12 +177,29 @@ export interface PaginatedResponse<T> {
 export const useMeetingRoomService = () => {
     const { $api } = useNuxtApp();
 
-    const getRooms = async (): Promise<MeetingRoom[]> => {
-        const result = await $api<any>(API_BASE + "/");
+    const getRooms = async (params: RoomListParams = {}): Promise<{
+        rooms: MeetingRoom[];
+        count: number;
+        next: string | null;
+        previous: string | null;
+    }> => {
+        const queryParams = new URLSearchParams();
+        if (params.page) queryParams.append("page", params.page.toString());
+        if (params.page_size) queryParams.append("page_size", params.page_size.toString());
+        if (params.search) queryParams.append("search", params.search);
+        if (params.facility_id) queryParams.append("facility_id", params.facility_id);
+        
+        const queryString = queryParams.toString();
+        const result = await $api<any>(API_BASE + "/" + (queryString ? `?${queryString}` : ""));
         if (result.success) {
-            return result.data.results || [];
+            return {
+                rooms: result.data.results || [],
+                count: result.data.count || 0,
+                next: result.data.next || null,
+                previous: result.data.previous || null,
+            };
         }
-        return [];
+        return { rooms: [], count: 0, next: null, previous: null };
     };
 
     const getRoomById = async (

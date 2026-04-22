@@ -23,7 +23,7 @@
                 </div>
 
                 <!-- Mobile Pagination -->
-                <div class="flex justify-center pt-4" v-if="showMobilePagination">
+                <div class="flex justify-end pt-4" v-if="showMobilePagination">
                     <a-pagination
                         :current="mobileCurrent"
                         :page-size="mobilePageSizeValue"

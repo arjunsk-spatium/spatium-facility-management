@@ -5,15 +5,25 @@ import { useMeetingRoomStore } from './meetingRoom'
 // Mock the meetingRoomService
 vi.mock('../composables/meetingRoomService', () => ({
     useMeetingRoomService: () => ({
-        getRooms: vi.fn().mockResolvedValue([
-            { id: '1', name: 'Conference Room A', capacity: 10, status: 'Active' },
-            { id: '2', name: 'Board Room', capacity: 20, status: 'Active' },
-            { id: '3', name: 'Meeting Room B', capacity: 6, status: 'Inactive' }
-        ]),
-        getBookings: vi.fn().mockResolvedValue([
-            { id: 'B1', roomId: '1', date: '2026-01-07', startTime: '09:00', endTime: '10:00' },
-            { id: 'B2', roomId: '2', date: '2026-01-07', startTime: '14:00', endTime: '16:00' }
-        ]),
+        getRooms: vi.fn().mockResolvedValue({
+            rooms: [
+                { id: '1', name: 'Conference Room A', capacity: 10, status: 'Active' },
+                { id: '2', name: 'Board Room', capacity: 20, status: 'Active' },
+                { id: '3', name: 'Meeting Room B', capacity: 6, status: 'Inactive' }
+            ],
+            count: 3,
+            next: null,
+            previous: null
+        }),
+        getBookings: vi.fn().mockResolvedValue({
+            results: [
+                { id: 'B1', roomId: '1', date: '2026-01-07', startTime: '09:00', endTime: '10:00' },
+                { id: 'B2', roomId: '2', date: '2026-01-07', startTime: '14:00', endTime: '16:00' }
+            ],
+            count: 2,
+            next: null,
+            previous: null
+        }),
         getRoomById: vi.fn().mockImplementation((id) => Promise.resolve(
             id === '1' ? { id: '1', name: 'Conference Room A', capacity: 10, status: 'Active' } : null
         )),
@@ -77,6 +87,13 @@ describe('Meeting Room Store', () => {
             const store = useMeetingRoomStore()
             expect(store.stats).toBeNull()
         })
+
+        it('should have default pagination values', () => {
+            const store = useMeetingRoomStore()
+            expect(store.page).toBe(1)
+            expect(store.pageSize).toBe(10)
+            expect(store.count).toBe(0)
+        })
     })
 
     describe('Getters', () => {
@@ -98,15 +115,28 @@ describe('Meeting Room Store', () => {
             ] as any[]
             expect(store.getRoomById('2')?.name).toBe('Room B')
         })
+
+        it('totalRooms should return count', () => {
+            const store = useMeetingRoomStore()
+            store.count = 10
+            expect(store.totalRooms).toBe(10)
+        })
     })
 
     describe('Actions', () => {
-        it('fetchRooms should populate rooms', async () => {
+        it('fetchRooms should populate rooms and pagination', async () => {
             const store = useMeetingRoomStore()
             await store.fetchRooms()
             
             expect(store.rooms.length).toBe(3)
+            expect(store.count).toBe(3)
             expect(store.init).toBe(true)
+        })
+
+        it('goToPage should update page', async () => {
+            const store = useMeetingRoomStore()
+            await store.goToPage(2)
+            expect(store.page).toBe(2)
         })
 
         it('fetchRooms should not refetch if initialized with data', async () => {

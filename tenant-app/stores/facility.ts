@@ -223,8 +223,8 @@ export const useFacilityStore = defineStore("facility", {
             }
         },
 
-        async goToPage(page: number) {
-            await this.fetchFacilities({ page }, true);
+        async goToPage(page: number, pageSize?: number) {
+            await this.fetchFacilities({ page, ...(pageSize ? { page_size: pageSize } : {}) }, true);
         },
 
         async fetchInsightsAction(startDate?: string, endDate?: string) {

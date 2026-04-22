@@ -196,7 +196,7 @@
                 </a-button>
             </div>
 
-            <ResponsiveDataView :columns="columns" :data="filteredTickets" :loading="loading" row-key="id">
+            <ResponsiveDataView :columns="columns" :data="tickets" :loading="loading" row-key="id" :pagination="paginationConfig">
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'ticket_number'">
                         <a @click="navigateTo(`/helpdesk/${record.id}`)" class="font-medium hover:underline">{{
@@ -287,7 +287,6 @@
         <div v-else class="text-center py-12 text-gray-500">
             You don't have permission to view helpdesk tickets.
         </div>
-
     </div>
 </template>
 
@@ -299,6 +298,7 @@ import { useFacilityService } from '../../../composables/facilityService';
 import { useAuthStore } from '../../../stores/auth';
 import { storeToRefs } from 'pinia';
 import { message } from 'ant-design-vue';
+import type { TicketListParams } from '../../../composables/helpdeskService';
 import {
     PlusOutlined,
     BarChartOutlined,
@@ -318,7 +318,7 @@ definePageMeta({
 const helpdeskStore = useHelpdeskStore();
 const facilityStore = useFacilityStore();
 const authStore = useAuthStore();
-const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, pendingCount, closedCount, allCount } = storeToRefs(helpdeskStore);
+const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, pendingCount, closedCount, allCount, count, page, pageSize } = storeToRefs(helpdeskStore);
 const { facilities } = storeToRefs(facilityStore);
 
 // Permission checks
@@ -527,10 +527,10 @@ const handleFacilityFilterChange = async () => {
 };
 
 const fetchTicketsByFilter = async () => {
-    const params: { states?: string; facility_id?: string } = {};
+    const params: TicketListParams = { page: 1 };
     
     if (activeTab.value === 'priority') {
-        await helpdeskStore.fetchPriorityTickets(1, 20, facilityFilter.value);
+        await helpdeskStore.fetchPriorityTickets(1, pageSize.value, facilityFilter.value);
         return;
     } else if (activeTab.value === 'open') {
         params.states = 'open';
@@ -562,10 +562,38 @@ const getPriorityColor = (priority: any) => {
     }
 };
 
-// Computed Filtered Data
-const filteredTickets = computed(() => {
-    return tickets.value;
-});
+// Pagination config
+const paginationConfig = computed(() => ({
+    total: count.value,
+    current: page.value,
+    pageSize: pageSize.value,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
+    onChange: handlePageChange,
+}));
+
+const handlePageChange = async (pageNum: number, newPageSize: number) => {
+    const params: TicketListParams = { page: pageNum };
+    if (activeTab.value === 'open') {
+        params.states = 'open';
+    } else if (activeTab.value === 'inprogress') {
+        params.states = 'inprogress';
+    } else if (activeTab.value === 'pending') {
+        params.states = 'pending_confirmation';
+    } else if (activeTab.value === 'closed') {
+        params.states = 'closed';
+    } else if (activeTab.value === 'priority') {
+        await helpdeskStore.fetchPriorityTickets(pageNum, newPageSize, facilityFilter.value);
+        return;
+    }
+    if (facilityFilter.value) {
+        params.facility_id = facilityFilter.value;
+    }
+    if (newPageSize !== pageSize.value) {
+        params.page_size = newPageSize;
+    }
+    await helpdeskStore.fetchTickets(params);
+};
 
 const handleCloseTicket = async (record: any) => {
     try {

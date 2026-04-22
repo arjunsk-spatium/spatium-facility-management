@@ -31,21 +31,36 @@
             </div>
         </div>
 
-
-
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                <a-input-search v-model:value="searchText" placeholder="Search rooms..." class="w-full md:w-64" />
+                <a-input-search 
+                    v-model:value="searchText" 
+                    placeholder="Search rooms..." 
+                    class="w-full md:w-64"
+                    @search="handleSearch"
+                    allow-clear
+                />
 
-                <a-select v-model:value="facilityFilter" placeholder="Filter by Facility" class="w-full md:w-48"
-                    allow-clear>
+                <a-select 
+                    v-model:value="facilityFilter" 
+                    placeholder="Filter by Facility" 
+                    class="w-full md:w-48"
+                    allow-clear 
+                    @change="handleFacilityFilterChange"
+                >
                     <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">{{ fac.name
                     }}</a-select-option>
                 </a-select>
             </div>
         </div>
 
-        <ResponsiveDataView :columns="columns" :data="filteredRooms" :loading="loading" row-key="id">
+        <ResponsiveDataView 
+            :columns="columns" 
+            :data="rooms" 
+            :loading="loading" 
+            row-key="id"
+            :pagination="paginationConfig"
+        >
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'name'">
                     <div class="flex items-center gap-3">
@@ -84,16 +99,6 @@
                     <div>
                         <div class="font-medium">{{ record.facility }}</div>
                     </div>
-                </template>
-
-                <template v-if="column.key === 'actions'">
-                    <a-tooltip v-if="canUpdate" title="Edit Configuration">
-                        <a-button type="text" shape="circle" @click="navigateTo(`/meeting-rooms/${record.id}`)">
-                            <template #icon>
-                                <SettingOutlined />
-                            </template>
-                        </a-button>
-                    </a-tooltip>
                 </template>
             </template>
 
@@ -134,11 +139,8 @@
                             <div class="font-bold text-gray-900 dark:text-white">₹{{ record.price }}/hr</div>
                             <div class="text-xs text-gray-400">{{ record.credits }} Credits</div>
                         </div>
-                        <a-button @click="navigateTo(`/meeting-rooms/${record.id}`)">
-                            <template #icon>
-                                <SettingOutlined />
-                            </template>
-                            Configure
+                        <a-button type="link" size="small" @click="navigateTo(`/meeting-rooms/${record.id}`)">
+                            View Details
                         </a-button>
                     </div>
                 </a-card>
@@ -159,12 +161,12 @@ import {
     PlusOutlined,
     BarChartOutlined,
     CalendarOutlined,
-    SettingOutlined,
     UserOutlined,
     PictureOutlined
 } from '@ant-design/icons-vue';
 import RoomStatusBadge from '../../../components/meeting-rooms/RoomStatusBadge.vue';
 import ResponsiveDataView from '../../../components/ResponsiveDataView.vue';
+import type { RoomListParams } from '../../../composables/meetingRoomService';
 
 definePageMeta({
     middleware: 'auth'
@@ -174,7 +176,7 @@ definePageMeta({
 const roomStore = useMeetingRoomStore();
 const facilityStore = useFacilityStore();
 const authStore = useAuthStore();
-const { rooms, loading } = storeToRefs(roomStore);
+const { rooms, loading, count, page, pageSize } = storeToRefs(roomStore);
 const { facilities } = storeToRefs(facilityStore);
 
 const canView = computed(() => authStore.hasPermission('meeting-rooms-list:view'))
@@ -196,29 +198,50 @@ const columns = [
     { title: 'Location', dataIndex: 'facility', key: 'location', width: 200 },
     { title: 'Pricing', dataIndex: 'price', key: 'pricing', width: 150 },
     { title: 'Status', dataIndex: 'status', key: 'status', width: 120 },
-    { title: '', key: 'actions', width: 60 }
 ];
 
-// Computed Filtered Data
-const filteredRooms = computed(() => {
-    let result = [...rooms.value];
+// Pagination config
+const paginationConfig = computed(() => ({
+    total: count.value,
+    current: page.value,
+    pageSize: pageSize.value,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
+    onChange: handlePageChange,
+}));
 
-    // Facility Filter
+const handlePageChange = async (pageNum: number, newPageSize: number) => {
+    const params: RoomListParams = { page: pageNum };
     if (facilityFilter.value) {
-        result = result.filter(r => r.facility === facilityFilter.value);
+        params.facility_id = facilityFilter.value;
     }
-
-    // Search
     if (searchText.value) {
-        const query = searchText.value.toLowerCase();
-        result = result.filter(r =>
-            r.name.toLowerCase().includes(query) ||
-            r.id.toLowerCase().includes(query)
-        );
+        params.search = searchText.value;
     }
+    if (newPageSize !== pageSize.value) {
+        params.page_size = newPageSize;
+    }
+    await roomStore.fetchRooms(params);
+};
 
-    return result;
-});
+const handleSearch = () => {
+    fetchRoomsByFilter();
+};
+
+const handleFacilityFilterChange = () => {
+    fetchRoomsByFilter();
+};
+
+const fetchRoomsByFilter = async () => {
+    const params: RoomListParams = { page: 1 };
+    if (facilityFilter.value) {
+        params.facility_id = facilityFilter.value;
+    }
+    if (searchText.value) {
+        params.search = searchText.value;
+    }
+    await roomStore.fetchRooms(params);
+};
 
 // Initialization
 onMounted(async () => {
