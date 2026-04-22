@@ -49,7 +49,7 @@
             <span class="text-lg font-semibold">Company List</span>
             <div class="flex items-center gap-3">
                 <a-input-search v-model:value="searchText" placeholder="Search companies..." style="width: 250px"
-                    allow-clear />
+                    allow-clear @search="handleSearch" />
                 <a-button v-if="canView" @click="downloadExcel" :loading="downloading">
                     <template #icon>
                         <DownloadOutlined />
@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <ResponsiveDataView v-if="canView" :columns="columns" :data="filteredCompanies" :loading="loading"
+        <ResponsiveDataView v-if="canView" :columns="columns" :data="companies" :loading="loading"
             :row-key="(record: any) => record.id" :pagination="paginationConfig">
             <!-- Desktop Table Cells -->
             <template #bodyCell="{ column, record }">
@@ -140,6 +140,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useCompanyStore } from '../../../stores/company'
 import { useAuthStore } from '../../../stores/auth'
 import { message } from 'ant-design-vue'
@@ -159,8 +160,7 @@ definePageMeta({
 const store = useCompanyStore()
 const authStore = useAuthStore()
 
-const companies = computed(() => store.companies)
-const loading = computed(() => store.loading)
+const { companies, loading, count, page, pageSize } = storeToRefs(store)
 
 const canView = computed(() => authStore.hasPermission('companies-list:view'))
 const canCreate = computed(() => authStore.hasPermission('companies-list:create'))
@@ -171,24 +171,16 @@ const canDelete = computed(() => authStore.hasPermission('companies-list:delete'
 const searchText = ref('')
 const downloading = ref(false)
 
-// Filtered companies based on search
-const filteredCompanies = computed(() => {
-    if (!searchText.value) return companies.value
-    const search = searchText.value.toLowerCase()
-    return companies.value.filter(company =>
-        company.name.toLowerCase().includes(search) ||
-        company.contacts[0]?.contact_name?.toLowerCase().includes(search) ||
-        company.contacts[0]?.email?.toLowerCase().includes(search) ||
-        company.contacts[0]?.phone?.toLowerCase().includes(search)
-    )
-})
-
 // Stats for companies
 const stats = computed(() => ({
-    total: companies.value.length,
+    total: count.value,
     active: companies.value.filter(c => c.status === 'active').length,
     inactive: companies.value.filter(c => c.status === 'inactive').length
 }))
+
+const handleSearch = () => {
+    store.fetchCompanies({ search: searchText.value || undefined, page: 1 })
+}
 
 // Download as Excel
 const downloadExcel = async () => {
@@ -197,7 +189,7 @@ const downloadExcel = async () => {
         // Dynamic imports for client-side only
         const XLSX = await import('xlsx')
 
-        const data = filteredCompanies.value.map(company => ({
+        const data = companies.value.map(company => ({
             'Company Name': company.name,
             'Status': company.status,
             'Contact Name': company.contacts[0]?.contact_name || '',
@@ -262,10 +254,19 @@ const columns = [
 
 // Pagination configuration
 const paginationConfig = computed(() => ({
-    pageSize: 10,
+    total: count.value,
+    current: page.value,
+    pageSize: pageSize.value,
     showSizeChanger: true,
     pageSizeOptions: ['10', '20', '50', '100'],
     showTotal: (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} companies`,
+    onChange: (pageNum: number, newPageSize: number) => {
+        if (newPageSize !== pageSize.value) {
+            store.fetchCompanies({ search: searchText.value || undefined, page: 1, page_size: newPageSize })
+        } else {
+            store.fetchCompanies({ search: searchText.value || undefined, page: pageNum })
+        }
+    },
 }))
 
 onMounted(() => {

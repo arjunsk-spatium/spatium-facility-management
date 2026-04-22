@@ -732,7 +732,8 @@ const verifyOtpCode = async () => {
             // Fetch dropdown data now that we have the token
             try {
                 purposes.value = await getPurposesOfVisit()
-                companies.value = await getCompanies(facilityId.value || undefined)
+                const { companies: companiesData } = await getCompanies();
+                companies.value = companiesData
                 if (companyIdQuery.value && companies.value.some(c => c.id === companyIdQuery.value)) {
                     formState.companyId = companyIdQuery.value
                 }

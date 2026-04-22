@@ -97,6 +97,12 @@ const MOCK_COMPANIES: Company[] = [
     },
 ];
 
+export interface CompanyListParams {
+    page?: number;
+    page_size?: number;
+    search?: string;
+}
+
 export interface CreateCompanyPayload {
     name: string;
     status: "active" | "inactive";
@@ -126,18 +132,33 @@ export const useCompanyService = () => {
         return url;
     };
 
-    const getCompanies = async (): Promise<Company[]> => {
+    const getCompanies = async (params: CompanyListParams = {}): Promise<{
+        companies: Company[];
+        count: number;
+        next: string | null;
+        previous: string | null;
+    }> => {
         const url = buildUrl("/api/portal/companies/");
         console.log("[CompanyService] Fetching companies from:", url);
+        const query: any = {};
+        if (params.page) query.page = params.page;
+        if (params.page_size) query.page_size = params.page_size;
+        if (params.search) query.search = params.search;
+
         const response = await $api<{
             success: boolean;
-            data: { results: Company[] };
-        }>(url, { method: "GET" });
+            data: { count: number; next: string | null; previous: string | null; results: Company[] };
+        }>(url, { method: "GET", query });
         console.log(
             "[CompanyService] Companies fetched:",
             response.data?.results?.length || 0,
         );
-        return response.data?.results || [];
+        return {
+            companies: response.data?.results || [],
+            count: response.data?.count || 0,
+            next: response.data?.next || null,
+            previous: response.data?.previous || null,
+        };
     };
 
     const getCompanyById = async (id: string): Promise<Company | null> => {

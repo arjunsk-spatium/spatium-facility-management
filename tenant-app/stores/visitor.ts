@@ -13,20 +13,31 @@ export const useVisitorStore = defineStore('visitor', {
         error: null as string | null,
         currentVisitor: null as Visitor | null,
         count: 0,
+        page: 1,
+        pageSize: 10,
         next: null as string | null,
         previous: null as string | null,
     }),
+    getters: {
+        totalVisitors: (state) => state.count,
+        hasNext: (state) => state.next !== null,
+        hasPrevious: (state) => state.previous !== null,
+    },
     actions: {
         async fetchVisitors(params: VisitorListParams = {}) {
             this.loading = true
             this.error = null
             try {
                 const { getVisitors } = useVisitorService()
-                const result = await getVisitors(params)
+                const page = params.page ?? this.page
+                const page_size = params.page_size ?? this.pageSize
+                const result = await getVisitors({ ...params, page, page_size })
                 this.visitors = result.visitors
                 this.count = result.count
                 this.next = result.next
                 this.previous = result.previous
+                this.page = page
+                this.pageSize = page_size
             } catch (err: any) {
                 this.error = err.message || 'Failed to fetch visitors'
             } finally {
@@ -42,6 +53,8 @@ export const useVisitorStore = defineStore('visitor', {
                 const params: VisitorListParams = {
                     start_date: startDate,
                     end_date: endDate,
+                    page: 1,
+                    page_size: this.pageSize,
                 }
                 if (facilityId) {
                     params.facility_id = facilityId
@@ -49,6 +62,9 @@ export const useVisitorStore = defineStore('visitor', {
                 const result = await getVisitors(params)
                 this.visitors = result.visitors
                 this.count = result.count
+                this.page = 1
+                this.next = result.next
+                this.previous = result.previous
             } catch (err: any) {
                 this.error = err.message || 'Failed to fetch visitors'
             } finally {
@@ -61,14 +77,21 @@ export const useVisitorStore = defineStore('visitor', {
             this.error = null
             try {
                 const { getVisitors } = useVisitorService()
-                const result = await getVisitors({ company_id: companyId })
+                const result = await getVisitors({ company_id: companyId, page: 1, page_size: this.pageSize })
                 this.visitors = result.visitors
                 this.count = result.count
+                this.page = 1
+                this.next = result.next
+                this.previous = result.previous
             } catch (err: any) {
                 this.error = err.message || 'Failed to fetch visitors'
             } finally {
                 this.loading = false
             }
+        },
+
+        async goToPage(page: number) {
+            await this.fetchVisitors({ page })
         },
 
         async fetchVisitorById(id: string) {

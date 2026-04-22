@@ -36,7 +36,12 @@ const mockInsights = {
 // Mocking the service to avoid real delays and logic
 vi.mock('../composables/companyService', () => ({
     useCompanyService: () => ({
-        getCompanies: vi.fn(async () => [mockCompany]),
+        getCompanies: vi.fn(async () => ({
+            companies: [mockCompany],
+            count: 1,
+            next: null,
+            previous: null
+        })),
         getCompanyById: vi.fn(async (id) => ({ ...mockCompany, id })),
         createCompany: vi.fn(async (data) => ({ ...data, id: 'new-id' })),
         updateCompany: vi.fn(async (id, data) => ({ ...mockCompany, id, ...data })),
@@ -54,6 +59,9 @@ describe('Company Store', () => {
         expect(store.companies).toEqual([])
         expect(store.currentCompany).toBeNull()
         expect(store.loading).toBe(false)
+        expect(store.page).toBe(1)
+        expect(store.pageSize).toBe(10)
+        expect(store.count).toBe(0)
     })
 
     it('should fetch companies', async () => {
@@ -63,6 +71,14 @@ describe('Company Store', () => {
         expect(store.companies.length).toBe(1)
         expect(store.companies[0].name).toBe('Tech Corp')
         expect(store.companies[0].spoc_name).toBe('John Smith')
+        expect(store.count).toBe(1)
+        expect(store.page).toBe(1)
+    })
+
+    it('should go to page', async () => {
+        const store = useCompanyStore()
+        await store.goToPage(2)
+        expect(store.page).toBe(2)
     })
 
     it('should fetch company by id', async () => {

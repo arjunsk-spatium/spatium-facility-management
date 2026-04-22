@@ -3,6 +3,12 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import VisitorsPage from '../../app/pages/visitors/index.vue'
 import { createTestingPinia } from '@pinia/testing'
 
+vi.mock('../../stores/auth', () => ({
+    useAuthStore: vi.fn(() => ({
+        hasPermission: vi.fn(() => true)
+    }))
+}))
+
 describe('Visitors Page', () => {
     const mockVisitors = [
         { id: '1', name: 'John Visitor', status: 'checked_in', company: 'ABC Corp', purpose: 'Meeting', checkInTime: '09:00', passcode: '123456' },

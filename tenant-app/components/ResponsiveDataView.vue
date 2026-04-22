@@ -23,9 +23,15 @@
                 </div>
 
                 <!-- Mobile Pagination -->
-                <div class="flex justify-center pt-4" v-if="data.length > mobilePageSize">
-                    <a-pagination v-model:current="currentMobilePage" v-model:pageSize="pageSizeRef"
-                        :total="data.length" :show-size-changer="false" size="small" />
+                <div class="flex justify-center pt-4" v-if="showMobilePagination">
+                    <a-pagination
+                        :current="mobileCurrent"
+                        :page-size="mobilePageSizeValue"
+                        :total="mobileTotal"
+                        :show-size-changer="false"
+                        size="small"
+                        @change="handleMobilePageChange"
+                    />
                 </div>
             </template>
         </div>
@@ -65,13 +71,35 @@ const props = defineProps({
 
 const { isMobile } = useSidebar()
 
-// Mobile Pagination State
+// Determine if we're using server-side pagination
+const isServerSide = computed(() => {
+    return typeof props.pagination?.total === 'number'
+})
+
+const mobilePageSizeValue = computed(() => {
+    return props.pagination?.pageSize ?? props.mobilePageSize
+})
+
+const mobileTotal = computed(() => {
+    return isServerSide.value ? props.pagination.total : props.data.length
+})
+
+const mobileCurrent = computed(() => {
+    return isServerSide.value ? (props.pagination?.current ?? 1) : currentMobilePage.value
+})
+
+const showMobilePagination = computed(() => {
+    return mobileTotal.value > mobilePageSizeValue.value
+})
+
+// Mobile Pagination State (client-side only)
 const currentMobilePage = ref(1)
-const pageSizeRef = ref(props.mobilePageSize)
 
 // Reset pagination when data changes (e.g., search filter applied)
 watch(() => props.data, () => {
-    currentMobilePage.value = 1
+    if (!isServerSide.value) {
+        currentMobilePage.value = 1
+    }
 })
 
 // Helper check for rowKey to support both string and function
@@ -82,10 +110,22 @@ const getRowKey = (record: any) => {
     return record[props.rowKey]
 }
 
+const handleMobilePageChange = (page: number) => {
+    if (isServerSide.value && props.pagination?.onChange) {
+        props.pagination.onChange(page, mobilePageSizeValue.value)
+    } else {
+        currentMobilePage.value = page
+    }
+}
+
 // Compute sliced data for mobile view
 const paginatedMobileData = computed(() => {
-    const start = (currentMobilePage.value - 1) * pageSizeRef.value
-    const end = start + pageSizeRef.value
+    if (isServerSide.value) {
+        // Server-side: show all data passed in (already paginated by server)
+        return props.data
+    }
+    const start = (currentMobilePage.value - 1) * mobilePageSizeValue.value
+    const end = start + mobilePageSizeValue.value
     return props.data.slice(start, end)
 })
 </script>
