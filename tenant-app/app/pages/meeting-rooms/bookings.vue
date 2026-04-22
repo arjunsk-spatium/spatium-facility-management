@@ -551,7 +551,7 @@ onMounted(async () => {
             roomStore.fetchBookings(),
             roomStore.fetchRooms()
         ]);
-        const companiesData = await companyService.getCompanies();
+        const { companies: companiesData } = await companyService.getCompanies();
         companies.value = companiesData.map(c => ({ id: c.id, name: c.name }));
     } catch (error) {
         console.error('Failed to load initial data:', error);
