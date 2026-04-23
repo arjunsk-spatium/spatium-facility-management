@@ -167,7 +167,6 @@ const subcategoryFields = computed(() => {
     
     const fields = [
         { name: 'name', label: 'Name', type: 'text' as const },
-        { name: 'key', label: 'Key', type: 'text' as const },
         { name: 'default_priority', label: 'Default Priority', type: 'select' as const, options: priorityOpts },
         { name: 'assignment_mode', label: 'Assignment Mode', type: 'select' as const, options: assignmentOpts },
         { name: 'response_sla', label: 'Response SLA (minutes)', type: 'number' as const },
@@ -194,7 +193,6 @@ const roleColumns = [
 
 const roleFields = [
     { name: 'name', label: 'Name', type: 'text' as const },
-    { name: 'key', label: 'Key', type: 'text' as const },
     { name: 'description', label: 'Description', type: 'text' as const },
     { name: 'display_order', label: 'Display Order', type: 'number' as const }
 ]
@@ -377,7 +375,7 @@ const handleEditSubcategory = async (record: HelpdeskSubCategory, data: any) => 
         const updated = await service.updateSubCategory(record.id, {
             category: data.parent_id,
             name: data.name,
-            key: data.key,
+            key: record.key,
             default_priority: data.default_priority,
             required_role: data.required_role,
             assignment_mode: data.assignment_mode,
@@ -413,7 +411,7 @@ const handleSubcategoryFieldChange = (field: string, value: any) => {
 const handleAddRole = async (data: any) => {
     try {
         const newRole = await service.createRole({
-            key: data.key,
+            key: data.name.toLowerCase().replace(/\s+/g, '_'),
             name: data.name,
             description: data.description || '',
             display_order: data.display_order || 1
@@ -429,7 +427,7 @@ const handleEditRole = async (record: HelpdeskRole, data: any) => {
     try {
         const updated = await service.updateRole(record.id, {
             name: data.name,
-            key: data.key,
+            key: record.key,
             description: data.description,
             display_order: data.display_order
         })
