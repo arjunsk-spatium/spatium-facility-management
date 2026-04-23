@@ -204,10 +204,17 @@ const openEditModal = (record: any) => {
     editingRecord.value = record
     formData.value = { ...record }
     if (props.parentOptions) {
-        // Set parent_id from the record's parent field
-        const parentIdKey = Object.keys(record).find(k =>
-            k.endsWith('_id') && k !== 'id'
-        )
+        // Try to find the parent key from parentLabel first
+        const labelKey = props.parentLabel ? props.parentLabel.toLowerCase().replace(/\s+/g, '_') : null;
+        let parentIdKey = Object.keys(record).find(k => k === labelKey);
+        
+        // Fallback to checking for keys ending with _id
+        if (!parentIdKey) {
+            parentIdKey = Object.keys(record).find(k =>
+                k.endsWith('_id') && k !== 'id'
+            );
+        }
+        
         if (parentIdKey) {
             formData.value.parent_id = record[parentIdKey]
         }

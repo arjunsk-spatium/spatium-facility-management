@@ -14,6 +14,8 @@ export interface TenantConfig {
     id: string;
     tenant: string;
     credit_system_enabled: boolean;
+    visitor_company_required: boolean;
+    visitor_email_required: boolean;
     created_at: string;
     updated_at: string;
 }

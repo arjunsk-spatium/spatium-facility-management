@@ -249,7 +249,7 @@
                 </div>
 
                 <!-- Email -->
-                <div>
+                <div v-if="tenantConfig.visitor_email_required">
                     <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email Address</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -261,7 +261,7 @@
                 </div>
 
                 <!-- Visitor's Company (from_company) -->
-                <div>
+                <div v-if="tenantConfig.visitor_company_required">
                     <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Your Company /
                         Organization</label>
                     <div class="relative">
@@ -359,15 +359,10 @@
                 class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto text-green-600 mb-4">
                 <CheckCircleFilled class="text-4xl" />
             </div>
-            <h1 class="text-2xl font-bold text-gray-900">Registration Submitted!</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Request Sent Successfully!</h1>
             <p class="text-gray-500 text-sm max-w-xs mx-auto">
-                Your walk-in request has been submitted. Please wait while we process your registration.
+                Request to visit is sent to the person. Kindly wait for approval.
             </p>
-            <NuxtLink to="/public/visitor/status">
-                <a-button type="primary" block size="large" class="h-12 text-lg font-medium rounded-xl mt-4">
-                    View Status
-                </a-button>
-            </NuxtLink>
         </div>
 
         <!-- Camera Modal -->
@@ -512,7 +507,7 @@ const router = useRouter()
 const tenantStore = useTenantStore()
 const {
     requestOtp, verifyOtp, getMe,
-    getPurposesOfVisit, getCompanies, getCompanyUsers, createWalkIn, getFacility, getFacilities
+    getPurposesOfVisit, getCompanies, getCompanyUsers, createWalkIn, getFacility, getFacilities, getTenantConfig
 } = usePublicVisitorService()
 
 const facilityId = computed(() => (route.query.facility_id as string) || '')
@@ -522,6 +517,7 @@ const companyIdQuery = computed(() => (route.query.company_id as string) || '')
 const step = ref(0)
 const loading = ref(false)
 const loadingHosts = ref(false)
+const tenantConfigLoading = ref(false)
 const otpDigits = ref(['', '', '', '', '', ''])
 const otpInputs = ref<HTMLInputElement[]>([])
 const profilePhotoFile = ref<File | null>(null)
@@ -534,6 +530,15 @@ const consentAccepted = ref(false)
 const purposes = ref<PurposeOfVisit[]>([])
 const companies = ref<PublicCompany[]>([])
 const companyUsers = ref<CompanyUser[]>([])
+
+// Tenant config
+const tenantConfig = ref<{
+    visitor_email_required: boolean
+    visitor_company_required: boolean
+}>({
+    visitor_email_required: true,
+    visitor_company_required: true,
+})
 
 // OTP Resend Timer
 const resendCooldown = ref(0)
@@ -575,6 +580,23 @@ const loadingFacilities = ref(false)
 const loadingSingleFacility = ref(false)
 const facilityLoadFailed = ref(false)
 
+const loadTenantConfig = async () => {
+    tenantConfigLoading.value = true
+    try {
+        const config = await getTenantConfig()
+        if (config) {
+            tenantConfig.value = {
+                visitor_email_required: config.visitor_email_required,
+                visitor_company_required: config.visitor_company_required,
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load tenant config', e)
+    } finally {
+        tenantConfigLoading.value = false
+    }
+}
+
 const loadFacility = async () => {
     if (facilityId.value) {
         loadingSingleFacility.value = true
@@ -608,6 +630,7 @@ const loadFacility = async () => {
 
 onMounted(() => {
     loadFacility()
+    loadTenantConfig()
 })
 
 watch(facilityId, () => {
@@ -615,13 +638,17 @@ watch(facilityId, () => {
 })
 
 const isFormValid = computed(() => {
-    return !!(
+    const baseValid = !!(
         formState.name &&
         formState.purposeOfVisitId &&
         formState.companyId &&
         formState.hostUserId &&
         profilePhotoFile.value
     )
+    if (!baseValid) return false
+    if (tenantConfig.value.visitor_email_required && !formState.email) return false
+    if (tenantConfig.value.visitor_company_required && !formState.fromCompany) return false
+    return true
 })
 
 const hasPrePopulatedData = computed(() => {
@@ -732,7 +759,7 @@ const verifyOtpCode = async () => {
             // Fetch dropdown data now that we have the token
             try {
                 purposes.value = await getPurposesOfVisit()
-                const { companies: companiesData } = await getCompanies();
+                const companiesData = await getCompanies(facilityId.value);
                 companies.value = companiesData
                 if (companyIdQuery.value && companies.value.some(c => c.id === companyIdQuery.value)) {
                     formState.companyId = companyIdQuery.value

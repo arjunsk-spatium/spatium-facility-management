@@ -53,6 +53,12 @@ export interface FacilityInfo {
     [key: string]: any;
 }
 
+export interface PublicTenantConfig {
+    credit_system_enabled: boolean;
+    visitor_email_required: boolean;
+    visitor_company_required: boolean;
+}
+
 export const usePublicVisitorService = () => {
     const route = useRoute();
 
@@ -294,6 +300,21 @@ export const usePublicVisitorService = () => {
         return response.data;
     };
 
+    const getTenantConfig = async (): Promise<PublicTenantConfig | null> => {
+        try {
+            const response = await publicFetch<ApiResponse<PublicTenantConfig>>(
+                "/api/portal/visitors/public/tenant-config/",
+                { method: "GET" },
+            );
+            if (response.success && response.data) {
+                return response.data;
+            }
+            return null;
+        } catch {
+            return null;
+        }
+    };
+
     return {
         requestOtp,
         verifyOtp,
@@ -306,5 +327,6 @@ export const usePublicVisitorService = () => {
         createWalkIn,
         preInvite,
         getVisitorStatus,
+        getTenantConfig,
     };
 };

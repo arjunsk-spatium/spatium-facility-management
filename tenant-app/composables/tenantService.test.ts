@@ -48,30 +48,34 @@ describe("Tenant Service", () => {
     it("should update tenant config", async () => {
         mockApi.mockResolvedValue({
             success: true,
-            data: { credit_system_enabled: true },
+            data: { credit_system_enabled: true, visitor_company_required: true, visitor_email_required: false },
         });
 
         const { updateTenantConfig } = useTenantService();
         const result = await updateTenantConfig("tenant-a", {
             credit_system_enabled: true,
+            visitor_company_required: true,
+            visitor_email_required: false,
         });
 
         expect(mockApi).toHaveBeenCalledWith(
             "/api/portal/tenants/configs/",
             {
                 method: "POST",
-                body: { credit_system_enabled: true },
+                body: { credit_system_enabled: true, visitor_company_required: true, visitor_email_required: false },
             },
         );
         expect(result).toBeDefined();
         expect(result?.credit_system_enabled).toBe(true);
+        expect(result?.visitor_company_required).toBe(true);
+        expect(result?.visitor_email_required).toBe(false);
     });
 
     it("should get tenant config", async () => {
         mockApi.mockResolvedValue({
             success: true,
             data: {
-                results: [{ credit_system_enabled: false }],
+                results: [{ credit_system_enabled: false, visitor_company_required: true, visitor_email_required: true }],
             },
         });
 
@@ -83,6 +87,8 @@ describe("Tenant Service", () => {
         );
         expect(result).toBeDefined();
         expect(result?.credit_system_enabled).toBe(false);
+        expect(result?.visitor_company_required).toBe(true);
+        expect(result?.visitor_email_required).toBe(true);
     });
 
     it("should update module config", async () => {

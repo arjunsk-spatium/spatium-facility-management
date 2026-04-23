@@ -53,7 +53,7 @@
                     </a-sub-menu>
 
                     <!-- Single Item -->
-                    <a-menu-item v-else :key="module.key + '-item'" class="mb-1 rounded-md">
+                    <a-menu-item v-else :key="module.key" class="mb-1 rounded-md">
                         <template #icon>
                             <component :is="getIconComponent(module.icon)" class="text-lg" />
                         </template>
@@ -271,6 +271,9 @@ onMounted(async () => {
 
 // Update on mount and route change
 watch(() => route.path, updateMenuState, { immediate: true });
+
+// Recompute active state when modules finish loading
+watch(filteredModules, updateMenuState, { flush: 'post' });
 </script>
 
 <style scoped>
