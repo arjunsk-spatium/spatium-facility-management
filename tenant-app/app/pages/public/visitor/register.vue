@@ -359,15 +359,10 @@
                 class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto text-green-600 mb-4">
                 <CheckCircleFilled class="text-4xl" />
             </div>
-            <h1 class="text-2xl font-bold text-gray-900">Registration Submitted!</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Request Sent Successfully!</h1>
             <p class="text-gray-500 text-sm max-w-xs mx-auto">
-                Your walk-in request has been submitted. Please wait while we process your registration.
+                Request to visit is sent to the person. Kindly wait for approval.
             </p>
-            <NuxtLink to="/public/visitor/status">
-                <a-button type="primary" block size="large" class="h-12 text-lg font-medium rounded-xl mt-4">
-                    View Status
-                </a-button>
-            </NuxtLink>
         </div>
 
         <!-- Camera Modal -->
