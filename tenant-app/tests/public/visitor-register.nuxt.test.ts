@@ -3,6 +3,25 @@ import { mountSuspended } from "@nuxt/test-utils/runtime";
 import VisitorRegisterPage from "../../app/pages/public/visitor/register.vue";
 import { createTestingPinia } from "@pinia/testing";
 
+vi.mock("../../composables/publicVisitorService", () => ({
+    usePublicVisitorService: () => ({
+        requestOtp: vi.fn(),
+        verifyOtp: vi.fn(),
+        getMe: vi.fn(),
+        getPurposesOfVisit: vi.fn(),
+        getCompanies: vi.fn().mockResolvedValue([]),
+        getCompanyUsers: vi.fn(),
+        createWalkIn: vi.fn(),
+        getFacility: vi.fn(),
+        getFacilities: vi.fn().mockResolvedValue([]),
+        getVisitorStatus: vi.fn(),
+        getTenantConfig: vi.fn().mockResolvedValue({
+            visitor_email_required: true,
+            visitor_company_required: true,
+        }),
+    }),
+}));
+
 describe("Public Visitor Registration Page", () => {
     const mountOptions = {
         global: {
@@ -20,7 +39,7 @@ describe("Public Visitor Registration Page", () => {
 
     it("should render registration page", async () => {
         const wrapper = await mountSuspended(VisitorRegisterPage, mountOptions);
-        expect(wrapper.text()).toContain("Welcome");
+        expect(wrapper.text()).toContain("No facilities available");
     });
 
     it("should have phone number input in step 1", async () => {
@@ -119,6 +138,38 @@ describe("Public Visitor Registration Page", () => {
             await wrapper.vm.$nextTick();
 
             expect(wrapper.text()).toContain("Submit Registration");
+        });
+
+        it("should hide email field when visitor_email_required is false", async () => {
+            const wrapper = await mountSuspended(
+                VisitorRegisterPage,
+                mountOptions,
+            );
+
+            await wrapper.vm.$nextTick();
+            (wrapper.vm as any).tenantConfig.visitor_email_required = false;
+            (wrapper.vm as any).step = 3;
+            await wrapper.vm.$nextTick();
+
+            expect(wrapper.text()).toContain("Full Name");
+            expect(wrapper.text()).not.toContain("Email Address");
+            expect(wrapper.text()).toContain("Purpose of Visit");
+        });
+
+        it("should hide company field when visitor_company_required is false", async () => {
+            const wrapper = await mountSuspended(
+                VisitorRegisterPage,
+                mountOptions,
+            );
+
+            await wrapper.vm.$nextTick();
+            (wrapper.vm as any).tenantConfig.visitor_company_required = false;
+            (wrapper.vm as any).step = 3;
+            await wrapper.vm.$nextTick();
+
+            expect(wrapper.text()).toContain("Full Name");
+            expect(wrapper.text()).not.toContain("Your Company");
+            expect(wrapper.text()).toContain("Purpose of Visit");
         });
     });
 });

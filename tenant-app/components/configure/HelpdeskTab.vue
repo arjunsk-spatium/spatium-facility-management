@@ -375,6 +375,7 @@ const handleAddSubcategory = async (data: any) => {
 const handleEditSubcategory = async (record: HelpdeskSubCategory, data: any) => {
     try {
         const updated = await service.updateSubCategory(record.id, {
+            category: data.parent_id,
             name: data.name,
             key: data.key,
             default_priority: data.default_priority,
