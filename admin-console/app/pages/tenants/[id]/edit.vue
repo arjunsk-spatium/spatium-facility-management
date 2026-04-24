@@ -131,11 +131,12 @@
             <!-- Section 3: Modules -->
             <section>
                 <div class="mb-6">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Assigned Modules</h2>
-                    <p class="text-gray-500 text-sm">Enable or disable features.</p>
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Assigned Modules & Features</h2>
+                    <p class="text-gray-500 text-sm">Enable or disable modules and their associated features.</p>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-white">Modules</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                         <div v-for="mod in modules" :key="mod.id"
                             class="p-4 border rounded-xl hover:bg-white dark:hover:bg-gray-800 transition-all cursor-pointer flex items-start space-x-3 bg-white dark:bg-gray-800"
                             :class="selectedModules.includes(mod.id) ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10' : 'border-gray-200 dark:border-gray-700'"
@@ -147,9 +148,27 @@
                             </div>
                         </div>
                     </div>
+
+                    <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-white" v-if="Object.keys(groupedFeatures).length > 0">Features</h3>
+                    <div v-for="(feats, groupName) in groupedFeatures" :key="groupName" class="mb-6">
+                        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ groupName }}</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div v-for="feat in feats" :key="feat.id"
+                                class="p-3 border rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-all cursor-pointer flex items-start space-x-3 bg-white dark:bg-gray-800"
+                                :class="selectedFeatures.includes(feat.id) ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10' : 'border-gray-200 dark:border-gray-700'"
+                                @click="toggleFeature(feat.id)">
+                                <a-checkbox :checked="selectedFeatures.includes(feat.id)" class="mt-1 pointer-events-none" />
+                                <div>
+                                    <span class="font-medium block text-gray-900 dark:text-gray-100">{{ feat.name }}</span>
+                                    <span class="text-xs text-gray-500 mt-0.5 block">{{ feat.description }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="flex justify-end mt-4">
                         <a-button type="primary" @click="updateModules" :loading="loadingModules">Update
-                            Modules</a-button>
+                            Modules & Features</a-button>
                     </div>
                 </div>
             </section>
@@ -353,7 +372,10 @@ const {
     getTenantById,
     getTenantSubscription,
     getTenantBranding,
-    getTenantPii
+    getTenantPii,
+    getFeatures,
+    getTenantFeatures,
+    assignFeatures
 } = useTenantService();
 const { getRegistry, getActiveRegistry } = useModuleRegistry();
 const { getPlans } = usePlanService();
@@ -365,6 +387,8 @@ const tenant = ref<any>(null);
 const basicForm = reactive({ name: '', domain: '', status: '' });
 const subscriptionForm = reactive({ plan: '', start_date: '', end_date: '', billing_cycle: 'monthly', max_users: 100, max_client_users: 100, price: 0 });
 const selectedModules = ref<string[]>([]);
+const featuresList = ref<any[]>([]);
+const selectedFeatures = ref<string[]>([]);
 const brandingForm = reactive({
     primary_color: '#ffffff',
     logo: null as File | null,
@@ -397,6 +421,16 @@ const isCustomPlan = computed(() => {
     return p?.is_custom || false;
 });
 
+const groupedFeatures = computed(() => {
+    const groups: Record<string, any[]> = {};
+    featuresList.value.forEach(f => {
+        const smName = f.submodule_name || 'Other Features';
+        if (!groups[smName]) groups[smName] = [];
+        groups[smName].push(f);
+    });
+    return groups;
+});
+
 const fetchData = async () => {
     loading.value = true;
     try {
@@ -410,13 +444,16 @@ const fetchData = async () => {
             basicForm.status = fetchedTenant.status || 'active';
         }
 
-        // 2. Fetch Plans & Registry
-        const [plansRes, modulesRes] = await Promise.all([getPlans(), getActiveRegistry()]);
+        // 2. Fetch Plans, Registry & Features
+        const [plansRes, modulesRes, featuresRes] = await Promise.all([getPlans(), getActiveRegistry(), getFeatures()]);
         if (plansRes) plans.value = plansRes.data?.results || plansRes.data || [];
         if (modulesRes) {
              modules.value = Array.isArray(modulesRes.data) 
                 ? modulesRes.data 
                 : (modulesRes.data.results || []);
+        }
+        if (featuresRes) {
+            featuresList.value = Array.isArray(featuresRes.data) ? featuresRes.data : (featuresRes.data.results || []);
         }
 
         // 3. Fetch Sub-Resources (Prefill)
@@ -440,10 +477,12 @@ const fetchData = async () => {
             console.warn('No subscription found or error fetching', e);
         }
 
-        // Modules
+        // Modules and Features
         try {
-            // getTenantModules returns assignment list
-            const modRes = await getTenantModules(tenantId);
+            const [modRes, featRes] = await Promise.all([
+                getTenantModules(tenantId),
+                getTenantFeatures(tenantId)
+            ]);
             if (modRes && modRes.data) {
                 const assignments = modRes.data.results || modRes.data || [];
                 // Only map if assignments is an array
@@ -451,7 +490,13 @@ const fetchData = async () => {
                     selectedModules.value = assignments.map((a: any) => a.module || a.module_id);
                 }
             }
-        } catch (e) { console.warn('No modules found', e); }
+            if (featRes && featRes.data) {
+                const assignments = featRes.data.results || featRes.data || [];
+                if (Array.isArray(assignments)) {
+                    selectedFeatures.value = assignments.map((a: any) => a.feature || a.feature_id);
+                }
+            }
+        } catch (e) { console.warn('No modules/features found', e); }
 
         // Branding
         try {
@@ -542,6 +587,14 @@ const toggleModule = (moduleId: string) => {
     }
 };
 
+const toggleFeature = (featureId: string) => {
+    if (selectedFeatures.value.includes(featureId)) {
+        selectedFeatures.value = selectedFeatures.value.filter(id => id !== featureId);
+    } else {
+        selectedFeatures.value.push(featureId);
+    }
+};
+
 const updateModules = async () => {
     loadingModules.value = true;
     try {
@@ -550,8 +603,16 @@ const updateModules = async () => {
             modules: selectedModules.value.map((mid, idx) => ({ module: mid, priority: 10 - idx }))
         };
         await assignModules(modulePayload);
-        message.success('Modules updated');
-    } catch (e) { message.error('Failed to update modules'); }
+        
+        const featurePayload = {
+            tenant: tenantId,
+            features: selectedFeatures.value,
+            is_active: true
+        };
+        await assignFeatures(featurePayload);
+        
+        message.success('Modules & Features updated');
+    } catch (e) { message.error('Failed to update modules/features'); }
     finally { loadingModules.value = false; }
 };
 

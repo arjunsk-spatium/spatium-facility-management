@@ -7,7 +7,13 @@ vi.mock("../composables/userService", () => ({
     useUserService: () => ({
         getUserModules: vi
             .fn()
-            .mockResolvedValue({ modules: ["dashboard", "visitors", "companies"], permissions: [] }),
+            .mockResolvedValue({ modules: ["dashboard", "visitors", "companies"], permissions: ["dashboard:view"] }),
+        getUserAssignedModules: vi
+            .fn()
+            .mockResolvedValue({
+                submodule_permissions: [],
+                feature_permissions: [{ feature_permission: "visitor_sticker_print" }]
+            }),
     }),
 }));
 
@@ -99,13 +105,30 @@ describe("Auth Store", () => {
             expect(store.modules).toEqual([]);
         });
 
-        it("fetchModules should populate modules array", async () => {
+        it("fetchModules should populate modules array and fetch feature permissions", async () => {
             const store = useAuthStore();
+            store.user = { id: "1", name: "User" };
+            
+            const fetchMock = vi.fn().mockImplementation((url) => {
+                if (url.includes('/api/portal/modules/user/?user_id=')) {
+                    return Promise.resolve({ data: { feature_permissions: [{ feature_permission: "visitor_sticker_print" }] } });
+                }
+                if (url.includes('/api/platform/modules/features/')) {
+                    return Promise.resolve({ data: [{ id: "visitor_sticker_print", key: "visitor_sticker_print" }] });
+                }
+                return Promise.resolve({ data: [] });
+            });
+            
+            vi.stubGlobal("useNuxtApp", () => ({ $api: fetchMock }));
+
             await store.fetchModules();
 
             expect(store.modules).toContain("dashboard");
             expect(store.modules).toContain("visitors");
             expect(store.modules).toContain("companies");
+            expect(store.permissions).toContain("visitor_sticker_print");
+            
+            vi.unstubAllGlobals();
         });
 
         it("fetchModules should set SPOC modules when user is SPOC", async () => {

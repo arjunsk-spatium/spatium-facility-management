@@ -147,6 +147,24 @@
                                         {{ perm.name }}
                                     </span>
                                 </div>
+                                <div v-if="submod.features && submod.features.length" class="ml-6 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                    <div class="text-xs font-medium text-gray-500 mb-1">Features</div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <div v-for="feat in submod.features" :key="feat.id" class="flex items-center gap-2 flex-wrap">
+                                            <span class="text-xs text-gray-600 dark:text-gray-400 font-medium">{{ feat.name }}:</span>
+                                            <span v-for="perm in feat.permissions" :key="perm.id"
+                                                :class="[
+                                                    'text-xs px-1.5 py-0.5 rounded cursor-pointer',
+                                                    isFeaturePermissionAssigned(activeModuleUser, perm.id) 
+                                                        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
+                                                ]"
+                                                @click="toggleFeaturePermission(activeModuleUser, perm.id)">
+                                                {{ perm.name }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -205,6 +223,8 @@ const users = ref<User[]>([])
 const systemModules = ref<SystemModule[]>([])
 const userAssignedPermissions = ref<Record<string, Set<string>>>({})
 const originalUserPermissions = ref<Record<string, Set<string>>>({})
+const userAssignedFeatures = ref<Record<string, Set<string>>>({})
+const originalUserFeatures = ref<Record<string, Set<string>>>({})
 const searchQuery = ref('')
 const savingUserId = ref<string | null>(null)
 
@@ -250,9 +270,11 @@ const fetchData = async () => {
         // Load assigned permissions for each user
         for (const user of usersData) {
             const assignedPerms = await getUserAssignedModules(user.id)
-            const permissions = new Set(assignedPerms)
-            userAssignedPermissions.value[user.id] = permissions
-            originalUserPermissions.value[user.id] = new Set(permissions)
+            userAssignedPermissions.value[user.id] = new Set(assignedPerms.submodules)
+            originalUserPermissions.value[user.id] = new Set(assignedPerms.submodules)
+            
+            userAssignedFeatures.value[user.id] = new Set(assignedPerms.features)
+            originalUserFeatures.value[user.id] = new Set(assignedPerms.features)
         }
     } catch (error) {
         message.error('Failed to load data')
@@ -265,36 +287,53 @@ const fetchData = async () => {
 
 const isModuleFullyAssigned = (user: User, mod: SystemModule): boolean => {
     const userPerms = userAssignedPermissions.value[user.id]
-    if (!userPerms) return false
+    const userFeats = userAssignedFeatures.value[user.id]
+    if (!userPerms || !userFeats) return false
     
     const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
-    return allPerms.length > 0 && allPerms.every(p => userPerms.has(p))
+    const allFeatPerms = mod.submodules.flatMap(sm => (sm.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id)))
+    
+    const totalCount = allPerms.length + allFeatPerms.length
+    return totalCount > 0 && allPerms.every(p => userPerms.has(p)) && allFeatPerms.every(p => userFeats.has(p))
 }
 
 const isModulePartiallyAssigned = (user: User, mod: SystemModule): boolean => {
     const userPerms = userAssignedPermissions.value[user.id]
-    if (!userPerms) return false
+    const userFeats = userAssignedFeatures.value[user.id]
+    if (!userPerms || !userFeats) return false
     
     const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
-    const assignedCount = allPerms.filter(p => userPerms.has(p)).length
-    return assignedCount > 0 && assignedCount < allPerms.length
+    const allFeatPerms = mod.submodules.flatMap(sm => (sm.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id)))
+    
+    const assignedCount = allPerms.filter(p => userPerms.has(p)).length + allFeatPerms.filter(p => userFeats.has(p)).length
+    const totalCount = allPerms.length + allFeatPerms.length
+    
+    return assignedCount > 0 && assignedCount < totalCount
 }
 
 const isSubmoduleFullyAssigned = (user: User, submod: any): boolean => {
     const userPerms = userAssignedPermissions.value[user.id]
-    if (!userPerms) return false
+    const userFeats = userAssignedFeatures.value[user.id]
+    if (!userPerms || !userFeats) return false
     
     const allPerms = submod.permissions.map((p: any) => p.id)
-    return allPerms.length > 0 && allPerms.every((p: string) => userPerms.has(p))
+    const allFeatPerms = (submod.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id))
+    
+    const totalCount = allPerms.length + allFeatPerms.length
+    return totalCount > 0 && allPerms.every((p: string) => userPerms.has(p)) && allFeatPerms.every((p: string) => userFeats.has(p))
 }
 
 const isSubmodulePartiallyAssigned = (user: User, submod: any): boolean => {
     const userPerms = userAssignedPermissions.value[user.id]
-    if (!userPerms) return false
+    const userFeats = userAssignedFeatures.value[user.id]
+    if (!userPerms || !userFeats) return false
     
     const allPerms = submod.permissions.map((p: any) => p.id)
-    const assignedCount = allPerms.filter((p: string) => userPerms.has(p)).length
-    return assignedCount > 0 && assignedCount < allPerms.length
+    const allFeatPerms = (submod.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id))
+    
+    const assignedCount = allPerms.filter((p: string) => userPerms.has(p)).length + allFeatPerms.filter((p: string) => userFeats.has(p)).length
+    const totalCount = allPerms.length + allFeatPerms.length
+    return assignedCount > 0 && assignedCount < totalCount
 }
 
 const isPermissionAssigned = (user: User, permissionId: string): boolean => {
@@ -302,31 +341,46 @@ const isPermissionAssigned = (user: User, permissionId: string): boolean => {
     return userPerms ? userPerms.has(permissionId) : false
 }
 
+const isFeaturePermissionAssigned = (user: User, permissionId: string): boolean => {
+    const userFeats = userAssignedFeatures.value[user.id]
+    return userFeats ? userFeats.has(permissionId) : false
+}
+
 const toggleModuleAll = (user: User, mod: SystemModule) => {
     const userPerms = userAssignedPermissions.value[user.id]
-    if (!userPerms) return
+    const userFeats = userAssignedFeatures.value[user.id]
+    if (!userPerms || !userFeats) return
     
     const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
-    const allAssigned = allPerms.every(p => userPerms.has(p))
+    const allFeatPerms = mod.submodules.flatMap(sm => (sm.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id)))
+    
+    const allAssigned = allPerms.every(p => userPerms.has(p)) && allFeatPerms.every(p => userFeats.has(p))
     
     if (allAssigned) {
         allPerms.forEach(p => userPerms.delete(p))
+        allFeatPerms.forEach(p => userFeats.delete(p))
     } else {
         allPerms.forEach(p => userPerms.add(p))
+        allFeatPerms.forEach(p => userFeats.add(p))
     }
 }
 
 const toggleSubmoduleAll = (user: User, submod: any, mod: SystemModule) => {
     const userPerms = userAssignedPermissions.value[user.id]
-    if (!userPerms) return
+    const userFeats = userAssignedFeatures.value[user.id]
+    if (!userPerms || !userFeats) return
     
     const allPerms: string[] = submod.permissions.map((p: any) => p.id)
-    const allAssigned = allPerms.every((p: string) => userPerms.has(p))
+    const allFeatPerms: string[] = (submod.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id))
+    
+    const allAssigned = allPerms.every((p: string) => userPerms.has(p)) && allFeatPerms.every((p: string) => userFeats.has(p))
     
     if (allAssigned) {
         allPerms.forEach((p: string) => userPerms.delete(p))
+        allFeatPerms.forEach((p: string) => userFeats.delete(p))
     } else {
         allPerms.forEach((p: string) => userPerms.add(p))
+        allFeatPerms.forEach((p: string) => userFeats.add(p))
     }
 }
 
@@ -341,18 +395,31 @@ const togglePermission = (user: User, permissionId: string) => {
     }
 }
 
+const toggleFeaturePermission = (user: User, permissionId: string) => {
+    const userFeats = userAssignedFeatures.value[user.id]
+    if (!userFeats) return
+    
+    if (userFeats.has(permissionId)) {
+        userFeats.delete(permissionId)
+    } else {
+        userFeats.add(permissionId)
+    }
+}
+
 const hasModuleChanges = (user: User): boolean => {
     const original = originalUserPermissions.value[user.id]
     const current = userAssignedPermissions.value[user.id]
+    const originalFeat = originalUserFeatures.value[user.id]
+    const currentFeat = userAssignedFeatures.value[user.id]
     
-    if (!original || !current) return false
-    if (original.size !== current.size) return true
+    if (!original || !current || !originalFeat || !currentFeat) return false
+    if (original.size !== current.size || originalFeat.size !== currentFeat.size) return true
     
     for (const p of original) {
         if (!current.has(p)) return true
     }
-    for (const p of current) {
-        if (!original.has(p)) return true
+    for (const p of originalFeat) {
+        if (!currentFeat.has(p)) return true
     }
     return false
 }
@@ -363,9 +430,13 @@ const saveUserModules = async (user: User) => {
         const userPerms = userAssignedPermissions.value[user.id]
         const permissionArray = Array.from(userPerms || [])
         
-        await assignModulesToUser(user.id, permissionArray)
+        const userFeats = userAssignedFeatures.value[user.id]
+        const featureArray = Array.from(userFeats || [])
+        
+        await assignModulesToUser(user.id, permissionArray, featureArray)
         
         originalUserPermissions.value[user.id] = new Set(userPerms)
+        originalUserFeatures.value[user.id] = new Set(userFeats)
         message.success('Modules updated successfully')
         closeModuleModal()
     } catch (error) {
@@ -435,6 +506,8 @@ const handleUserSubmit = async () => {
             users.value.push(newUser)
             userAssignedPermissions.value[newUser.id] = new Set()
             originalUserPermissions.value[newUser.id] = new Set()
+            userAssignedFeatures.value[newUser.id] = new Set()
+            originalUserFeatures.value[newUser.id] = new Set()
             message.success('User created successfully')
         }
         closeUserModal()
@@ -462,6 +535,8 @@ const handleDeleteUser = async (userId: string) => {
         users.value = users.value.filter(u => u.id !== userId)
         delete userAssignedPermissions.value[userId]
         delete originalUserPermissions.value[userId]
+        delete userAssignedFeatures.value[userId]
+        delete originalUserFeatures.value[userId]
         message.success('User deleted successfully')
     } catch (error) {
         message.error('Failed to delete user')

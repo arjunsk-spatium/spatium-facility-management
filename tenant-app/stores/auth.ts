@@ -213,11 +213,48 @@ export const useAuthStore = defineStore("auth", {
                 return;
             }
 
-            const { getUserModules } = useUserService();
+            const { getUserModules, getUserAssignedModules } = useUserService();
             try {
                 const { modules, permissions } = await getUserModules();
                 this.modules = modules;
                 this.permissions = permissions;
+                
+                // Fetch assigned features using user ID to ensure they are present
+                if (this.user?.id) {
+                    try {
+                        const { $api } = useNuxtApp()
+                        // Use $api directly since getUserAssignedModules might not be available or formats differently
+                        const response = await $api<any>(`/api/portal/modules/user/?user_id=${this.user.id}`);
+                        if (response?.data?.feature_permissions) {
+                            response.data.feature_permissions.forEach((fp: any) => {
+                                // Add both the ID and the potential string keys to be safe
+                                const featureId = fp.feature_permission || fp.feature || fp.id;
+                                if (featureId && !this.permissions.includes(featureId)) {
+                                    this.permissions.push(featureId);
+                                }
+                            });
+                        }
+                    } catch (fErr) {
+                        console.error("Failed to fetch feature permissions directly", fErr);
+                    }
+                }
+                
+                // Let's also fetch the platform features to map IDs to keys
+                try {
+                    const { $api } = useNuxtApp()
+                    const fRes = await $api<any>('/api/platform/modules/features/');
+                    if (fRes?.data) {
+                        fRes.data.forEach((f: any) => {
+                            if (this.permissions.includes(f.id) && !this.permissions.includes(f.key)) {
+                                this.permissions.push(f.key);
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.error("Failed to map feature keys", err);
+                }
+                
+                console.log("FINAL AUTH PERMISSIONS:", this.permissions);
             } catch (error) {
                 console.error("Failed to fetch modules", error);
                 this.modules = [];

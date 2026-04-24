@@ -26,6 +26,7 @@ export interface SubModule {
     id: string
     name: string
     permissions: Permission[]
+    features?: any[]
 }
 
 export interface SystemModule {
@@ -122,6 +123,19 @@ export const useUserService = () => {
                                         }
                                     })
                                 }
+                                
+                                if (sm.features && Array.isArray(sm.features)) {
+                                    sm.features.forEach((f: any) => {
+                                        const featureKey = f.key || f.name.toLowerCase().replace(/\s+/g, '_')
+                                        if (f.permissions && Array.isArray(f.permissions)) {
+                                            f.permissions.forEach((p: any) => {
+                                                if (p.key) {
+                                                    permissions.push(`${featureKey}:${p.key}`)
+                                                }
+                                            })
+                                        }
+                                    })
+                                }
                             })
                         } else {
                             m.submodules.forEach((sm: any) => {
@@ -134,11 +148,24 @@ export const useUserService = () => {
                                         }
                                     })
                                 }
+                                
+                                if (sm.features && Array.isArray(sm.features)) {
+                                    sm.features.forEach((f: any) => {
+                                        const featureKey = f.key || f.name.toLowerCase().replace(/\s+/g, '_')
+                                        if (f.permissions && Array.isArray(f.permissions)) {
+                                            f.permissions.forEach((p: any) => {
+                                                if (p.key) {
+                                                    permissions.push(`${featureKey}:${p.key}`)
+                                                }
+                                            })
+                                        }
+                                    })
+                                }
                             })
                         }
                     }
                 })
-                return { modules: userKeys, permissions }
+                console.log("PARSED PERMISSIONS:", permissions); return { modules: userKeys, permissions }
             }
             return { modules: [], permissions: [] }
         } catch (error) {
@@ -326,52 +353,61 @@ export const useUserService = () => {
         }
     }
 
-    const getUserAssignedModules = async (userId: string): Promise<string[]> => {
+    const getUserAssignedModules = async (userId: string): Promise<{ submodules: string[], features: string[] }> => {
         try {
             const { $api } = useNuxtApp()
             const response = await $api<any>(`/api/portal/modules/user/?user_id=${userId}&page_size=9999`)
             
-            // The API response might be in response.data.data.results or response.data.results or response.data.data
-            let results = response?.data?.data?.results || response?.data?.results || response?.data?.data
-            if (Array.isArray(results)) {
-                if (results.length > 0) {
-                    if (results[0].submodule_permission) {
-                        // Old flat mapping format
-                        return results.map((p: any) => p.submodule_permission)
-                    } else if (results[0].submodules || results[0].module) {
-                        // New nested format: modules > submodules > permissions
-                        const permIds: string[] = []
-                        results.forEach((m: any) => {
-                            if (m.submodules && Array.isArray(m.submodules)) {
-                                m.submodules.forEach((sm: any) => {
-                                    if (sm.permissions && Array.isArray(sm.permissions)) {
-                                        sm.permissions.forEach((p: any) => {
-                                            if (p.id) permIds.push(p.id)
-                                        })
-                                    }
-                                })
-                            }
-                        })
-                        return permIds
+            const result = { submodules: [] as string[], features: [] as string[] }
+            const data = response?.data
+            
+            if (data) {
+                // New format: data.submodule_permissions and data.feature_permissions
+                if (data.submodule_permissions && Array.isArray(data.submodule_permissions)) {
+                    result.submodules = data.submodule_permissions.map((p: any) => p.submodule_permission)
+                }
+                if (data.feature_permissions && Array.isArray(data.feature_permissions)) {
+                    result.features = data.feature_permissions.map((p: any) => p.feature_permission || p.feature || p.id)
+                }
+                
+                // Old format fallback
+                if (!data.submodule_permissions) {
+                    let results = data.data?.results || data.results || data
+                    if (Array.isArray(results) && results.length > 0) {
+                        if (results[0].submodule_permission) {
+                            result.submodules = results.map((p: any) => p.submodule_permission)
+                        } else if (results[0].submodules || results[0].module) {
+                            results.forEach((m: any) => {
+                                if (m.submodules && Array.isArray(m.submodules)) {
+                                    m.submodules.forEach((sm: any) => {
+                                        if (sm.permissions && Array.isArray(sm.permissions)) {
+                                            sm.permissions.forEach((p: any) => {
+                                                if (p.id) result.submodules.push(p.id)
+                                            })
+                                        }
+                                    })
+                                }
+                            })
+                        }
                     }
                 }
-                return []
             }
-            return []
+            return result
         } catch (error) {
             console.error('Failed to fetch user modules:', error)
-            return []
+            return { submodules: [], features: [] }
         }
     }
 
-    const assignModulesToUser = async (userId: string, submodulePermissionIds: string[]): Promise<boolean> => {
+    const assignModulesToUser = async (userId: string, submodulePermissionIds: string[], featurePermissionIds: string[] = []): Promise<boolean> => {
         try {
             const { $api } = useNuxtApp()
             await $api<any>('/api/portal/modules/user/bulk-assign/', {
                 method: 'POST',
                 body: {
                     user: userId,
-                    submodule_permissions: submodulePermissionIds
+                    submodule_permissions: submodulePermissionIds,
+                    feature_permissions: featurePermissionIds
                 }
             })
             return true
