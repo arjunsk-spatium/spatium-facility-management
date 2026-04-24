@@ -94,6 +94,25 @@ export const useTenantService = () => {
         });
     }
 
+    const getFeatures = async () => {
+        return request<any>('/api/platform/modules/features/', {
+            method: 'GET',
+        });
+    };
+
+    const getTenantFeatures = async (tenantId: string) => {
+        return request<any>(`/api/platform/modules/tenant-features/?tenant_id=${tenantId}`, {
+            method: 'GET',
+        });
+    };
+
+    const assignFeatures = async (payload: { tenant: string; features: string[]; is_active: boolean }) => {
+        return request('/api/platform/modules/tenant-features/', {
+            method: 'POST',
+            body: payload,
+        });
+    };
+
     const updateBranding = async (formData: FormData) => {
         return request('/api/platform/tenants/branding/', {
             method: 'POST',
@@ -181,6 +200,9 @@ export const useTenantService = () => {
         assignPlan,
         assignModules,
         getTenantModules,
+        getFeatures,
+        getTenantFeatures,
+        assignFeatures,
         getTenantSubscription,
         getTenantBranding,
         getTenantPii,

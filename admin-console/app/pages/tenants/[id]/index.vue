@@ -251,6 +251,33 @@
                     </div>
                 </section>
 
+                <!-- Features Card -->
+                <section
+                    class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <h3 class="font-semibold text-gray-900 dark:text-white">Enabled Features</h3>
+                        <a-badge :count="assignedFeatures.length"
+                            :number-style="{ backgroundColor: '#fffbe6', color: '#faad14', boxShadow: '0 0 0 1px #ffe58f inset' }" />
+                    </div>
+                    <div class="p-6">
+                        <div v-if="assignedFeatures.length" class="grid grid-cols-1 gap-3">
+                            <div v-for="feat in assignedFeatures" :key="feat.id"
+                                class="flex flex-col gap-1 p-3 rounded-lg border border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/50">
+                                <div class="flex items-center gap-3">
+                                    <CheckCircleFilled class="text-yellow-500 text-lg" />
+                                    <span class="font-medium text-gray-700 dark:text-gray-200 capitalize">
+                                        {{ feat.feature_name || feat.feature?.name || feat.feature }}
+                                    </span>
+                                </div>
+                                <span v-if="feat.submodule_name" class="text-xs text-gray-500 ml-8">{{ feat.submodule_name }}</span>
+                            </div>
+                        </div>
+                        <div v-else class="text-center py-8 text-gray-400 italic">
+                            No features enabled
+                        </div>
+                    </div>
+                </section>
+
             </div>
         </div>
 
@@ -290,12 +317,13 @@ import { message } from 'ant-design-vue';
 
 const route = useRoute();
 const tenantId = route.params.id as string;
-const { getTenantById, getTenantModules } = useTenantService();
+const { getTenantById, getTenantModules, getTenantFeatures } = useTenantService();
 const { getUsers, createUser, deleteUser } = useUserService();
 
 const loading = ref(true);
 const tenant = ref<any>(null);
 const assignedModules = ref<any[]>([]);
+const assignedFeatures = ref<any[]>([]);
 const tenantUsers = ref<any[]>([]);
 
 const showCreateUserModal = ref(false);
@@ -316,9 +344,10 @@ const userColumns = [
 const fetchData = async () => {
     loading.value = true;
     try {
-        const [fetchedTenant, modulesRes, users] = await Promise.all([
+        const [fetchedTenant, modulesRes, featuresRes, users] = await Promise.all([
             getTenantById(tenantId),
             getTenantModules(tenantId),
+            getTenantFeatures(tenantId),
             getUsers({ tenant_id: tenantId })
         ]);
 
@@ -329,6 +358,11 @@ const fetchData = async () => {
         if (modulesRes && modulesRes.data) {
             const results = modulesRes.data.results || modulesRes.data;
             assignedModules.value = Array.isArray(results) ? results : [];
+        }
+
+        if (featuresRes && featuresRes.data) {
+            const results = featuresRes.data.results || featuresRes.data;
+            assignedFeatures.value = Array.isArray(results) ? results : [];
         }
 
         if (users) {
