@@ -54,6 +54,10 @@
                             @click="$emit('update-status', record.id, 'Checked Out')">
                             Check Out
                         </a-button>
+                        <a-button v-if="canPrintStickerFeature" size="small" type="default"
+                            @click="handlePrintSticker(record.id)" :loading="printingId === record.id">
+                            Print Sticker
+                        </a-button>
                     </div>
                 </template>
             </template>
@@ -160,6 +164,10 @@
                             @click="$emit('update-status', record.id, 'Checked Out')">
                             Check Out
                         </a-button>
+                        <a-button v-if="canPrintStickerFeature" size="small" type="default" block
+                            @click="handlePrintSticker(record.id)" :loading="printingId === record.id">
+                            Print Sticker
+                        </a-button>
                     </div>
                 </a-card>
             </template>
@@ -201,6 +209,65 @@ import ResponsiveDataView from '../ResponsiveDataView.vue'
 import VisitorDetailsModal from './VisitorDetailsModal.vue'
 import ImagePreviewModal from './ImagePreviewModal.vue'
 import { useVisitorStore, type Visitor } from '../../stores/visitor'
+import { useAuthStore } from '../../stores/auth'
+import { message } from 'ant-design-vue'
+
+const authStore = useAuthStore()
+
+const canPrintStickerFeature = computed(() => {
+    return authStore.permissions.some(p => p.includes('visitor_sticker_print'))
+})
+
+const printingId = ref<string | null>(null)
+
+const handlePrintSticker = async (visitorId: string) => {
+    printingId.value = visitorId
+    try {
+        const config = useRuntimeConfig()
+        const tenantId = useCookie('tenant_id').value || localStorage.getItem('tenant_id')
+        
+        const response = await fetch(`${config.public.apiBaseUrl}/api/portal/visitors/client/sticker/print/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authStore.token}`,
+                ...(tenantId ? { 'X-TENANT-ID': tenantId } : {})
+            },
+            body: JSON.stringify({ visitor_id: visitorId })
+        })
+        
+        if (!response.ok) throw new Error('Failed to generate sticker')
+        
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+            const result = await response.json()
+            if (result.data && result.data.url) {
+                window.open(result.data.url, '_blank')
+            } else if (result.data && result.data.base64) {
+                 const pdfWindow = window.open("")
+                 pdfWindow?.document.write("<iframe width='100%' height='100%' src='data:application/pdf;base64, " + encodeURI(result.data.base64) + "'></iframe>")
+            } else if (result.url) {
+                window.open(result.url, '_blank')
+            } else {
+                 throw new Error('Invalid response format')
+            }
+            return
+        }
+
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        
+        const pdfWindow = window.open(url, '_blank')
+        if (pdfWindow) {
+            setTimeout(() => URL.revokeObjectURL(url), 10000)
+        }
+    } catch (error) {
+        console.error(error)
+        message.error('Failed to print sticker')
+    } finally {
+        printingId.value = null
+    }
+}
 
 const props = defineProps<{
     visitors: Visitor[],

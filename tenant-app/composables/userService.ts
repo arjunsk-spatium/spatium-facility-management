@@ -123,6 +123,19 @@ export const useUserService = () => {
                                         }
                                     })
                                 }
+                                
+                                if (sm.features && Array.isArray(sm.features)) {
+                                    sm.features.forEach((f: any) => {
+                                        const featureKey = f.key || f.name.toLowerCase().replace(/\s+/g, '_')
+                                        if (f.permissions && Array.isArray(f.permissions)) {
+                                            f.permissions.forEach((p: any) => {
+                                                if (p.key) {
+                                                    permissions.push(`${featureKey}:${p.key}`)
+                                                }
+                                            })
+                                        }
+                                    })
+                                }
                             })
                         } else {
                             m.submodules.forEach((sm: any) => {
@@ -135,11 +148,24 @@ export const useUserService = () => {
                                         }
                                     })
                                 }
+                                
+                                if (sm.features && Array.isArray(sm.features)) {
+                                    sm.features.forEach((f: any) => {
+                                        const featureKey = f.key || f.name.toLowerCase().replace(/\s+/g, '_')
+                                        if (f.permissions && Array.isArray(f.permissions)) {
+                                            f.permissions.forEach((p: any) => {
+                                                if (p.key) {
+                                                    permissions.push(`${featureKey}:${p.key}`)
+                                                }
+                                            })
+                                        }
+                                    })
+                                }
                             })
                         }
                     }
                 })
-                return { modules: userKeys, permissions }
+                console.log("PARSED PERMISSIONS:", permissions); return { modules: userKeys, permissions }
             }
             return { modules: [], permissions: [] }
         } catch (error) {

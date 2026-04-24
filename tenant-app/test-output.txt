@@ -1,0 +1,38 @@
+
+> test
+> vitest components/visitors/VisitorList.spec.ts
+
+
+ DEV  v3.2.4 /Users/arjunsk/Documents/Code/nuxt/spatium-facility-management/tenant-app/app
+
+stdout | ../components/visitors/VisitorList.spec.ts
+[API] Initial response status: 404
+
+ ❯ ../components/visitors/VisitorList.spec.ts (2 tests | 2 failed) 22ms
+   × VisitorList.vue > mounts successfully 19ms
+     → Cannot read properties of undefined (reading '0')
+   × VisitorList.vue > shows Print Sticker button for approved visitors when permission is present 2ms
+     → Cannot read properties of undefined (reading '0')
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  15:23:58
+   Duration  4.10s (transform 2.01s, setup 3.02s, collect 405ms, tests 22ms, environment 155ms, prepare 146ms)
+
+ FAIL  Tests failed. Watching for file changes...
+       press h to show help, press q to quit
+c[3J RERUN  ../../components/visitors/VisitorList.spec.ts x1 
+        Filename pattern: components/visitors/VisitorList.spec.ts
+
+stdout | ../components/visitors/VisitorList.spec.ts
+[API] Initial response status: 404
+
+ ✓ ../components/visitors/VisitorList.spec.ts (2 tests) 21ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  15:24:18
+   Duration  2.35s
+
+ PASS  Waiting for file changes...
+       press h to show help, press q to quit
