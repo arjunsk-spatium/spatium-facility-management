@@ -1,9 +1,15 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ConfigurePage from '../../app/pages/configure/index.vue'
 import { createTestingPinia } from '@pinia/testing'
 
 describe('Configuration Page', () => {
+    beforeAll(() => {
+        if (typeof globalThis.requestAnimationFrame === 'undefined') {
+            globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0) as any;
+        }
+    })
+
     it('should render configuration page', async () => {
         const wrapper = await mountSuspended(ConfigurePage, {
             global: {
