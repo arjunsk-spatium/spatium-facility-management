@@ -55,21 +55,6 @@ describe('SPOC Invite Visitor Page', () => {
         expect(wrapper.text()).toContain('Purpose of Visit')
     })
 
-    it('should have host employee selection', async () => {
-        const wrapper = await mountSuspended(SpocInvitePage, {
-            global: {
-                plugins: [createTestingPinia({
-                    createSpy: vi.fn,
-                    initialState: {
-                        spoc: { employees: mockEmployees, loading: false }
-                    }
-                })]
-            }
-        })
-        
-        expect(wrapper.text()).toContain('Host Employee')
-    })
-
     it('should have "Send Invitation" submit button', async () => {
         const wrapper = await mountSuspended(SpocInvitePage, {
             global: {

@@ -2,6 +2,15 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useTenantStore } from './tenant'
 
+vi.mock('../composables/tenantService', () => ({
+    useTenantService: () => ({
+        getTenantById: vi.fn().mockImplementation(async (id) => {
+            if (id === 'tenant-a') return { id: 'tenant-a', name: 'Acme Corp', colors: { primary: '#3378ff', secondary: '#64748b' } }
+            return null
+        })
+    })
+}))
+
 describe('Tenant Store', () => {
     beforeEach(() => {
         setActivePinia(createPinia())

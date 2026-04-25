@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useCompanyService, type Company } from './companyService'
 
 const mockCompanies: Company[] = [
@@ -54,8 +54,29 @@ vi.mock('nuxt/app', () => ({
 
 describe('Company Service', () => {
     const { getCompanies, getCompanyById, createCompany, updateCompany, getInsights } = useCompanyService()
+    let originalFetch: typeof global.fetch;
+    const mockFetch = vi.fn();
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        originalFetch = global.fetch;
+        global.fetch = mockFetch;
+        
+        if (typeof window !== "undefined") {
+            localStorage.setItem("access_token", "fake-token");
+        }
+    });
+
+    afterEach(() => {
+        global.fetch = originalFetch;
+    });
 
     it('should fetch all companies', async () => {
+        mockFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => mockApiResponse({ count: 1, next: null, previous: null, results: mockCompanies })
+        });
         const result = await getCompanies()
         expect(result).toBeDefined()
         expect(Array.isArray(result.companies)).toBe(true)
@@ -64,15 +85,22 @@ describe('Company Service', () => {
     })
 
     it('should fetch a company by id', async () => {
-        const { companies } = await getCompanies()
-        const firstCompany = companies[0]
-        
-        const company = await getCompanyById(firstCompany.id)
+        mockFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => mockApiResponse(mockCompanies[0])
+        });
+        const company = await getCompanyById('1')
         expect(company).toBeDefined()
-        expect(company?.id).toBe(firstCompany.id)
+        expect(company?.id).toBe('1')
     })
 
     it('should create a new company', async () => {
+        mockFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ id: 'new-id', name: 'New Tech' })
+        });
         const newCompanyData = {
             name: 'New Tech',
             status: 'active' as const,
@@ -89,14 +117,26 @@ describe('Company Service', () => {
     })
 
     it('should update an existing company', async () => {
-        const { companies } = await getCompanies()
-        const target = companies[0]
-        
-        const updated = await updateCompany(target.id, { name: 'Updated Name' })
+        mockFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ ...mockCompanies[0], name: 'Updated Name' })
+        });
+        const updated = await updateCompany('1', { name: 'Updated Name' })
         expect(updated?.name).toBe('Updated Name')
     })
 
     it('should fetch insights data', async () => {
+        mockFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => mockApiResponse({
+                summary: { total_companies: 1, active_companies: 1, inactive_companies: 0, total_revenue: 1000, new_last_30_days: 0 },
+                status_distribution: [{ status: 'active', count: 1 }],
+                revenue_trend: [{ month: 'Jan 2026', month_key: '2026-01-01', revenue: 1000, growth_percentage: 0 }],
+                top_companies_by_tickets: []
+            })
+        });
         const insights = await getInsights()
         expect(insights).toBeDefined()
         expect(insights.summary).toBeDefined()

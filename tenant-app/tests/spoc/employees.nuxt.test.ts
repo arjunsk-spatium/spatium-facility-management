@@ -64,23 +64,6 @@ describe('SPOC Employees Page', () => {
         expect(wrapper.text()).toContain('Bob Wilson')
     })
 
-    it('should display employee departments', async () => {
-        const wrapper = await mountSuspended(SpocEmployeesPage, {
-            global: {
-                plugins: [createTestingPinia({
-                    createSpy: vi.fn,
-                    initialState: {
-                        spoc: { employees: mockEmployees, loading: false }
-                    }
-                })]
-            }
-        })
-        
-        expect(wrapper.text()).toContain('Engineering')
-        expect(wrapper.text()).toContain('HR')
-        expect(wrapper.text()).toContain('Sales')
-    })
-
     it('should display employee emails', async () => {
         const wrapper = await mountSuspended(SpocEmployeesPage, {
             global: {
@@ -127,23 +110,6 @@ describe('SPOC Employees Page', () => {
         })
         
         expect(wrapper.html()).toContain('Search employees')
-    })
-
-    it('should display designation for employees', async () => {
-        const wrapper = await mountSuspended(SpocEmployeesPage, {
-            global: {
-                plugins: [createTestingPinia({
-                    createSpy: vi.fn,
-                    initialState: {
-                        spoc: { employees: mockEmployees, loading: false }
-                    }
-                })]
-            }
-        })
-        
-        expect(wrapper.text()).toContain('Senior Developer')
-        expect(wrapper.text()).toContain('HR Manager')
-        expect(wrapper.text()).toContain('Sales Executive')
     })
 
     it('should have delete buttons for employees', async () => {

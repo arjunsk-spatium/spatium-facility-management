@@ -7,9 +7,9 @@ describe('CompanyForm', () => {
     const wrapper = await mountSuspended(CompanyForm)
 
     // Check if the input exists and has correct attributes
-    const phoneInput = wrapper.find('input[placeholder="Enter SPOC phone number"]')
+    const phoneInput = wrapper.find('input[placeholder="Enter phone number"]')
     expect(phoneInput.exists()).toBe(true)
-    expect(phoneInput.attributes('maxlength')).toBe('10')
+    expect(phoneInput.attributes('maxlength')).toBe('20')
   })
 
   it('validates GSTIN attributes', async () => {
@@ -46,6 +46,6 @@ describe('CompanyForm', () => {
 
       // However, form is ref inside script setup, so it might not be directly exposed on vm.
       // But let's try.
-      expect((wrapper.vm as any).form.gstin).toBe('LOWERCASE')
+      expect((wrapper.vm as any).formState.gstin).toBe('LOWERCASE')
   })
 })

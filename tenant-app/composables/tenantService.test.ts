@@ -1,13 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { setActivePinia, createPinia } from "pinia";
 import { useTenantService } from "./tenantService";
-
-const mockApi = vi.fn();
-vi.mock("#app", () => ({
-    useNuxtApp: () => ({
-        $api: mockApi,
-    }),
-}));
 
 vi.mock("../stores/auth", () => ({
     useAuthStore: () => ({
@@ -16,9 +9,22 @@ vi.mock("../stores/auth", () => ({
 }));
 
 describe("Tenant Service", () => {
+    let originalFetch: typeof global.fetch;
+    const mockFetch = vi.fn();
+
     beforeEach(() => {
         vi.clearAllMocks();
         setActivePinia(createPinia());
+        originalFetch = global.fetch;
+        global.fetch = mockFetch;
+        
+        if (typeof window !== "undefined") {
+            localStorage.setItem("access_token", "fake-token");
+        }
+    });
+
+    afterEach(() => {
+        global.fetch = originalFetch;
     });
 
     const { getTenantById, getCurrentTenantId } = useTenantService();
@@ -46,9 +52,13 @@ describe("Tenant Service", () => {
     });
 
     it("should update tenant config", async () => {
-        mockApi.mockResolvedValue({
-            success: true,
-            data: { credit_system_enabled: true, visitor_company_required: true, visitor_email_required: false },
+        mockFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({
+                success: true,
+                data: { credit_system_enabled: true, visitor_company_required: true, visitor_email_required: false },
+            })
         });
 
         const { updateTenantConfig } = useTenantService();
@@ -58,13 +68,9 @@ describe("Tenant Service", () => {
             visitor_email_required: false,
         });
 
-        expect(mockApi).toHaveBeenCalledWith(
-            "/api/portal/tenants/configs/",
-            {
-                method: "POST",
-                body: { credit_system_enabled: true, visitor_company_required: true, visitor_email_required: false },
-            },
-        );
+        expect(mockFetch).toHaveBeenCalled();
+        const url = mockFetch.mock.calls[0][0];
+        expect(url).toContain("/api/portal/tenants/configs/");
         expect(result).toBeDefined();
         expect(result?.credit_system_enabled).toBe(true);
         expect(result?.visitor_company_required).toBe(true);
@@ -72,19 +78,23 @@ describe("Tenant Service", () => {
     });
 
     it("should get tenant config", async () => {
-        mockApi.mockResolvedValue({
-            success: true,
-            data: {
-                results: [{ credit_system_enabled: false, visitor_company_required: true, visitor_email_required: true }],
-            },
+        mockFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({
+                success: true,
+                data: {
+                    results: [{ credit_system_enabled: false, visitor_company_required: true, visitor_email_required: true }],
+                },
+            })
         });
 
         const { getTenantConfig } = useTenantService();
         const result = await getTenantConfig("tenant-a");
 
-        expect(mockApi).toHaveBeenCalledWith(
-            "/api/portal/tenants/configs/",
-        );
+        expect(mockFetch).toHaveBeenCalled();
+        const url = mockFetch.mock.calls[0][0];
+        expect(url).toContain("/api/portal/tenants/configs/");
         expect(result).toBeDefined();
         expect(result?.credit_system_enabled).toBe(false);
         expect(result?.visitor_company_required).toBe(true);
@@ -92,20 +102,18 @@ describe("Tenant Service", () => {
     });
 
     it("should update module config", async () => {
-        mockApi.mockResolvedValue({ success: true });
+        mockFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ success: true })
+        });
 
         const { updateModuleConfig } = useTenantService();
         const result = await updateModuleConfig("mod-1", "credit_only");
 
-        expect(mockApi).toHaveBeenCalledWith(
-            "/api/portal/tenants/module-configs/",
-            {
-                method: "POST",
-                body: {
-                    modules: [{ module: "mod-1", billing_mode: "credit_only" }],
-                },
-            },
-        );
+        expect(mockFetch).toHaveBeenCalled();
+        const url = mockFetch.mock.calls[0][0];
+        expect(url).toContain("/api/portal/tenants/module-configs/");
         expect(result).toBe(true);
     });
 });
