@@ -13,9 +13,9 @@ describe('SPOC Visitor List Page', () => {
             visitDate: '2026-01-07',
             visitTime: '10:00 AM',
             purpose: 'Business Meeting',
-            status: 'checked_in',
+            status: 'Checked In',
             hostName: 'John Doe',
-            passcode: '123456'
+            visitor_pass_url: 'http://pass1.pdf'
         },
         {
             id: '2',
@@ -24,7 +24,7 @@ describe('SPOC Visitor List Page', () => {
             visitDate: '2026-01-07',
             visitTime: '11:30 AM',
             purpose: 'Interview',
-            status: 'pending',
+            status: 'Pending',
             hostName: 'Jane Smith'
         },
         {
@@ -33,9 +33,9 @@ describe('SPOC Visitor List Page', () => {
             phone: '+91 76543 21098',
             visitDate: '2026-01-07',
             purpose: 'Delivery',
-            status: 'approved',
+            status: 'Approved',
             hostName: 'Bob Wilson',
-            passcode: '654321'
+            visitor_pass_url: 'http://pass2.pdf'
         }
     ]
 
@@ -149,7 +149,6 @@ describe('SPOC Visitor List Page', () => {
             }
         })
         
-        expect(wrapper.text()).toContain('123456')
-        expect(wrapper.text()).toContain('654321')
+        expect(wrapper.text()).toContain('Generated')
     })
 })

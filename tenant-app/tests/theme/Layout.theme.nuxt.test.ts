@@ -111,8 +111,8 @@ describe('Default Layout Theme Adaptation', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Spatium Facility Management')
-    expect(wrapper.text()).toContain('2024')
+    expect(wrapper.text()).toContain('Nexspace')
+    expect(wrapper.text()).toContain('2026')
   })
 })
 

@@ -5,7 +5,9 @@ import { createTestingPinia } from '@pinia/testing'
 
 vi.mock('../../stores/auth', () => ({
     useAuthStore: vi.fn(() => ({
-        hasPermission: vi.fn(() => true)
+        hasPermission: vi.fn(() => true),
+        hasModule: vi.fn(() => true),
+        permissions: []
     }))
 }))
 

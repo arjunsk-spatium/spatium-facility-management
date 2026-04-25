@@ -8,11 +8,14 @@ describe('Company Details Page', () => {
     const mockCompany = {
         id: '1',
         name: 'Tech Corp',
-        address: '123 Tech Street, Bangalore',
-        spoc_name: 'John Smith',
-        spoc_email: 'john.smith@techcorp.com',
-        spoc_phone: '+91 98765 43210',
-        gstin: '29ABCDE1234F1ZH',
+        status: 'active',
+        contacts: [{
+            contact_name: 'John Smith',
+            email: 'john.smith@techcorp.com',
+            phone: '+91 98765 43210',
+            address: '123 Tech Street, Bangalore',
+            gstin: '29ABCDE1234F1ZH'
+        }],
         facility: 'Facility 1'
     }
 

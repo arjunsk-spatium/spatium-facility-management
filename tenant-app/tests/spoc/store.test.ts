@@ -1,11 +1,25 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useSpocStore } from '../../stores/spoc'
 
 describe('SPOC Store', () => {
+    let originalFetch: typeof global.fetch;
+    const mockFetch = vi.fn();
+
     beforeEach(() => {
-        setActivePinia(createPinia())
+        vi.clearAllMocks();
+        setActivePinia(createPinia());
+        originalFetch = global.fetch;
+        global.fetch = mockFetch;
+        
+        if (typeof window !== "undefined") {
+            localStorage.setItem("access_token", "fake-token");
+        }
     })
+
+    afterEach(() => {
+        global.fetch = originalFetch;
+    });
 
     describe('Initial State', () => {
         it('should have empty visitors array initially', () => {
@@ -36,6 +50,19 @@ describe('SPOC Store', () => {
 
     describe('fetchStats', () => {
         it('should fetch and populate stats', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        totalVisitors: 10,
+                        pendingApprovals: 2,
+                        checkedInToday: 5,
+                        totalEmployees: 20
+                    }
+                })
+            });
             const store = useSpocStore()
             await store.fetchStats()
             
@@ -47,6 +74,11 @@ describe('SPOC Store', () => {
         })
 
         it('should set loading to false after fetch', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({ success: true, data: {} })
+            });
             const store = useSpocStore()
             await store.fetchStats()
             
@@ -56,6 +88,23 @@ describe('SPOC Store', () => {
 
     describe('fetchVisitors', () => {
         it('should fetch and populate visitors', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        results: [{
+                            id: '1',
+                            name: 'Test Visitor',
+                            phone_number: '+91 12345 67890',
+                            created_at: '2024-01-01T10:00:00Z',
+                            purpose_of_visit: 'Meeting',
+                            status: 'Pending'
+                        }]
+                    }
+                })
+            });
             const store = useSpocStore()
             await store.fetchVisitors()
             
@@ -63,21 +112,48 @@ describe('SPOC Store', () => {
         })
 
         it('should have required visitor properties', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        results: [{
+                            id: '1',
+                            name: 'Test Visitor',
+                            phone_number: '+91 12345 67890',
+                            created_at: '2024-01-01T10:00:00Z',
+                            purpose_of_visit: 'Meeting',
+                            status: 'Pending'
+                        }]
+                    }
+                })
+            });
             const store = useSpocStore()
             await store.fetchVisitors()
             
             const visitor = store.visitors[0]
             expect(visitor.id).toBeDefined()
             expect(visitor.name).toBeDefined()
-            expect(visitor.phone).toBeDefined()
-            expect(visitor.visitDate).toBeDefined()
-            expect(visitor.purpose).toBeDefined()
+            expect(visitor.phone_number).toBeDefined()
+            expect(visitor.created_at).toBeDefined()
+            expect(visitor.purpose_of_visit).toBeDefined()
             expect(visitor.status).toBeDefined()
         })
     })
 
     describe('fetchEmployees', () => {
         it('should fetch and populate employees', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        results: [{ id: '1', full_name: 'Test User', email: 'test@example.com' }]
+                    }
+                })
+            });
             const store = useSpocStore()
             await store.fetchEmployees()
             
@@ -85,6 +161,16 @@ describe('SPOC Store', () => {
         })
 
         it('should have required employee properties', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        results: [{ id: '1', full_name: 'Test User', email: 'test@example.com' }]
+                    }
+                })
+            });
             const store = useSpocStore()
             await store.fetchEmployees()
             
@@ -97,6 +183,16 @@ describe('SPOC Store', () => {
 
     describe('inviteVisitor', () => {
         it('should add a new visitor to the list', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        id: 'new-v', passcode: '123456', status: 'Pending', name: 'Test Visitor'
+                    }
+                })
+            });
             const store = useSpocStore()
             const initialLength = store.visitors.length
             
@@ -110,6 +206,16 @@ describe('SPOC Store', () => {
         })
 
         it('should generate a passcode for new visitor', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        id: 'new-v', passcode: '123456', status: 'Pending', name: 'Test Visitor'
+                    }
+                })
+            });
             const store = useSpocStore()
             
             const visitor = await store.inviteVisitor({
@@ -123,6 +229,16 @@ describe('SPOC Store', () => {
         })
 
         it('should set status to pending for new visitor', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        id: 'new-v', passcode: '123456', status: 'Pending', name: 'Test Visitor'
+                    }
+                })
+            });
             const store = useSpocStore()
             
             const visitor = await store.inviteVisitor({
@@ -137,6 +253,14 @@ describe('SPOC Store', () => {
 
     describe('addEmployee', () => {
         it('should add a new employee to the list', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: { id: 'new-e', name: 'New Employee', email: 'new@company.com' }
+                })
+            });
             const store = useSpocStore()
             const initialLength = store.employees.length
             
@@ -149,6 +273,14 @@ describe('SPOC Store', () => {
         })
 
         it('should return the created employee', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: { id: 'new-e', name: 'New Employee', email: 'new@company.com', department: 'Engineering' }
+                })
+            });
             const store = useSpocStore()
             
             const employee = await store.addEmployee({
@@ -165,6 +297,14 @@ describe('SPOC Store', () => {
 
     describe('deleteEmployee', () => {
         it('should remove employee from the list', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: { id: 'delete-id', name: 'To Delete', email: 'delete@company.com' }
+                })
+            });
             const store = useSpocStore()
             
             // First add an employee
@@ -175,6 +315,12 @@ describe('SPOC Store', () => {
             
             const lengthBefore = store.employees.length
             
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({ success: true })
+            });
+
             // Then delete
             await store.deleteEmployee(employee.id)
             
@@ -183,6 +329,14 @@ describe('SPOC Store', () => {
         })
 
         it('should return true when employee is deleted', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: { id: 'delete-id', name: 'To Delete', email: 'delete@company.com' }
+                })
+            });
             const store = useSpocStore()
             
             const employee = await store.addEmployee({
@@ -190,11 +344,22 @@ describe('SPOC Store', () => {
                 email: 'delete@company.com'
             })
             
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({ success: true })
+            });
+
             const result = await store.deleteEmployee(employee.id)
             expect(result).toBe(true)
         })
 
         it('should return false when employee not found', async () => {
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 404,
+                json: async () => ({ success: false })
+            });
             const store = useSpocStore()
             
             const result = await store.deleteEmployee('nonexistent-id')

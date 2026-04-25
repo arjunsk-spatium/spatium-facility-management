@@ -7,7 +7,7 @@ vi.mock("../composables/userService", () => ({
     useUserService: () => ({
         getUserModules: vi
             .fn()
-            .mockResolvedValue({ modules: ["dashboard", "visitors", "companies"], permissions: ["dashboard:view"] }),
+            .mockResolvedValue({ modules: ["dashboard", "visitors", "companies"], permissions: ["dashboard:view", "visitor_sticker_print"] }),
         getUserAssignedModules: vi
             .fn()
             .mockResolvedValue({

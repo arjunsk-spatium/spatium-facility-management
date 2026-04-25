@@ -42,9 +42,9 @@ describe('Company Create Page', () => {
         // Check for form labels (updated form fields)
         expect(wrapper.text()).toContain('Company Name')
         expect(wrapper.text()).toContain('Address')
-        expect(wrapper.text()).toContain('SPOC Name')
-        expect(wrapper.text()).toContain('SPOC Email')
-        expect(wrapper.text()).toContain('SPOC Phone')
+        expect(wrapper.text()).toContain('Contact Name')
+        expect(wrapper.text()).toContain('Email')
+        expect(wrapper.text()).toContain('Phone')
         
         // Check for submit button
         expect(wrapper.text()).toContain('Create Company')
@@ -73,7 +73,7 @@ describe('Company Create Page', () => {
         expect(wrapper.text()).toContain('Create Company')
     })
 
-    it('should render business details section', async () => {
+    it('should render contact details section', async () => {
         const wrapper = await mountSuspended(CompanyCreatePage, {
             global: {
                 plugins: [createTestingPinia({ createSpy: vi.fn })]
@@ -81,12 +81,10 @@ describe('Company Create Page', () => {
         })
         
         // Check for section dividers
-        expect(wrapper.text()).toContain('SPOC Details')
-        expect(wrapper.text()).toContain('Business Details')
+        expect(wrapper.text()).toContain('Contact Details')
         
         // Check for business fields
         expect(wrapper.text()).toContain('GSTIN')
-        expect(wrapper.text()).toContain('Facility')
     })
 
     it('should render company logo upload', async () => {
