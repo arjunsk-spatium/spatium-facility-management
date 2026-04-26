@@ -209,10 +209,10 @@ const { $api } = useNuxtApp()
 const data = await $api<any>('/api/endpoint', { method: 'GET' })
 ```
 
-**Admin Console:** Use the globally provided `$api` (ofetch instance with interceptors):
+**Admin Console:** Use the `useApi()` composable which wraps the provided `$api` instance (ofetch with interceptors and token refresh logic):
 ```ts
-const { $api } = useNuxtApp()
-const data = await $api('/api/endpoint')
+const { request } = useApi()
+const data = await request('/api/endpoint')
 ```
 
 ### Service Composables
@@ -224,6 +224,9 @@ API calls are organized in service composables:
 - `tenant-app/composables/helpdeskService.ts`
 - `tenant-app/composables/meetingRoomService.ts`
 - `tenant-app/composables/visitorService.ts`
+- `tenant-app/composables/publicVisitorService.ts`
+- `tenant-app/composables/dashboardService.ts`
+- `tenant-app/composables/locationService.ts`
 - `tenant-app/composables/userService.ts`
 - `admin-console/app/composables/tenantService.ts`
 - `admin-console/app/composables/planService.ts`
@@ -236,6 +239,8 @@ Naming convention: `useXxxService()` returning an object of async functions.
 Some backend endpoints are proxied through Nitro server routes under `server/routes/api/portal/` to avoid CORS or to inject headers. Examples:
 - `server/routes/api/portal/modules/[...].ts`
 - `server/routes/api/portal/visitors/public/[...].ts`
+- `server/routes/api/portal/users/org_portal/list.ts`
+- `server/routes/api/portal/modules/user/assign/bulk-assign.ts`
 
 ---
 
@@ -252,12 +257,26 @@ Some backend endpoints are proxied through Nitro server routes under `server/rou
 **Tenant App:**
 - `useAuthStore` — Auth state, tokens, modules, permissions
 - `useTenantStore` — Current tenant config, branding, loading state
-- `useCompanyStore`, `useFacilityStore`, `useHelpdeskStore`, `useMeetingRoomStore`, `useVisitorStore` — Feature-specific data
+- `useDashboardStore` — Dashboard state and metrics
+- `useCompanyStore`, `useFacilityStore`, `useHelpdeskStore`, `useMeetingRoomStore`, `useVisitorStore`, `useSpocStore` — Feature-specific data
 
 **Admin Console:**
 - `useAuthStore` — Admin auth state
 - `useTenantStore` — Tenant listing and management
 - `usePlanStore` — Subscription plans
+
+---
+
+## Storage Patterns & Utilities
+
+### IndexedDB Storage
+For asynchronous client-side storage of user settings (e.g., storing the `helpdesk-selected-facility`), the tenant app uses the `useIndexedDB.ts` composable. Use this for persisting larger or non-critical state that doesn't belong in `localStorage` or Pinia.
+
+### Utility Composables
+The tenant app has shared utility composables:
+- `useDate.ts` — Shared date formatting and manipulation logic.
+- `useValidation.ts` — Common form validation rules and utilities.
+Agents should leverage these existing utilities instead of writing custom date/validation logic.
 
 ---
 
@@ -312,7 +331,7 @@ Both apps share nearly identical design system CSS, though there are minor diffe
 - **Admin console:** Uses `environment: 'happy-dom'`
 - **Test locations:**
   - Co-located: `[Component].spec.ts` or `[composable].test.ts` next to source files
-  - Dedicated folder: `tenant-app/tests/` for broader integration tests
+  - Dedicated folder: `tenant-app/tests/` for broader integration tests. These are organized cleanly into feature-based subdirectories (e.g., `visitors/`, `companies/`, `facilities/`, `helpdesk/`, `meeting-rooms/`, `dashboard/`, `spoc/`, `users/`, `admin/`, etc.).
 
 ### E2E Tests (Playwright — Tenant App Only)
 
