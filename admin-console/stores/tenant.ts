@@ -20,6 +20,10 @@ export const useTenantStore = defineStore('tenant', {
             },
             recent_tenants: [] as any[]
         },
+        insightsData: {
+            stats: { total: 0, active: 0, suspended: 0, cancelled: 0 },
+            tenants: { count: 0, page: 1, page_size: 20, total_pages: 1, results: [] as any[] }
+        },
         loading: false,
         error: null as string | null
     }),
@@ -150,6 +154,34 @@ export const useTenantStore = defineStore('tenant', {
                 }
             } catch (err) {
                 console.error('Failed to fetch dashboard data', err)
+            }
+        },
+        async fetchTenantInsights() {
+            try {
+                const { getTenantInsights } = useTenantService()
+                const response = await getTenantInsights()
+                if (response && response.success && response.data) {
+                    this.insightsData = response.data
+                    
+                    // We can also populate the tenants list from insights if we want
+                    if (response.data.tenants && response.data.tenants.results) {
+                        const results = response.data.tenants.results;
+                        this.tenants = results.map((t: any) => ({
+                            id: t.id,
+                            name: t.name,
+                            domain: t.domain,
+                            status: t.status,
+                            planName: t.active_plan?.name,
+                            moduleCount: t.module_count,
+                            userCount: t.user_count,
+                            createdAt: t.created_at,
+                            onboarded_at: t.onboarded_at,
+                            modules: t.modules || []
+                        }));
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch tenant insights', err)
             }
         }
     }

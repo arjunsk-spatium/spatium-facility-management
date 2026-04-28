@@ -189,6 +189,12 @@ export const useTenantService = () => {
         });
     }
 
+    const getTenantInsights = async () => {
+        return request<any>('/api/platform/tenants/admin/insights/', {
+            method: 'GET',
+        });
+    }
+
     return {
         createTenant,
         updateTenant,
@@ -206,6 +212,7 @@ export const useTenantService = () => {
         getTenants,
         getTenantById,
         deleteTenant,
-        getDashboardData
+        getDashboardData,
+        getTenantInsights
     }
 }
