@@ -403,7 +403,8 @@ const handleSubmit = async () => {
             city: formData.city,
             zone: formData.zone,
             has_towers: formData.has_towers,
-            postal_code: formData.postal_code || undefined
+            postal_code: formData.postal_code || undefined,
+            image_url: formData.image_url
         });
         message.success('Facility created successfully');
         navigateTo('/facilities');
