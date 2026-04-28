@@ -301,10 +301,10 @@ export const useSpocStore = defineStore('spoc', {
             try {
                 const { $api } = useNuxtApp()
                 
-                const response = await $api<any>('/api/portal/users/client_portal/create/', {
+                const response = await $api<any>('/api/portal/users/org_portal/create/', {
                     method: 'POST',
                     body: {
-                        app_name: 'client_portal',
+                        app_name: 'hub',
                         full_name: data.name,
                         email: data.email,
                         phone_number: data.phone,

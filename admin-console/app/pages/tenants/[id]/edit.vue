@@ -320,17 +320,17 @@
                             <a-textarea v-model:value="piiForm.address" :rows="3" />
                         </a-form-item>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <a-form-item label="Contact Name" name="contact_name"
+                            <a-form-item label="Contact Name" name="full_name"
                                 :rules="[{ required: true, message: 'Please enter contact name' }]">
-                                <a-input v-model:value="piiForm.contact_name" size="large" />
+                                <a-input v-model:value="piiForm.full_name" size="large" />
                             </a-form-item>
                             <a-form-item label="Contact Email" name="email"
                                 :rules="[{ required: true, type: 'email', message: 'Please enter valid email' }]">
                                 <a-input v-model:value="piiForm.email" size="large" />
                             </a-form-item>
-                            <a-form-item label="Contact Phone" name="phone"
+                            <a-form-item label="Contact Phone" name="phone_number"
                                 :rules="[{ required: true, message: 'Please enter contact phone' }]">
-                                <a-input v-model:value="piiForm.phone" size="large" />
+                                <a-input v-model:value="piiForm.phone_number" size="large" />
                             </a-form-item>
                         </div>
                         <div class="flex justify-end mt-4">
@@ -401,7 +401,7 @@ const brandingForm = reactive({
     darkLogoPreview: '',
     faviconPreview: ''
 });
-const piiForm = reactive({ gstin: '', address: '', contact_name: '', email: '', phone: '' });
+const piiForm = reactive({ gstin: '', address: '', full_name: '', email: '', phone_number: '' });
 
 // Lists
 const plans = ref<Plan[]>([]);
@@ -524,9 +524,9 @@ const fetchData = async () => {
                 if (p) {
                     piiForm.gstin = p.gstin;
                     piiForm.address = p.address;
-                    piiForm.contact_name = p.contact_name;
+                    piiForm.full_name = p.full_name || p.contact_name;
                     piiForm.email = p.email;
-                    piiForm.phone = p.phone;
+                    piiForm.phone_number = p.phone_number || p.phone;
                 }
             }
         } catch (e) { console.warn('No PII found', e); }

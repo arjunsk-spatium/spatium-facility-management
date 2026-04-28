@@ -319,14 +319,14 @@
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <a-form-item label="Contact Person Name" required>
-                                    <a-input v-model:value="piiForm.contact_name" />
+                                    <a-input v-model:value="piiForm.full_name" />
                                 </a-form-item>
                                 <a-form-item label="Contact Email" required>
                                     <a-input v-model:value="piiForm.email" type="email"
                                         @change="(e: any) => piiForm.email = e.target.value.toLowerCase()" />
                                 </a-form-item>
                                 <a-form-item label="Contact Phone" required>
-                                    <a-input v-model:value="piiForm.phone" />
+                                    <a-input v-model:value="piiForm.phone_number" />
                                 </a-form-item>
                             </div>
                         </a-form>
@@ -480,9 +480,9 @@ const brandingForm = reactive({
 const piiForm = reactive({
     gstin: '',
     address: '',
-    contact_name: '',
+    full_name: '',
     email: '',
-    phone: ''
+    phone_number: ''
 });
 
 const isCustomPlan = computed(() => {
