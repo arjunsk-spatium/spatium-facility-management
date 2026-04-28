@@ -11,6 +11,15 @@ export const useTenantStore = defineStore('tenant', {
             trial: 0,
             suspended: 0
         },
+        dashboardData: {
+            stats: {
+                total_tenants: { count: 0, active: 0, trial: 0 },
+                active_plans: { count: 0, subscriptions: 0 },
+                available_modules: { count: 0, enabled: 0 },
+                total_users: 0
+            },
+            recent_tenants: [] as any[]
+        },
         loading: false,
         error: null as string | null
     }),
@@ -132,12 +141,15 @@ export const useTenantStore = defineStore('tenant', {
                 this.loading = false
             }
         },
-        async fetchStats() {
+        async fetchDashboardData() {
             try {
-                const { getStats } = useTenantService()
-                this.stats = await getStats()
+                const { getDashboardData } = useTenantService()
+                const response = await getDashboardData()
+                if (response && response.success && response.data) {
+                    this.dashboardData = response.data
+                }
             } catch (err) {
-                console.error('Failed to fetch stats', err)
+                console.error('Failed to fetch dashboard data', err)
             }
         }
     }

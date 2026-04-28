@@ -183,15 +183,10 @@ export const useTenantService = () => {
         }
     }
 
-    const getStats = async () => {
-        // TODO: Replace with real API
-        await new Promise(resolve => setTimeout(resolve, 200))
-        return {
-            total: mockTenants.length,
-            active: mockTenants.filter(t => t.status === 'active').length,
-            trial: mockTenants.filter(t => t.status === 'trial').length,
-            suspended: mockTenants.filter(t => t.status === 'suspended').length
-        }
+    const getDashboardData = async () => {
+        return request<any>('/api/platform/tenants/admin/dashboard/', {
+            method: 'GET',
+        });
     }
 
     return {
@@ -211,6 +206,6 @@ export const useTenantService = () => {
         getTenants,
         getTenantById,
         deleteTenant,
-        getStats
+        getDashboardData
     }
 }

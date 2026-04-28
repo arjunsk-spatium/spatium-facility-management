@@ -16,28 +16,28 @@
         <!-- Stats Section -->
         <div class="flex flex-wrap gap-4">
             <a-card class="flex-grow min-w-[160px]">
-                <a-statistic title="Total Tenants" :value="stats.total" :value-style="{ color: '#1677ff' }">
+                <a-statistic title="Total Tenants" :value="stats.count || 0" :value-style="{ color: '#1677ff' }">
                     <template #prefix>
                         <TeamOutlined />
                     </template>
                 </a-statistic>
             </a-card>
             <a-card class="flex-grow min-w-[160px]">
-                <a-statistic title="Active" :value="stats.active" :value-style="{ color: '#52c41a' }">
+                <a-statistic title="Active" :value="stats.active || 0" :value-style="{ color: '#52c41a' }">
                     <template #prefix>
                         <CheckCircleOutlined />
                     </template>
                 </a-statistic>
             </a-card>
             <a-card class="flex-grow min-w-[160px]">
-                <a-statistic title="Trial" :value="stats.trial" :value-style="{ color: '#faad14' }">
+                <a-statistic title="Trial" :value="stats.trial || 0" :value-style="{ color: '#faad14' }">
                     <template #prefix>
                         <ClockCircleOutlined />
                     </template>
                 </a-statistic>
             </a-card>
             <a-card class="flex-grow min-w-[160px]">
-                <a-statistic title="Suspended" :value="stats.suspended" :value-style="{ color: '#ff4d4f' }">
+                <a-statistic title="Suspended" :value="0" :value-style="{ color: '#ff4d4f' }">
                     <template #prefix>
                         <StopOutlined />
                     </template>
@@ -164,7 +164,7 @@ import ResponsiveDataView from '../../components/ResponsiveDataView.vue'
 
 const store = useTenantStore()
 const tenants = computed(() => store.tenants)
-const stats = computed(() => store.stats)
+const stats = computed(() => store.dashboardData?.stats?.total_tenants || {})
 const loading = computed(() => store.loading)
 
 const searchText = ref('')
@@ -273,7 +273,7 @@ const exportData = async () => {
 
 onMounted(() => {
     store.fetchTenants()
-    store.fetchStats()
+    store.fetchDashboardData()
 })
 </script>
 
