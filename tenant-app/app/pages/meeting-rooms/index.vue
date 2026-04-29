@@ -90,8 +90,8 @@
 
                 <template v-if="column.key === 'pricing'">
                     <div>
-                        <div class="font-medium">₹{{ record.price }}/hr</div>
-                        <div class="text-xs text-gray-500">{{ record.credits }} Credits/hr</div>
+                        <div class="font-medium">₹{{ record.price }}/30 min</div>
+                        <div class="text-xs text-gray-500">{{ record.credits }} Credits/30 min</div>
                     </div>
                 </template>
 
@@ -136,8 +136,8 @@
 
                     <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
                         <div>
-                            <div class="font-bold text-gray-900 dark:text-white">₹{{ record.price }}/hr</div>
-                            <div class="text-xs text-gray-400">{{ record.credits }} Credits</div>
+                            <div class="font-bold text-gray-900 dark:text-white">₹{{ record.price }}/30 min</div>
+                            <div class="text-xs text-gray-400">{{ record.credits }} Credits/30 min</div>
                         </div>
                         <a-button type="link" size="small" @click="navigateTo(`/meeting-rooms/${record.id}`)">
                             View Details

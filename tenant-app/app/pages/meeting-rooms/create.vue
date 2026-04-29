@@ -186,7 +186,7 @@ const handleSubmit = async () => {
         await createRoom(roomData)
         message.success('Room created successfully!')
 
-        await roomStore.fetchRooms(true)
+        await roomStore.fetchRooms({}, true)
 
         navigateTo('/meeting-rooms')
     } catch (e: any) {

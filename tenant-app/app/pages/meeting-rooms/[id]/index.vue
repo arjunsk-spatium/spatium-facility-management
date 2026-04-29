@@ -85,7 +85,7 @@
                 <!-- Pricing Card -->
                 <a-card class="mb-6!">
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-500 font-medium">Hourly Rate</span>
+                        <span class="text-gray-500 font-medium">Rate (30 min)</span>
                         <span class="text-2xl font-bold text-gray-900 dark:text-white">₹{{ currentRoom.price }}</span>
                     </div>
                     <div class="flex justify-between items-center border-t border-blue-200 dark:border-blue-800 pt-2 mt-2">

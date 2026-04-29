@@ -212,6 +212,7 @@ const handleSubmit = async () => {
         console.log('Updating room with payload:', payload)
         await updateRoom(roomId, payload)
         message.success('Room updated successfully')
+        await roomStore.fetchRooms({}, true)
         navigateTo(`/meeting-rooms/${roomId}`)
     } catch (e: any) {
         console.error('Failed to update room', e)

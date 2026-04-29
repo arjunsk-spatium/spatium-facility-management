@@ -34,7 +34,7 @@
                         size="large" />
                 </a-form-item>
 
-                <a-form-item label="Price per Hour (₹)" name="pricePerHour">
+                <a-form-item label="Price per 30 min (₹)" name="pricePerHour">
                     <a-input-number v-model:value="formState.pricePerHour" :min="0" class="w-full" size="large"
                         placeholder="e.g. 50" />
                 </a-form-item>
