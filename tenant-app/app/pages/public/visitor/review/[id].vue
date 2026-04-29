@@ -148,8 +148,8 @@ const handleAction = async (action: 'approve' | 'reject') => {
     try {
         const id = route.params.id as string
         const response = await $api<any>(`/api/portal/visitors/public/review/${id}/`, {
-            method: 'GET',
-            query: { action }
+            method: 'POST',
+            body: { action }
         })
         
         if (response.success) {
