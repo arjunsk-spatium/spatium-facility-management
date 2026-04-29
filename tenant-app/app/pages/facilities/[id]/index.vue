@@ -251,7 +251,10 @@
                         :options="roleOptions" :loading="rolesLoading" allow-clear />
                 </a-form-item>
                 <template v-if="!editingStaffId">
-                    <a-form-item label="Username" required>
+                    <a-form-item required>
+                        <template #label>
+                            Username <span class="text-xs text-gray-400 ml-2 font-normal">(Case Sensitive)</span>
+                        </template>
                         <a-input v-model:value="staffForm.username" placeholder="Enter username" />
                     </a-form-item>
                     <a-form-item label="Password" required>
