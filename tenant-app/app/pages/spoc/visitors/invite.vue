@@ -37,8 +37,15 @@
                         </a-input-group>
                     </a-form-item>
 
-                    <a-form-item label="Email" name="email" class="sm:col-span-2">
+                    <a-form-item v-if="visitorEmailRequired" label="Email" name="email" class="sm:col-span-2"
+                        :rules="[{ required: true, message: 'Please enter email' }]">
                         <a-input v-model:value="formState.email" placeholder="visitor@email.com" size="large" />
+                    </a-form-item>
+
+                    <a-form-item v-if="visitorCompanyRequired" label="From Company" name="fromCompany"
+                        class="sm:col-span-2" :rules="[{ required: true, message: 'Please enter company name' }]">
+                        <a-input v-model:value="formState.fromCompany" placeholder="Visitor's company / organization"
+                            size="large" />
                     </a-form-item>
 
                     <a-form-item label="Visit Date" name="visitDate"
@@ -128,6 +135,10 @@ definePageMeta({
 })
 
 const { toApiDate, toApiTime } = useDate()
+const { getTenantConfig, getCurrentTenantId } = useTenantService()
+
+const visitorEmailRequired = ref(false)
+const visitorCompanyRequired = ref(false)
 
 interface SpocVisitor {
     id: string
@@ -152,6 +163,7 @@ const formState = reactive({
     countryCode: '+91',
     phone: '',
     email: '',
+    fromCompany: '',
     visitDate: null as Dayjs | null,
     visitTime: null as Dayjs | null,
     purpose: null as string | null,
@@ -200,6 +212,7 @@ const resetForm = () => {
     formState.countryCode = '+91'
     formState.phone = ''
     formState.email = ''
+    formState.fromCompany = ''
     formState.visitDate = null
     formState.visitTime = null
     formState.purpose = null
@@ -212,6 +225,7 @@ const handleSubmit = async () => {
             name: formState.name,
             phone: formState.countryCode + formState.phone,
             email: formState.email || undefined,
+            from_company: formState.fromCompany || undefined,
             visitDate: toApiDate(formState.visitDate),
             visitTime: toApiTime(formState.visitTime) || undefined,
             purpose: formState.purpose || 'General Visit',
@@ -228,10 +242,24 @@ const handleSubmit = async () => {
     }
 }
 
+const loadTenantConfig = async () => {
+    try {
+        const tenantId = getCurrentTenantId()
+        const config = await getTenantConfig(tenantId)
+        if (config) {
+            visitorEmailRequired.value = config.visitor_email_required
+            visitorCompanyRequired.value = config.visitor_company_required
+        }
+    } catch (e) {
+        console.error('Failed to load tenant config', e)
+    }
+}
+
 onMounted(async () => {
     await Promise.all([
         store.fetchPurposesOfVisit(),
-        store.fetchFacilities()
+        store.fetchFacilities(),
+        loadTenantConfig()
     ])
 })
 </script>

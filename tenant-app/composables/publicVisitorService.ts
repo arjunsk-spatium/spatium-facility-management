@@ -272,6 +272,7 @@ export const usePublicVisitorService = () => {
         name: string;
         phone: string;
         email?: string;
+        from_company?: string;
         appointment_date: string;
         appointment_time: string;
     }): Promise<any> => {

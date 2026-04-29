@@ -189,6 +189,7 @@ export const useSpocStore = defineStore('spoc', {
                             name: data.name,
                             phone: data.phone,
                             email: data.email,
+                            from_company: data.from_company,
                             appointment_date: data.visitDate,
                             appointment_time: data.visitTime
                         }
