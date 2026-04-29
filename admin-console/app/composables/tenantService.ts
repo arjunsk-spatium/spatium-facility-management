@@ -62,10 +62,13 @@ export const useTenantService = () => {
         });
     };
 
-    const updateTenant = async (id: string, data: { name: string; domain: string }) => {
+    const updateTenant = async (id: string, data: { name: string; domain: string; status?: string }) => {
         const formData = new FormData();
         formData.append('name', data.name);
         formData.append('domain', data.domain);
+        if (data.status) {
+            formData.append('status', data.status);
+        }
 
         return request<Tenant>(`/api/platform/tenants/tenants/${id}/`, {
             method: 'PATCH',

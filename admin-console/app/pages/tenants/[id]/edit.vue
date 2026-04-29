@@ -457,27 +457,41 @@ const fetchData = async () => {
         }
 
         // 3. Fetch Sub-Resources (Prefill)
-        // Subscription
-        try {
-            const subRes = await getTenantSubscription(tenantId);
-            if (subRes && subRes.data) {
-                const results = subRes.data.results || subRes.data;
-                const sub = Array.isArray(results) ? results[0] : results;
-                if (sub) {
-                    subscriptionForm.plan = sub.plan; // might need plan ID mapping
-                    subscriptionForm.start_date = sub.start_date;
-                    subscriptionForm.end_date = sub.end_date;
-                    subscriptionForm.billing_cycle = sub.billing_cycle;
-                    subscriptionForm.max_users = sub.max_users;
-                    subscriptionForm.max_client_users = sub.max_client_users || 0;
-                    subscriptionForm.price = sub.price ? Number(sub.price) : 0;
-                }
+        // Extract data directly from the retrieved tenant object first
+        if (fetchedTenant) {
+            // Subscription
+            if (fetchedTenant.subscription) {
+                const sub = fetchedTenant.subscription;
+                subscriptionForm.plan = sub.plan?.id || sub.plan;
+                subscriptionForm.start_date = sub.start_date;
+                subscriptionForm.end_date = sub.end_date;
+                subscriptionForm.billing_cycle = sub.billing_cycle;
+                subscriptionForm.max_users = sub.max_users;
+                subscriptionForm.max_client_users = sub.max_client_users || 0;
+                subscriptionForm.price = sub.price ? Number(sub.price) : 0;
             }
-        } catch (e) {
-            console.warn('No subscription found or error fetching', e);
+
+            // Branding
+            if (fetchedTenant.branding) {
+                const b = fetchedTenant.branding;
+                brandingForm.primary_color = b.primary_color || '#ffffff';
+                brandingForm.logoUrl = b.logo;
+                brandingForm.darkLogoUrl = b.dark_logo;
+                brandingForm.faviconUrl = b.favicon;
+            }
+
+            // PII
+            if (fetchedTenant.pii) {
+                const p = fetchedTenant.pii;
+                piiForm.gstin = p.gstin;
+                piiForm.address = p.address;
+                piiForm.full_name = p.full_name || p.contact_name;
+                piiForm.email = p.email;
+                piiForm.phone_number = p.phone_number || p.phone;
+            }
         }
 
-        // Modules and Features
+        // Modules and Features (still need to be fetched separately if not nested)
         try {
             const [modRes, featRes] = await Promise.all([
                 getTenantModules(tenantId),
@@ -497,39 +511,6 @@ const fetchData = async () => {
                 }
             }
         } catch (e) { console.warn('No modules/features found', e); }
-
-        // Branding
-        try {
-            const brandRes = await getTenantBranding(tenantId);
-            if (brandRes && brandRes.data) {
-                const results = brandRes.data.results || brandRes.data;
-                const b = Array.isArray(results) ? results[0] : results;
-
-                if (b) {
-                    brandingForm.primary_color = b.primary_color || '#ffffff';
-                    brandingForm.logoUrl = b.logo;
-                    brandingForm.darkLogoUrl = b.dark_logo;
-                    brandingForm.faviconUrl = b.favicon;
-                }
-            }
-        } catch (e) { console.warn('No branding found', e); }
-
-        // PII
-        try {
-            const piiRes = await getTenantPii(tenantId);
-            if (piiRes && piiRes.data) {
-                const results = piiRes.data.results || piiRes.data;
-                const p = Array.isArray(results) ? results[0] : results;
-
-                if (p) {
-                    piiForm.gstin = p.gstin;
-                    piiForm.address = p.address;
-                    piiForm.full_name = p.full_name || p.contact_name;
-                    piiForm.email = p.email;
-                    piiForm.phone_number = p.phone_number || p.phone;
-                }
-            }
-        } catch (e) { console.warn('No PII found', e); }
 
     } catch (e) {
         console.error('Failed to load tenant data', e);
