@@ -35,7 +35,7 @@ const departments = ref<Department[]>([])
 const departmentColumns = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Description', dataIndex: 'description', key: 'description' },
-    { title: 'Slug', dataIndex: 'slug', key: 'slug' },
+    { title: 'Slug', dataIndex: 'slug', key: 'slug', copyable: true },
     { title: 'Action', key: 'action', width: 150 }
 ]
 

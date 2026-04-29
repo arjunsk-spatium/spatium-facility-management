@@ -32,4 +32,21 @@ describe('SPOC Config Page', () => {
 
         expect(wrapper.text()).toContain('Departments')
     })
+    it('should configure Slug column as copyable', async () => {
+        const wrapper = await mountSuspended(SpocConfigPage, {
+            global: {
+                plugins: [createTestingPinia({ createSpy: vi.fn })]
+            }
+        })
+
+        // Find the ConfigTable component and check its columns prop
+        const configTable = wrapper.findComponent({ name: 'ConfigTable' })
+        expect(configTable.exists()).toBe(true)
+
+        const columns = configTable.props('columns') as Array<any>
+        const slugColumn = columns.find(col => col.key === 'slug')
+        
+        expect(slugColumn).toBeDefined()
+        expect(slugColumn.copyable).toBe(true)
+    })
 })

@@ -32,6 +32,11 @@
                     <template v-else-if="column.customRender">
                         {{ getColumnValue(column, record) }}
                     </template>
+                    <template v-else-if="column.copyable">
+                        <a-typography-text :copyable="{ text: getColumnValue(column, record) }">
+                            {{ getColumnValue(column, record) }}
+                        </a-typography-text>
+                    </template>
                 </template>
 
             <!-- Mobile Card View -->
@@ -48,7 +53,14 @@
                                 <template v-for="col in displayColumns" :key="col.key">
                                     <div v-if="record[col.dataIndex]" class="flex gap-2">
                                         <span class="font-medium">{{ col.title }}:</span>
-                                        <span>{{ record[col.dataIndex] }}</span>
+                                        <template v-if="col.copyable">
+                                            <a-typography-text :copyable="{ text: record[col.dataIndex] }">
+                                                {{ record[col.dataIndex] }}
+                                            </a-typography-text>
+                                        </template>
+                                        <template v-else>
+                                            <span>{{ record[col.dataIndex] }}</span>
+                                        </template>
                                     </div>
                                 </template>
                             </div>
@@ -125,6 +137,7 @@ interface Column {
     dataIndex?: string
     key: string
     width?: number
+    copyable?: boolean
 }
 
 interface Field {
