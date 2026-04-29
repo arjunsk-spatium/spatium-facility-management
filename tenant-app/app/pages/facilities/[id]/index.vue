@@ -244,7 +244,18 @@
                     <a-input v-model:value="staffForm.email" placeholder="Enter email" type="email" />
                 </a-form-item>
                 <a-form-item label="Phone Number">
-                    <a-input v-model:value="staffForm.phone_number" placeholder="Enter phone number" />
+                    <a-input-group compact>
+                        <a-select v-model:value="phonePrefix" disabled style="width: 70px">
+                            <a-select-option value="+91">+91</a-select-option>
+                        </a-select>
+                        <a-input
+                            v-model:value="staffForm.phone_number"
+                            placeholder="Enter phone number"
+                            style="width: calc(100% - 70px)"
+                            :maxlength="10"
+                            @input="staffForm.phone_number = staffForm.phone_number?.replace(/\D/g, '')"
+                        />
+                    </a-input-group>
                 </a-form-item>
                 <a-form-item label="Role">
                     <a-select v-model:value="staffForm.role_id" placeholder="Select role"
@@ -470,6 +481,24 @@ const staffForm = ref({
     role_id: undefined as string | undefined
 });
 const editingStaffId = ref<string | null>(null);
+const phonePrefix = ref('+91');
+
+const formatPhoneNumber = (phone: string): string => {
+    const digits = phone.replace(/\D/g, '');
+    const last10 = digits.slice(-10);
+    return last10 ? `+91${last10}` : '';
+};
+
+const stripPhonePrefix = (phone: string): string => {
+    if (!phone) return '';
+    const digits = phone.replace(/\D/g, '');
+    // If starts with 91 and has 12 digits, remove the 91 prefix
+    if (digits.length === 12 && digits.startsWith('91')) {
+        return digits.slice(2);
+    }
+    // If just digits (with or without +91), return last 10 digits
+    return digits.slice(-10);
+};
 
 // Roles
 const roles = ref<any[]>([]);
@@ -535,7 +564,7 @@ const openEditStaffModal = (record: any) => {
     staffForm.value = {
         full_name: record.full_name || '',
         email: record.email || '',
-        phone_number: record.phone_number || '',
+        phone_number: stripPhonePrefix(record.phone_number),
         username: '',
         password: '',
         role_id: record.role_id || undefined
@@ -554,6 +583,7 @@ const handleAddStaff = async () => {
         const service = useHelpdeskService();
         await service.createStaff({
             ...staffForm.value,
+            phone_number: formatPhoneNumber(staffForm.value.phone_number),
             facility_id: facilityId,
             ...(staffForm.value.role_id && { role_id: staffForm.value.role_id })
         });
@@ -582,7 +612,7 @@ const handleEditStaff = async () => {
             body: {
                 full_name: staffForm.value.full_name,
                 email: staffForm.value.email,
-                phone_number: staffForm.value.phone_number,
+                phone_number: formatPhoneNumber(staffForm.value.phone_number),
                 ...(staffForm.value.role_id && { role_id: staffForm.value.role_id })
             }
         });
