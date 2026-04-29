@@ -330,7 +330,7 @@
                             </a-form-item>
                             <a-form-item label="Contact Phone" name="phone_number"
                                 :rules="[{ required: true, message: 'Please enter contact phone' }]">
-                                <a-input v-model:value="piiForm.phone_number" size="large" />
+                                <PhoneInput v-model="piiForm.phone_number" size="large" />
                             </a-form-item>
                         </div>
                         <div class="flex justify-end mt-4">

@@ -183,7 +183,7 @@
                     <a-input v-model:value="userForm.email" placeholder="Enter email address" type="email" />
                 </a-form-item>
                 <a-form-item label="Phone">
-                    <a-input v-model:value="userForm.phone" placeholder="Enter phone number" />
+                    <PhoneInput v-model="userForm.phone" />
                 </a-form-item>
             </a-form>
         </a-modal>

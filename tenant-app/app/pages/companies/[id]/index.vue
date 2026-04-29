@@ -361,7 +361,7 @@
                     <a-input v-model:value="spocForm.email" />
                 </a-form-item>
                 <a-form-item label="Phone" required>
-                    <a-input v-model:value="spocForm.phone_number" />
+                    <PhoneInput v-model="spocForm.phone_number" />
                 </a-form-item>
             </a-form>
         </a-modal>
@@ -377,7 +377,7 @@
                     <a-input v-model:value="employeeForm.email" />
                 </a-form-item>
                 <a-form-item label="Phone">
-                    <a-input v-model:value="employeeForm.phone_number" />
+                    <PhoneInput v-model="employeeForm.phone_number" />
                 </a-form-item>
             </a-form>
         </a-modal>

@@ -124,7 +124,7 @@
                     <a-input v-model:value="newEmployee.email" placeholder="employee@company.com" />
                 </a-form-item>
                 <a-form-item label="Phone">
-                    <a-input v-model:value="newEmployee.phone" placeholder="+91 98765 43210" />
+                    <PhoneInput v-model="newEmployee.phone" />
                 </a-form-item>
                 <a-form-item label="Department">
                     <a-select v-model:value="newEmployee.departmentId" placeholder="Select department">

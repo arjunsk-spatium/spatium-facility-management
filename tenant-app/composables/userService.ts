@@ -287,6 +287,7 @@ export const useUserService = () => {
                     full_name: data.name,
                     email: data.email,
                     phone_number: data.phone,
+                    app_name: 'org_portal',
                     apps: data.modules
                 }
             })

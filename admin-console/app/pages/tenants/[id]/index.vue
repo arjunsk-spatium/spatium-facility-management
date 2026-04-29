@@ -300,7 +300,7 @@
                     <a-input v-model:value="userForm.email" placeholder="john@example.com" />
                 </a-form-item>
                 <a-form-item label="Phone Number" name="phone_number">
-                    <a-input v-model:value="userForm.phone_number" placeholder="+1234567890" />
+                    <PhoneInput v-model="userForm.phone_number" />
                 </a-form-item>
             </a-form>
         </a-modal>

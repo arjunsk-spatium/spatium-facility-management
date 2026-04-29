@@ -326,7 +326,7 @@
                                         @change="(e: any) => piiForm.email = e.target.value.toLowerCase()" />
                                 </a-form-item>
                                 <a-form-item label="Contact Phone" required>
-                                    <a-input v-model:value="piiForm.phone_number" />
+                                    <PhoneInput v-model="piiForm.phone_number" />
                                 </a-form-item>
                             </div>
                         </a-form>

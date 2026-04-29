@@ -28,13 +28,7 @@
 
                     <a-form-item label="Phone Number" name="phone"
                         :rules="[{ required: true, message: 'Please enter phone number' }]">
-                        <a-input-group compact>
-                            <a-select v-model:value="formState.countryCode" style="width: 90px" size="large" disabled>
-                                <a-select-option value="+91">+91</a-select-option>
-                            </a-select>
-                            <a-input v-model:value="formState.phone" placeholder="98765 43210" size="large"
-                                style="width: calc(100% - 90px)" />
-                        </a-input-group>
+                        <PhoneInput v-model="formState.phone" size="large" selectWidth="90px" />
                     </a-form-item>
 
                     <a-form-item v-if="visitorEmailRequired" label="Email" name="email" class="sm:col-span-2"
@@ -160,7 +154,6 @@ const lastInvited = ref<SpocVisitor | null>(null)
 
 const formState = reactive({
     name: '',
-    countryCode: '+91',
     phone: '',
     email: '',
     fromCompany: '',
@@ -209,7 +202,6 @@ const filterOption = (input: string, option: any) => {
 
 const resetForm = () => {
     formState.name = ''
-    formState.countryCode = '+91'
     formState.phone = ''
     formState.email = ''
     formState.fromCompany = ''
@@ -223,7 +215,7 @@ const handleSubmit = async () => {
     try {
         const data = {
             name: formState.name,
-            phone: formState.countryCode + formState.phone,
+            phone: formState.phone,
             email: formState.email || undefined,
             from_company: formState.fromCompany || undefined,
             visitDate: toApiDate(formState.visitDate),

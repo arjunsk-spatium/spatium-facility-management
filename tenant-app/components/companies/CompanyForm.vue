@@ -53,7 +53,7 @@
         <a-row :gutter="16">
             <a-col :span="12">
                 <a-form-item label="Phone" name="phone">
-                    <a-input v-model:value="formState.phone" placeholder="Enter phone number" :maxlength="20" />
+                    <PhoneInput v-model="formState.phone" />
                 </a-form-item>
             </a-col>
             <a-col :span="12">

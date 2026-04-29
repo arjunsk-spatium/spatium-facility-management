@@ -31,7 +31,7 @@
 
                 <a-form-item label="Phone Number" name="phone_number"
                     :rules="[{ required: true, message: 'Please input phone number!' }]">
-                    <a-input v-model:value="formState.phone_number" placeholder="+1234567890" />
+                    <PhoneInput v-model="formState.phone_number" />
                 </a-form-item>
 
                 <div class="flex justify-end gap-2 mt-6">
