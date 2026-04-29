@@ -17,11 +17,12 @@
         <!-- Search -->
         <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
             <a-input-search v-model:value="searchQuery" placeholder="Search employees..." allow-clear
-                class="flex-1 sm:max-w-xs" />
+                class="flex-1 sm:max-w-xs" @search="handleSearchChange" @change="handleSearchChange" />
         </div>
 
         <!-- Employee Table/Cards using ResponsiveDataView -->
-        <ResponsiveDataView :columns="columns" :data="filteredEmployees" :loading="loading" row-key="id">
+        <ResponsiveDataView :columns="columns" :data="employees" :loading="loading" row-key="id"
+            :pagination="paginationConfig">
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'employee'">
                     <div class="flex items-center gap-3">
@@ -37,9 +38,19 @@
                     </div>
                 </template>
 
+                <template v-if="column.key === 'designation'">
+                    <span class="text-gray-600 dark:text-gray-300">{{ record.designation || '-' }}</span>
+                </template>
+
                 <template v-if="column.key === 'role'">
                     <a-tag :color="record.role === 'SPOC' ? 'purple' : 'blue'">
                         {{ record.role }}
+                    </a-tag>
+                </template>
+
+                <template v-if="column.key === 'status'">
+                    <a-tag :color="record.status === 'active' ? 'green' : 'default'">
+                        {{ record.status || 'active' }}
                     </a-tag>
                 </template>
 
@@ -82,6 +93,20 @@
                         <div>
                             <p class="text-gray-400 dark:text-gray-500 text-xs">Phone</p>
                             <p class="text-gray-600 dark:text-gray-300">{{ record.phone || '-' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs">Department</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ record.department || '-' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs">Designation</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ record.designation || '-' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs">Status</p>
+                            <a-tag :color="record.status === 'active' ? 'green' : 'default'" class="m-0">
+                                {{ record.status || 'active' }}
+                            </a-tag>
                         </div>
                     </div>
                 </a-card>
@@ -137,8 +162,18 @@ definePageMeta({
 const tenantStore = useTenantStore()
 const { isDark } = useTheme()
 const store = useSpocStore()
-const { employees, loading } = storeToRefs(store)
+const { employees, loading, employeeCount, employeePage, employeePageSize } = storeToRefs(store)
 const { fetchDepartments } = useDepartmentService()
+
+// Pagination config for table
+const paginationConfig = computed(() => ({
+    total: employeeCount.value,
+    current: employeePage.value,
+    pageSize: employeePageSize.value,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
+    onChange: handlePageChange,
+}))
 
 // Whitelabeled avatar style using tenant's primary color
 const avatarStyle = computed(() => {
@@ -173,21 +208,37 @@ const columns = [
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
     { title: 'Department', dataIndex: 'department', key: 'department' },
-    { title: 'Role', dataIndex: 'role', key: 'role' },
+    { title: 'Designation', key: 'designation' },
+    { title: 'Role', key: 'role' },
+    { title: 'Status', key: 'status' },
     { title: '', key: 'actions', width: 50 }
 ]
 
-const filteredEmployees = computed(() => {
-    if (!searchQuery.value) return employees.value
+const searchDebounce = ref<ReturnType<typeof setTimeout> | null>(null)
 
-    const query = searchQuery.value.toLowerCase()
-    return employees.value.filter(e =>
-        e.name.toLowerCase().includes(query) ||
-        e.email.toLowerCase().includes(query) ||
-        e.department?.toLowerCase().includes(query) ||
-        e.designation?.toLowerCase().includes(query)
-    )
-})
+const handleSearchChange = () => {
+    if (searchDebounce.value) clearTimeout(searchDebounce.value)
+    searchDebounce.value = setTimeout(() => {
+        store.employeePage = 1
+        store.fetchEmployees({
+            search: searchQuery.value,
+            page: 1,
+            page_size: employeePageSize.value
+        })
+    }, 400)
+}
+
+const handlePageChange = (page: number, newPageSize?: number) => {
+    store.employeePage = page
+    if (newPageSize) {
+        store.employeePageSize = newPageSize
+    }
+    store.fetchEmployees({
+        search: searchQuery.value,
+        page,
+        page_size: newPageSize || employeePageSize.value
+    })
+}
 
 const loadDepartments = async () => {
     try {
@@ -217,7 +268,8 @@ const handleSaveEmployee = async () => {
                 phone: newEmployee.phone || undefined,
                 department: selectedDept?.name,
                 department_id: newEmployee.departmentId || undefined,
-                designation: newEmployee.designation || undefined
+                designation: newEmployee.designation || undefined,
+                role: newEmployee.role
             })
             message.success('Employee updated successfully')
         } else {
@@ -227,7 +279,8 @@ const handleSaveEmployee = async () => {
                 phone: newEmployee.phone || undefined,
                 department: selectedDept?.name,
                 department_id: newEmployee.departmentId || undefined,
-                designation: newEmployee.designation || undefined
+                designation: newEmployee.designation || undefined,
+                role: newEmployee.role
             })
             message.success('Employee added successfully')
         }
@@ -239,6 +292,7 @@ const handleSaveEmployee = async () => {
         newEmployee.phone = ''
         newEmployee.departmentId = null
         newEmployee.designation = ''
+        newEmployee.role = 'Employee'
     } catch (err) {
         message.error(editingEmployee.value ? 'Failed to update employee' : 'Failed to add employee')
     }
@@ -265,7 +319,7 @@ const handleDelete = async (id: string) => {
 }
 
 onMounted(() => {
-    store.fetchEmployees()
+    store.fetchEmployees({ page: employeePage.value, page_size: employeePageSize.value })
     loadDepartments()
 })
 </script>

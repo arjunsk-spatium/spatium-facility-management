@@ -34,6 +34,8 @@ export interface SpocEmployee {
     department?: string
     department_id?: string
     designation?: string
+    role?: 'SPOC' | 'Employee'
+    status?: string
     avatar?: string
     createdAt?: string
 }
@@ -55,6 +57,9 @@ export const useSpocStore = defineStore('spoc', {
     state: () => ({
         visitors: [] as SpocVisitor[],
         employees: [] as SpocEmployee[],
+        employeeCount: 0,
+        employeePage: 1,
+        employeePageSize: 10,
         stats: null as SpocStats | null,
         purposes: [] as PurposeOfVisit[],
         facilities: [] as { id: string; name: string; companyId?: string }[],
@@ -135,24 +140,34 @@ export const useSpocStore = defineStore('spoc', {
             }
         },
 
-        async fetchEmployees(companyId?: string) {
+        async fetchEmployees(params: { companyId?: string; search?: string; page?: number; page_size?: number } = {}) {
             this.loading = true
             this.error = null
             try {
                 const { $api } = useNuxtApp()
-                
+
                 const query: Record<string, any> = {}
-                if (companyId) {
-                    query.company_id = companyId
+                if (params.companyId) {
+                    query.company_id = params.companyId
                 }
-                
+                if (params.search) {
+                    query.search = params.search
+                }
+                if (params.page) {
+                    query.page = params.page
+                }
+                if (params.page_size) {
+                    query.page_size = params.page_size
+                }
+
                 const response = await $api<any>('/api/portal/users/client_portal/list/', {
                     method: 'GET',
                     query
                 })
-                
+
                 if (response.success && response.data) {
                     const results = response.data.results || response.data
+                    this.employeeCount = response.data.count || results.length
                     // Map all users with role based on apps array
                     this.employees = results.map((u: any) => ({
                         id: u.id,
@@ -162,15 +177,20 @@ export const useSpocStore = defineStore('spoc', {
                         department: u.department_name || u.department || '',
                         department_id: u.department_id || '',
                         designation: u.designation || '',
-                        role: u.apps && u.apps.includes('client_portal') ? 'SPOC' : 'Employee'
+                        status: u.status || 'active',
+                        role: u.apps && u.apps.some((app: string) => app.toLowerCase().replace(/\s/g, '_') === 'client_portal')
+                            ? 'SPOC'
+                            : 'Employee'
                     }))
                 } else {
                     this.employees = []
+                    this.employeeCount = 0
                 }
             } catch (err) {
                 console.error('Failed to fetch employees:', err)
                 this.error = 'Failed to fetch employees'
                 this.employees = []
+                this.employeeCount = 0
             } finally {
                 this.loading = false
             }
@@ -330,6 +350,7 @@ export const useSpocStore = defineStore('spoc', {
                         department_id: data.department_id,
                         designation: data.designation,
                         role: data.role || 'Employee',
+                        status: 'active',
                         createdAt: new Date().toISOString()
                     }
                     this.employees.push(newEmployee)
@@ -363,10 +384,12 @@ export const useSpocStore = defineStore('spoc', {
             }
         },
 
-        async updateEmployee(id: string, data: Partial<SpocEmployee>) {
+        async updateEmployee(id: string, data: Partial<SpocEmployee> & { role?: 'Employee' | 'SPOC' }) {
             this.loading = true
             try {
                 const { $api } = useNuxtApp()
+
+                const appName = data.role === 'SPOC' ? 'client_portal' : 'hub'
 
                 const response = await $api<any>(`/api/portal/users/client_portal/${id}/update/`, {
                     method: 'PATCH',
@@ -375,7 +398,8 @@ export const useSpocStore = defineStore('spoc', {
                         email: data.email,
                         phone_number: data.phone,
                         designation: data.designation,
-                        department_id: data.department_id
+                        department_id: data.department_id,
+                        app_name: appName
                     }
                 })
 
