@@ -102,17 +102,20 @@
                     <a-input v-model:value="newEmployee.phone" placeholder="+91 98765 43210" />
                 </a-form-item>
                 <a-form-item label="Department">
-                    <a-select v-model:value="newEmployee.department" placeholder="Select department">
-                        <a-select-option value="Engineering">Engineering</a-select-option>
-                        <a-select-option value="HR">HR</a-select-option>
-                        <a-select-option value="Sales">Sales</a-select-option>
-                        <a-select-option value="Marketing">Marketing</a-select-option>
-                        <a-select-option value="Finance">Finance</a-select-option>
-                        <a-select-option value="Operations">Operations</a-select-option>
+                    <a-select v-model:value="newEmployee.departmentId" placeholder="Select department">
+                        <a-select-option v-for="dept in departments" :key="dept.id" :value="dept.id">
+                            {{ dept.name }}
+                        </a-select-option>
                     </a-select>
                 </a-form-item>
                 <a-form-item label="Designation">
                     <a-input v-model:value="newEmployee.designation" placeholder="Job title" />
+                </a-form-item>
+                <a-form-item label="Type">
+                    <a-select v-model:value="newEmployee.role" placeholder="Select type">
+                        <a-select-option value="Employee">Employee</a-select-option>
+                        <a-select-option value="SPOC">SPOC</a-select-option>
+                    </a-select>
                 </a-form-item>
             </a-form>
         </a-modal>
@@ -125,6 +128,7 @@ import { storeToRefs } from 'pinia'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
+import { useDepartmentService, type Department } from '../../../../composables/departmentService'
 
 definePageMeta({
     middleware: 'auth'
@@ -134,6 +138,7 @@ const tenantStore = useTenantStore()
 const { isDark } = useTheme()
 const store = useSpocStore()
 const { employees, loading } = storeToRefs(store)
+const { fetchDepartments } = useDepartmentService()
 
 // Whitelabeled avatar style using tenant's primary color
 const avatarStyle = computed(() => {
@@ -151,13 +156,15 @@ const avatarStyle = computed(() => {
 const searchQuery = ref('')
 const showAddModal = ref(false)
 const editingEmployee = ref<any>(null)
+const departments = ref<Department[]>([])
 
 const newEmployee = reactive({
     name: '',
     email: '',
     phone: '',
-    department: null as string | null,
-    designation: ''
+    departmentId: null as string | null,
+    designation: '',
+    role: 'Employee' as 'Employee' | 'SPOC'
 })
 
 // Table columns
@@ -165,6 +172,7 @@ const columns = [
     { title: 'Employee', key: 'employee', dataIndex: 'name' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
+    { title: 'Department', dataIndex: 'department', key: 'department' },
     { title: 'Role', dataIndex: 'role', key: 'role' },
     { title: '', key: 'actions', width: 50 }
 ]
@@ -181,6 +189,14 @@ const filteredEmployees = computed(() => {
     )
 })
 
+const loadDepartments = async () => {
+    try {
+        departments.value = await fetchDepartments()
+    } catch (e) {
+        console.error('Failed to load departments', e)
+    }
+}
+
 const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
@@ -191,13 +207,16 @@ const handleSaveEmployee = async () => {
         return
     }
 
+    const selectedDept = departments.value.find(d => d.id === newEmployee.departmentId)
+
     try {
         if (editingEmployee.value) {
             await store.updateEmployee(editingEmployee.value.id, {
                 name: newEmployee.name,
                 email: newEmployee.email,
                 phone: newEmployee.phone || undefined,
-                department: newEmployee.department || undefined,
+                department: selectedDept?.name,
+                department_id: newEmployee.departmentId || undefined,
                 designation: newEmployee.designation || undefined
             })
             message.success('Employee updated successfully')
@@ -206,7 +225,8 @@ const handleSaveEmployee = async () => {
                 name: newEmployee.name,
                 email: newEmployee.email,
                 phone: newEmployee.phone || undefined,
-                department: newEmployee.department || undefined,
+                department: selectedDept?.name,
+                department_id: newEmployee.departmentId || undefined,
                 designation: newEmployee.designation || undefined
             })
             message.success('Employee added successfully')
@@ -217,7 +237,7 @@ const handleSaveEmployee = async () => {
         newEmployee.name = ''
         newEmployee.email = ''
         newEmployee.phone = ''
-        newEmployee.department = null
+        newEmployee.departmentId = null
         newEmployee.designation = ''
     } catch (err) {
         message.error(editingEmployee.value ? 'Failed to update employee' : 'Failed to add employee')
@@ -229,8 +249,9 @@ const handleEdit = (employee: any) => {
     newEmployee.name = employee.name
     newEmployee.email = employee.email
     newEmployee.phone = employee.phone || ''
-    newEmployee.department = employee.department || null
+    newEmployee.departmentId = employee.department_id || null
     newEmployee.designation = employee.designation || ''
+    newEmployee.role = employee.role || 'Employee'
     showAddModal.value = true
 }
 
@@ -245,5 +266,6 @@ const handleDelete = async (id: string) => {
 
 onMounted(() => {
     store.fetchEmployees()
+    loadDepartments()
 })
 </script>

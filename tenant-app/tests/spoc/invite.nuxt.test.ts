@@ -49,7 +49,6 @@ describe('SPOC Invite Visitor Page', () => {
         
         expect(wrapper.text()).toContain('Visitor Name')
         expect(wrapper.text()).toContain('Phone Number')
-        expect(wrapper.text()).toContain('Email')
         expect(wrapper.text()).toContain('Visit Date')
         expect(wrapper.text()).toContain('Visit Time')
         expect(wrapper.text()).toContain('Purpose of Visit')

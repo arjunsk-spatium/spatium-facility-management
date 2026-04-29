@@ -32,6 +32,7 @@ export interface SpocEmployee {
     email: string
     phone?: string
     department?: string
+    department_id?: string
     designation?: string
     avatar?: string
     createdAt?: string
@@ -158,8 +159,9 @@ export const useSpocStore = defineStore('spoc', {
                         name: u.full_name || u.email?.split('@')[0] || 'Unknown',
                         email: u.email,
                         phone: u.phone_number,
-                        department: '',
-                        designation: '',
+                        department: u.department_name || u.department || '',
+                        department_id: u.department_id || '',
+                        designation: u.designation || '',
                         role: u.apps && u.apps.includes('client_portal') ? 'SPOC' : 'Employee'
                     }))
                 } else {
@@ -297,22 +299,27 @@ export const useSpocStore = defineStore('spoc', {
             }
         },
 
-        async addEmployee(data: Partial<SpocEmployee> & { companyId?: string }) {
+        async addEmployee(data: Partial<SpocEmployee> & { companyId?: string; role?: 'Employee' | 'SPOC' }) {
             this.loading = true
             try {
                 const { $api } = useNuxtApp()
-                
-                const response = await $api<any>('/api/portal/users/org_portal/create/', {
+                const authStore = useAuthStore()
+
+                const appName = data.role === 'SPOC' ? 'client_portal' : 'hub'
+
+                const response = await $api<any>('/api/portal/users/client_portal/create/', {
                     method: 'POST',
                     body: {
-                        app_name: 'hub',
+                        app_name: appName,
                         full_name: data.name,
                         email: data.email,
                         phone_number: data.phone,
-                        company_id: data.companyId
+                        company_id: data.companyId || authStore.user?.company_id,
+                        designation: data.designation,
+                        department_id: data.department_id
                     }
                 })
-                
+
                 if (response.success && response.data) {
                     const newEmployee: SpocEmployee = {
                         id: response.data.id || Date.now().toString(),
@@ -320,7 +327,9 @@ export const useSpocStore = defineStore('spoc', {
                         email: data.email || '',
                         phone: data.phone,
                         department: data.department,
+                        department_id: data.department_id,
                         designation: data.designation,
+                        role: data.role || 'Employee',
                         createdAt: new Date().toISOString()
                     }
                     this.employees.push(newEmployee)
@@ -357,15 +366,29 @@ export const useSpocStore = defineStore('spoc', {
         async updateEmployee(id: string, data: Partial<SpocEmployee>) {
             this.loading = true
             try {
-                await new Promise(resolve => setTimeout(resolve, 300))
-                const index = this.employees.findIndex(e => e.id === id)
-                if (index > -1) {
-                    this.employees[index] = { ...this.employees[index], ...data }
-                    return this.employees[index]
+                const { $api } = useNuxtApp()
+
+                const response = await $api<any>(`/api/portal/users/client_portal/${id}/update/`, {
+                    method: 'PATCH',
+                    body: {
+                        full_name: data.name,
+                        email: data.email,
+                        phone_number: data.phone,
+                        designation: data.designation,
+                        department_id: data.department_id
+                    }
+                })
+
+                if (response.success && response.data) {
+                    const index = this.employees.findIndex(e => e.id === id)
+                    if (index > -1) {
+                        this.employees[index] = { ...this.employees[index], ...data }
+                        return this.employees[index]
+                    }
                 }
-                throw new Error('Employee not found')
-            } catch (err) {
-                this.error = 'Failed to update employee'
+                throw new Error(response.message || 'Failed to update employee')
+            } catch (err: any) {
+                this.error = err?.data?.message || err?.message || 'Failed to update employee'
                 throw err
             } finally {
                 this.loading = false

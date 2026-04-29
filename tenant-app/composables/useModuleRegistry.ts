@@ -83,7 +83,8 @@ const registry: Module[] = [
             { key: 'spoc-visitors-invite', label: 'Invite Visitor', route: '/spoc/visitors/invite' }
         ]
     },
-    { key: 'spoc_employees', label: 'Employees', icon: 'TeamOutlined', route: '/spoc/employees' }
+    { key: 'spoc_employees', label: 'Employees', icon: 'TeamOutlined', route: '/spoc/employees' },
+    { key: 'spoc_config', label: 'Configuration', icon: 'SettingOutlined', route: '/spoc/config' }
 ]
 
 export const useModuleRegistry = () => {
