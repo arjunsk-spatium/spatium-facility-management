@@ -369,18 +369,67 @@ export const useSpocStore = defineStore('spoc', {
         async deleteEmployee(id: string) {
             this.loading = true
             try {
-                await new Promise(resolve => setTimeout(resolve, 200))
-                const index = this.employees.findIndex(e => e.id === id)
-                if (index > -1) {
-                    this.employees.splice(index, 1)
-                    return true
-                }
-                return false
-            } catch (err) {
-                this.error = 'Failed to delete employee'
+                const { $api } = useNuxtApp()
+
+                await $api<any>(`/api/portal/users/client_portal/${id}/delete/`, {
+                    method: 'DELETE'
+                })
+
+                return true
+            } catch (err: any) {
+                this.error = err?.data?.message || err?.message || 'Failed to delete employee'
                 throw err
             } finally {
                 this.loading = false
+            }
+        },
+
+        async bulkUploadEmployees(file: File) {
+            this.loading = true
+            try {
+                const { $api } = useNuxtApp()
+
+                const formData = new FormData()
+                formData.append('file', file)
+
+                const response = await $api<any>('/api/portal/users/client_portal/bulk-upload/', {
+                    method: 'POST',
+                    body: formData
+                })
+
+                return response
+            } catch (err: any) {
+                this.error = err?.data?.message || err?.message || 'Failed to bulk upload employees'
+                throw err
+            } finally {
+                this.loading = false
+            }
+        },
+
+        async fetchBulkUploadJobs(params: { page?: number; page_size?: number } = {}) {
+            try {
+                const { $api } = useNuxtApp()
+
+                const query: Record<string, any> = {
+                    page: params.page || 1,
+                    page_size: params.page_size || 10
+                }
+
+                const response = await $api<any>('/api/portal/users/client_portal/bulk-upload/jobs/', {
+                    method: 'GET',
+                    query
+                })
+
+                if (response.success && response.data) {
+                    return {
+                        results: response.data.results || [],
+                        count: response.data.count || 0
+                    }
+                }
+                return { results: [], count: 0 }
+            } catch (err: any) {
+                console.error('Failed to fetch bulk upload jobs:', err)
+                return { results: [], count: 0 }
             }
         },
 

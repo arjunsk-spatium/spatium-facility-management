@@ -1,0 +1,11 @@
+full_name,phone_number,email,department_slug,designation,app_name
+John Doe,+91 98765 43210,john.doe@company.com,spatium-engineering,Senior Software Engineer,client_portal
+Jane Smith,+91 87654 32109,jane.smith@company.com,spatium-engineering,Sales Manager,hub
+Alice Johnson,+91 76543 21098,alice.johnson@company.com,spatium-engineering-2,HR Manager,client_portal
+Bob Wilson,+91 65432 10987,bob.wilson@company.com,spatium-engineering,Marketing Lead,hub
+Charlie Brown,9876543210,charlie.brown@company.com,spatium-engineering,Junior Developer,client_portal
+Diana Prince,-10215,diana.prince@company.com,spatium-engineering-123,Sales Executive,client_portal
+Eve Davis,(+91) 9654-3210-98,eve.davis@company.com,spatium-engineering-123,HR Specialist,hub
+Frank Miller,9.19543E+11,frank.miller@company.com,spatium-engineering-123,Content Strategist,client_portal
+Grace Lee,+91 9432 10987,grace.lee@company.com,spatium-engineering-2,QA Engineer,hub
+Henry Taylor,9321098765,henry.taylor@company.com,spatium-engineering-2,Business Development,client_portal
