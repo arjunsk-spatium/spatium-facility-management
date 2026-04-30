@@ -19,7 +19,7 @@
         <!-- Stats Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div
-                class="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
+                class="bg-white dark:bg-transparent rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
@@ -35,7 +35,7 @@
             </div>
 
             <div
-                class="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
+                class="bg-white dark:bg-transparent rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 flex items-center justify-center">
@@ -51,7 +51,7 @@
             </div>
 
             <div
-                class="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
+                class="bg-white dark:bg-transparent rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
@@ -67,7 +67,7 @@
             </div>
 
             <div
-                class="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
+                class="bg-white dark:bg-transparent rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center">
@@ -84,7 +84,7 @@
         </div>
 
         <!-- Quick Actions -->
-        <div class="bg-white dark:bg-neutral-800 rounded-xl border border-gray-100 dark:border-neutral-700 p-4 sm:p-6">
+        <div class="bg-white dark:bg-transparent rounded-xl border border-gray-100 dark:border-neutral-700 p-4 sm:p-6">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <QuickActionCard title="Pre-register Visitor" description="Send invite link" to="/spoc/visitors/invite"
@@ -105,7 +105,7 @@
 
         <!-- Recent Visitors -->
         <div
-            class="bg-white dark:bg-neutral-800 rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
+            class="bg-white dark:bg-transparent rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
             <div
                 class="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-neutral-700 flex justify-between items-center">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Visitors</h2>
@@ -165,7 +165,7 @@
 
         <!-- Credit Transaction History (only when credit system is enabled) -->
         <div v-if="creditSystemEnabled"
-            class="bg-white dark:bg-neutral-800 rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
+            class="bg-white dark:bg-transparent rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
             <div
                 class="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-neutral-700 flex justify-between items-center">
                 <div class="flex items-center gap-2">
@@ -303,13 +303,14 @@ const formatDate = (dateStr: string | null) => {
 
 const getStatusClass = (status: string) => {
     const classes: Record<string, string> = {
-        'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-        'approved': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-        'checked_in': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400',
+        'approved': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400',
+        'checked_in': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400',
         'checked_out': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-        'rejected': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+        'rejected': 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'
     }
-    return classes[status] || classes['pending']
+    const key = status?.toLowerCase() || 'pending'
+    return classes[key] || classes['pending']
 }
 
 const getStatusLabel = (status: string) => {
@@ -320,7 +321,8 @@ const getStatusLabel = (status: string) => {
         'checked_out': 'Checked Out',
         'rejected': 'Rejected'
     }
-    return labels[status] || status
+    const key = status?.toLowerCase() || 'pending'
+    return labels[key] || status
 }
 
 onMounted(async () => {
