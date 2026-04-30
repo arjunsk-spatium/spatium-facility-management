@@ -12,7 +12,33 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockApi = vi.fn(async (url: string) => {
-    if (url.includes('client_portal')) {
+    if (url.includes('wallet-transactions')) {
+        return {
+            success: true,
+            data: {
+                company_id: '123',
+                company_name: 'Test Corp',
+                current_balance: 10,
+                total_transactions: 1,
+                transactions: [
+                    {
+                        id: 'txn-1',
+                        transaction_type: 'credit',
+                        credits: 20,
+                        balance_after: 20,
+                        reference_type: 'balance_reset',
+                        reference_id: '11029c75-0aa3-4b52-bd7d-fb3b0a705830',
+                        metadata: { reason: 'New balance credited' },
+                        created_at: '2026-01-21T12:00:00Z',
+                        company_name: 'Test Corp',
+                        wallet_balance: 10
+                    }
+                ],
+                pagination: { limit: 50, offset: 0, total: 1, has_more: false }
+            }
+        }
+    }
+    if (url.includes('client_portal') && !url.includes('wallet-transactions')) {
         return {
             success: true,
             data: [{
@@ -218,13 +244,17 @@ describe('CompanyDetails', () => {
             expect(visibleModals[0].props('title')).toBe('Edit Credits')
         })
 
-        it('opens history drawer', async () => {
+        it('opens history drawer and fetches transactions', async () => {
             await wrapper.vm.openHistoryDrawer()
             await wrapper.vm.$nextTick()
+            await new Promise(resolve => setTimeout(resolve, 0))
             
             const drawer = wrapper.findComponent(AntComponents.ADrawer)
             expect(drawer.exists()).toBe(true)
             expect(drawer.props('open')).toBe(true)
+            expect(mockApi).toHaveBeenCalledWith(
+                expect.stringContaining('wallet-transactions')
+            )
         })
     })
 

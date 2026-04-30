@@ -162,11 +162,62 @@
                 </table>
             </div>
         </div>
+
+        <!-- Credit Transaction History (only when credit system is enabled) -->
+        <div v-if="creditSystemEnabled"
+            class="bg-white dark:bg-neutral-800 rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
+            <div
+                class="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-neutral-700 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <WalletOutlined class="text-lg text-primary-600 dark:text-primary-400" />
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Credit Transaction History</h2>
+                </div>
+                <div v-if="walletSummary" class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Balance:</span>
+                    <span class="text-lg font-bold text-green-600">{{ walletSummary.current_balance }}</span>
+                </div>
+            </div>
+            <div v-if="walletLoading" class="flex justify-center py-12">
+                <a-spin size="large" />
+            </div>
+            <div v-else>
+                <a-table :dataSource="walletTransactions" :columns="walletColumns" size="small"
+                    :pagination="{ pageSize: 5 }" rowKey="id">
+                    <template #bodyCell="{ column, record }">
+                        <template v-if="column.key === 'transaction_type'">
+                            <a-tag :color="record.transaction_type === 'credit' ? 'green' : 'red'">
+                                {{ record.transaction_type === 'credit' ? 'Credit' : 'Debit' }}
+                            </a-tag>
+                        </template>
+                        <template v-if="column.key === 'credits'">
+                            <span
+                                :class="record.transaction_type === 'credit' ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'">
+                                {{ record.transaction_type === 'credit' ? '+' : '-' }}{{ record.credits }}
+                            </span>
+                        </template>
+                        <template v-if="column.key === 'balance_after'">
+                            <span class="font-medium">{{ record.balance_after }}</span>
+                        </template>
+                        <template v-if="column.key === 'reference_type'">
+                            <span class="text-gray-600 dark:text-gray-300 text-xs">
+                                {{ formatReferenceType(record.reference_type) }}
+                            </span>
+                            <div v-if="record.metadata?.reason" class="text-xs text-gray-400 mt-0.5">
+                                {{ record.metadata.reason }}
+                            </div>
+                        </template>
+                        <template v-if="column.key === 'created_at'">
+                            {{ formatDate(record.created_at) }}
+                        </template>
+                    </template>
+                </a-table>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
     PlusOutlined,
@@ -175,7 +226,8 @@ import {
     CheckCircleOutlined,
     TeamOutlined,
     UserAddOutlined,
-    DownloadOutlined
+    DownloadOutlined,
+    WalletOutlined
 } from '@ant-design/icons-vue'
 import QuickActionCard from '../../../components/common/QuickActionCard.vue'
 
@@ -187,6 +239,67 @@ const store = useSpocStore()
 const { stats, visitors } = storeToRefs(store)
 
 const recentVisitors = computed(() => visitors.value.slice(0, 5))
+
+// --- Credit System ---
+const creditSystemEnabled = ref(false)
+const walletLoading = ref(false)
+const walletTransactions = ref<any[]>([])
+const walletSummary = ref<{ company_name: string; current_balance: number; total_transactions: number } | null>(null)
+
+const walletColumns = [
+    { title: 'Type', dataIndex: 'transaction_type', key: 'transaction_type', width: 80 },
+    { title: 'Credits', dataIndex: 'credits', key: 'credits', align: 'right' as const, width: 80 },
+    { title: 'Balance', dataIndex: 'balance_after', key: 'balance_after', align: 'right' as const, width: 80 },
+    { title: 'Reference', dataIndex: 'reference_type', key: 'reference_type' },
+    { title: 'Date', dataIndex: 'created_at', key: 'created_at', width: 150 },
+]
+
+const fetchCreditConfig = async () => {
+    try {
+        const { $api } = useNuxtApp()
+        const response = await $api<any>('/api/portal/visitors/public/tenant-config/')
+        if (response.success && response.data) {
+            creditSystemEnabled.value = response.data.credit_system_enabled ?? false
+        }
+    } catch (err) {
+        creditSystemEnabled.value = false
+    }
+}
+
+const fetchWalletTransactions = async () => {
+    walletLoading.value = true
+    try {
+        const { $api } = useNuxtApp()
+        const result = await $api<any>('/api/portal/users/client_portal/wallet-transactions/')
+        if (result.success && result.data) {
+            walletTransactions.value = result.data.transactions || []
+            walletSummary.value = {
+                company_name: result.data.company_name || '',
+                current_balance: result.data.current_balance ?? 0,
+                total_transactions: result.data.total_transactions ?? 0
+            }
+        }
+    } catch (err) {
+        console.error('Failed to fetch wallet transactions:', err)
+    } finally {
+        walletLoading.value = false
+    }
+}
+
+const formatReferenceType = (type: string) => {
+    if (!type) return 'N/A'
+    return type
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+}
+
+const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '-'
+    return new Date(dateStr).toLocaleString(undefined, {
+        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    })
+}
 
 const getStatusClass = (status: string) => {
     const classes: Record<string, string> = {
@@ -213,7 +326,12 @@ const getStatusLabel = (status: string) => {
 onMounted(async () => {
     await Promise.all([
         store.fetchStats(),
-        store.fetchVisitors()
+        store.fetchVisitors(),
+        fetchCreditConfig()
     ])
+    // Only fetch wallet transactions if credit system is enabled
+    if (creditSystemEnabled.value) {
+        await fetchWalletTransactions()
+    }
 })
 </script>

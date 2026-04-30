@@ -194,4 +194,57 @@ describe('SPOC Dashboard Page', () => {
             expect(wrapper.text()).toContain('5 waiting') // mockStats.pendingApprovals
         })
     })
+
+    describe('Credit Transaction History', () => {
+        it('should not show credit section when credit system is disabled', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+
+            expect(wrapper.text()).not.toContain('Credit Transaction History')
+        })
+
+        it('should show credit section when credit system is enabled', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+
+            // Simulate credit system being enabled
+            ;(wrapper.vm as any).creditSystemEnabled = true
+            ;(wrapper.vm as any).walletSummary = {
+                company_name: 'Test Corp',
+                current_balance: 50,
+                total_transactions: 2
+            }
+            ;(wrapper.vm as any).walletTransactions = [
+                {
+                    id: 'txn-1',
+                    transaction_type: 'credit',
+                    credits: 20,
+                    balance_after: 70,
+                    reference_type: 'balance_reset',
+                    metadata: { reason: 'New balance credited' },
+                    created_at: '2026-01-21T12:00:00Z'
+                }
+            ]
+            await wrapper.vm.$nextTick()
+
+            expect(wrapper.text()).toContain('Credit Transaction History')
+            expect(wrapper.text()).toContain('50') // current balance
+        })
+    })
 })

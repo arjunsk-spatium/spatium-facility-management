@@ -40,7 +40,8 @@
                             </template>
 
                             <!-- Logo Section -->
-                            <div class="flex items-center gap-4 mb-5 pb-5 border-b border-gray-100 dark:border-gray-700">
+                            <div
+                                class="flex items-center gap-4 mb-5 pb-5 border-b border-gray-100 dark:border-gray-700">
                                 <div v-if="company.logo"
                                     class="w-20 h-20 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
                                     <img :src="company.logo" :alt="company.name"
@@ -51,8 +52,10 @@
                                     {{ getInitials(company.name) }}
                                 </a-avatar>
                                 <div>
-                                    <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ company.name }}</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ company.email_domain }}</div>
+                                    <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ company.name
+                                        }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ company.email_domain }}
+                                    </div>
                                     <a-tag :color="company.status === 'active' ? 'green' : 'default'" class="mt-1">
                                         {{ company.status }}
                                     </a-tag>
@@ -62,15 +65,15 @@
                             <a-descriptions :column="{ xs: 1, sm: 2 }" bordered size="small">
                                 <a-descriptions-item label="Company Name">{{ company.name }}</a-descriptions-item>
                                 <a-descriptions-item label="Address">{{ company.contacts[0]?.address
-                                    }}</a-descriptions-item>
+                                }}</a-descriptions-item>
                                 <a-descriptions-item label="GSTIN">{{ company.contacts[0]?.gstin || 'N/A'
-                                    }}</a-descriptions-item>
+                                }}</a-descriptions-item>
                                 <a-descriptions-item label="Contact Name">{{ company.contacts[0]?.contact_name
-                                    }}</a-descriptions-item>
+                                }}</a-descriptions-item>
                                 <a-descriptions-item label="Email">{{ company.contacts[0]?.email
-                                    }}</a-descriptions-item>
+                                }}</a-descriptions-item>
                                 <a-descriptions-item label="Phone">{{ company.contacts[0]?.phone
-                                    }}</a-descriptions-item>
+                                }}</a-descriptions-item>
                             </a-descriptions>
                         </a-card>
 
@@ -107,7 +110,8 @@
                                     </div>
                                     <div class="flex gap-2">
                                         <a-button type="text" size="small" class="text-blue-500"
-                                            @click="generateQR(facility.facility_id, company.name)" title="Generate QR Code">
+                                            @click="generateQR(facility.facility_id, company.name)"
+                                            title="Generate QR Code">
                                             <QrcodeOutlined />
                                         </a-button>
                                         <a-button type="text" size="small" class="text-red-500"
@@ -173,7 +177,7 @@
                                     <a-card class="mb-4" size="small">
                                         <div class="flex justify-between items-start mb-2">
                                             <span class="font-semibold text-gray-900 dark:text-gray-100">{{ record.name
-                                                }}</span>
+                                            }}</span>
                                             <a-tag
                                                 :color="record.status === 'Approved' ? 'green' : record.status === 'Pending' ? 'orange' : 'default'">
                                                 {{ record.status }}
@@ -226,7 +230,7 @@
                                 <div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Allotted</div>
                                     <div class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ credits.alloted
-                                    }}</div>
+                                        }}</div>
                                 </div>
                                 <div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Used</div>
@@ -338,16 +342,59 @@
         </a-modal>
 
         <!-- Credit History Drawer -->
-        <a-drawer v-model:open="isHistoryDrawerVisible" title="Credit Usage History" placement="right" width="400">
-            <a-table :dataSource="creditHistory" :columns="historyColumns" size="small" :pagination="false" rowKey="id">
-                <template #bodyCell="{ column, record }">
-                    <template v-if="column.key === 'amount'">
-                        <span :class="record.amount < 0 ? 'text-red-500' : 'text-green-600'">
-                            {{ record.amount > 0 ? '+' : '' }}{{ record.amount }}
-                        </span>
+        <a-drawer v-model:open="isHistoryDrawerVisible" title="Credit Transaction History" placement="right"
+            width="480">
+            <div v-if="historyLoading" class="flex justify-center py-12">
+                <a-spin size="large" />
+            </div>
+            <template v-else>
+                <!-- Balance Summary -->
+                <div v-if="historySummary" class="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Company</div>
+                            <div class="font-semibold text-gray-900 dark:text-gray-100">{{ historySummary.company_name
+                                }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Current Balance</div>
+                            <div class="text-xl font-bold text-green-600">{{ historySummary.current_balance }}</div>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-400">{{ historySummary.total_transactions }} transaction(s)</div>
+                </div>
+
+                <a-table :dataSource="creditHistory" :columns="historyColumns" size="small"
+                    :pagination="{ pageSize: 10 }" rowKey="id">
+                    <template #bodyCell="{ column, record }">
+                        <template v-if="column.key === 'transaction_type'">
+                            <a-tag :color="record.transaction_type === 'credit' ? 'green' : 'red'">
+                                {{ record.transaction_type === 'credit' ? 'Credit' : 'Debit' }}
+                            </a-tag>
+                        </template>
+                        <template v-if="column.key === 'credits'">
+                            <span
+                                :class="record.transaction_type === 'credit' ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'">
+                                {{ record.transaction_type === 'credit' ? '+' : '-' }}{{ record.credits }}
+                            </span>
+                        </template>
+                        <template v-if="column.key === 'reference_type'">
+                            <span class="text-gray-600 dark:text-gray-300 text-xs">
+                                {{ formatReferenceType(record.reference_type) }}
+                            </span>
+                            <div v-if="record.metadata?.reason" class="text-xs text-gray-400 mt-0.5">
+                                {{ record.metadata.reason }}
+                            </div>
+                        </template>
+                        <template v-if="column.key === 'balance_after'">
+                            <span class="font-medium">{{ record.balance_after }}</span>
+                        </template>
+                        <template v-if="column.key === 'created_at'">
+                            {{ formatDate(record.created_at) }}
+                        </template>
                     </template>
-                </template>
-            </a-table>
+                </a-table>
+            </template>
         </a-drawer>
 
         <!-- Edit/Add SPOC Modal -->
@@ -471,16 +518,15 @@ const creditForm = reactive({
 })
 
 const isHistoryDrawerVisible = ref(false)
-const creditHistory = ref([
-    { id: 1, date: '2024-01-25', description: 'Booking #1234', amount: -50 },
-    { id: 2, date: '2024-01-20', description: 'Monthly Allocation', amount: +1000 },
-    { id: 3, date: '2024-01-15', description: 'Booking #987', amount: -120 },
-    { id: 4, date: '2023-12-01', description: 'Initial Credits', amount: +5000 },
-])
+const historyLoading = ref(false)
+const creditHistory = ref<any[]>([])
+const historySummary = ref<{ company_name: string; current_balance: number; total_transactions: number } | null>(null)
 const historyColumns = [
-    { title: 'Date', dataIndex: 'date', key: 'date' },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
-    { title: 'Amount', dataIndex: 'amount', key: 'amount', align: 'right' },
+    { title: 'Type', dataIndex: 'transaction_type', key: 'transaction_type', width: 80 },
+    { title: 'Credits', dataIndex: 'credits', key: 'credits', align: 'right' as const, width: 80 },
+    { title: 'Balance', dataIndex: 'balance_after', key: 'balance_after', align: 'right' as const, width: 80 },
+    { title: 'Reference', dataIndex: 'reference_type', key: 'reference_type' },
+    { title: 'Date', dataIndex: 'created_at', key: 'created_at', width: 130 },
 ]
 
 
@@ -617,8 +663,38 @@ const handleCreditOk = async () => {
     }
 }
 
-const openHistoryDrawer = () => {
+const openHistoryDrawer = async () => {
     isHistoryDrawerVisible.value = true
+    await fetchWalletTransactions()
+}
+
+const fetchWalletTransactions = async () => {
+    const companyId = route.params.id as string
+    historyLoading.value = true
+    try {
+        const result = await $api<any>(`/api/portal/users/org_portal/wallet-transactions/?company_id=${companyId}`)
+        if (result.success && result.data) {
+            creditHistory.value = result.data.transactions || []
+            historySummary.value = {
+                company_name: result.data.company_name || '',
+                current_balance: result.data.current_balance ?? 0,
+                total_transactions: result.data.total_transactions ?? 0
+            }
+        }
+    } catch (err) {
+        console.error('Failed to fetch wallet transactions:', err)
+        message.error('Failed to load transaction history')
+    } finally {
+        historyLoading.value = false
+    }
+}
+
+const formatReferenceType = (type: string) => {
+    if (!type) return 'N/A'
+    return type
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
 }
 
 // --- Actions: Users (Employees & SPOCs) ---
