@@ -375,7 +375,7 @@
                         <template v-if="column.key === 'credits'">
                             <span
                                 :class="record.transaction_type === 'credit' ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'">
-                                {{ record.transaction_type === 'credit' ? '+' : '-' }}{{ record.credits }}
+                                {{ record.transaction_type === 'credit' ? '+' : '-' }}{{ Math.abs(record.credits ?? 0) }}
                             </span>
                         </template>
                         <template v-if="column.key === 'reference_type'">
@@ -690,7 +690,7 @@ const fetchWalletTransactions = async () => {
 }
 
 const formatReferenceType = (type: string) => {
-    if (!type) return 'N/A'
+    if (!type || type === '--') return 'N/A'
     return type
         .split('_')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))

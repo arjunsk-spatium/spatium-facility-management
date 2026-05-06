@@ -438,7 +438,7 @@ const fetchCompanyEmployees = async () => {
     }
     employeesLoading.value = true;
     try {
-        const result = await $api<any>(`/api/portal/users/list/?company_id=${bookingForm.value.company}&app_name=hub`);
+        const result = await $api<any>(`/api/portal/users/org_portal/list/?company_id=${bookingForm.value.company}&app_name=hub&page_size=99999`);
         let users: any[] = [];
         if (result.success && Array.isArray(result.data)) {
             users = result.data;
