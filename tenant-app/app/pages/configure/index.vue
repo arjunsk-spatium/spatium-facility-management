@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import {
     EnvironmentOutlined,
     CustomerServiceOutlined,
@@ -107,13 +107,27 @@ const { isDark } = useTheme()
 const sidebarCollapsed = ref(false)
 const activeTab = ref('location')
 
-const tabs = [
-    { key: 'location', label: 'Location', icon: EnvironmentOutlined },
-    { key: 'helpdesk', label: 'Helpdesk', icon: CustomerServiceOutlined },
-    { key: 'roomMeta', label: 'Room Meta', icon: AppstoreOutlined },
-    { key: 'creditSystem', label: 'Credit System', icon: CreditCardOutlined },
-    { key: 'visitor', label: 'Visitor Management', icon: IdcardOutlined }
-]
+const tabs = computed(() => {
+    const allTabs = [
+        { key: 'location', label: 'Location', icon: EnvironmentOutlined },
+        { key: 'helpdesk', label: 'Helpdesk', icon: CustomerServiceOutlined, module: 'helpdesk' as const },
+        { key: 'roomMeta', label: 'Room Meta', icon: AppstoreOutlined, module: 'meeting_rooms' as const },
+        { key: 'creditSystem', label: 'Credit System', icon: CreditCardOutlined },
+        { key: 'visitor', label: 'Visitor Management', icon: IdcardOutlined, module: 'visitors' as const }
+    ]
+    return allTabs.filter(tab => !tab.module || authStore.hasModule(tab.module))
+})
+
+watch(() => tabs.value.map(t => t.key), (keys) => {
+    if (!keys.includes(activeTab.value)) {
+        activeTab.value = keys[0] || 'location'
+    }
+}, { immediate: true })
+
+// Refresh modules when entering the page to ensure permissions are up-to-date
+onMounted(async () => {
+    await authStore.fetchModules()
+})
 
 // Whitelabeled active tab style using tenant's primary color
 const activeTabStyle = computed(() => {

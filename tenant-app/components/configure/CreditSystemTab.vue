@@ -24,7 +24,7 @@
         </a-card>
 
         <!-- Module Configuration -->
-        <a-card :loading="loadingModules" title="Module Configuration" v-if="creditSystemEnabled && canUpdate">
+        <a-card :loading="loadingModules" title="Module Configuration" v-if="creditSystemEnabled && canUpdate && hasMeetingRoomsModule">
             <p class="mb-4 text-gray-500">Configure payment modes for individual modules.</p>
             
             <a-table :dataSource="modules" :columns="moduleColumns" :pagination="false" rowKey="id">
@@ -49,10 +49,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useNuxtApp } from '#app'
 import { message } from 'ant-design-vue'
 import { useTenantService, type TenantConfig } from '../../composables/tenantService'
+import { useAuthStore } from '../../stores/auth'
 
 defineProps<{
     canCreate?: boolean
@@ -62,6 +63,8 @@ defineProps<{
 
 const { $api } = useNuxtApp()
 const { getCurrentTenantId, updateTenantConfig, getTenantConfig, updateModuleConfig } = useTenantService()
+const authStore = useAuthStore()
+const hasMeetingRoomsModule = computed(() => authStore.hasModule('meeting_rooms'))
 
 const loading = ref(false)
 const saving = ref(false)
