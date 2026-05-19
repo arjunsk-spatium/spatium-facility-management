@@ -154,6 +154,7 @@ interface ParentOption {
 
 const props = defineProps<{
     title: string
+    singularTitle?: string
     columns: Column[]
     data: any[]
     loading?: boolean
@@ -174,8 +175,10 @@ const emit = defineEmits<{
 
 // Computed
 const singularTitle = computed(() => {
+    if (props.singularTitle) return props.singularTitle
     const t = props.title
     if (t.endsWith('ies')) return t.slice(0, -3) + 'y'
+    if (t.endsWith('Types')) return t.slice(0, -1)
     if (t.endsWith('es')) return t.slice(0, -2)
     if (t.endsWith('s')) return t.slice(0, -1)
     return t

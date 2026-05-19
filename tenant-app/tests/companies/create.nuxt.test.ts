@@ -97,4 +97,29 @@ describe('Company Create Page', () => {
         // Check for logo upload field
         expect(wrapper.text()).toContain('Company Logo')
     })
+
+    it('should redirect to company list after successful creation', async () => {
+        const wrapper = await mountSuspended(CompanyCreatePage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        company: { loading: false }
+                    }
+                })]
+            }
+        })
+
+        const store = useCompanyStore()
+        store.createCompanyAction = vi.fn().mockResolvedValue({ id: '1', name: 'Test Co' })
+
+        // Emit submit event from CompanyForm
+        const formComponent = wrapper.findComponent({ name: 'CompanyForm' })
+        await formComponent.vm.$emit('submit', { name: 'Test Co' })
+
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(store.createCompanyAction).toHaveBeenCalledWith({ name: 'Test Co' })
+        expect(mockPush).toHaveBeenCalledWith('/companies')
+    })
 })
