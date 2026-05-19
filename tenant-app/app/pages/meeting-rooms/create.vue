@@ -19,6 +19,18 @@
                                 <a-select-option v-for="rt in roomTypes" :key="rt.id" :value="rt.id">
                                     {{ rt.name }}
                                 </a-select-option>
+                                <template #notFoundContent>
+                                    <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                        <span class="text-gray-500 dark:text-gray-400">No room types available</span>
+                                        <a-button v-if="canConfigure" type="primary" size="small"
+                                            @click="navigateTo('/configure?tab=roomMeta')">
+                                            <template #icon>
+                                                <PlusOutlined />
+                                            </template>
+                                            Add Room Type
+                                        </a-button>
+                                    </div>
+                                </template>
                             </a-select>
                         </a-form-item>
 
@@ -32,6 +44,18 @@
                                 <a-select-option v-for="fac in facilities" :key="fac.id" :value="fac.id">
                                     {{ fac.name }}
                                 </a-select-option>
+                                <template #notFoundContent>
+                                    <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                        <span class="text-gray-500 dark:text-gray-400">No facilities available</span>
+                                        <a-button v-if="canConfigure" type="primary" size="small"
+                                            @click="navigateTo('/facilities/create')">
+                                            <template #icon>
+                                                <PlusOutlined />
+                                            </template>
+                                            Add Facility
+                                        </a-button>
+                                    </div>
+                                </template>
                             </a-select>
                         </a-form-item>
 
@@ -59,6 +83,18 @@
                                 <a-select-option v-for="amenity in amenitiesList" :key="amenity.id" :value="amenity.id">
                                     {{ amenity.name }}
                                 </a-select-option>
+                                <template #notFoundContent>
+                                    <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                        <span class="text-gray-500 dark:text-gray-400">No amenities available</span>
+                                        <a-button v-if="canConfigure" type="primary" size="small"
+                                            @click="navigateTo('/configure?tab=roomMeta')">
+                                            <template #icon>
+                                                <PlusOutlined />
+                                            </template>
+                                            Add Amenity
+                                        </a-button>
+                                    </div>
+                                </template>
                             </a-select>
                         </a-form-item>
 
@@ -110,6 +146,7 @@ const authStore = useAuthStore()
 const { facilities } = storeToRefs(facilityStore)
 
 const canCreate = computed(() => authStore.hasPermission('meeting-rooms-list:create'))
+const canConfigure = computed(() => authStore.hasPermission('configure:create'))
 
 if (!canCreate.value) {
     navigateTo('/meeting-rooms');

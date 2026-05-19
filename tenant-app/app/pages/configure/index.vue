@@ -105,7 +105,8 @@ if (!canView.value) {
 const tenantStore = useTenantStore()
 const { isDark } = useTheme()
 const sidebarCollapsed = ref(false)
-const activeTab = ref('location')
+const route = useRoute()
+const activeTab = ref((route.query.tab as string) || 'location')
 
 const tabs = computed(() => {
     const allTabs = [
