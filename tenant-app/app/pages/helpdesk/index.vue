@@ -45,7 +45,20 @@
                                 :options="categoryOptions"
                                 :loading="loadingCategories"
                                 @change="handleCategoryChange"
-                            />
+                            >
+                                <template #notFoundContent>
+                                    <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                        <span class="text-gray-500 dark:text-gray-400">No categories available</span>
+                                        <a-button v-if="canConfigure" type="primary" size="small"
+                                            @click="navigateTo('/configure?tab=helpdesk')">
+                                            <template #icon>
+                                                <PlusOutlined />
+                                            </template>
+                                            Add Category
+                                        </a-button>
+                                    </div>
+                                </template>
+                            </a-select>
                         </a-form-item>
                     </a-col>
                     <a-col :span="12">
@@ -56,7 +69,20 @@
                                 :options="subCategoryOptions"
                                 :loading="loadingSubCategories"
                                 :disabled="!createForm.category"
-                            />
+                            >
+                                <template #notFoundContent>
+                                    <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                        <span class="text-gray-500 dark:text-gray-400">No subcategories available</span>
+                                        <a-button v-if="canConfigure" type="primary" size="small"
+                                            @click="navigateTo('/configure?tab=helpdesk')">
+                                            <template #icon>
+                                                <PlusOutlined />
+                                            </template>
+                                            Add Subcategory
+                                        </a-button>
+                                    </div>
+                                </template>
+                            </a-select>
                         </a-form-item>
                     </a-col>
                 </a-row>
@@ -95,7 +121,20 @@
                                 :options="facilityOptions"
                                 :loading="loadingFacilities"
                                 @change="handleFacilityChange"
-                            />
+                            >
+                                <template #notFoundContent>
+                                    <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                        <span class="text-gray-500 dark:text-gray-400">No facilities available</span>
+                                        <a-button v-if="canConfigure" type="primary" size="small"
+                                            @click="navigateTo('/facilities/create')">
+                                            <template #icon>
+                                                <PlusOutlined />
+                                            </template>
+                                            Add Facility
+                                        </a-button>
+                                    </div>
+                                </template>
+                            </a-select>
                         </a-form-item>
                     </a-col>
                 </a-row>
@@ -326,6 +365,7 @@ const canView = computed(() => authStore.hasPermission('helpdesk-tickets:view'))
 const canCreate = computed(() => authStore.hasPermission('helpdesk-tickets:create'))
 const canUpdate = computed(() => authStore.hasPermission('helpdesk-tickets:update'))
 const canAction = computed(() => authStore.hasPermission('helpdesk-tickets:action'))
+const canConfigure = computed(() => authStore.hasPermission('configure:create'))
 
 // Form state
 const showCreateModal = ref(false);
