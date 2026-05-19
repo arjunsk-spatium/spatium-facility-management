@@ -77,6 +77,9 @@ export const useCompanyStore = defineStore("company", {
             try {
                 const { createCompany } = useCompanyService();
                 const newCompany = await createCompany(data);
+                if (!newCompany.contacts) {
+                    newCompany.contacts = [];
+                }
                 this.companies.push(newCompany);
                 return newCompany;
             } catch (err) {

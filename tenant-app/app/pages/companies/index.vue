@@ -102,7 +102,7 @@
                             <div class="flex flex-col">
                                 <span
                                     class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Address</span>
-                                <span class="text-neutral-900 dark:text-neutral-200">{{ company.contacts[0]?.address }}</span>
+                                <span class="text-neutral-900 dark:text-neutral-200">{{ company.contacts?.[0]?.address }}</span>
                             </div>
                             <!-- Contact Details Section -->
                             <div class="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
@@ -111,10 +111,10 @@
                                     Person</span>
                                 <div
                                     class="flex flex-col gap-1 pl-2 border-l-2 border-primary-200 dark:border-primary-800">
-                                    <span class="font-medium">{{ company.contacts[0]?.contact_name }}</span>
-                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.contacts[0]?.email
+                                    <span class="font-medium">{{ company.contacts?.[0]?.contact_name }}</span>
+                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.contacts?.[0]?.email
                                         }}</span>
-                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.contacts[0]?.phone
+                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.contacts?.[0]?.phone
                                         }}</span>
                                 </div>
                             </div>
@@ -192,11 +192,11 @@ const downloadExcel = async () => {
         const data = companies.value.map(company => ({
             'Company Name': company.name,
             'Status': company.status,
-            'Contact Name': company.contacts[0]?.contact_name || '',
-            'Email': company.contacts[0]?.email || '',
-            'Address': company.contacts[0]?.address || '',
-            'Phone': company.contacts[0]?.phone || '',
-            'GSTIN': company.contacts[0]?.gstin || ''
+            'Contact Name': company.contacts?.[0]?.contact_name || '',
+            'Email': company.contacts?.[0]?.email || '',
+            'Address': company.contacts?.[0]?.address || '',
+            'Phone': company.contacts?.[0]?.phone || '',
+            'GSTIN': company.contacts?.[0]?.gstin || ''
         }))
 
         const worksheet = XLSX.utils.json_to_sheet(data)
@@ -234,17 +234,17 @@ const columns = [
     {
         title: 'Contact Name',
         key: 'contact_name',
-        customRender: ({ record }: { record: any }) => record.contacts[0]?.contact_name || '-'
+        customRender: ({ record }: { record: any }) => record.contacts?.[0]?.contact_name || '-'
     },
     {
         title: 'Email',
         key: 'email',
-        customRender: ({ record }: { record: any }) => record.contacts[0]?.email || '-'
+        customRender: ({ record }: { record: any }) => record.contacts?.[0]?.email || '-'
     },
     {
         title: 'Phone',
         key: 'phone',
-        customRender: ({ record }: { record: any }) => record.contacts[0]?.phone || '-'
+        customRender: ({ record }: { record: any }) => record.contacts?.[0]?.phone || '-'
     },
     {
         title: 'Action',
