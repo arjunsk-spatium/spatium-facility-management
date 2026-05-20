@@ -157,6 +157,18 @@
                         <a-select-option v-for="company in companies" :key="company.id" :value="company.id">
                             {{ company.name }}
                         </a-select-option>
+                        <template #notFoundContent>
+                            <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                <span class="text-gray-500 dark:text-gray-400">No companies available</span>
+                                <a-button v-if="canCreateCompany" type="primary" size="small"
+                                    @click="navigateTo('/companies/create')">
+                                    <template #icon>
+                                        <PlusOutlined />
+                                    </template>
+                                    Add Company
+                                </a-button>
+                            </div>
+                        </template>
                     </a-select>
                 </a-form-item>
 
@@ -356,6 +368,7 @@ const canView = computed(() => authStore.hasPermission('meeting-rooms-bookings:v
 const canCreate = computed(() => authStore.hasPermission('meeting-rooms-bookings:create'))
 const canAction = computed(() => authStore.hasPermission('meeting-rooms-bookings:action'))
 const canCreateRoom = computed(() => authStore.hasPermission('meeting-rooms-list:create'))
+const canCreateCompany = computed(() => authStore.hasPermission('companies-list:create'))
 
 if (!canView.value) {
     navigateTo('/meeting-rooms');
