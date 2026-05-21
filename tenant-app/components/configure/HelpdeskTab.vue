@@ -54,6 +54,7 @@
                 <div class="py-4">
                     <ConfigTable 
                         title="Roles" 
+                        singular-title="Role"
                         :columns="roleColumns" 
                         :data="roles" 
                         :loading="loadingRoles"
