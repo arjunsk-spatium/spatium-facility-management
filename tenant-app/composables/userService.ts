@@ -96,7 +96,8 @@ export const useUserService = () => {
                     'Meeting Rooms': 'meeting_rooms',
                     'User Management': 'users',
                     'Configure': 'configure',
-                    'Front Desk': 'frontdesk'
+                    'Front Desk': 'frontdesk',
+                    'Banners': 'banners'
                 }
 
                 const userKeys: string[] = []

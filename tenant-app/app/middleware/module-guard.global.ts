@@ -12,6 +12,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         '/facilities': 'facilities',
         '/users': 'users',
         '/meeting-rooms': 'meeting_rooms',
+        '/banners': 'banners',
         '/configure': 'configure',
         '/spoc': 'spoc_dashboard',
         '/spoc/config': 'spoc_config'
@@ -22,6 +23,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
     if (restrictedModuleKey) {
         const requiredModule = moduleMap[restrictedModuleKey];
+        
+        // NOTE: 'banners' is temporarily allowed for all authenticated users
+        // until backend permission integration is complete
+        if (requiredModule === 'banners') {
+            return;
+        }
         
         // Ensure modules are loaded
         if (authStore.modules.length === 0) {
