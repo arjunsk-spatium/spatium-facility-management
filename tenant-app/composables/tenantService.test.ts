@@ -32,13 +32,13 @@ describe("Tenant Service", () => {
     it("should retrieve keys for tenant-a", async () => {
         const tenant = await getTenantById("tenant-a");
         expect(tenant).toBeDefined();
-        expect(tenant?.name).toBe("Spatium Hub");
+        expect(tenant?.name).toBe("Nexspace Hub");
     });
 
     it("should retrieve keys for tenant-b", async () => {
         const tenant = await getTenantById("tenant-b");
         expect(tenant).toBeDefined();
-        expect(tenant?.name).toBe("Spatium Hub");
+        expect(tenant?.name).toBe("Nexspace Hub");
     });
 
     it("should return null for unknown tenant", async () => {

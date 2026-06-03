@@ -45,13 +45,13 @@ describe('SidebarMenu Component', () => {
                     createSpy: vi.fn,
                     initialState: {
                         auth: { modules: ['dashboard'] },
-                        tenant: { tenant: { name: 'Spatium Hub' } }
+                        tenant: { tenant: { name: 'Nexspace Hub' } }
                     }
                 })]
             }
         })
         
-        expect(wrapper.text()).toContain('Spatium Hub')
+        expect(wrapper.text()).toContain('Nexspace Hub')
     })
 
     it('should handle collapsed state', async () => {

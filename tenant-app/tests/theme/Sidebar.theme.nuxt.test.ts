@@ -153,7 +153,7 @@ describe('Sidebar Theme Adaptation', () => {
               tenant: {
                 tenant: {
                   id: 'test',
-                  name: 'Spatium Hub',
+                  name: 'Nexspace Hub',
                   logoUrl: '',
                   colors: { primary: '#3378ff', secondary: '#64748b' }
                 }

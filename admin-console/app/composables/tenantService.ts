@@ -35,7 +35,7 @@ const mockTenants: Tenant[] = [
     {
         id: '1',
         name: 'Acme Corporation',
-        domain: 'acme.spatium.app',
+        domain: 'acme.nexspace.app',
         adminEmail: 'admin@acme.com',
         planId: 'pro',
         planName: 'Pro Plan',

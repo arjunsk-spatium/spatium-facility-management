@@ -133,7 +133,7 @@ describe('Login Page Theme Adaptation', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Spatium Hub')
+    expect(wrapper.text()).toContain('Nexspace Hub')
   })
 
   it('should have email and password inputs with proper labels', async () => {

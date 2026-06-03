@@ -1,4 +1,4 @@
-const DB_NAME = 'spatium-facility-db';
+const DB_NAME = 'nexspace-facility-db';
 const STORE_NAME = 'settings';
 const DB_VERSION = 1;
 

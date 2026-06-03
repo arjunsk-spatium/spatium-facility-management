@@ -58,7 +58,7 @@ describe('Login Page', () => {
         // override mock
         vi.mocked(useTenantStore).mockReturnValueOnce({
             tenant: null,
-            tenantName: 'Spatium Hub',
+            tenantName: 'Nexspace Hub',
             darkLogo: '',
             tenantLogo: '',
             primaryColor: '#3378ff',
@@ -78,7 +78,7 @@ describe('Login Page', () => {
             }
         })
         
-        // Should show default Spatium Hub text
-        expect(wraper.text()).toContain('Spatium Hub')
+        // Should show default Nexspace Hub text
+        expect(wraper.text()).toContain('Nexspace Hub')
     })
 })

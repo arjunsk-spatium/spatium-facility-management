@@ -86,8 +86,8 @@ vi.mock('../../composables/dashboardService', () => ({
                     { company_id: '1', name: 'Outcomes', visitor_count: 6 }
                 ],
                 top_facilities: {
-                    highest_visitors: { facility_id: '1', name: 'Spatium Iconic', count: 6 },
-                    highest_tickets: { facility_id: '1', name: 'Spatium Iconic', count: 7 }
+                    highest_visitors: { facility_id: '1', name: 'Nexspace Iconic', count: 6 },
+                    highest_tickets: { facility_id: '1', name: 'Nexspace Iconic', count: 7 }
                 }
             },
             users: {

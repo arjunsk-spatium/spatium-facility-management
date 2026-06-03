@@ -1,6 +1,6 @@
-# Spatium Facility Management — Agent Guide
+# Nexspace Facility Management — Agent Guide
 
-This document provides essential context for AI coding agents working on the Spatium Facility Management frontend monorepo. The reader is assumed to know nothing about the project.
+This document provides essential context for AI coding agents working on the Nexspace Facility Management frontend monorepo. The reader is assumed to know nothing about the project.
 
 ---
 

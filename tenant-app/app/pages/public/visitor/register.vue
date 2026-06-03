@@ -441,7 +441,7 @@
                         </p>
 
                         <p class="text-sm">
-                            <a href="https://nexspace.spatiumoffices.com/privacy-policy" target="_blank"
+                            <a href="https://nexspace.nexspaceoffices.com/privacy-policy" target="_blank"
                                 class="text-blue-600 hover:underline font-medium">
                                 Privacy Policy
                             </a>

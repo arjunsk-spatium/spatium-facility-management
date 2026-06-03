@@ -28,7 +28,7 @@ export const useTenantService = () => {
         // Replace with real API call when tenant API is available
         return {
             id,
-            name: "Spatium Hub",
+            name: "Nexspace Hub",
             logoUrl: "",
             faviconUrl: "/favicon.ico",
             colors: {

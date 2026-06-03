@@ -41,7 +41,7 @@ describe('Admin Login Page', () => {
     it('should render default branding if store is empty', async () => {
         vi.mocked(useTenantStore).mockReturnValueOnce({
             tenant: null,
-            tenantName: 'Spatium Hub',
+            tenantName: 'Nexspace Hub',
             tenantLogo: '',
             darkLogo: '',
             primaryColor: '#3378ff',
@@ -50,8 +50,8 @@ describe('Admin Login Page', () => {
 
         const wraper = await mountSuspended(Login)
         
-        // Should show default Spatium Hub text
-        expect(wraper.text()).toContain('Spatium Hub')
+        // Should show default Nexspace Hub text
+        expect(wraper.text()).toContain('Nexspace Hub')
         expect(wraper.text()).toContain('Admin Access')
     })
 })

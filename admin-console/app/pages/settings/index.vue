@@ -135,8 +135,8 @@ import {
 } from '@ant-design/icons-vue'
 
 const settings = ref({
-    platformName: 'Spatium Facility Management',
-    supportEmail: 'support@spatium.app',
+    platformName: 'Nexspace Facility Management',
+    supportEmail: 'support@nexspace.app',
     trialDays: 14,
     defaultPlan: 'starter'
 })
