@@ -294,7 +294,12 @@ const isModuleFullyAssigned = (user: User, mod: SystemModule): boolean => {
     const allFeatPerms = mod.submodules.flatMap(sm => (sm.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id)))
     
     const totalCount = allPerms.length + allFeatPerms.length
-    return totalCount > 0 && allPerms.every(p => userPerms.has(p)) && allFeatPerms.every(p => userFeats.has(p))
+    if (totalCount === 0) {
+        // Module has no permissions at all - check if all submodule IDs are assigned
+        return mod.submodules.every((sm: any) => userPerms.has(sm.id))
+    }
+    
+    return allPerms.every(p => userPerms.has(p)) && allFeatPerms.every(p => userFeats.has(p))
 }
 
 const isModulePartiallyAssigned = (user: User, mod: SystemModule): boolean => {
@@ -305,9 +310,14 @@ const isModulePartiallyAssigned = (user: User, mod: SystemModule): boolean => {
     const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
     const allFeatPerms = mod.submodules.flatMap(sm => (sm.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id)))
     
-    const assignedCount = allPerms.filter(p => userPerms.has(p)).length + allFeatPerms.filter(p => userFeats.has(p)).length
     const totalCount = allPerms.length + allFeatPerms.length
+    if (totalCount === 0) {
+        // Module has no permissions at all - check if some submodule IDs are assigned
+        const assignedCount = mod.submodules.filter((sm: any) => userPerms.has(sm.id)).length
+        return assignedCount > 0 && assignedCount < mod.submodules.length
+    }
     
+    const assignedCount = allPerms.filter(p => userPerms.has(p)).length + allFeatPerms.filter(p => userFeats.has(p)).length
     return assignedCount > 0 && assignedCount < totalCount
 }
 
@@ -320,7 +330,12 @@ const isSubmoduleFullyAssigned = (user: User, submod: any): boolean => {
     const allFeatPerms = (submod.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id))
     
     const totalCount = allPerms.length + allFeatPerms.length
-    return totalCount > 0 && allPerms.every((p: string) => userPerms.has(p)) && allFeatPerms.every((p: string) => userFeats.has(p))
+    if (totalCount === 0) {
+        // Submodule has no permissions or features - check if submodule ID itself is assigned
+        return userPerms.has(submod.id)
+    }
+    
+    return allPerms.every((p: string) => userPerms.has(p)) && allFeatPerms.every((p: string) => userFeats.has(p))
 }
 
 const isSubmodulePartiallyAssigned = (user: User, submod: any): boolean => {
@@ -331,8 +346,13 @@ const isSubmodulePartiallyAssigned = (user: User, submod: any): boolean => {
     const allPerms = submod.permissions.map((p: any) => p.id)
     const allFeatPerms = (submod.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id))
     
-    const assignedCount = allPerms.filter((p: string) => userPerms.has(p)).length + allFeatPerms.filter((p: string) => userFeats.has(p)).length
     const totalCount = allPerms.length + allFeatPerms.length
+    if (totalCount === 0) {
+        // Submodule has no permissions or features - cannot be partially assigned
+        return false
+    }
+    
+    const assignedCount = allPerms.filter((p: string) => userPerms.has(p)).length + allFeatPerms.filter((p: string) => userFeats.has(p)).length
     return assignedCount > 0 && assignedCount < totalCount
 }
 
@@ -354,6 +374,17 @@ const toggleModuleAll = (user: User, mod: SystemModule) => {
     const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
     const allFeatPerms = mod.submodules.flatMap(sm => (sm.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id)))
     
+    if (allPerms.length === 0 && allFeatPerms.length === 0) {
+        // Module has no permissions at all - toggle all submodule IDs
+        const allAssigned = mod.submodules.every((sm: any) => userPerms.has(sm.id))
+        if (allAssigned) {
+            mod.submodules.forEach((sm: any) => userPerms.delete(sm.id))
+        } else {
+            mod.submodules.forEach((sm: any) => userPerms.add(sm.id))
+        }
+        return
+    }
+    
     const allAssigned = allPerms.every(p => userPerms.has(p)) && allFeatPerms.every(p => userFeats.has(p))
     
     if (allAssigned) {
@@ -372,6 +403,16 @@ const toggleSubmoduleAll = (user: User, submod: any, mod: SystemModule) => {
     
     const allPerms: string[] = submod.permissions.map((p: any) => p.id)
     const allFeatPerms: string[] = (submod.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id))
+    
+    if (allPerms.length === 0 && allFeatPerms.length === 0) {
+        // Submodule has no permissions or features - toggle submodule ID itself
+        if (userPerms.has(submod.id)) {
+            userPerms.delete(submod.id)
+        } else {
+            userPerms.add(submod.id)
+        }
+        return
+    }
     
     const allAssigned = allPerms.every((p: string) => userPerms.has(p)) && allFeatPerms.every((p: string) => userFeats.has(p))
     

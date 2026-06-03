@@ -14,6 +14,7 @@ describe('useModuleRegistry', () => {
     expect(keys).toContain('dashboard')
     expect(keys).toContain('visitors')
     expect(keys).toContain('frontdesk')
+    expect(keys).toContain('banners')
   })
 
   it('should have correct structure for module with children', () => {

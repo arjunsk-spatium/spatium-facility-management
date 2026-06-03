@@ -146,10 +146,9 @@ const userModuleKeys = computed(() => authStore.modules);
 const currentLogo = computed(() => isDark.value ? tenantStore.darkLogo : tenantStore.tenantLogo);
 
 // Filter modules based on user's access
-// NOTE: 'banners' is temporarily always visible until backend permission integration is complete
 const filteredModules = computed(() => {
     return allModules.value.map(m => {
-        if (m.key !== 'banners' && !userModuleKeys.value.includes(m.key)) return null;
+        if (!userModuleKeys.value.includes(m.key)) return null;
 
         const mod = { ...m };
         if (mod.children) {

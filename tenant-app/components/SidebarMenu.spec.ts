@@ -49,7 +49,9 @@ vi.mock('@ant-design/icons-vue', () => {
         TeamOutlined: FakeIcon,
         CalendarOutlined: FakeIcon,
         AppstoreOutlined: FakeIcon,
-        DashboardOutlined: FakeIcon
+        DashboardOutlined: FakeIcon,
+        PictureOutlined: FakeIcon,
+        GlobalOutlined: FakeIcon
     }
 })
 
