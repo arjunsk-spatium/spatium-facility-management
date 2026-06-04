@@ -63,6 +63,7 @@ export const useTenantService = () => {
             const response = await $api<any>("/api/portal/tenants/public/domain/", {
                 method: "POST",
                 body: { domain },
+                skipToken: true,
             });
 
             if (response && response.success && response.data) {

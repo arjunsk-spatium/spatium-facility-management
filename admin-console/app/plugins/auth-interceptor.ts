@@ -17,6 +17,7 @@ const publicUrls = [
     '/api/auth/otp/request/',
     '/api/auth/login/',
     '/api/auth/token/refresh/',
+    '/api/portal/tenants/public/domain/',
 ];
 
 const isPublicUrl = (url: string) => {
