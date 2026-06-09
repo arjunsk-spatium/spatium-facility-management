@@ -208,7 +208,8 @@ export const useAuthStore = defineStore("auth", {
                     'spoc-visitors-list',
                     'spoc-visitors-invite',
                     'spoc_employees',
-                    'spoc_config'
+                    'spoc_config',
+                    'feed_hub'
                 ];
                 this.permissions = [];
                 return;

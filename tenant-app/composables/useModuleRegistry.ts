@@ -63,6 +63,14 @@ const registry: Module[] = [
     },
     { key: 'users', label: 'User Management', icon: 'TeamOutlined', route: '/users' },
     { key: 'banners', label: 'Banners', icon: 'PictureOutlined', route: '/banners' },
+    {
+        key: 'feed',
+        label: 'Feed',
+        icon: 'NotificationOutlined',
+        children: [
+            { key: 'feed-list', label: 'Feed Posts', route: '/feed' }
+        ]
+    },
     { key: 'configure', label: 'Configure', icon: 'SettingOutlined', route: '/configure' },
     {
         key: 'frontdesk',
@@ -85,7 +93,8 @@ const registry: Module[] = [
         ]
     },
     { key: 'spoc_employees', label: 'Employees', icon: 'TeamOutlined', route: '/spoc/employees' },
-    { key: 'spoc_config', label: 'Configuration', icon: 'SettingOutlined', route: '/spoc/config' }
+    { key: 'spoc_config', label: 'Configuration', icon: 'SettingOutlined', route: '/spoc/config' },
+    { key: 'feed_hub', label: 'Feed Hub', icon: 'NotificationOutlined', route: '/feed-hub' }
 ]
 
 export const useModuleRegistry = () => {

@@ -88,7 +88,8 @@ import {
     AppstoreOutlined,
     DashboardOutlined,
     PictureOutlined,
-    GlobalOutlined
+    GlobalOutlined,
+    NotificationOutlined
 } from '@ant-design/icons-vue';
 
 const props = defineProps<{
@@ -120,7 +121,8 @@ const iconMap: Record<string, any> = {
     'AppstoreOutlined': AppstoreOutlined,
     'DashboardOutlined': DashboardOutlined,
     'PictureOutlined': PictureOutlined,
-    'GlobalOutlined': GlobalOutlined
+    'GlobalOutlined': GlobalOutlined,
+    'NotificationOutlined': NotificationOutlined
 };
 
 const getIconComponent = (iconName?: string) => {
@@ -148,6 +150,14 @@ const currentLogo = computed(() => isDark.value ? tenantStore.darkLogo : tenantS
 // Filter modules based on user's access
 const filteredModules = computed(() => {
     return allModules.value.map(m => {
+        // Always show feed modules for all authenticated users (temporary testing)
+        if (m.key === 'feed' || m.key === 'feed_hub') {
+            const mod = { ...m };
+            if (mod.children) {
+                mod.children = mod.children.filter(c => c.key === 'feed-list' || c.key === 'feed_hub');
+            }
+            return mod;
+        }
         if (!userModuleKeys.value.includes(m.key)) return null;
 
         const mod = { ...m };
@@ -260,7 +270,17 @@ onMounted(async () => {
     try {
         // Fetch modules configuration from "API"
         const modulesFromApi = await getTenantModules();
-        allModules.value = hydrateModules(modulesFromApi);
+        let hydrated = hydrateModules(modulesFromApi);
+
+        // Inject feed modules from registry if not present in API response
+        // (temporary until backend adds them to tenant modules)
+        const feedModules = registryModules.filter(r => r.key === 'feed' || r.key === 'feed_hub');
+        for (const feedMod of feedModules) {
+            if (!hydrated.find(m => m.key === feedMod.key)) {
+                hydrated.push(feedMod);
+            }
+        }
+        allModules.value = hydrated;
 
         // Fetch user's module access if not already loaded
         if (authStore.modules.length === 0) {
