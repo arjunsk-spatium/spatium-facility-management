@@ -26,10 +26,11 @@ export interface FeedPost {
     title: string
     description: string
     image: string | null
+    link: string | null
     category: FeedCategory
     created_by_profile: CreatorProfile
     creator_type: 'superadmin' | 'tenant_admin' | 'client'
-    scope_type: string
+    scope_type?: string
     allow_likes: boolean
     is_system_generated: boolean
     is_active: boolean
@@ -72,6 +73,7 @@ export interface CreateAdminPostPayload {
     company_ids?: string[]
     facility_ids?: string[]
     allow_likes?: boolean
+    link?: string
     published_at?: string
     event?: {
         event_date: string
@@ -87,6 +89,7 @@ export interface CreateClientPostPayload {
     title: string
     description: string
     allow_likes?: boolean
+    link?: string
     image?: File | null
 }
 
@@ -210,6 +213,7 @@ export const useFeedService = () => {
                 payload.facility_ids.forEach(id => formData.append('facility_ids', id))
             }
             if (payload.allow_likes !== undefined) formData.append('allow_likes', String(payload.allow_likes))
+            if (payload.link) formData.append('link', payload.link)
             if (payload.published_at) formData.append('published_at', payload.published_at)
             if (payload.event) formData.append('event', JSON.stringify(payload.event))
             formData.append('image', payload.image)
@@ -230,6 +234,7 @@ export const useFeedService = () => {
             if (payload.company_ids) body.company_ids = payload.company_ids
             if (payload.facility_ids) body.facility_ids = payload.facility_ids
             if (payload.allow_likes !== undefined) body.allow_likes = payload.allow_likes
+            if (payload.link) body.link = payload.link
             if (payload.published_at) body.published_at = payload.published_at
             if (payload.event) body.event = payload.event
 
@@ -299,6 +304,7 @@ export const useFeedService = () => {
         formData.append('title', payload.title)
         formData.append('description', payload.description)
         if (payload.allow_likes !== undefined) formData.append('allow_likes', String(payload.allow_likes))
+        if (payload.link) formData.append('link', payload.link)
         if (payload.image instanceof File) formData.append('image', payload.image)
 
         const response = await $api<ApiResponse<FeedPost>>(

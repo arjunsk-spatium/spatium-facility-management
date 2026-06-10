@@ -1,123 +1,161 @@
 <template>
-    <a-form layout="vertical" :model="formState" @finish="handleSubmit">
-        <a-card :title="isEditing ? 'Edit Post' : 'Create Post'" :loading="loading">
-            <a-form-item label="Category" name="category_id"
-                :rules="[{ required: true, message: 'Please select a category' }]">
-                <a-select v-model:value="formState.category_id" placeholder="Select category" :loading="categoriesLoading">
-                    <a-select-option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                        {{ cat.name }}
-                    </a-select-option>
-                </a-select>
+    <div class="max-w-2xl mx-auto">
+        <!-- Category Chips -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+                Choose a category
+            </label>
+            <div class="flex flex-wrap gap-2">
+                <button v-for="cat in categories" :key="cat.id" type="button"
+                    class="category-chip"
+                    :class="{
+                        'category-chip--active': formState.category_id === cat.id,
+                        [`category-chip--${cat.slug}`]: true
+                    }"
+                    @click="formState.category_id = cat.id">
+                    {{ cat.name }}
+                </button>
+            </div>
+        </div>
+
+        <a-form layout="vertical" :model="formState" @finish="handleSubmit">
+            <!-- Title -->
+            <a-form-item name="title" :rules="[{ required: true, message: 'Give your post a title' }]">
+                <a-input v-model:value="formState.title" size="large"
+                    placeholder="What's this post about?" class="font-medium" />
             </a-form-item>
 
-            <a-form-item label="Title" name="title"
-                :rules="[{ required: true, message: 'Please enter a title' }]">
-                <a-input v-model:value="formState.title" placeholder="Enter post title" />
+            <!-- Description -->
+            <a-form-item name="description" :rules="[{ required: true, message: 'Write something...' }]">
+                <a-textarea v-model:value="formState.description" :rows="4"
+                    placeholder="Share the details..." class="text-base" />
             </a-form-item>
 
-            <a-form-item label="Description" name="description"
-                :rules="[{ required: true, message: 'Please enter a description' }]">
-                <a-textarea v-model:value="formState.description" rows="4" placeholder="Enter post description" />
+            <!-- Link -->
+            <a-form-item name="link">
+                <a-input v-model:value="formState.link" size="middle"
+                    placeholder="Add a link (optional)">
+                    <template #prefix>
+                        <LinkOutlined class="text-neutral-400" />
+                    </template>
+                </a-input>
             </a-form-item>
 
-            <a-form-item label="Scope" name="scope_type"
-                :rules="[{ required: true, message: 'Please select a scope' }]">
-                <a-radio-group v-model:value="formState.scope_type">
-                    <a-radio value="all_tenants">All Tenants</a-radio>
-                    <a-radio value="selected_tenants">Selected Tenants</a-radio>
-                </a-radio-group>
-            </a-form-item>
-
-            <a-form-item v-if="formState.scope_type === 'selected_tenants'" label="Select Tenants" name="tenant_ids"
-                :rules="[{ required: formState.scope_type === 'selected_tenants', message: 'Please select at least one tenant' }]">
-                <a-select v-model:value="formState.tenant_ids" mode="multiple" placeholder="Select tenants"
-                    :loading="tenantsLoading" show-search option-filter-prop="label">
-                    <a-select-option v-for="tenant in tenants" :key="tenant.id" :value="tenant.id"
-                        :label="tenant.name">
-                        {{ tenant.name }}
-                    </a-select-option>
-                </a-select>
-            </a-form-item>
-
-            <a-form-item label="Post Image">
-                <a-upload :before-upload="beforeUpload" :show-upload-list="false" accept="image/*">
-                    <a-button>
-                        <template #icon>
-                            <UploadOutlined />
-                        </template>
-                        {{ imagePreview ? 'Change Image' : 'Upload Image' }}
-                    </a-button>
-                </a-upload>
-                <div v-if="imagePreview" class="mt-3">
-                    <img :src="imagePreview" alt="Preview" class="max-h-48 rounded-lg border" />
-                    <a-button type="link" danger size="small" @click="clearImage" class="mt-1">
-                        Remove Image
-                    </a-button>
+            <!-- Image Upload -->
+            <div class="mb-6">
+                <div v-if="!imagePreview"
+                    class="upload-zone"
+                    :class="{ 'upload-zone--dragover': isDragOver }"
+                    @dragenter.prevent="isDragOver = true"
+                    @dragleave.prevent="isDragOver = false"
+                    @dragover.prevent
+                    @drop.prevent="handleDrop">
+                    <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileChange">
+                    <div class="flex flex-col items-center gap-2 py-8 cursor-pointer" @click="fileInput?.click()">
+                        <PictureOutlined class="text-3xl text-neutral-400" />
+                        <span class="text-sm text-neutral-500">Click or drag an image here</span>
+                        <span class="text-xs text-neutral-400">Optional</span>
+                    </div>
                 </div>
-            </a-form-item>
+                <div v-else class="relative rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-700">
+                    <img :src="imagePreview" alt="Preview" class="w-full max-h-80 object-cover" />
+                    <button type="button"
+                        class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors"
+                        @click="clearImage">
+                        <CloseOutlined class="text-sm" />
+                    </button>
+                </div>
+            </div>
 
-            <a-form-item>
-                <a-checkbox v-model:checked="formState.is_event">This is an event</a-checkbox>
-            </a-form-item>
+            <!-- Scope (Tenant Selection) -->
+            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 mb-6">
+                <div class="flex items-center gap-2 mb-3">
+                    <GlobalOutlined class="text-neutral-500" />
+                    <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Target Audience</span>
+                </div>
+                <a-form-item class="mb-3">
+                    <a-radio-group v-model:value="formState.scope_type">
+                        <a-radio value="all_tenants">All Tenants</a-radio>
+                        <a-radio value="selected_tenants">Selected Tenants</a-radio>
+                    </a-radio-group>
+                </a-form-item>
+                <a-form-item v-if="formState.scope_type === 'selected_tenants'" class="mb-0">
+                    <a-select v-model:value="formState.tenant_ids" mode="multiple"
+                        placeholder="Select tenants" :loading="tenantsLoading"
+                        show-search option-filter-prop="label" size="middle">
+                        <a-select-option v-for="tenant in tenants" :key="tenant.id" :value="tenant.id"
+                            :label="tenant.name">
+                            {{ tenant.name }}
+                        </a-select-option>
+                    </a-select>
+                </a-form-item>
+            </div>
 
-            <template v-if="formState.is_event">
-                <a-row :gutter="16">
-                    <a-col :span="12">
-                        <a-form-item label="Event Date" name="event_date"
-                            :rules="[{ required: formState.is_event, message: 'Please select event date' }]">
+            <!-- Event Toggle -->
+            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden mb-6">
+                <button type="button"
+                    class="w-full flex items-center justify-between p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                    @click="formState.is_event = !formState.is_event">
+                    <div class="flex items-center gap-2">
+                        <CalendarOutlined class="text-neutral-500" />
+                        <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">This is an event</span>
+                    </div>
+                    <a-switch :checked="formState.is_event" size="small" />
+                </button>
+
+                <div v-show="formState.is_event"
+                    class="px-4 pb-4 border-t border-neutral-100 dark:border-neutral-700">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+                        <a-form-item class="mb-0" label="Event Date">
                             <a-date-picker v-model:value="eventDateValue" class="w-full" format="YYYY-MM-DD" />
                         </a-form-item>
-                    </a-col>
-                    <a-col :span="12">
-                        <a-form-item label="Venue" name="venue"
-                            :rules="[{ required: formState.is_event, message: 'Please enter venue' }]">
-                            <a-input v-model:value="formState.event.venue" placeholder="Event venue" />
+                        <a-form-item class="mb-0" label="Venue">
+                            <a-input v-model:value="formState.event.venue" placeholder="Where is it happening?" />
                         </a-form-item>
-                    </a-col>
-                </a-row>
-                <a-row :gutter="16">
-                    <a-col :span="12">
-                        <a-form-item label="Start Time" name="start_time"
-                            :rules="[{ required: formState.is_event, message: 'Please select start time' }]">
-                            <a-time-picker v-model:value="startTimeValue" class="w-full" format="HH:mm:ss" />
+                        <a-form-item class="mb-0" label="Start Time">
+                            <a-time-picker v-model:value="startTimeValue" class="w-full" format="HH:mm" />
                         </a-form-item>
-                    </a-col>
-                    <a-col :span="12">
-                        <a-form-item label="End Time" name="end_time"
-                            :rules="[{ required: formState.is_event, message: 'Please select end time' }]">
-                            <a-time-picker v-model:value="endTimeValue" class="w-full" format="HH:mm:ss" />
+                        <a-form-item class="mb-0" label="End Time">
+                            <a-time-picker v-model:value="endTimeValue" class="w-full" format="HH:mm" />
                         </a-form-item>
-                    </a-col>
-                </a-row>
-            </template>
+                    </div>
+                </div>
+            </div>
 
-            <a-row :gutter="16">
-                <a-col :span="12">
-                    <a-form-item>
-                        <a-checkbox v-model:checked="formState.allow_likes">Allow Likes</a-checkbox>
-                    </a-form-item>
-                </a-col>
-                <a-col :span="12">
-                    <a-form-item label="Published At">
-                        <a-date-picker v-model:value="publishedAtValue" class="w-full" show-time
-                            format="YYYY-MM-DD HH:mm:ss" placeholder="Optional - defaults to now" />
-                    </a-form-item>
-                </a-col>
-            </a-row>
+            <!-- Allow Likes + Published At -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <HeartOutlined class="text-neutral-500" />
+                    <span class="text-sm text-neutral-700 dark:text-neutral-300">Allow likes</span>
+                    <a-switch v-model:checked="formState.allow_likes" size="small" />
+                </div>
+                <a-form-item class="mb-0" label="Published At (Optional)">
+                    <a-date-picker v-model:value="publishedAtValue" class="w-full" show-time
+                        format="YYYY-MM-DD HH:mm" placeholder="Defaults to now" />
+                </a-form-item>
+            </div>
 
-            <div class="flex justify-end gap-3 pt-4 border-t">
-                <a-button @click="handleCancel">Cancel</a-button>
-                <a-button type="primary" html-type="submit" :loading="submitting">
+            <!-- Actions -->
+            <div class="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                <a-button size="large" @click="handleCancel">Cancel</a-button>
+                <a-button type="primary" size="large" html-type="submit" :loading="submitting">
                     {{ submitText }}
                 </a-button>
             </div>
-        </a-card>
-    </a-form>
+        </a-form>
+    </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { UploadOutlined } from '@ant-design/icons-vue'
+import {
+    PictureOutlined,
+    CloseOutlined,
+    GlobalOutlined,
+    CalendarOutlined,
+    HeartOutlined,
+    LinkOutlined,
+} from '@ant-design/icons-vue'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useFeedService, type FeedCategory } from '../../composables/feedService'
 
@@ -141,6 +179,8 @@ const categoriesLoading = ref(false)
 const tenantsLoading = ref(false)
 const imagePreview = ref<string | null>(null)
 const imageFile = ref<File | null>(null)
+const isDragOver = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const eventDateValue = ref<Dayjs | null>(null)
 const startTimeValue = ref<Dayjs | null>(null)
@@ -161,6 +201,7 @@ const formState = reactive({
         end_time: '',
         venue: '',
     },
+    link: '',
     published_at: '',
 })
 
@@ -170,6 +211,10 @@ const fetchCategories = async () => {
     categoriesLoading.value = true
     try {
         categories.value = await getCategories()
+        const general = categories.value.find(c => c.slug === 'general')
+        if (general && !formState.category_id) {
+            formState.category_id = general.id
+        }
     } catch (err) {
         console.error('Failed to fetch categories:', err)
     } finally {
@@ -188,19 +233,33 @@ const fetchTenants = async () => {
     }
 }
 
-const beforeUpload = (file: File) => {
+const handleFileChange = (e: Event) => {
+    const target = e.target as HTMLInputElement
+    if (target.files?.[0]) {
+        setImage(target.files[0])
+    }
+}
+
+const handleDrop = (e: DragEvent) => {
+    isDragOver.value = false
+    if (e.dataTransfer?.files[0]) {
+        setImage(e.dataTransfer.files[0])
+    }
+}
+
+const setImage = (file: File) => {
     imageFile.value = file
     const reader = new FileReader()
     reader.onload = (e) => {
         imagePreview.value = e.target?.result as string
     }
     reader.readAsDataURL(file)
-    return false
 }
 
 const clearImage = () => {
     imageFile.value = null
     imagePreview.value = null
+    if (fileInput.value) fileInput.value.value = ''
 }
 
 const handleSubmit = () => {
@@ -210,6 +269,10 @@ const handleSubmit = () => {
         description: formState.description,
         scope_type: formState.scope_type,
         allow_likes: formState.allow_likes,
+    }
+
+    if (formState.link) {
+        payload.link = formState.link
     }
 
     if (formState.scope_type === 'selected_tenants' && formState.tenant_ids.length > 0) {
@@ -245,3 +308,50 @@ onMounted(() => {
     fetchTenants()
 })
 </script>
+
+<style scoped>
+@reference "../../assets/styles/main.css";
+
+.category-chip {
+    @apply px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200;
+    @apply bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700;
+    @apply text-neutral-600 dark:text-neutral-400;
+    @apply hover:border-neutral-400 hover:dark:border-neutral-500;
+}
+
+.category-chip--active {
+    @apply ring-2 ring-offset-1 dark:ring-offset-neutral-900;
+}
+
+.category-chip--announcement.category-chip--active {
+    @apply bg-blue-50 dark:bg-blue-900/30 border-blue-400 text-blue-700 dark:text-blue-300 ring-blue-300;
+}
+
+.category-chip--appreciation.category-chip--active {
+    @apply bg-amber-50 dark:bg-amber-900/30 border-amber-400 text-amber-700 dark:text-amber-300 ring-amber-300;
+}
+
+.category-chip--birthday.category-chip--active {
+    @apply bg-pink-50 dark:bg-pink-900/30 border-pink-400 text-pink-700 dark:text-pink-300 ring-pink-300;
+}
+
+.category-chip--event.category-chip--active {
+    @apply bg-orange-50 dark:bg-orange-900/30 border-orange-400 text-orange-700 dark:text-orange-300 ring-orange-300;
+}
+
+.category-chip--general.category-chip--active {
+    @apply bg-neutral-100 dark:bg-neutral-700 border-neutral-500 text-neutral-800 dark:text-neutral-200 ring-neutral-400;
+}
+
+.category-chip--work_anniversary.category-chip--active {
+    @apply bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400 text-emerald-700 dark:text-emerald-300 ring-emerald-300;
+}
+
+.upload-zone {
+    @apply rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 transition-colors;
+}
+
+.upload-zone--dragover {
+    @apply border-primary-400 bg-primary-50 dark:bg-primary-900/20;
+}
+</style>

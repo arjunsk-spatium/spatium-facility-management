@@ -24,6 +24,12 @@
                 <p class="text-neutral-700 dark:text-neutral-300 line-clamp-3">{{ post.description }}</p>
             </NuxtLink>
 
+            <a v-if="post.link" :href="post.link" target="_blank" rel="noopener"
+                class="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline break-all">
+                <LinkOutlined />
+                <span class="truncate">{{ post.link }}</span>
+            </a>
+
             <!-- Image -->
             <img v-if="post.image" :src="post.image" alt="Post image" class="max-h-80 rounded-lg object-cover" />
 
@@ -83,6 +89,7 @@ import {
     CalendarOutlined,
     EnvironmentOutlined,
     DeleteOutlined,
+    LinkOutlined,
 } from '@ant-design/icons-vue'
 import type { FeedPost } from '../../../composables/feedService'
 

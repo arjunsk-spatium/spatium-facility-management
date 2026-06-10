@@ -52,6 +52,12 @@
                     <p class="text-base text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap">{{ post.description
                         }}</p>
 
+                    <a v-if="post.link" :href="post.link" target="_blank" rel="noopener"
+                        class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline break-all">
+                        <LinkOutlined />
+                        {{ post.link }}
+                    </a>
+
                     <a-card v-if="post.event" class="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
                         <div class="flex items-center gap-2 mb-2">
                             <CalendarOutlined class="text-blue-600" />
@@ -81,7 +87,8 @@
                         <div class="grid grid-cols-2 gap-4 text-sm">
                             <div>
                                 <span class="text-neutral-500">Scope:</span>
-                                <a-tag class="ml-2">{{ formatScopeType(post.scope_type) }}</a-tag>
+                                <a-tag v-if="post.scope_type" class="ml-2">{{ formatScopeType(post.scope_type) }}</a-tag>
+                                <a-tag v-else class="ml-2">All</a-tag>
                             </div>
                             <div>
                                 <span class="text-neutral-500">Likes:</span>
@@ -132,6 +139,7 @@ import {
     CalendarOutlined,
     LikeOutlined,
     CommentOutlined,
+    LinkOutlined,
 } from '@ant-design/icons-vue'
 
 definePageMeta({ layout: 'default', middleware: ['auth'] })
@@ -161,7 +169,8 @@ const getCategoryColor = (slug?: string) => {
     return colors[slug || ''] || 'default'
 }
 
-const formatScopeType = (scope: string) => {
+const formatScopeType = (scope?: string) => {
+    if (!scope) return 'All'
     return scope.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 }
 

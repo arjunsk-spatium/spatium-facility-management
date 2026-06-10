@@ -71,7 +71,8 @@
                     </a-tag>
                 </template>
                 <template v-if="column.key === 'scope_type'">
-                    <a-tag>{{ formatScopeType(record.scope_type) }}</a-tag>
+                    <a-tag v-if="record.scope_type">{{ formatScopeType(record.scope_type) }}</a-tag>
+                    <a-tag v-else>All</a-tag>
                 </template>
                 <template v-if="column.key === 'creator'">
                     <div class="flex items-center gap-2">
@@ -201,7 +202,8 @@ const getCategoryColor = (slug?: string) => {
     return colors[slug || ''] || 'default'
 }
 
-const formatScopeType = (scope: string) => {
+const formatScopeType = (scope?: string) => {
+    if (!scope) return 'All'
     return scope.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 }
 

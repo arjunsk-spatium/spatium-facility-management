@@ -26,10 +26,11 @@ export interface FeedPost {
     title: string
     description: string
     image: string | null
+    link: string | null
     category: FeedCategory
     created_by_profile: CreatorProfile
     creator_type: 'superadmin' | 'tenant_admin' | 'client'
-    scope_type: string
+    scope_type?: string
     allow_likes: boolean
     is_system_generated: boolean
     is_active: boolean
@@ -61,6 +62,7 @@ export interface CreateSuperadminPostPayload {
     tenant_ids?: string[]
     published_at?: string
     allow_likes?: boolean
+    link?: string
     event?: {
         event_date: string
         start_time: string
@@ -155,6 +157,7 @@ export const useFeedService = () => {
             }
             if (payload.published_at) formData.append('published_at', payload.published_at)
             if (payload.allow_likes !== undefined) formData.append('allow_likes', String(payload.allow_likes))
+            if (payload.link) formData.append('link', payload.link)
             if (payload.event) {
                 formData.append('event', JSON.stringify(payload.event))
             }
@@ -178,6 +181,7 @@ export const useFeedService = () => {
             if (payload.tenant_ids) body.tenant_ids = payload.tenant_ids
             if (payload.published_at) body.published_at = payload.published_at
             if (payload.allow_likes !== undefined) body.allow_likes = payload.allow_likes
+            if (payload.link) body.link = payload.link
             if (payload.event) body.event = payload.event
 
             const response = await request<ApiResponse<FeedPost>>(
