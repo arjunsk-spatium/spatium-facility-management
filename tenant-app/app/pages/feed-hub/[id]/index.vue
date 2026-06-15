@@ -59,7 +59,7 @@ const store = useFeedStore()
 const post = computed(() => store.currentPost)
 const loading = computed(() => store.loading)
 const comments = computed(() => store.comments)
-const commentsLoading = computed(() => store.loading)
+const commentsLoading = computed(() => store.commentsLoading)
 const commentLoading = ref(false)
 
 const handleLikeToggled = () => {

@@ -42,6 +42,7 @@ export const useFeedStore = defineStore('feed', {
         categories: [] as FeedCategory[],
 
         loading: false,
+        commentsLoading: false,
         error: null as string | null,
     }),
     getters: {
@@ -94,11 +95,9 @@ export const useFeedStore = defineStore('feed', {
                 const { transferPost } = useFeedService()
                 const success = await transferPost(postId, facilityIds)
                 if (success) {
-                    // Mark as transferred locally by updating facility_ids
-                    const post = this.incomingPosts.find((p) => p.id === postId)
-                    if (post) {
-                        post.facility_ids = facilityIds
-                    }
+                    // Remove transferred post from incoming list
+                    this.incomingPosts = this.incomingPosts.filter((p) => p.id !== postId)
+                    this.incomingCount = Math.max(0, this.incomingCount - 1)
                 }
                 return success
             } catch (err: any) {
@@ -262,7 +261,7 @@ export const useFeedStore = defineStore('feed', {
         },
 
         async fetchComments(postId: string, params: { page?: number; page_size?: number } = {}) {
-            this.loading = true
+            this.commentsLoading = true
             this.error = null
             try {
                 const { getComments } = useFeedService()
@@ -275,12 +274,12 @@ export const useFeedStore = defineStore('feed', {
                 this.error = 'Failed to fetch comments: ' + err.message
                 console.error('[FeedStore] Error fetching comments:', err)
             } finally {
-                this.loading = false
+                this.commentsLoading = false
             }
         },
 
         async addComment(postId: string, text: string) {
-            this.loading = true
+            this.commentsLoading = true
             this.error = null
             try {
                 const { addComment } = useFeedService()
@@ -298,12 +297,12 @@ export const useFeedStore = defineStore('feed', {
                 console.error('[FeedStore] Error adding comment:', err)
                 throw err
             } finally {
-                this.loading = false
+                this.commentsLoading = false
             }
         },
 
         async addReply(commentId: string, text: string) {
-            this.loading = true
+            this.commentsLoading = true
             this.error = null
             try {
                 const { addReply } = useFeedService()
@@ -319,7 +318,7 @@ export const useFeedStore = defineStore('feed', {
                 console.error('[FeedStore] Error adding reply:', err)
                 throw err
             } finally {
-                this.loading = false
+                this.commentsLoading = false
             }
         },
 

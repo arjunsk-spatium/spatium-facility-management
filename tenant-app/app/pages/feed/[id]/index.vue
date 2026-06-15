@@ -121,6 +121,19 @@
                     </div>
                 </div>
             </a-card>
+
+            <!-- Comments Section -->
+            <a-card title="Comments">
+                <div v-if="commentsLoading" class="flex justify-center py-8">
+                    <a-spin />
+                </div>
+
+                <div v-else-if="comments.length === 0" class="text-center py-8">
+                    <a-empty description="No comments yet." />
+                </div>
+
+                <CommentThread v-else :comments="comments" @reply-added="handleReplyAdded" />
+            </a-card>
         </template>
 
         <a-card v-else class="text-center py-12">
@@ -141,6 +154,7 @@ import {
     CommentOutlined,
     LinkOutlined,
 } from '@ant-design/icons-vue'
+import CommentThread from '../../../components/feed/CommentThread.vue'
 
 definePageMeta({ layout: 'default', middleware: ['auth'] })
 
@@ -151,6 +165,8 @@ const authStore = useAuthStore()
 
 const post = computed(() => store.currentPost)
 const loading = computed(() => store.loading)
+const comments = computed(() => store.comments)
+const commentsLoading = computed(() => store.commentsLoading)
 
 const isMyPost = computed(() => {
     if (!post.value) return false
@@ -200,7 +216,12 @@ const handleDelete = async () => {
     }
 }
 
+const handleReplyAdded = () => {
+    store.fetchComments(route.params.id as string)
+}
+
 onMounted(() => {
     store.fetchPost(route.params.id as string, 'admin')
+    store.fetchComments(route.params.id as string)
 })
 </script>

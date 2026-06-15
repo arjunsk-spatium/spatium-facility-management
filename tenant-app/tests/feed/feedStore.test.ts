@@ -106,11 +106,13 @@ describe('Feed Store', () => {
     it('transfers a post', async () => {
         const store = useFeedStore()
         store.incomingPosts = [{ ...mockPost }]
+        store.incomingCount = 1
         mockTransferPost.mockResolvedValue(true)
 
         await store.transferPost('post-1', ['fac-1'])
 
-        expect(store.incomingPosts[0].facility_ids).toContain('fac-1')
+        expect(store.incomingPosts).toHaveLength(0)
+        expect(store.incomingCount).toBe(0)
     })
 
     it('fetches my posts', async () => {
