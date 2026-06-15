@@ -61,6 +61,14 @@
             <NuxtLink to="/feed">Feed</NuxtLink>
         </a-menu-item>
 
+        <!-- Banners -->
+        <a-menu-item key="banners">
+            <template #icon>
+                <PictureOutlined />
+            </template>
+            <NuxtLink to="/banners">Banners</NuxtLink>
+        </a-menu-item>
+
         <!-- Settings -->
         <a-menu-item key="settings">
             <template #icon>
@@ -81,7 +89,8 @@ import {
     AppstoreOutlined,
     SettingOutlined,
     UserOutlined,
-    NotificationOutlined
+    NotificationOutlined,
+    PictureOutlined
 } from '@ant-design/icons-vue'
 import { useSidebar } from '../composables/useSidebar'
 
@@ -109,6 +118,7 @@ const getMenuKey = (path: string) => {
     if (path === '/modules') return 'modules'
     if (path === '/settings') return 'settings'
     if (path === '/feed' || path.startsWith('/feed/')) return 'feed'
+    if (path === '/banners' || path.startsWith('/banners/')) return 'banners'
     return 'dashboard'
 }
 
