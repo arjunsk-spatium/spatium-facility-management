@@ -151,10 +151,10 @@ const currentLogo = computed(() => isDark.value ? tenantStore.darkLogo : tenantS
 const filteredModules = computed(() => {
     return allModules.value.map(m => {
         // Always show feed modules for all authenticated users (temporary testing)
-        if (m.key === 'feed' || m.key === 'feed_hub') {
+        if (m.key === 'feed') {
             const mod = { ...m };
             if (mod.children) {
-                mod.children = mod.children.filter(c => c.key === 'feed-list' || c.key === 'feed_hub');
+                mod.children = mod.children.filter(c => c.key === 'feed-list');
             }
             return mod;
         }
@@ -274,11 +274,9 @@ onMounted(async () => {
 
         // Inject feed modules from registry if not present in API response
         // (temporary until backend adds them to tenant modules)
-        const feedModules = registryModules.filter(r => r.key === 'feed' || r.key === 'feed_hub');
-        for (const feedMod of feedModules) {
-            if (!hydrated.find(m => m.key === feedMod.key)) {
-                hydrated.push(feedMod);
-            }
+        const feedModule = registryModules.find(r => r.key === 'feed');
+        if (feedModule && !hydrated.find(m => m.key === feedModule.key)) {
+            hydrated.push(feedModule);
         }
         allModules.value = hydrated;
 

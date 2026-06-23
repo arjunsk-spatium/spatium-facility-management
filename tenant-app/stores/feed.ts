@@ -2,11 +2,9 @@ import { defineStore } from 'pinia'
 import {
     useFeedService,
     type FeedPost,
-    type FeedComment,
     type FeedCategory,
     type FeedListParams,
     type CreateAdminPostPayload,
-    type CreateClientPostPayload,
 } from '../composables/feedService'
 
 export const useFeedStore = defineStore('feed', {
@@ -23,26 +21,13 @@ export const useFeedStore = defineStore('feed', {
         myPostsNext: null as string | null,
         myPostsPrevious: null as string | null,
 
-        // Client feed hub
-        hubPosts: [] as FeedPost[],
-        hubCount: 0,
-        hubNext: null as string | null,
-        hubPrevious: null as string | null,
-
         // Current post (detail view)
         currentPost: null as FeedPost | null,
-
-        // Comments
-        comments: [] as FeedComment[],
-        commentsCount: 0,
-        commentsNext: null as string | null,
-        commentsPrevious: null as string | null,
 
         // Categories
         categories: [] as FeedCategory[],
 
         loading: false,
-        commentsLoading: false,
         error: null as string | null,
     }),
     getters: {
@@ -50,8 +35,6 @@ export const useFeedStore = defineStore('feed', {
         hasPreviousIncoming: (state) => state.incomingPrevious !== null,
         hasNextMyPosts: (state) => state.myPostsNext !== null,
         hasPreviousMyPosts: (state) => state.myPostsPrevious !== null,
-        hasNextHub: (state) => state.hubNext !== null,
-        hasPreviousHub: (state) => state.hubPrevious !== null,
     },
     actions: {
         // ========== Categories ==========
@@ -170,168 +153,13 @@ export const useFeedStore = defineStore('feed', {
             }
         },
 
-        // ========== Client Hub ==========
-        async fetchHubPosts(params: FeedListParams = {}) {
-            this.loading = true
-            this.error = null
-            try {
-                const { getClientPosts } = useFeedService()
-                const result = await getClientPosts(params)
-                this.hubPosts = result.posts
-                this.hubCount = result.count
-                this.hubNext = result.next
-                this.hubPrevious = result.previous
-            } catch (err: any) {
-                this.error = 'Failed to fetch hub posts: ' + err.message
-                console.error('[FeedStore] Error fetching hub posts:', err)
-            } finally {
-                this.loading = false
-            }
-        },
-
-        async createClientPost(data: CreateClientPostPayload) {
-            this.loading = true
-            this.error = null
-            try {
-                const { createClientPost } = useFeedService()
-                const newPost = await createClientPost(data)
-                this.hubPosts.unshift(newPost)
-                this.hubCount += 1
-                return newPost
-            } catch (err: any) {
-                this.error = 'Failed to create post: ' + err.message
-                console.error('[FeedStore] Error creating client post:', err)
-                throw err
-            } finally {
-                this.loading = false
-            }
-        },
-
-        async deleteClientPost(id: string) {
-            this.loading = true
-            this.error = null
-            try {
-                const { deleteClientPost } = useFeedService()
-                const success = await deleteClientPost(id)
-                if (success) {
-                    this.hubPosts = this.hubPosts.filter((p) => p.id !== id)
-                    this.hubCount = Math.max(0, this.hubCount - 1)
-                    if (this.currentPost?.id === id) {
-                        this.currentPost = null
-                    }
-                    return true
-                }
-                throw new Error('Failed to delete post')
-            } catch (err: any) {
-                this.error = 'Failed to delete post: ' + err.message
-                console.error('[FeedStore] Error deleting client post:', err)
-                throw err
-            } finally {
-                this.loading = false
-            }
-        },
-
-        // ========== Likes & Comments ==========
-        async toggleLike(postId: string) {
-            const post =
-                this.hubPosts.find((p) => p.id === postId) ||
-                this.currentPost
-            if (!post) return
-
-            const isLiked = post.user_has_liked
-            try {
-                const { likePost, unlikePost } = useFeedService()
-                if (isLiked) {
-                    const success = await unlikePost(postId)
-                    if (success) {
-                        post.user_has_liked = false
-                        post.likes_count = Math.max(0, post.likes_count - 1)
-                    }
-                } else {
-                    const success = await likePost(postId)
-                    if (success) {
-                        post.user_has_liked = true
-                        post.likes_count += 1
-                    }
-                }
-            } catch (err: any) {
-                console.error('[FeedStore] Error toggling like:', err)
-                throw err
-            }
-        },
-
-        async fetchComments(postId: string, params: { page?: number; page_size?: number } = {}) {
-            this.commentsLoading = true
-            this.error = null
-            try {
-                const { getComments } = useFeedService()
-                const result = await getComments(postId, params)
-                this.comments = result.comments
-                this.commentsCount = result.count
-                this.commentsNext = result.next
-                this.commentsPrevious = result.previous
-            } catch (err: any) {
-                this.error = 'Failed to fetch comments: ' + err.message
-                console.error('[FeedStore] Error fetching comments:', err)
-            } finally {
-                this.commentsLoading = false
-            }
-        },
-
-        async addComment(postId: string, text: string) {
-            this.commentsLoading = true
-            this.error = null
-            try {
-                const { addComment } = useFeedService()
-                const newComment = await addComment(postId, text)
-                this.comments.unshift(newComment)
-                this.commentsCount += 1
-                // Update post comment count
-                const post = this.hubPosts.find((p) => p.id === postId) || this.currentPost
-                if (post) {
-                    post.comments_count += 1
-                }
-                return newComment
-            } catch (err: any) {
-                this.error = 'Failed to add comment: ' + err.message
-                console.error('[FeedStore] Error adding comment:', err)
-                throw err
-            } finally {
-                this.commentsLoading = false
-            }
-        },
-
-        async addReply(commentId: string, text: string) {
-            this.commentsLoading = true
-            this.error = null
-            try {
-                const { addReply } = useFeedService()
-                const newReply = await addReply(commentId, text)
-                // Find parent comment and add reply
-                const parentComment = this.comments.find((c) => c.id === commentId)
-                if (parentComment) {
-                    parentComment.replies.push(newReply)
-                }
-                return newReply
-            } catch (err: any) {
-                this.error = 'Failed to add reply: ' + err.message
-                console.error('[FeedStore] Error adding reply:', err)
-                throw err
-            } finally {
-                this.commentsLoading = false
-            }
-        },
-
         // ========== Shared ==========
-        async fetchPost(id: string, type: 'admin' | 'client' = 'client') {
+        async fetchPost(id: string) {
             this.loading = true
             this.error = null
             try {
-                const { getAdminPostById, getClientPostById } = useFeedService()
-                this.currentPost =
-                    type === 'admin'
-                        ? await getAdminPostById(id)
-                        : await getClientPostById(id)
+                const { getAdminPostById } = useFeedService()
+                this.currentPost = await getAdminPostById(id)
             } catch (err: any) {
                 this.error = 'Failed to fetch post: ' + err.message
                 console.error('[FeedStore] Error fetching post:', err)
@@ -342,10 +170,6 @@ export const useFeedStore = defineStore('feed', {
 
         clearCurrentPost() {
             this.currentPost = null
-            this.comments = []
-            this.commentsCount = 0
-            this.commentsNext = null
-            this.commentsPrevious = null
         },
     },
 })

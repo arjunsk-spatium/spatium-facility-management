@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { useFeedService, type FeedPost, type FeedCategory, type FeedComment } from '../../composables/feedService'
+import { useFeedService, type FeedPost, type FeedCategory } from '../../composables/feedService'
 
 const mockCategories: FeedCategory[] = [
     { id: 'cat-1', name: 'Announcement', slug: 'announcement', description: 'Announcement', is_active: true },
@@ -27,17 +27,6 @@ const mockPost: FeedPost = {
     published_at: '2026-06-01T10:00:00Z',
     created_at: '2026-06-01T10:00:00Z',
     updated_at: '2026-06-01T10:00:00Z',
-}
-
-const mockComment: FeedComment = {
-    id: 'comment-1',
-    comment: 'Great post!',
-    user_profile: { user_id: 'user-2', employee_name: 'Commenter', designation: '', profile_photo: null },
-    is_edited: false,
-    is_deleted: false,
-    replies: [],
-    created_at: '2026-06-01T11:00:00Z',
-    updated_at: '2026-06-01T11:00:00Z',
 }
 
 const mockApiResponse = <T>(data: T) => ({
@@ -153,97 +142,15 @@ describe('Feed Service', () => {
         expect(result).toBe(true)
     })
 
-    it('should fetch client posts', async () => {
-        mockFetch.mockResolvedValue({
-            ok: true,
-            status: 200,
-            json: async () => mockApiResponse({ count: 1, next: null, previous: null, results: [mockPost] })
-        })
-
-        const result = await service.getClientPosts()
-        expect(result.posts).toHaveLength(1)
-        expect(result.count).toBe(1)
-    })
-
-    it('should create client post', async () => {
+    it('should fetch admin post by id', async () => {
         mockFetch.mockResolvedValue({
             ok: true,
             status: 200,
             json: async () => mockApiResponse(mockPost)
         })
 
-        const result = await service.createClientPost({
-            category_id: 'cat-1',
-            title: 'Client Post',
-            description: 'Desc',
-        })
-        expect(result.id).toBe('post-1')
-    })
-
-    it('should delete client post', async () => {
-        mockFetch.mockResolvedValue({
-            ok: true,
-            status: 204,
-            json: async () => ({})
-        })
-
-        const result = await service.deleteClientPost('post-1')
-        expect(result).toBe(true)
-    })
-
-    it('should like a post', async () => {
-        mockFetch.mockResolvedValue({
-            ok: true,
-            status: 200,
-            json: async () => mockApiResponse({ success: true })
-        })
-
-        const result = await service.likePost('post-1')
-        expect(result).toBe(true)
-    })
-
-    it('should unlike a post', async () => {
-        mockFetch.mockResolvedValue({
-            ok: true,
-            status: 200,
-            json: async () => mockApiResponse({ success: true })
-        })
-
-        const result = await service.unlikePost('post-1')
-        expect(result).toBe(true)
-    })
-
-    it('should fetch comments', async () => {
-        mockFetch.mockResolvedValue({
-            ok: true,
-            status: 200,
-            json: async () => mockApiResponse({ count: 1, next: null, previous: null, results: [mockComment] })
-        })
-
-        const result = await service.getComments('post-1')
-        expect(result.comments).toHaveLength(1)
-        expect(result.comments[0].comment).toBe('Great post!')
-    })
-
-    it('should add a comment', async () => {
-        mockFetch.mockResolvedValue({
-            ok: true,
-            status: 200,
-            json: async () => mockApiResponse(mockComment)
-        })
-
-        const result = await service.addComment('post-1', 'Nice!')
-        expect(result.comment).toBe('Great post!')
-    })
-
-    it('should add a reply', async () => {
-        mockFetch.mockResolvedValue({
-            ok: true,
-            status: 200,
-            json: async () => mockApiResponse(mockComment)
-        })
-
-        const result = await service.addReply('comment-1', 'Thanks!')
-        expect(result.comment).toBe('Great post!')
+        const result = await service.getAdminPostById('post-1')
+        expect(result).not.toBeNull()
+        expect(result?.title).toBe('Test Post')
     })
 })

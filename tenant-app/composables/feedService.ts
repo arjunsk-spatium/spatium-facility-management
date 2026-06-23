@@ -47,17 +47,6 @@ export interface FeedPost {
     updated_at: string
 }
 
-export interface FeedComment {
-    id: string
-    comment: string
-    user_profile: CreatorProfile
-    is_edited: boolean
-    is_deleted: boolean
-    replies: FeedComment[]
-    created_at: string
-    updated_at: string
-}
-
 export interface FeedListParams {
     page?: number
     page_size?: number
@@ -81,15 +70,6 @@ export interface CreateAdminPostPayload {
         end_time: string
         venue: string
     }
-    image?: File | null
-}
-
-export interface CreateClientPostPayload {
-    category_id: string
-    title: string
-    description: string
-    allow_likes?: boolean
-    link?: string
     image?: File | null
 }
 
@@ -270,141 +250,6 @@ export const useFeedService = () => {
         }
     }
 
-    // ========== Client / SPOC APIs ==========
-    const getClientPosts = async (params: FeedListParams = {}): Promise<{
-        posts: FeedPost[]
-        count: number
-        next: string | null
-        previous: string | null
-    }> => {
-        const query: any = {}
-        if (params.page) query.page = params.page
-        if (params.page_size) query.page_size = params.page_size
-        if (params.search) query.search = params.search
-
-        const response = await $api<ApiResponse<PaginatedResponse<FeedPost>>>(
-            buildUrl('/api/portal/feed/client/posts/'),
-            { method: 'GET', query }
-        )
-
-        if (response.success && response.data) {
-            return {
-                posts: response.data.results || [],
-                count: response.data.count || 0,
-                next: response.data.next || null,
-                previous: response.data.previous || null,
-            }
-        }
-        return { posts: [], count: 0, next: null, previous: null }
-    }
-
-    const createClientPost = async (payload: CreateClientPostPayload): Promise<FeedPost> => {
-        const formData = new FormData()
-        formData.append('category_id', payload.category_id)
-        formData.append('title', payload.title)
-        formData.append('description', payload.description)
-        if (payload.allow_likes !== undefined) formData.append('allow_likes', String(payload.allow_likes))
-        if (payload.link) formData.append('link', payload.link)
-        if (payload.image instanceof File) formData.append('image', payload.image)
-
-        const response = await $api<ApiResponse<FeedPost>>(
-            buildUrl('/api/portal/feed/client/posts/'),
-            { method: 'POST', body: formData }
-        )
-        if (response.success && response.data) return response.data
-        throw new Error(response.message || 'Failed to create post')
-    }
-
-    const getClientPostById = async (id: string): Promise<FeedPost | null> => {
-        try {
-            const response = await $api<ApiResponse<FeedPost>>(
-                buildUrl(`/api/portal/feed/client/posts/${id}/`),
-                { method: 'GET' }
-            )
-            if (response.success && response.data) return response.data
-            return null
-        } catch (error: any) {
-            if (error.statusCode === 404) return null
-            throw error
-        }
-    }
-
-    const deleteClientPost = async (id: string): Promise<boolean> => {
-        try {
-            await $api(buildUrl(`/api/portal/feed/client/posts/${id}/`), { method: 'DELETE' })
-            return true
-        } catch (error) {
-            return false
-        }
-    }
-
-    // ========== Hub APIs (Likes & Comments) ==========
-    const likePost = async (postId: string): Promise<boolean> => {
-        const response = await $api<ApiResponse<any>>(
-            buildUrl(`/api/portal/feed/hub/posts/${postId}/like/`),
-            { method: 'POST' }
-        )
-        return response.success
-    }
-
-    const unlikePost = async (postId: string): Promise<boolean> => {
-        const response = await $api<ApiResponse<any>>(
-            buildUrl(`/api/portal/feed/hub/posts/${postId}/like/`),
-            { method: 'DELETE' }
-        )
-        return response.success
-    }
-
-    const getComments = async (postId: string, params: { page?: number; page_size?: number } = {}): Promise<{
-        comments: FeedComment[]
-        count: number
-        next: string | null
-        previous: string | null
-    }> => {
-        const query: any = {}
-        if (params.page) query.page = params.page
-        if (params.page_size) query.page_size = params.page_size
-
-        const response = await $api<ApiResponse<PaginatedResponse<FeedComment>>>(
-            buildUrl(`/api/portal/feed/hub/posts/${postId}/comments/`),
-            { method: 'GET', query }
-        )
-
-        if (response.success && response.data) {
-            return {
-                comments: response.data.results || [],
-                count: response.data.count || 0,
-                next: response.data.next || null,
-                previous: response.data.previous || null,
-            }
-        }
-        return { comments: [], count: 0, next: null, previous: null }
-    }
-
-    const addComment = async (postId: string, comment: string): Promise<FeedComment> => {
-        const response = await $api<ApiResponse<FeedComment>>(
-            buildUrl(`/api/portal/feed/hub/posts/${postId}/comments/`),
-            {
-                method: 'POST',
-                body: { comment },
-            }
-        )
-        if (response.success && response.data) return response.data
-        throw new Error(response.message || 'Failed to add comment')
-    }
-
-    const addReply = async (commentId: string, comment: string): Promise<FeedComment> => {
-        const response = await $api<ApiResponse<FeedComment>>(
-            buildUrl(`/api/portal/feed/hub/comments/${commentId}/reply/`),
-            {
-                method: 'POST',
-                body: { comment },
-            }
-        )
-        if (response.success && response.data) return response.data
-        throw new Error(response.message || 'Failed to add reply')
-    }
-
     return {
         // Categories
         getCategories,
@@ -415,16 +260,5 @@ export const useFeedService = () => {
         createAdminPost,
         getAdminPostById,
         deleteAdminPost,
-        // Client
-        getClientPosts,
-        createClientPost,
-        getClientPostById,
-        deleteClientPost,
-        // Hub
-        likePost,
-        unlikePost,
-        getComments,
-        addComment,
-        addReply,
     }
 }

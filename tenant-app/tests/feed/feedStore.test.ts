@@ -28,33 +28,13 @@ const mockPost = {
     updated_at: '2026-06-01T10:00:00Z',
 }
 
-const mockComment = {
-    id: 'comment-1',
-    comment: 'Great!',
-    user_profile: { user_id: 'user-2', employee_name: 'Commenter', designation: '', profile_photo: null },
-    is_edited: false,
-    is_deleted: false,
-    replies: [],
-    created_at: '2026-06-01T11:00:00Z',
-    updated_at: '2026-06-01T11:00:00Z',
-}
-
 const mockGetCategories = vi.fn()
 const mockGetIncomingPosts = vi.fn()
 const mockTransferPost = vi.fn()
 const mockGetMyPosts = vi.fn()
 const mockCreateAdminPost = vi.fn()
 const mockDeleteAdminPost = vi.fn()
-const mockGetClientPosts = vi.fn()
-const mockCreateClientPost = vi.fn()
-const mockDeleteClientPost = vi.fn()
-const mockLikePost = vi.fn()
-const mockUnlikePost = vi.fn()
-const mockGetComments = vi.fn()
-const mockAddComment = vi.fn()
-const mockAddReply = vi.fn()
 const mockGetAdminPostById = vi.fn()
-const mockGetClientPostById = vi.fn()
 
 vi.mock('../../composables/feedService', () => ({
     useFeedService: () => ({
@@ -64,16 +44,7 @@ vi.mock('../../composables/feedService', () => ({
         getMyPosts: mockGetMyPosts,
         createAdminPost: mockCreateAdminPost,
         deleteAdminPost: mockDeleteAdminPost,
-        getClientPosts: mockGetClientPosts,
-        createClientPost: mockCreateClientPost,
-        deleteClientPost: mockDeleteClientPost,
-        likePost: mockLikePost,
-        unlikePost: mockUnlikePost,
-        getComments: mockGetComments,
-        addComment: mockAddComment,
-        addReply: mockAddReply,
         getAdminPostById: mockGetAdminPostById,
-        getClientPostById: mockGetClientPostById,
     })
 }))
 
@@ -152,54 +123,22 @@ describe('Feed Store', () => {
         expect(store.myPostsCount).toBe(0)
     })
 
-    it('fetches hub posts', async () => {
+    it('fetches a post by id', async () => {
         const store = useFeedStore()
-        mockGetClientPosts.mockResolvedValue({ posts: [mockPost], count: 1, next: null, previous: null })
+        mockGetAdminPostById.mockResolvedValue(mockPost)
 
-        await store.fetchHubPosts()
+        await store.fetchPost('post-1')
 
-        expect(store.hubPosts).toHaveLength(1)
-        expect(store.hubCount).toBe(1)
+        expect(store.currentPost).not.toBeNull()
+        expect(store.currentPost?.id).toBe('post-1')
     })
 
-    it('toggles like on a post', async () => {
+    it('clears current post', async () => {
         const store = useFeedStore()
-        store.hubPosts = [{ ...mockPost }]
-        mockUnlikePost.mockResolvedValue(true)
+        store.currentPost = { ...mockPost }
 
-        await store.toggleLike('post-1')
+        store.clearCurrentPost()
 
-        expect(store.hubPosts[0].user_has_liked).toBe(false)
-    })
-
-    it('fetches comments', async () => {
-        const store = useFeedStore()
-        mockGetComments.mockResolvedValue({ comments: [mockComment], count: 1, next: null, previous: null })
-
-        await store.fetchComments('post-1')
-
-        expect(store.comments).toHaveLength(1)
-        expect(store.commentsCount).toBe(1)
-    })
-
-    it('adds a comment', async () => {
-        const store = useFeedStore()
-        store.hubPosts = [{ ...mockPost }]
-        mockAddComment.mockResolvedValue(mockComment)
-
-        await store.addComment('post-1', 'Nice!')
-
-        expect(store.comments).toHaveLength(1)
-        expect(store.hubPosts[0].comments_count).toBe(3)
-    })
-
-    it('adds a reply', async () => {
-        const store = useFeedStore()
-        store.comments = [{ ...mockComment, replies: [] }]
-        mockAddReply.mockResolvedValue(mockComment)
-
-        await store.addReply('comment-1', 'Thanks!')
-
-        expect(store.comments[0].replies).toHaveLength(1)
+        expect(store.currentPost).toBeNull()
     })
 })

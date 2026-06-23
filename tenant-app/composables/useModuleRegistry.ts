@@ -93,8 +93,7 @@ const registry: Module[] = [
         ]
     },
     { key: 'spoc_employees', label: 'Employees', icon: 'TeamOutlined', route: '/spoc/employees' },
-    { key: 'spoc_config', label: 'Configuration', icon: 'SettingOutlined', route: '/spoc/config' },
-    { key: 'feed_hub', label: 'Feed Hub', icon: 'NotificationOutlined', route: '/feed-hub' }
+    { key: 'spoc_config', label: 'Configuration', icon: 'SettingOutlined', route: '/spoc/config' }
 ]
 
 export const useModuleRegistry = () => {
