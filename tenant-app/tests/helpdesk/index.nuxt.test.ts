@@ -1,9 +1,28 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import HelpdeskPage from '../../app/pages/helpdesk/index.vue'
 import { createTestingPinia } from '@pinia/testing'
 
+const mockGetItem = vi.fn()
+const mockSetItem = vi.fn()
+const mockRemoveItem = vi.fn()
+
+vi.mock('../../composables/useIndexedDB', () => ({
+    useIndexedDB: () => ({
+        getItem: mockGetItem,
+        setItem: mockSetItem,
+        removeItem: mockRemoveItem
+    }),
+    HELPDESK_FACILITY_KEY: 'helpdesk-selected-facility'
+}))
+
 describe('Helpdesk Page', () => {
+    beforeEach(() => {
+        mockGetItem.mockReset()
+        mockSetItem.mockReset()
+        mockRemoveItem.mockReset()
+    })
+
     const mockTickets = [
         { id: 'TKT-001', ticket_number: 'TKT-001', category_name: 'IT', subcategory_name: 'Network Issue', state: { key: 'open', label: 'Open' }, priority: { key: 'p1', label: 'High' }, facilityId: '1', facilityName: 'HQ', created_at: '2026-01-07' },
         { id: 'TKT-002', ticket_number: 'TKT-002', category_name: 'Maintenance', subcategory_name: 'AC Repair', state: { key: 'inprogress', label: 'In Progress' }, priority: { key: 'p2', label: 'Medium' }, facilityId: '1', facilityName: 'HQ', created_at: '2026-01-06' }
@@ -116,6 +135,101 @@ describe('Helpdesk Page', () => {
             // Should contain badge count of 2 for 'All' tab
             const badges = wrapper.findAllComponents({ name: 'ABadge' })
             expect(badges.length).toBeGreaterThan(0)
+        })
+
+        it('should preload saved facility filter from IndexedDB on mount', async () => {
+            mockGetItem.mockResolvedValue('fac-1')
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [{ id: 'fac-1', name: 'HQ' }, { id: 'fac-2', name: 'Branch' }] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockGetItem).toHaveBeenCalledWith('helpdesk-selected-facility')
+            expect((wrapper.vm as any).facilityFilter).toBe('fac-1')
+        })
+
+        it('should ignore saved facility filter if it no longer exists', async () => {
+            mockGetItem.mockResolvedValue('old-facility')
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [{ id: 'fac-1', name: 'HQ' }] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect((wrapper.vm as any).facilityFilter).toBeUndefined()
+        })
+
+        it('should persist facility filter to IndexedDB when changed', async () => {
+            mockGetItem.mockResolvedValue(null)
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [{ id: 'fac-1', name: 'HQ' }, { id: 'fac-2', name: 'Branch' }] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const vm = wrapper.vm as any
+            vm.facilityFilter = 'fac-2'
+            await wrapper.vm.$nextTick()
+            await vm.handleFacilityFilterChange()
+
+            expect(mockSetItem).toHaveBeenCalledWith('helpdesk-selected-facility', 'fac-2')
+        })
+
+        it('should remove saved facility filter from IndexedDB when cleared', async () => {
+            mockGetItem.mockResolvedValue(null)
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [{ id: 'fac-1', name: 'HQ' }] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const vm = wrapper.vm as any
+            vm.facilityFilter = undefined
+            await wrapper.vm.$nextTick()
+            await vm.handleFacilityFilterChange()
+
+            expect(mockRemoveItem).toHaveBeenCalledWith('helpdesk-selected-facility')
         })
 
         it('should compute ticket counts correctly', async () => {

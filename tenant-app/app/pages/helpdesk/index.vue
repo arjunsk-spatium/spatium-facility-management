@@ -348,6 +348,7 @@ import {
 } from '@ant-design/icons-vue';
 import StatusBadge from '../../../components/helpdesk/StatusBadge.vue';
 import ResponsiveDataView from '../../../components/ResponsiveDataView.vue';
+import { useIndexedDB, HELPDESK_FACILITY_KEY } from '../../../composables/useIndexedDB';
 
 definePageMeta({
     middleware: 'auth'
@@ -357,6 +358,7 @@ definePageMeta({
 const helpdeskStore = useHelpdeskStore();
 const facilityStore = useFacilityStore();
 const authStore = useAuthStore();
+const { setItem, getItem, removeItem } = useIndexedDB();
 const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, pendingCount, closedCount, allCount, count, page, pageSize } = storeToRefs(helpdeskStore);
 const { facilities } = storeToRefs(facilityStore);
 
@@ -563,6 +565,11 @@ const handleTabChange = async () => {
 };
 
 const handleFacilityFilterChange = async () => {
+    if (facilityFilter.value) {
+        await setItem(HELPDESK_FACILITY_KEY, facilityFilter.value);
+    } else {
+        await removeItem(HELPDESK_FACILITY_KEY);
+    }
     await fetchTicketsByFilter();
 };
 
@@ -647,10 +654,16 @@ const handleCloseTicket = async (record: any) => {
 
 // Initialization
 onMounted(async () => {
+    await facilityStore.fetchFacilities();
+
+    const savedFacility = await getItem<string>(HELPDESK_FACILITY_KEY);
+    if (savedFacility && facilities.value.some(f => f.id === savedFacility)) {
+        facilityFilter.value = savedFacility;
+    }
+
     await Promise.all([
         fetchTicketsByFilter(),
-        helpdeskStore.fetchTicketCounts(),
-        facilityStore.fetchFacilities()
+        helpdeskStore.fetchTicketCounts()
     ]);
 });
 </script>

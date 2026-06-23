@@ -836,11 +836,14 @@ export const useHelpdeskService = () => {
             }
         },
 
-        getAssignableUsers: async (): Promise<any[]> => {
+        getAssignableUsers: async (facilityId: string): Promise<any[]> => {
             try {
                 const response = await $api<
                     ApiResponse<PaginatedResponse<any>>
-                >("/api/portal/users/opstrack/list/", { method: "GET" });
+                >("/api/portal/users/opstrack/online/list/", {
+                    method: "GET",
+                    query: { facility_id: facilityId },
+                });
                 if (!response.success) {
                     throw new Error(
                         response.message || "Failed to fetch users",
