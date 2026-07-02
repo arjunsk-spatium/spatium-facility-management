@@ -1,3 +1,5 @@
+import { useNuxtApp, useRuntimeConfig } from 'nuxt/app'
+
 export const useApi = () => {
     const config = useRuntimeConfig();
     const authStore = useAuthStore();
@@ -13,7 +15,12 @@ export const useApi = () => {
                 ...options,
             });
         } catch (error: any) {
-            if (error?.response?.status === 401 && authStore.refreshToken) {
+            if (error?.response?.status === 401) {
+                if (!authStore.refreshToken) {
+                    authStore.logout();
+                    throw error;
+                }
+
                 const refreshed = await authStore.refreshTokenAction();
                 if (refreshed) {
                     return await api<T>(url, {
@@ -25,6 +32,9 @@ export const useApi = () => {
                         }
                     });
                 }
+
+                // Refresh failed - logout the user
+                authStore.logout();
             }
             throw error;
         }

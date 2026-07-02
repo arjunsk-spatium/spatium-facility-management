@@ -67,13 +67,13 @@ export const useHelpdeskStore = defineStore('helpdesk', {
             }
         },
 
-        async fetchPriorityTickets(page = 1, pageSize = 20, facilityId?: string) {
+        async fetchPriorityTickets(page = 1, pageSize = 20, facilityId?: string, search?: string) {
             this.loading = true;
             this.error = null;
             const service = useHelpdeskService();
             
             try {
-                const result = await service.getPriorityTickets(page, pageSize, facilityId);
+                const result = await service.getPriorityTickets(page, pageSize, facilityId, search);
                 this.tickets = result.tickets;
                 this.count = result.count;
                 this.next = result.next;

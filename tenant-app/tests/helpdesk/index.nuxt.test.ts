@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import HelpdeskPage from '../../app/pages/helpdesk/index.vue'
 import { createTestingPinia } from '@pinia/testing'
+import { useHelpdeskStore } from '../../stores/helpdesk'
 
 const mockGetItem = vi.fn()
 const mockSetItem = vi.fn()
@@ -266,6 +267,124 @@ describe('Helpdesk Page', () => {
             expect(vm.ticketCounts.open).toBe(2)
             expect(vm.ticketCounts.inprogress).toBe(1)
             expect(vm.ticketCounts.closed).toBe(1)
+        })
+
+        it('should fetch tickets with search query after debounce', async () => {
+            mockGetItem.mockResolvedValue(null)
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk'], permissions: ['helpdesk-tickets:view'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const store = useHelpdeskStore()
+            const vm = wrapper.vm as any
+            vm.searchText = 'network'
+            await wrapper.vm.$nextTick()
+            await new Promise(resolve => setTimeout(resolve, 350))
+
+            const lastCall = store.fetchTickets.mock.calls[store.fetchTickets.mock.calls.length - 1]
+            expect(lastCall[0]).toMatchObject({ search: 'network', page: 1 })
+        })
+
+        it('should combine search query with facility filter', async () => {
+            mockGetItem.mockResolvedValue(null)
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk'], permissions: ['helpdesk-tickets:view'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [{ id: 'fac-1', name: 'HQ' }] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const store = useHelpdeskStore()
+            const vm = wrapper.vm as any
+            vm.facilityFilter = 'fac-1'
+            await vm.handleFacilityFilterChange()
+
+            vm.searchText = 'network'
+            await wrapper.vm.$nextTick()
+            await new Promise(resolve => setTimeout(resolve, 350))
+
+            const lastCall = store.fetchTickets.mock.calls[store.fetchTickets.mock.calls.length - 1]
+            expect(lastCall[0]).toMatchObject({ search: 'network', facility_id: 'fac-1', page: 1 })
+        })
+
+        it('should include search query in pagination requests', async () => {
+            mockGetItem.mockResolvedValue(null)
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk'], permissions: ['helpdesk-tickets:view'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const store = useHelpdeskStore()
+            const vm = wrapper.vm as any
+            vm.searchText = 'network'
+            await wrapper.vm.$nextTick()
+            await new Promise(resolve => setTimeout(resolve, 350))
+
+            await vm.handlePageChange(2, 20)
+
+            const lastCall = store.fetchTickets.mock.calls[store.fetchTickets.mock.calls.length - 1]
+            expect(lastCall[0]).toMatchObject({ search: 'network', page: 2, page_size: 20 })
+        })
+
+        it('should pass search query to priority tickets fetch', async () => {
+            mockGetItem.mockResolvedValue(null)
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk'], permissions: ['helpdesk-tickets:view'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const store = useHelpdeskStore()
+            const vm = wrapper.vm as any
+            vm.activeTab = 'priority'
+            vm.searchText = 'urgent'
+            await wrapper.vm.$nextTick()
+            await new Promise(resolve => setTimeout(resolve, 350))
+
+            const lastCall = store.fetchPriorityTickets.mock.calls[store.fetchPriorityTickets.mock.calls.length - 1]
+            expect(lastCall).toEqual([1, 10, undefined, 'urgent'])
         })
     })
 })

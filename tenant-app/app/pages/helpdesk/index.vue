@@ -536,6 +536,15 @@ const activeTab = ref('all');
 const searchText = ref('');
 const facilityFilter = ref<string | undefined>(undefined);
 
+// Debounce search input to avoid excessive API calls
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+watch(searchText, () => {
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+        fetchTicketsByFilter();
+    }, 300);
+});
+
 const columns = [
     { title: 'Ticket ID', dataIndex: 'ticket_number', key: 'ticket_number', width: 140 },
     { title: 'Title', dataIndex: 'title', key: 'title' },
@@ -577,7 +586,7 @@ const fetchTicketsByFilter = async () => {
     const params: TicketListParams = { page: 1 };
     
     if (activeTab.value === 'priority') {
-        await helpdeskStore.fetchPriorityTickets(1, pageSize.value, facilityFilter.value);
+        await helpdeskStore.fetchPriorityTickets(1, pageSize.value, facilityFilter.value, searchText.value || undefined);
         return;
     } else if (activeTab.value === 'open') {
         params.states = 'open';
@@ -593,6 +602,10 @@ const fetchTicketsByFilter = async () => {
     
     if (facilityFilter.value) {
         params.facility_id = facilityFilter.value;
+    }
+    
+    if (searchText.value) {
+        params.search = searchText.value;
     }
     
     await helpdeskStore.fetchTickets(params);
@@ -630,11 +643,14 @@ const handlePageChange = async (pageNum: number, newPageSize: number) => {
     } else if (activeTab.value === 'closed') {
         params.states = 'closed';
     } else if (activeTab.value === 'priority') {
-        await helpdeskStore.fetchPriorityTickets(pageNum, newPageSize, facilityFilter.value);
+        await helpdeskStore.fetchPriorityTickets(pageNum, newPageSize, facilityFilter.value, searchText.value || undefined);
         return;
     }
     if (facilityFilter.value) {
         params.facility_id = facilityFilter.value;
+    }
+    if (searchText.value) {
+        params.search = searchText.value;
     }
     if (newPageSize !== pageSize.value) {
         params.page_size = newPageSize;

@@ -593,18 +593,22 @@ export const useHelpdeskService = () => {
             };
         },
 
-        getPriorityTickets: async (page = 1, pageSize = 20, facilityId?: string): Promise<{
+        getPriorityTickets: async (page = 1, pageSize = 20, facilityId?: string, search?: string): Promise<{
             tickets: Ticket[];
             count: number;
             next: string | null;
             previous: string | null;
         }> => {
             try {
+                const query: Record<string, any> = { page, page_size: pageSize };
+                if (facilityId) query.facility_id = facilityId;
+                if (search) query.search = search;
+
                 const response = await $api<
                     ApiResponse<ApiResponse<PaginatedResponse<Ticket>>>
                 >("/api/portal/helpdesk/tickets/priority-tickets/", {
                     method: "GET",
-                    query: { page, page_size: pageSize, facility_id: facilityId },
+                    query,
                 });
                 if (!response.success || !response.data.success) {
                     throw new Error(
