@@ -73,6 +73,17 @@
                     </a-tag>
                 </template>
 
+                <template v-if="column.key === 'building_pass'">
+                    <a-switch
+                        :checked="record.buildingPassEnabled"
+                        :loading="buildingPassLoading[record.id]"
+                        size="small"
+                        checked-children="On"
+                        un-checked-children="Off"
+                        @change="(checked: boolean) => handleBuildingPassToggle(record, checked)"
+                    />
+                </template>
+
                 <template v-if="column.key === 'actions'">
                     <div class="flex items-center gap-1">
                         <a-button type="text" size="small" @click="handleEdit(record)">
@@ -127,6 +138,17 @@
                                 {{ record.status || 'active' }}
                             </a-tag>
                         </div>
+                        <div>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs">Building Pass</p>
+                            <a-switch
+                                :checked="record.buildingPassEnabled"
+                                :loading="buildingPassLoading[record.id]"
+                                size="small"
+                                checked-children="On"
+                                un-checked-children="Off"
+                                @change="(checked: boolean) => handleBuildingPassToggle(record, checked)"
+                            />
+                        </div>
                     </div>
                 </a-card>
             </template>
@@ -160,6 +182,9 @@
                         <a-select-option value="Employee">Employee</a-select-option>
                         <a-select-option value="SPOC">SPOC</a-select-option>
                     </a-select>
+                </a-form-item>
+                <a-form-item v-if="editingEmployee" label="Building Pass">
+                    <a-switch v-model:checked="newEmployee.buildingPassEnabled" checked-children="Enabled" un-checked-children="Disabled" />
                 </a-form-item>
             </a-form>
         </a-modal>
@@ -374,6 +399,7 @@ const bulkUploadFileList = ref<UploadFile[]>([])
 const bulkUploadFile = ref<File | null>(null)
 const bulkUploading = ref(false)
 const bulkUploadError = ref('')
+const buildingPassLoading = ref<Record<string, boolean>>({})
 
 // Jobs drawer state
 const showJobsDrawer = ref(false)
@@ -398,7 +424,8 @@ const newEmployee = reactive({
     phone: '',
     departmentId: null as string | null,
     designation: '',
-    role: 'Employee' as 'Employee' | 'SPOC'
+    role: 'Employee' as 'Employee' | 'SPOC',
+    buildingPassEnabled: false
 })
 
 // Table columns
@@ -410,6 +437,7 @@ const columns = [
     { title: 'Designation', key: 'designation' },
     { title: 'Role', key: 'role' },
     { title: 'Status', key: 'status' },
+    { title: 'Building Pass', key: 'building_pass', width: 120 },
     { title: '', key: 'actions', width: 50 }
 ]
 
@@ -468,7 +496,8 @@ const handleSaveEmployee = async () => {
                 department: selectedDept?.name,
                 department_id: newEmployee.departmentId || undefined,
                 designation: newEmployee.designation || undefined,
-                role: newEmployee.role
+                role: newEmployee.role,
+                buildingPassEnabled: newEmployee.buildingPassEnabled
             })
             message.success('Employee updated successfully')
         } else {
@@ -492,6 +521,7 @@ const handleSaveEmployee = async () => {
         newEmployee.departmentId = null
         newEmployee.designation = ''
         newEmployee.role = 'Employee'
+        newEmployee.buildingPassEnabled = false
     } catch (err) {
         message.error(editingEmployee.value ? 'Failed to update employee' : 'Failed to add employee')
     }
@@ -505,6 +535,7 @@ const handleEdit = (employee: any) => {
     newEmployee.departmentId = employee.department_id || null
     newEmployee.designation = employee.designation || ''
     newEmployee.role = employee.role || 'Employee'
+    newEmployee.buildingPassEnabled = employee.buildingPassEnabled || false
     showAddModal.value = true
 }
 
@@ -515,6 +546,21 @@ const handleDelete = async (id: string) => {
         refreshEmployees()
     } catch (err) {
         message.error('Failed to delete employee')
+    }
+}
+
+const handleBuildingPassToggle = async (employee: any, checked: boolean) => {
+    buildingPassLoading.value[employee.id] = true
+    try {
+        await store.updateEmployee(employee.id, {
+            buildingPassEnabled: checked
+        })
+        employee.buildingPassEnabled = checked
+        message.success(`Building pass ${checked ? 'enabled' : 'disabled'} for ${employee.name}`)
+    } catch (err) {
+        message.error('Failed to update building pass')
+    } finally {
+        buildingPassLoading.value[employee.id] = false
     }
 }
 

@@ -38,6 +38,7 @@ export interface SpocEmployee {
     status?: string
     avatar?: string
     createdAt?: string
+    buildingPassEnabled?: boolean
 }
 
 export interface SpocStats {
@@ -178,6 +179,7 @@ export const useSpocStore = defineStore('spoc', {
                         department_id: u.department_id || '',
                         designation: u.designation || '',
                         status: u.status || 'active',
+                        buildingPassEnabled: u.building_pass_enabled || false,
                         role: u.apps && u.apps.some((app: string) => app.toLowerCase().replace(/\s/g, '_') === 'client_portal')
                             ? 'SPOC'
                             : 'Employee'
@@ -440,16 +442,21 @@ export const useSpocStore = defineStore('spoc', {
 
                 const appName = data.role === 'SPOC' ? 'client_portal' : 'hub'
 
+                const body: Record<string, any> = {
+                    full_name: data.name,
+                    email: data.email,
+                    phone_number: data.phone,
+                    designation: data.designation,
+                    department_id: data.department_id,
+                    app_name: appName
+                }
+                if (typeof data.buildingPassEnabled === 'boolean') {
+                    body.building_pass_enabled = data.buildingPassEnabled
+                }
+
                 const response = await $api<any>(`/api/portal/users/client_portal/${id}/update/`, {
                     method: 'PATCH',
-                    body: {
-                        full_name: data.name,
-                        email: data.email,
-                        phone_number: data.phone,
-                        designation: data.designation,
-                        department_id: data.department_id,
-                        app_name: appName
-                    }
+                    body
                 })
 
                 if (response.success && response.data) {
