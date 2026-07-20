@@ -45,6 +45,14 @@
             <NuxtLink to="/users">Users</NuxtLink>
         </a-menu-item>
 
+        <!-- Privacy Requests -->
+        <a-menu-item key="privacy-requests">
+            <template #icon>
+                <SafetyOutlined />
+            </template>
+            <NuxtLink to="/privacy-requests">Privacy Requests</NuxtLink>
+        </a-menu-item>
+
         <!-- Modules -->
         <a-menu-item key="modules">
             <template #icon>
@@ -90,7 +98,8 @@ import {
     SettingOutlined,
     UserOutlined,
     NotificationOutlined,
-    PictureOutlined
+    PictureOutlined,
+    SafetyOutlined
 } from '@ant-design/icons-vue'
 import { useSidebar } from '../composables/useSidebar'
 
@@ -115,6 +124,7 @@ const getMenuKey = (path: string) => {
     if (path === '/plans/create') return 'plans-create'
     if (path.startsWith('/plans/')) return 'plans-list'
     if (path === '/users' || path.startsWith('/users/')) return 'users'
+    if (path === '/privacy-requests' || path.startsWith('/privacy-requests/')) return 'privacy-requests'
     if (path === '/modules') return 'modules'
     if (path === '/settings') return 'settings'
     if (path === '/feed' || path.startsWith('/feed/')) return 'feed'
