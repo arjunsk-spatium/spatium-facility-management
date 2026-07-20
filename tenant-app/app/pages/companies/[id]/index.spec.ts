@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import CompanyDetails from './index.vue'
 import { createTestingPinia } from '@pinia/testing'
 import { useCompanyStore } from '../../../../stores/company'
+import { message } from 'ant-design-vue'
 
 // Mock components
 vi.mock('vue-router', () => ({
@@ -195,6 +196,8 @@ describe('CompanyDetails', () => {
 
     beforeEach(async () => {
         vi.clearAllMocks()
+        vi.spyOn(message, 'error').mockImplementation(() => {})
+        vi.spyOn(message, 'success').mockImplementation(() => {})
         await startComponent()
     })
 
@@ -280,6 +283,141 @@ describe('CompanyDetails', () => {
                 method: 'POST',
                 body: expect.objectContaining({ full_name: 'New Spoc' })
             }))
+        })
+
+        it('shows existing user confirmation when SPOC user_id error is returned', async () => {
+            const error = new Error('Failed to create user') as any
+            error.data = {
+                success: false,
+                code: 'USER_CREATION_ERROR',
+                message: 'Failed to create user.',
+                error: {
+                    type: 'VALIDATION_ERROR',
+                    fields: {
+                        user_id: [{ code: 'INVALID', message: 'existing-user-id' }],
+                        email: [{ code: 'INVALID', message: 'User already exists in another app.' }]
+                    }
+                }
+            }
+            error.statusCode = 400
+            mockApi.mockRejectedValueOnce(error)
+
+            await wrapper.vm.openAddSpocModal()
+            wrapper.vm.spocForm.full_name = 'Existing Spoc'
+            wrapper.vm.spocForm.email = 'existing@spoc.com'
+            wrapper.vm.spocForm.phone_number = '123456'
+
+            await wrapper.vm.handleSpocOk()
+
+            expect(wrapper.vm.existingUserConfirmVisible).toBe(true)
+            expect(wrapper.vm.existingUserAppName).toBe('client_portal')
+            expect(wrapper.vm.existingUserId).toBe('existing-user-id')
+        })
+
+        it('shows specific email error when SPOC already exists in a different tenant', async () => {
+            const error = new Error('Failed to create user') as any
+            error.data = {
+                success: false,
+                code: 'USER_CREATION_ERROR',
+                message: 'Failed to create user.',
+                error: {
+                    type: 'VALIDATION_ERROR',
+                    fields: {
+                        email: [{ code: 'INVALID', message: 'User already exists in a different tenant.' }]
+                    }
+                }
+            }
+            error.statusCode = 400
+            mockApi.mockRejectedValueOnce(error)
+
+            await wrapper.vm.openAddSpocModal()
+            wrapper.vm.spocForm.full_name = 'New Spoc'
+            wrapper.vm.spocForm.email = 'existing@other.com'
+            wrapper.vm.spocForm.phone_number = '123456'
+
+            await wrapper.vm.handleSpocOk()
+
+            expect(message.error).toHaveBeenCalledWith('User already exists in a different tenant.')
+        })
+    })
+
+    describe('Employee Management', () => {
+        it('opens add employee modal', async () => {
+            await wrapper.vm.openAddEmployeeModal()
+            await wrapper.vm.$nextTick()
+
+            const visibleModals = wrapper.findAllComponents(AntComponents.AModal).filter((m: any) => m.props('open') === true)
+            expect(visibleModals[0].props('title')).toBe('Add Employee')
+        })
+
+        it('adds a new employee', async () => {
+            await wrapper.vm.openAddEmployeeModal()
+            
+            wrapper.vm.employeeForm.full_name = 'New Employee'
+            wrapper.vm.employeeForm.email = 'new@employee.com'
+            wrapper.vm.employeeForm.phone_number = '123456'
+            
+            await wrapper.vm.handleEmployeeOk()
+            
+            expect(mockApi).toHaveBeenCalledWith('/api/portal/users/org_portal/create/', expect.objectContaining({
+                method: 'POST',
+                body: expect.objectContaining({ full_name: 'New Employee', app_name: 'hub' })
+            }))
+        })
+
+        it('shows existing user confirmation when employee user_id error is returned', async () => {
+            const error = new Error('Failed to create user') as any
+            error.data = {
+                success: false,
+                code: 'USER_CREATION_ERROR',
+                message: 'Failed to create user.',
+                error: {
+                    type: 'VALIDATION_ERROR',
+                    fields: {
+                        user_id: [{ code: 'INVALID', message: 'existing-user-id' }],
+                        email: [{ code: 'INVALID', message: 'User already exists in another app.' }]
+                    }
+                }
+            }
+            error.statusCode = 400
+            mockApi.mockRejectedValueOnce(error)
+
+            await wrapper.vm.openAddEmployeeModal()
+            wrapper.vm.employeeForm.full_name = 'Existing Employee'
+            wrapper.vm.employeeForm.email = 'existing@employee.com'
+            wrapper.vm.employeeForm.phone_number = '123456'
+
+            await wrapper.vm.handleEmployeeOk()
+
+            expect(wrapper.vm.existingUserConfirmVisible).toBe(true)
+            expect(wrapper.vm.existingUserAppName).toBe('hub')
+            expect(wrapper.vm.existingUserId).toBe('existing-user-id')
+        })
+
+        it('shows specific email error when employee already exists in a different tenant', async () => {
+            const error = new Error('Failed to create user') as any
+            error.data = {
+                success: false,
+                code: 'USER_CREATION_ERROR',
+                message: 'Failed to create user.',
+                error: {
+                    type: 'VALIDATION_ERROR',
+                    fields: {
+                        email: [{ code: 'INVALID', message: 'User already exists in a different tenant.' }]
+                    }
+                }
+            }
+            error.statusCode = 400
+            mockApi.mockRejectedValueOnce(error)
+
+            await wrapper.vm.openAddEmployeeModal()
+            wrapper.vm.employeeForm.full_name = 'New Employee'
+            wrapper.vm.employeeForm.email = 'existing@other.com'
+            wrapper.vm.employeeForm.phone_number = '123456'
+
+            await wrapper.vm.handleEmployeeOk()
+
+            expect(message.error).toHaveBeenCalledWith('User already exists in a different tenant.')
         })
     })
 })

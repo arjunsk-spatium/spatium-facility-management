@@ -581,6 +581,25 @@ const existingUserMessage = ref('')
 const existingUserAppName = ref('')
 const existingUserAppLabel = computed(() => existingUserAppName.value === 'hub' ? 'employee portal' : 'client portal')
 
+const handleUserCreationError = (err: any, appName: 'hub' | 'client_portal'): boolean => {
+    if (err.data?.code === 'USER_CREATION_ERROR' && err.data?.error?.type === 'VALIDATION_ERROR') {
+        const userIdError = err.data?.error?.fields?.user_id?.[0]
+        const emailError = err.data?.error?.fields?.email?.[0]
+        if (userIdError) {
+            existingUserId.value = userIdError.message
+            existingUserMessage.value = emailError?.message || 'User already exists in another app.'
+            existingUserAppName.value = appName
+            existingUserConfirmVisible.value = true
+            return true
+        }
+        if (emailError?.message) {
+            message.error(emailError.message)
+            return true
+        }
+    }
+    return false
+}
+
 // Facilities
 const isFacilityModalVisible = ref(false)
 const facilityLoading = ref(false)
@@ -805,18 +824,9 @@ const handleEmployeeOk = async () => {
         }
         await fetchEmployees()
     } catch (err: any) {
-        if (err.data?.code === 'USER_CREATION_ERROR' && err.data?.error?.type === 'VALIDATION_ERROR') {
-            const userIdError = err.data?.error?.fields?.user_id?.[0]
-            const emailError = err.data?.error?.fields?.email?.[0]
-            if (userIdError) {
-                existingUserId.value = userIdError.message
-                existingUserMessage.value = emailError?.message || 'User already exists in another app.'
-                existingUserAppName.value = 'hub'
-                existingUserConfirmVisible.value = true
-                return
-            }
+        if (!handleUserCreationError(err, 'hub')) {
+            message.error('Failed to save employee')
         }
-        message.error('Failed to save employee')
     } finally {
         employeeSaving.value = false
         isEmployeeModalVisible.value = false
@@ -879,18 +889,9 @@ const handleSpocOk = async () => {
         }
         await fetchSpocs()
     } catch (err: any) {
-        if (err.data?.code === 'USER_CREATION_ERROR' && err.data?.error?.type === 'VALIDATION_ERROR') {
-            const userIdError = err.data?.error?.fields?.user_id?.[0]
-            const emailError = err.data?.error?.fields?.email?.[0]
-            if (userIdError) {
-                existingUserId.value = userIdError.message
-                existingUserMessage.value = emailError?.message || 'User already exists in another app.'
-                existingUserAppName.value = 'client_portal'
-                existingUserConfirmVisible.value = true
-                return
-            }
+        if (!handleUserCreationError(err, 'client_portal')) {
+            message.error('Failed to save SPOC')
         }
-        message.error('Failed to save SPOC')
     } finally {
         spocSaving.value = false
         isSpocModalVisible.value = false

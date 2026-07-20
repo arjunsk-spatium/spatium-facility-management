@@ -244,6 +244,20 @@ export const useUserService = () => {
         }
     }
 
+    const extractApiErrorMessage = (error: any): string => {
+        const errorData = error?.data || error
+        if (errorData?.error?.type === 'VALIDATION_ERROR' && errorData?.error?.fields) {
+            const fields = errorData.error.fields
+            for (const key of Object.keys(fields)) {
+                const fieldErrors = fields[key]
+                if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+                    return fieldErrors[0].message || `Invalid ${key}`
+                }
+            }
+        }
+        return errorData?.message || error?.message || 'Failed to create user'
+    }
+
     const createUser = async (data: Partial<User>): Promise<User> => {
         try {
             const { $api } = useNuxtApp()
@@ -273,9 +287,13 @@ export const useUserService = () => {
                 }
             }
             throw new Error('Failed to create user')
-        } catch (error) {
+        } catch (error: any) {
+            const message = extractApiErrorMessage(error)
+            const err = new Error(message) as any
+            err.data = error?.data
+            err.statusCode = error?.statusCode
             console.error('Failed to create user:', error)
-            throw error
+            throw err
         }
     }
 
