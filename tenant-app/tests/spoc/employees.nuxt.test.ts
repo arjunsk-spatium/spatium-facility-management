@@ -11,7 +11,8 @@ describe('SPOC Employees Page', () => {
             email: 'john.doe@company.com',
             phone: '+91 98765 43210',
             department: 'Engineering',
-            designation: 'Senior Developer'
+            designation: 'Senior Developer',
+            buildingPassEnabled: false
         },
         {
             id: '2',
@@ -19,7 +20,8 @@ describe('SPOC Employees Page', () => {
             email: 'jane.smith@company.com',
             phone: '+91 87654 32109',
             department: 'HR',
-            designation: 'HR Manager'
+            designation: 'HR Manager',
+            buildingPassEnabled: true
         },
         {
             id: '3',
@@ -27,7 +29,8 @@ describe('SPOC Employees Page', () => {
             email: 'bob.wilson@company.com',
             phone: '+91 76543 21098',
             department: 'Sales',
-            designation: 'Sales Executive'
+            designation: 'Sales Executive',
+            buildingPassEnabled: false
         }
     ]
 
@@ -179,6 +182,91 @@ describe('SPOC Employees Page', () => {
             
             const vm = wrapper.vm as any
             expect(typeof vm.handleSaveEmployee).toBe('function')
+        })
+    })
+
+    describe('Building Pass Toggle', () => {
+        it('should have handleBuildingPassToggle method', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: mockEmployees, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            const vm = wrapper.vm as any
+            expect(typeof vm.handleBuildingPassToggle).toBe('function')
+        })
+
+        it('should initialize buildingPassLoading state', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: mockEmployees, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            const vm = wrapper.vm as any
+            expect(vm.buildingPassLoading).toEqual({})
+        })
+
+        it('should include Building Pass column', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: mockEmployees, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            const vm = wrapper.vm as any
+            const buildingPassColumn = vm.columns.find((c: any) => c.key === 'building_pass')
+            expect(buildingPassColumn).toBeDefined()
+            expect(buildingPassColumn.title).toBe('Building Pass')
+        })
+
+        it('should render Building Pass toggle for employees', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: mockEmployees, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            // Ant Design Vue switch renders a button with role="switch"
+            const switches = wrapper.findAll('[role="switch"]')
+            expect(switches.length).toBeGreaterThan(0)
+        })
+
+        it('should have buildingPassEnabled in newEmployee form', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            const vm = wrapper.vm as any
+            expect(vm.newEmployee.buildingPassEnabled).toBe(false)
         })
     })
 
