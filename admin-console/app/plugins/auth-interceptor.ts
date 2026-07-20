@@ -18,6 +18,7 @@ const publicUrls = [
     '/api/auth/login/',
     '/api/auth/token/refresh/',
     '/api/portal/tenants/public/domain/',
+    '/api/platform/privacy/public/tasks/',
 ];
 
 const isPublicUrl = (url: string) => {

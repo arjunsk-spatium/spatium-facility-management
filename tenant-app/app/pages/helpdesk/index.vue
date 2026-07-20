@@ -348,6 +348,7 @@ import {
 } from '@ant-design/icons-vue';
 import StatusBadge from '../../../components/helpdesk/StatusBadge.vue';
 import ResponsiveDataView from '../../../components/ResponsiveDataView.vue';
+import { useIndexedDB, HELPDESK_FACILITY_KEY } from '../../../composables/useIndexedDB';
 
 definePageMeta({
     middleware: 'auth'
@@ -357,6 +358,7 @@ definePageMeta({
 const helpdeskStore = useHelpdeskStore();
 const facilityStore = useFacilityStore();
 const authStore = useAuthStore();
+const { setItem, getItem, removeItem } = useIndexedDB();
 const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, pendingCount, closedCount, allCount, count, page, pageSize } = storeToRefs(helpdeskStore);
 const { facilities } = storeToRefs(facilityStore);
 
@@ -534,6 +536,15 @@ const activeTab = ref('all');
 const searchText = ref('');
 const facilityFilter = ref<string | undefined>(undefined);
 
+// Debounce search input to avoid excessive API calls
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+watch(searchText, () => {
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+        fetchTicketsByFilter();
+    }, 300);
+});
+
 const columns = [
     { title: 'Ticket ID', dataIndex: 'ticket_number', key: 'ticket_number', width: 140 },
     { title: 'Title', dataIndex: 'title', key: 'title' },
@@ -563,6 +574,11 @@ const handleTabChange = async () => {
 };
 
 const handleFacilityFilterChange = async () => {
+    if (facilityFilter.value) {
+        await setItem(HELPDESK_FACILITY_KEY, facilityFilter.value);
+    } else {
+        await removeItem(HELPDESK_FACILITY_KEY);
+    }
     await fetchTicketsByFilter();
 };
 
@@ -570,7 +586,7 @@ const fetchTicketsByFilter = async () => {
     const params: TicketListParams = { page: 1 };
     
     if (activeTab.value === 'priority') {
-        await helpdeskStore.fetchPriorityTickets(1, pageSize.value, facilityFilter.value);
+        await helpdeskStore.fetchPriorityTickets(1, pageSize.value, facilityFilter.value, searchText.value || undefined);
         return;
     } else if (activeTab.value === 'open') {
         params.states = 'open';
@@ -586,6 +602,10 @@ const fetchTicketsByFilter = async () => {
     
     if (facilityFilter.value) {
         params.facility_id = facilityFilter.value;
+    }
+    
+    if (searchText.value) {
+        params.search = searchText.value;
     }
     
     await helpdeskStore.fetchTickets(params);
@@ -623,11 +643,14 @@ const handlePageChange = async (pageNum: number, newPageSize: number) => {
     } else if (activeTab.value === 'closed') {
         params.states = 'closed';
     } else if (activeTab.value === 'priority') {
-        await helpdeskStore.fetchPriorityTickets(pageNum, newPageSize, facilityFilter.value);
+        await helpdeskStore.fetchPriorityTickets(pageNum, newPageSize, facilityFilter.value, searchText.value || undefined);
         return;
     }
     if (facilityFilter.value) {
         params.facility_id = facilityFilter.value;
+    }
+    if (searchText.value) {
+        params.search = searchText.value;
     }
     if (newPageSize !== pageSize.value) {
         params.page_size = newPageSize;
@@ -647,10 +670,16 @@ const handleCloseTicket = async (record: any) => {
 
 // Initialization
 onMounted(async () => {
+    await facilityStore.fetchFacilities();
+
+    const savedFacility = await getItem<string>(HELPDESK_FACILITY_KEY);
+    if (savedFacility && facilities.value.some(f => f.id === savedFacility)) {
+        facilityFilter.value = savedFacility;
+    }
+
     await Promise.all([
         fetchTicketsByFilter(),
-        helpdeskStore.fetchTicketCounts(),
-        facilityStore.fetchFacilities()
+        helpdeskStore.fetchTicketCounts()
     ]);
 });
 </script>

@@ -1,43 +1,108 @@
-import { describe, it, expect } from 'vitest';
-import { useValidation } from './useValidation';
+import { describe, it, expect } from 'vitest'
+import { useValidation } from './useValidation'
 
 describe('useValidation', () => {
-  const { isValidEmail, sanitizeError } = useValidation();
+    describe('isValidEmail', () => {
+        it('returns true for valid email addresses', () => {
+            const { isValidEmail } = useValidation()
+            expect(isValidEmail('user@example.com')).toBe(true)
+            expect(isValidEmail('test.user+tag@domain.co.uk')).toBe(true)
+        })
 
-  describe('isValidEmail', () => {
-    it('should return true for valid emails', () => {
-      expect(isValidEmail('test@example.com')).toBe(true);
-      expect(isValidEmail('user.name@domain.co.uk')).toBe(true);
-      expect(isValidEmail('user+tag@domain.com')).toBe(true);
-    });
+        it('returns false for invalid email addresses', () => {
+            const { isValidEmail } = useValidation()
+            expect(isValidEmail('not-an-email')).toBe(false)
+            expect(isValidEmail('missing@domain')).toBe(false)
+            expect(isValidEmail('')).toBe(false)
+        })
+    })
 
-    it('should return false for invalid emails', () => {
-      expect(isValidEmail('plainaddress')).toBe(false);
-      expect(isValidEmail('@example.com')).toBe(false);
-      expect(isValidEmail('Joe Smith <email@example.com>')).toBe(false);
-      expect(isValidEmail('email.example.com')).toBe(false);
-      expect(isValidEmail('email@example@example.com')).toBe(false);
-    });
-  });
+    describe('sanitizeError', () => {
+        it('returns the string if error is a string', () => {
+            const { sanitizeError } = useValidation()
+            expect(sanitizeError('Something went wrong')).toBe('Something went wrong')
+        })
 
-  describe('sanitizeError', () => {
-    it('should return message from Error object', () => {
-      const error = new Error('Something went wrong');
-      expect(sanitizeError(error)).toBe('Something went wrong');
-    });
+        it('returns data.message when available', () => {
+            const { sanitizeError } = useValidation()
+            const error = { data: { message: 'Backend error' } }
+            expect(sanitizeError(error)).toBe('Backend error')
+        })
 
-    it('should return message from object with data.message (Nuxt/Fetch error)', () => {
-      const error = { data: { message: 'API Error' } };
-      expect(sanitizeError(error)).toBe('API Error');
-    });
+        it('returns the first field error for VALIDATION_ERROR type', () => {
+            const { sanitizeError } = useValidation()
+            const error = {
+                data: {
+                    error: {
+                        type: 'VALIDATION_ERROR',
+                        fields: {
+                            username: [{ code: 'INVALID', message: 'Username is already taken within this tenant.' }]
+                        }
+                    }
+                }
+            }
+            expect(sanitizeError(error)).toBe('Username is already taken within this tenant.')
+        })
 
-    it('should return string error as is', () => {
-      expect(sanitizeError('Just a string error')).toBe('Just a string error');
-    });
+        it('returns the first field error for VALIDATION type', () => {
+            const { sanitizeError } = useValidation()
+            const error = {
+                data: {
+                    error: {
+                        type: 'VALIDATION',
+                        fields: {
+                            email: [{ code: 'INVALID', message: 'Email is invalid.' }]
+                        }
+                    }
+                }
+            }
+            expect(sanitizeError(error)).toBe('Email is invalid.')
+        })
 
-    it('should return generic message for unknown objects', () => {
-      expect(sanitizeError({})).toBe('An unexpected error occurred');
-      expect(sanitizeError(null)).toBe('An unexpected error occurred');
-    });
-  });
-});
+        it('falls back to error.message', () => {
+            const { sanitizeError } = useValidation()
+            const error = { message: 'Network error' }
+            expect(sanitizeError(error)).toBe('Network error')
+        })
+
+        it('returns default message for unknown errors', () => {
+            const { sanitizeError } = useValidation()
+            expect(sanitizeError(null)).toBe('An unexpected error occurred')
+            expect(sanitizeError({})).toBe('An unexpected error occurred')
+        })
+    })
+
+    describe('getValidationErrors', () => {
+        it('returns an empty array when there are no field errors', () => {
+            const { getValidationErrors } = useValidation()
+            expect(getValidationErrors(null)).toEqual([])
+            expect(getValidationErrors({})).toEqual([])
+            expect(getValidationErrors({ data: {} })).toEqual([])
+        })
+
+        it('returns all field errors with field names', () => {
+            const { getValidationErrors } = useValidation()
+            const error = {
+                data: {
+                    error: {
+                        type: 'VALIDATION_ERROR',
+                        fields: {
+                            username: [
+                                { code: 'INVALID', message: 'Username is already taken within this tenant.' }
+                            ],
+                            email: [
+                                { code: 'INVALID', message: 'Email is invalid.' },
+                                { code: 'REQUIRED', message: 'Email is required.' }
+                            ]
+                        }
+                    }
+                }
+            }
+            expect(getValidationErrors(error)).toEqual([
+                'username: Username is already taken within this tenant.',
+                'email: Email is invalid.',
+                'email: Email is required.'
+            ])
+        })
+    })
+})

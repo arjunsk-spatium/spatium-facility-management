@@ -402,7 +402,7 @@ const openAssignModal = async (reassign = false) => {
     loadingUsers.value = true;
     try {
         const service = useHelpdeskService();
-        assignableUsers.value = await service.getAssignableUsers();
+        assignableUsers.value = await service.getAssignableUsers(currentTicket.value!.facility);
     } catch (error) {
         message.error('Failed to load users');
     } finally {
@@ -431,7 +431,7 @@ const openReopenModal = async () => {
     loadingUsers.value = true;
     try {
         const service = useHelpdeskService();
-        assignableUsers.value = await service.getAssignableUsers();
+        assignableUsers.value = await service.getAssignableUsers(currentTicket.value!.facility);
         reopenAssignee.value = currentTicket.value?.assignee || undefined;
     } catch (error) {
         message.error('Failed to load users');

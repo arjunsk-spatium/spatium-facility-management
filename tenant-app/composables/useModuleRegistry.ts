@@ -63,6 +63,14 @@ const registry: Module[] = [
     },
     { key: 'users', label: 'User Management', icon: 'TeamOutlined', route: '/users' },
     { key: 'banners', label: 'Banners', icon: 'PictureOutlined', route: '/banners' },
+    {
+        key: 'feed',
+        label: 'Feed',
+        icon: 'NotificationOutlined',
+        children: [
+            { key: 'feed-list', label: 'Feed Posts', route: '/feed' }
+        ]
+    },
     { key: 'configure', label: 'Configure', icon: 'SettingOutlined', route: '/configure' },
     {
         key: 'frontdesk',

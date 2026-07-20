@@ -593,18 +593,22 @@ export const useHelpdeskService = () => {
             };
         },
 
-        getPriorityTickets: async (page = 1, pageSize = 20, facilityId?: string): Promise<{
+        getPriorityTickets: async (page = 1, pageSize = 20, facilityId?: string, search?: string): Promise<{
             tickets: Ticket[];
             count: number;
             next: string | null;
             previous: string | null;
         }> => {
             try {
+                const query: Record<string, any> = { page, page_size: pageSize };
+                if (facilityId) query.facility_id = facilityId;
+                if (search) query.search = search;
+
                 const response = await $api<
                     ApiResponse<ApiResponse<PaginatedResponse<Ticket>>>
                 >("/api/portal/helpdesk/tickets/priority-tickets/", {
                     method: "GET",
-                    query: { page, page_size: pageSize, facility_id: facilityId },
+                    query,
                 });
                 if (!response.success || !response.data.success) {
                     throw new Error(
@@ -836,11 +840,14 @@ export const useHelpdeskService = () => {
             }
         },
 
-        getAssignableUsers: async (): Promise<any[]> => {
+        getAssignableUsers: async (facilityId: string): Promise<any[]> => {
             try {
                 const response = await $api<
                     ApiResponse<PaginatedResponse<any>>
-                >("/api/portal/users/opstrack/list/", { method: "GET" });
+                >("/api/portal/users/opstrack/online/list/", {
+                    method: "GET",
+                    query: { facility_id: facilityId },
+                });
                 if (!response.success) {
                     throw new Error(
                         response.message || "Failed to fetch users",

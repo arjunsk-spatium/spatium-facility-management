@@ -272,6 +272,7 @@ import { useRoute } from 'vue-router';
 import { useFacilityStore } from '../../../../stores/facility';
 import { useAuthStore } from '../../../../stores/auth';
 import { useHelpdeskService } from '../../../../composables/helpdeskService';
+import { useValidation } from '../../../../composables/useValidation';
 import type { Tower } from '../../../../composables/facilityService';
 import AppLoader from '../../../../components/AppLoader.vue';
 import FacilitiesTowerStructureManager from '../../../../components/facilities/TowerStructureManager.vue';
@@ -560,9 +561,15 @@ const handleAddStaff = async () => {
         message.success('Staff added successfully');
         isAddStaffModalOpen.value = false;
         await fetchStaff();
-    } catch (e) {
+    } catch (e: any) {
         console.error('Failed to add staff', e);
-        message.error('Failed to add staff');
+        const { getValidationErrors } = useValidation();
+        const fieldErrors = getValidationErrors(e);
+        if (fieldErrors.length > 0) {
+            message.error(fieldErrors.join(' | '));
+        } else {
+            message.error(e.data?.message || e.message || 'Failed to add staff');
+        }
     } finally {
         submittingStaff.value = false;
     }
