@@ -563,8 +563,13 @@ const handleUserSubmit = async () => {
                 userModalLoading.value = false
                 return
             }
+            if (emailError?.message) {
+                message.error(emailError.message)
+                userModalLoading.value = false
+                return
+            }
         }
-        message.error('Failed to save user')
+        message.error(err.message || 'Failed to save user')
     } finally {
         userModalLoading.value = false
     }
