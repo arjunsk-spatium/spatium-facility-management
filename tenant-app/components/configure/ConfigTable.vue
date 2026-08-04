@@ -235,6 +235,23 @@ const openEditModal = (record: any) => {
             formData.value.parent_id = record[parentIdKey]
         }
     }
+
+    // Normalize select fields: if the current value is an object, map it to the matching option value
+    if (props.fields) {
+        props.fields.forEach(field => {
+            if (field.type === 'select') {
+                const current = formData.value[field.name]
+                if (current && typeof current === 'object') {
+                    const match = field.options?.find(opt =>
+                        opt.value === current.id ||
+                        opt.value === current.key ||
+                        opt.label === current.label
+                    )
+                    formData.value[field.name] = match ? match.value : undefined
+                }
+            }
+        })
+    }
     modalVisible.value = true
 }
 

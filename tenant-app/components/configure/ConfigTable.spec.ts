@@ -83,4 +83,28 @@ describe('ConfigTable.vue', () => {
         const vm = wrapper.vm as any
         expect(vm.formData.parent_id).toBe('fac-123')
     })
+
+    it('normalizes object select-field values to option values when editing', async () => {
+        const data = [{
+            id: '1',
+            name: 'Test',
+            default_priority: { key: 'P1', label: 'Critical' }
+        }]
+        const wrapper = mountComponent({
+            data,
+            fields: [
+                { name: 'default_priority', label: 'Default Priority', type: 'select' as const, options: [
+                    { label: 'Critical', value: '00000000-0000-0000-0000-000000000101' },
+                    { label: 'High', value: '00000000-0000-0000-0000-000000000102' }
+                ]}
+            ],
+            canUpdate: true
+        })
+
+        const editBtn = wrapper.find('.a-button')
+        await editBtn.trigger('click')
+
+        const vm = wrapper.vm as any
+        expect(vm.formData.default_priority).toBe('00000000-0000-0000-0000-000000000101')
+    })
 })
