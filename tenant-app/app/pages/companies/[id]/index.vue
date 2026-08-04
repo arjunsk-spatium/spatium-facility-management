@@ -797,14 +797,15 @@ const handleEmployeeOk = async () => {
 
         if (editingEmployeeId.value) {
             // Edit
-            await $api<any>(`/api/portal/users/opstrack/${editingEmployeeId.value}/update/`, {
+            await $api<any>(`/api/portal/users/org_portal/${editingEmployeeId.value}/update/`, {
                 method: 'PATCH',
                 body: {
                     full_name: employeeForm.full_name,
                     email: employeeForm.email,
                     phone_number: employeeForm.phone_number,
                     tenant_id: tenantId,
-                    company_id: companyId
+                    company_id: companyId,
+                    app_name: 'org_portal'
                 }
             })
             message.success('Employee updated successfully')
