@@ -38,6 +38,7 @@ const mockFacilities = [
 vi.mock('../../../../composables/userService', () => ({
     useUserService: () => ({
         getUserById: vi.fn().mockResolvedValue(mockUser),
+        getUsers: vi.fn().mockResolvedValue([mockUser]),
         getUserAssignedModules: vi.fn().mockResolvedValue({ submodules: ['perm-1'], features: [] }),
         getAllSystemModules: vi.fn().mockResolvedValue(mockSystemModules),
         getUserFacilities: vi.fn().mockResolvedValue({ facility_ids: ['fac-1'], is_all_facilities: false })

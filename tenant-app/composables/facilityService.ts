@@ -286,7 +286,7 @@ export const useFacilityService = (): IFacilityService => {
 
             const response = await $api<
                 ApiResponse<PaginatedResponse<Facility>>
-            >("/api/portal/facilities/", {
+            >("/api/portal/all_facilities/", {
                 method: "GET",
                 query: {
                     ...params,
