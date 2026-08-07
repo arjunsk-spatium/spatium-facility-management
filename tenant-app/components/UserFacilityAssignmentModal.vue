@@ -84,7 +84,7 @@ const loadData = async () => {
     loading.value = true
     try {
         const [allFacilitiesData, userFacilitiesData] = await Promise.all([
-            facilityService.getFacilities({ page_size: 999 }),
+            facilityService.getAllFacilities({ page_size: 999 }),
             getUserFacilities(props.user.id)
         ])
         facilities.value = allFacilitiesData.facilities || []

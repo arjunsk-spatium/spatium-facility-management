@@ -236,7 +236,7 @@ const handleSubmit = async () => {
 
 onMounted(async () => {
     await Promise.all([
-        facilityStore.fetchFacilities(),
+        facilityStore.fetchFacilities({ page_size: 999 }, true),
         fetchDropdowns()
     ])
 })

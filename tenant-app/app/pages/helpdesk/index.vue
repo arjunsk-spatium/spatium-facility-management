@@ -426,7 +426,7 @@ const openCreateModal = async () => {
     await Promise.all([
         loadCategories(),
         loadPriorities(),
-        facilityStore.fetchFacilities()
+        facilityStore.fetchFacilities({ page_size: 999 }, true)
     ]);
 };
 
@@ -670,7 +670,7 @@ const handleCloseTicket = async (record: any) => {
 
 // Initialization
 onMounted(async () => {
-    await facilityStore.fetchFacilities();
+    await facilityStore.fetchFacilities({ page_size: 999 }, true);
 
     const savedFacility = await getItem<string>(HELPDESK_FACILITY_KEY);
     if (savedFacility && facilities.value.some(f => f.id === savedFacility)) {

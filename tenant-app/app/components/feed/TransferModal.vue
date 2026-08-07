@@ -21,6 +21,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useAllFacilityStore } from '../../../stores/allFacility'
 
 const props = defineProps<{
     visible: boolean
@@ -32,30 +33,19 @@ const emit = defineEmits<{
     cancel: []
 }>()
 
-const facilityStore = useFacilityStore()
+const allFacilityStore = useAllFacilityStore()
 const selectedFacilities = ref<string[]>([])
 const loading = ref(false)
-const facilitiesLoading = ref(false)
 
-const facilities = computed(() => facilityStore.facilities)
+const facilities = computed(() => allFacilityStore.facilities)
+const facilitiesLoading = computed(() => allFacilityStore.loading)
 
 watch(() => props.visible, (isVisible) => {
     if (isVisible) {
         selectedFacilities.value = []
-        fetchFacilities()
+        allFacilityStore.fetchAllFacilities({ page_size: 999 })
     }
 })
-
-const fetchFacilities = async () => {
-    facilitiesLoading.value = true
-    try {
-        await facilityStore.fetchFacilities()
-    } catch (err) {
-        console.error('Failed to fetch facilities:', err)
-    } finally {
-        facilitiesLoading.value = false
-    }
-}
 
 const handleOk = () => {
     if (props.postId) {

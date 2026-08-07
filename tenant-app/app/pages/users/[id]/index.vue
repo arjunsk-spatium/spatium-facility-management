@@ -204,7 +204,7 @@ const loadData = async () => {
             getAllSystemModules(),
             getUserAssignedModules(userId),
             getUserFacilities(userId),
-            facilityService.getFacilities({ page_size: 999 })
+            facilityService.getAllFacilities({ page_size: 999 })
         ])
 
         systemModules.value = modulesData

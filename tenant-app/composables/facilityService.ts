@@ -244,6 +244,12 @@ export interface IFacilityService {
         next: string | null;
         previous: string | null;
     }>;
+    getAllFacilities(params?: FacilityListParams): Promise<{
+        facilities: Facility[];
+        count: number;
+        next: string | null;
+        previous: string | null;
+    }>;
     getFacilityById(id: string): Promise<Facility>;
     createFacility(payload: CreateFacilityPayload): Promise<Facility>;
     updateFacility(
@@ -279,6 +285,37 @@ export const useFacilityService = (): IFacilityService => {
 
     return {
         getFacilities: async (params: FacilityListParams = {}) => {
+            const query: any = {};
+            if (params.page) query.page = params.page;
+            if (params.search) query.search = params.search;
+            if (params.page_size) query.page_size = params.page_size;
+
+            const response = await $api<
+                ApiResponse<PaginatedResponse<Facility>>
+            >("/api/portal/facilities/", {
+                method: "GET",
+                query: {
+                    ...params,
+                    page: params.page || 1,
+                    page_size: params.page_size || 1,
+                },
+            });
+
+            if (!response.success) {
+                throw new Error(
+                    response.message || "Failed to fetch facilities",
+                );
+            }
+
+            return {
+                facilities: response.data.results,
+                count: response.data.count,
+                next: response.data.next,
+                previous: response.data.previous,
+            };
+        },
+
+        getAllFacilities: async (params: FacilityListParams = {}) => {
             const query: any = {};
             if (params.page) query.page = params.page;
             if (params.search) query.search = params.search;

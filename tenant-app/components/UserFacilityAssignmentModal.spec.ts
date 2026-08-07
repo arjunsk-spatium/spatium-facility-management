@@ -36,7 +36,8 @@ vi.mock('../composables/userService', () => ({
 
 vi.mock('../composables/facilityService', () => ({
     useFacilityService: () => ({
-        getFacilities: vi.fn().mockResolvedValue(mockFacilities)
+        getFacilities: vi.fn().mockResolvedValue(mockFacilities),
+        getAllFacilities: vi.fn().mockResolvedValue(mockFacilities)
     })
 }))
 

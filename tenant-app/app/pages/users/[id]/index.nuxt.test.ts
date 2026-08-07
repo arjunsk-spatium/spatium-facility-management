@@ -47,7 +47,8 @@ vi.mock('../../../../composables/userService', () => ({
 
 vi.mock('../../../../composables/facilityService', () => ({
     useFacilityService: () => ({
-        getFacilities: vi.fn().mockResolvedValue({ facilities: mockFacilities, count: 2, next: null, previous: null })
+        getFacilities: vi.fn().mockResolvedValue({ facilities: mockFacilities, count: 2, next: null, previous: null }),
+        getAllFacilities: vi.fn().mockResolvedValue({ facilities: mockFacilities, count: 2, next: null, previous: null })
     })
 }))
 

@@ -20,7 +20,7 @@ export const useFacilityStore = defineStore("facility", {
         // Pagination
         count: 0,
         page: 1,
-        pageSize: 10,
+        pageSize: 1,
         next: null as string | null,
         previous: null as string | null,
         insights: null as FacilityInsights | null,
@@ -43,18 +43,18 @@ export const useFacilityStore = defineStore("facility", {
             const service = useFacilityService();
 
             try {
-                const { page = this.page, page_size = this.pageSize } = params;
+                const { page = this.page, page_size = params.page_size || this.pageSize } = params;
                 const result = await service.getFacilities({ page, page_size });
 
-                this.facilities = result.facilities;
-                this.count = result.count;
-                this.next = result.next;
-                this.previous = result.previous;
+                this.facilities = result.facilities || [];
+                this.count = result.count || 0;
+                this.next = result.next || null;
+                this.previous = result.previous || null;
                 this.page = page;
                 this.pageSize = page_size;
                 this.init = true;
             } catch (err: any) {
-                this.error = err.message || "Failed to fetch facilities";
+                this.error = err.message || "Failed to fetch user facilities";
             } finally {
                 this.loading = false;
             }
@@ -90,7 +90,6 @@ export const useFacilityStore = defineStore("facility", {
 
             try {
                 const newFacility = await service.createFacility(facilityData);
-                // Refresh the list
                 await this.fetchFacilities({}, true);
                 return newFacility;
             } catch (err: any) {
@@ -111,7 +110,6 @@ export const useFacilityStore = defineStore("facility", {
 
             try {
                 const updated = await service.updateFacility(id, updates);
-                // Update in list if exists
                 const index = this.facilities.findIndex((f) => f.id === id);
                 if (index !== -1) {
                     this.facilities[index] = updated;
@@ -210,7 +208,6 @@ export const useFacilityStore = defineStore("facility", {
             }
         },
 
-        // Pagination helpers
         async nextPage() {
             if (this.hasNext) {
                 await this.fetchFacilities({ page: this.page + 1 }, true);
@@ -257,3 +254,5 @@ export const useFacilityStore = defineStore("facility", {
         },
     },
 });
+
+export const useUserFacilityStore = useFacilityStore;

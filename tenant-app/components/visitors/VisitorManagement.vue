@@ -228,7 +228,7 @@ onMounted(async () => {
     // Fetch all required data
     await Promise.all([
         store.fetchVisitors(),
-        facilityStore.fetchFacilities(),
+        facilityStore.fetchFacilities({ page_size: 999 }, true),
         companyStore.fetchCompanies()
     ])
 })
