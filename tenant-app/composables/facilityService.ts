@@ -297,7 +297,7 @@ export const useFacilityService = (): IFacilityService => {
                 query: {
                     ...params,
                     page: params.page || 1,
-                    page_size: params.page_size || 10,
+                    page_size: params.page_size || 1,
                 },
             });
 

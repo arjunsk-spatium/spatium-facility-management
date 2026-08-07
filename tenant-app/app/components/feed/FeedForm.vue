@@ -163,6 +163,7 @@ import {
 } from '@ant-design/icons-vue'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useFeedService, type FeedCategory } from '../../../composables/feedService'
+import { useAllFacilityStore } from '../../../stores/allFacility'
 
 const props = defineProps<{
     submitText?: string
@@ -177,13 +178,12 @@ const emit = defineEmits<{
 }>()
 
 const { getCategories } = useFeedService()
+const allFacilityStore = useAllFacilityStore()
 const companyStore = useCompanyStore()
-const facilityStore = useFacilityStore()
 
 const categories = ref<FeedCategory[]>([])
 const categoriesLoading = ref(false)
 const companiesLoading = ref(false)
-const facilitiesLoading = ref(false)
 const imagePreview = ref<string | null>(null)
 const imageFile = ref<File | null>(null)
 const isDragOver = ref(false)
@@ -211,7 +211,8 @@ const formState = reactive({
 })
 
 const companies = computed(() => companyStore.companies)
-const facilities = computed(() => facilityStore.facilities)
+const facilities = computed(() => allFacilityStore.facilities)
+const facilitiesLoading = computed(() => allFacilityStore.loading)
 
 const fetchCategories = async () => {
     categoriesLoading.value = true
@@ -241,13 +242,10 @@ const fetchCompanies = async () => {
 }
 
 const fetchFacilities = async () => {
-    facilitiesLoading.value = true
     try {
-        await facilityStore.fetchAllFacilities()
+        await allFacilityStore.fetchAllFacilities({ page_size: 999 })
     } catch (err) {
         console.error('Failed to fetch facilities:', err)
-    } finally {
-        facilitiesLoading.value = false
     }
 }
 

@@ -19,10 +19,10 @@
             </div>
 
             <!-- Loading Handler -->
-            <AppLoader v-if="facilityStore.loading" message="Loading Facilities..." />
+            <AppLoader v-if="allFacilityStore.loading" message="Loading Facilities..." />
 
             <!-- Empty State -->
-            <div v-else-if="facilityStore.totalFacilities === 0"
+            <div v-else-if="allFacilityStore.totalFacilities === 0"
                 class="flex flex-col items-center justify-center p-12 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
                 <HomeOutlined class="text-4xl text-gray-300 dark:text-gray-600 mb-4" />
                 <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No Facilities Found</h3>
@@ -35,7 +35,7 @@
 
             <!-- Grid Layout -->
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                <a-card v-for="facility in facilityStore.facilities" :key="facility.id">
+                <a-card v-for="facility in allFacilityStore.facilities" :key="facility.id">
                     <!-- Card Content -->
                     <template #cover>
                         <div
@@ -98,9 +98,9 @@
             </div>
 
             <!-- Pagination -->
-            <div v-if="facilityStore.totalFacilities > 0" class="flex justify-end mt-6">
-                <a-pagination :current="facilityStore.page" :total="facilityStore.count"
-                    :page-size="facilityStore.pageSize" show-size-changer :page-size-options="['10', '20', '50', '100']"
+            <div v-if="allFacilityStore.totalFacilities > 0" class="flex justify-end mt-6">
+                <a-pagination :current="allFacilityStore.page" :total="allFacilityStore.totalFacilities"
+                    :page-size="allFacilityStore.pageSize" show-size-changer :page-size-options="['10', '20', '50', '100']"
                     @change="handlePageChange" />
             </div>
         </template>
@@ -109,7 +109,7 @@
 
 <script setup lang="ts">
 import { onMounted, computed } from 'vue';
-import { useFacilityStore } from '../../../stores/facility';
+import { useAllFacilityStore } from '../../../stores/allFacility';
 import { useAuthStore } from '../../../stores/auth';
 import AppLoader from '../../../components/AppLoader.vue';
 import {
@@ -127,7 +127,7 @@ definePageMeta({
     middleware: 'auth'
 });
 
-const facilityStore = useFacilityStore();
+const allFacilityStore = useAllFacilityStore();
 const authStore = useAuthStore();
 
 const canView = computed(() => authStore.hasPermission('facilities-list:view'))
@@ -136,13 +136,12 @@ const canUpdate = computed(() => authStore.hasPermission('facilities-list:update
 const canDelete = computed(() => authStore.hasPermission('facilities-list:delete'))
 
 const handlePageChange = (page: number, pageSize: number) => {
-    facilityStore.goToPage(page, pageSize);
+    allFacilityStore.goToPage(page, pageSize);
 };
-
 
 const handleDeleteFacility = async (id: string) => {
     try {
-        await facilityStore.deleteFacility(id);
+        await allFacilityStore.deleteFacility(id);
         message.success('Facility deleted successfully');
     } catch (error) {
         message.error('Failed to delete facility');
@@ -150,6 +149,6 @@ const handleDeleteFacility = async (id: string) => {
 };
 
 onMounted(() => {
-    facilityStore.fetchAllFacilities({}, true);
+    allFacilityStore.fetchAllFacilities({ page: 1, page_size: 10 }, true);
 });
 </script>

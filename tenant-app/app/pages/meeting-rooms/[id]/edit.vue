@@ -152,7 +152,8 @@ const fetchDropdowns = async () => {
     try {
         const [rtResult, amResult] = await Promise.all([
             $api<any>('/api/portal/meeting-rooms/room-types/'),
-            $api<any>('/api/portal/meeting-rooms/amenities/')
+            $api<any>('/api/portal/meeting-rooms/amenities/'),
+            facilityStore.fetchFacilities({ page_size: 999 }, true)
         ])
         if (rtResult.success) {
             roomTypes.value = rtResult.data.results || []

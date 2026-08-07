@@ -247,7 +247,7 @@ const fetchRoomsByFilter = async () => {
 onMounted(async () => {
     await Promise.all([
         roomStore.fetchRooms(),
-        facilityStore.fetchFacilities()
+        facilityStore.fetchFacilities({ page_size: 999 }, true)
     ]);
 });
 </script>
