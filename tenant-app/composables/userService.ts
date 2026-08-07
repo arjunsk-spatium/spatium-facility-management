@@ -35,6 +35,12 @@ export interface SystemModule {
     submodules: SubModule[]
 }
 
+export interface UserFacilityAssignment {
+    user_id?: string
+    facility_ids: string[]
+    is_all_facilities: boolean
+}
+
 export interface UserModule extends SystemModule {
     isAssigned?: boolean
 }
@@ -455,6 +461,39 @@ export const useUserService = () => {
         }
     }
 
+    const getUserFacilities = async (userId: string): Promise<UserFacilityAssignment> => {
+        try {
+            const { $api } = useNuxtApp()
+            const response = await $api<any>(`/api/portal/users/org_portal/${userId}/facilities/`)
+            const data = response?.data || {}
+            return {
+                user_id: data.user_id,
+                facility_ids: Array.isArray(data.facility_ids) ? data.facility_ids : [],
+                is_all_facilities: !!data.is_all_facilities
+            }
+        } catch (error) {
+            console.error('Failed to fetch user facilities:', error)
+            return { facility_ids: [], is_all_facilities: false }
+        }
+    }
+
+    const assignUserFacilities = async (userId: string, payload: { facility_ids: string[]; is_all_facilities: boolean }): Promise<boolean> => {
+        try {
+            const { $api } = useNuxtApp()
+            await $api<any>(`/api/portal/users/org_portal/${userId}/facilities/`, {
+                method: 'PUT',
+                body: {
+                    facility_ids: payload.facility_ids,
+                    is_all_facilities: payload.is_all_facilities
+                }
+            })
+            return true
+        } catch (error) {
+            console.error('Failed to assign user facilities:', error)
+            throw error
+        }
+    }
+
     return {
         getUserModules,
         getTenantModules,
@@ -468,6 +507,8 @@ export const useUserService = () => {
         getAllSystemModules,
         getUserAssignedModules,
         assignModulesToUser,
-        getAllSubmodulePermissions
+        getAllSubmodulePermissions,
+        getUserFacilities,
+        assignUserFacilities
     }
 }

@@ -114,4 +114,35 @@ describe('User Service', () => {
             phone: '+91 98765 43210'
         })).rejects.toThrow('Something went wrong')
     })
+
+    it('should get user facilities', async () => {
+        mockFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => mockApiResponse({
+                user_id: 'user-1',
+                facility_ids: ['fac-1', 'fac-2'],
+                is_all_facilities: false
+            })
+        })
+
+        const result = await service.getUserFacilities('user-1')
+        expect(result.facility_ids).toEqual(['fac-1', 'fac-2'])
+        expect(result.is_all_facilities).toBe(false)
+    })
+
+    it('should assign user facilities', async () => {
+        mockFetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => mockApiResponse({ success: true })
+        })
+
+        const result = await service.assignUserFacilities('user-1', {
+            facility_ids: ['fac-1'],
+            is_all_facilities: true
+        })
+
+        expect(result).toBe(true)
+    })
 })
