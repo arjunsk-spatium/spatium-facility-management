@@ -148,7 +148,7 @@ export const useCompanyService = () => {
         const response = await $api<{
             success: boolean;
             data: { count: number; next: string | null; previous: string | null; results: Company[] };
-        }>(url, { method: "GET", query });
+        }>(url, { method: "GET", query: { page: params.page || 1, page_size: params.page_size || 1, ...query } });
         console.log(
             "[CompanyService] Companies fetched:",
             response.data?.results?.length || 0,
@@ -161,8 +161,33 @@ export const useCompanyService = () => {
         };
     };
 
+    const getAllCompanies = async (params: CompanyListParams = {}): Promise<{
+        companies: Company[];
+        count: number;
+        next: string | null;
+        previous: string | null;
+    }> => {
+        const url = buildUrl("/api/portal/all_companies/");
+        console.log("[CompanyService] Fetching all companies from:", url);
+        const query: any = {};
+        if (params.page) query.page = params.page;
+        if (params.page_size) query.page_size = params.page_size;
+        if (params.search) query.search = params.search;
+
+        const response = await $api<{
+            success: boolean;
+            data: { count: number; next: string | null; previous: string | null; results: Company[] };
+        }>(url, { method: "GET", query: { page: params.page || 1, page_size: params.page_size || 10, ...query } });
+        return {
+            companies: response.data?.results || [],
+            count: response.data?.count || 0,
+            next: response.data?.next || null,
+            previous: response.data?.previous || null,
+        };
+    };
+
     const getCompanyById = async (id: string): Promise<Company | null> => {
-        const url = buildUrl(`/api/portal/companies/${id}/`);
+        const url = buildUrl(`/api/portal/all_companies/${id}/`);
         try {
             const response = await $api<{ success: boolean; data: Company }>(
                 url,
@@ -326,6 +351,7 @@ export const useCompanyService = () => {
 
     return {
         getCompanies,
+        getAllCompanies,
         getCompanyById,
         createCompany,
         updateCompany,

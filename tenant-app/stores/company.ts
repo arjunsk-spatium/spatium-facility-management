@@ -17,10 +17,11 @@ export const useCompanyStore = defineStore("company", {
         insights: null as CompanyInsights | null,
         loading: false,
         error: null as string | null,
+        init: false,
         // Pagination
         count: 0,
         page: 1,
-        pageSize: 10,
+        pageSize: 1,
         next: null as string | null,
         previous: null as string | null,
     }),
@@ -30,7 +31,9 @@ export const useCompanyStore = defineStore("company", {
         hasPrevious: (state) => state.previous !== null,
     },
     actions: {
-        async fetchCompanies(params: CompanyListParams = {}) {
+        async fetchCompanies(params: CompanyListParams = {}, force = false) {
+            if (this.init && !force && !params.page && !params.search) return;
+
             this.loading = true;
             this.error = null;
             try {
@@ -42,22 +45,23 @@ export const useCompanyStore = defineStore("company", {
                     page,
                     page_size,
                 });
-                this.companies = result.companies;
-                this.count = result.count;
-                this.next = result.next;
-                this.previous = result.previous;
+                this.companies = result.companies || [];
+                this.count = result.count || 0;
+                this.next = result.next || null;
+                this.previous = result.previous || null;
                 this.page = page;
                 this.pageSize = page_size;
+                this.init = true;
             } catch (err: any) {
                 console.error("[CompanyStore] Error fetching companies:", err);
-                this.error = "Failed to fetch companies: " + err.message;
+                this.error = "Failed to fetch user companies: " + err.message;
             } finally {
                 this.loading = false;
             }
         },
 
         async goToPage(page: number) {
-            await this.fetchCompanies({ page });
+            await this.fetchCompanies({ page }, true);
         },
         async fetchCompany(id: string) {
             this.loading = true;
@@ -110,6 +114,7 @@ export const useCompanyStore = defineStore("company", {
                 return updated;
             } catch (err) {
                 this.error = "Failed to update company";
+                throw err;
             } finally {
                 this.loading = false;
             }
@@ -121,9 +126,7 @@ export const useCompanyStore = defineStore("company", {
                 const { deleteCompany } = useCompanyService();
                 await deleteCompany(id);
                 this.companies = this.companies.filter((c) => c.id !== id);
-                if (this.currentCompany?.id === id) {
-                    this.currentCompany = null;
-                }
+                this.count = Math.max(0, this.count - 1);
             } catch (err) {
                 this.error = "Failed to delete company";
                 throw err;
@@ -133,6 +136,7 @@ export const useCompanyStore = defineStore("company", {
         },
         async fetchInsightsAction(startDate?: string, endDate?: string) {
             this.loading = true;
+            this.error = null;
             try {
                 const { getInsights } = useCompanyService();
                 this.insights = await getInsights(startDate, endDate);
@@ -142,27 +146,22 @@ export const useCompanyStore = defineStore("company", {
                 this.loading = false;
             }
         },
-        async fetchCompanyFacilitiesAction(companyId: string) {
+        async fetchCompanyFacilities(companyId: string) {
             this.loading = true;
             this.error = null;
             try {
                 const { getCompanyFacilities } = useCompanyService();
-                this.currentCompanyFacilities =
-                    await getCompanyFacilities(companyId);
-            } catch (err: any) {
-                console.error(
-                    "[CompanyStore] Error fetching company facilities:",
-                    err,
-                );
-                this.error =
-                    "Failed to fetch company facilities: " + err.message;
+                this.currentCompanyFacilities = await getCompanyFacilities(companyId);
+            } catch (err) {
+                this.error = "Failed to fetch company facilities";
             } finally {
                 this.loading = false;
             }
         },
-        async createCompanyFacilityMappingAction(
-            data: CreateCompanyFacilityMappingPayload,
-        ) {
+        async fetchCompanyFacilitiesAction(companyId: string) {
+            return this.fetchCompanyFacilities(companyId);
+        },
+        async addCompanyFacilityMapping(data: CreateCompanyFacilityMappingPayload) {
             this.loading = true;
             this.error = null;
             try {
@@ -170,41 +169,36 @@ export const useCompanyStore = defineStore("company", {
                 const newMapping = await createCompanyFacilityMapping(data);
                 this.currentCompanyFacilities.push(newMapping);
                 return newMapping;
-            } catch (err: any) {
-                console.error(
-                    "[CompanyStore] Error creating facility mapping:",
-                    err,
-                );
-                this.error =
-                    "Failed to create facility mapping: " + err.message;
+            } catch (err) {
+                this.error = "Failed to add facility mapping";
                 throw err;
             } finally {
                 this.loading = false;
             }
         },
-        async deleteCompanyFacilityMappingAction(mappingId: string) {
+        async addCompanyFacilityMappingAction(data: CreateCompanyFacilityMappingPayload) {
+            return this.addCompanyFacilityMapping(data);
+        },
+        async removeCompanyFacilityMapping(mappingId: string) {
             this.loading = true;
             this.error = null;
             try {
                 const { deleteCompanyFacilityMapping } = useCompanyService();
                 await deleteCompanyFacilityMapping(mappingId);
-                this.currentCompanyFacilities =
-                    this.currentCompanyFacilities.filter(
-                        (f) => f.id !== mappingId,
-                    );
-            } catch (err: any) {
-                console.error(
-                    "[CompanyStore] Error deleting facility mapping:",
-                    err,
+                this.currentCompanyFacilities = this.currentCompanyFacilities.filter(
+                    (m) => m.id !== mappingId
                 );
-                this.error =
-                    "Failed to delete facility mapping: " + err.message;
+            } catch (err) {
+                this.error = "Failed to remove facility mapping";
                 throw err;
             } finally {
                 this.loading = false;
             }
         },
-        async generateCompanyQRCodeAction(
+        async removeCompanyFacilityMappingAction(mappingId: string) {
+            return this.removeCompanyFacilityMapping(mappingId);
+        },
+        async generateCompanyQRCode(
             companyId: string,
             companyName: string,
             facilityId: string,
@@ -214,13 +208,8 @@ export const useCompanyStore = defineStore("company", {
             try {
                 const { generateCompanyQRCode } = useCompanyService();
                 await generateCompanyQRCode(companyId, companyName, facilityId);
-            } catch (err: any) {
-                console.error(
-                    "[CompanyStore] Error generating company QR code:",
-                    err,
-                );
-                this.error =
-                    "Failed to generate company QR code: " + err.message;
+            } catch (err) {
+                this.error = "Failed to generate QR Code";
                 throw err;
             } finally {
                 this.loading = false;
@@ -228,3 +217,5 @@ export const useCompanyStore = defineStore("company", {
         },
     },
 });
+
+export const useUserCompanyStore = useCompanyStore;

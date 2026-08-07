@@ -229,7 +229,7 @@ onMounted(async () => {
     await Promise.all([
         store.fetchVisitors(),
         facilityStore.fetchFacilities({ page_size: 999 }, true),
-        companyStore.fetchCompanies()
+        companyStore.fetchCompanies({ page_size: 999 }, true)
     ])
 })
 </script>

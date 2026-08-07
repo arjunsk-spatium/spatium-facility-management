@@ -297,7 +297,7 @@ export const useFacilityService = (): IFacilityService => {
                 query: {
                     ...params,
                     page: params.page || 1,
-                    page_size: params.page_size || 1,
+                    page_size: params.page_size || 100,
                 },
             });
 
@@ -348,7 +348,7 @@ export const useFacilityService = (): IFacilityService => {
 
         getFacilityById: async (id: string) => {
             const response = await $api<ApiResponse<Facility>>(
-                `/api/portal/facilities/${id}/`,
+                `/api/portal/all_facilities/${id}/`,
                 {
                     method: "GET",
                 },

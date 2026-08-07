@@ -18,6 +18,16 @@ describe('Company List Page', () => {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
                     initialState: {
+                        allCompany: {
+                            companies: [
+                                { id: '1', name: 'Test Corp A', status: 'active', contacts: [{ contact_name: 'John Doe', email: 'john@test.com', phone: '123', address: '123 St' }] },
+                                { id: '2', name: 'Test Corp B', status: 'inactive', contacts: [{ contact_name: 'Jane Doe', email: 'jane@test.com', phone: '456', address: '456 St' }] }
+                            ],
+                            loading: false,
+                            count: 2,
+                            page: 1,
+                            pageSize: 10
+                        },
                         company: {
                             companies: [
                                 { id: '1', name: 'Test Corp A', status: 'active', contacts: [{ contact_name: 'John Doe', email: 'john@test.com', phone: '123', address: '123 St' }] },

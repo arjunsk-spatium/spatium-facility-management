@@ -23,10 +23,10 @@ const mockApiResponse = (data: any) => ({
 vi.mock('nuxt/app', () => ({
     useNuxtApp: () => ({
         $api: vi.fn(async (url: string, options: any) => {
-            if (url.includes('/api/portal/companies/') && options?.method === 'GET' && !url.match(/\d/)) {
+            if ((url.includes('/api/portal/companies/') || url.includes('/api/portal/all_companies/')) && options?.method === 'GET' && !url.match(/\d/)) {
                 return mockApiResponse({ count: 1, next: null, previous: null, results: mockCompanies })
             }
-            if (url.includes('/api/portal/companies/') && options?.method === 'GET') {
+            if ((url.includes('/api/portal/companies/') || url.includes('/api/portal/all_companies/')) && options?.method === 'GET') {
                 return mockApiResponse(mockCompanies[0])
             }
             if (url.includes('/api/portal/companies/') && options?.method === 'POST') {

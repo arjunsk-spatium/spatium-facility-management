@@ -74,6 +74,13 @@ describe("Facilities List Page", () => {
                         createSpy: vi.fn,
                         initialState: {
                         auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
+                            allFacility: {
+                                facilities: mockFacilities,
+                                loading: false,
+                                count: 2,
+                                page: 1,
+                                pageSize: 10,
+                            },
                             facility: {
                                 facilities: mockFacilities,
                                 loading: false,
@@ -98,6 +105,13 @@ describe("Facilities List Page", () => {
                         createSpy: vi.fn,
                         initialState: {
                         auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
+                            allFacility: {
+                                facilities: mockFacilities,
+                                loading: false,
+                                count: 2,
+                                page: 1,
+                                pageSize: 10,
+                            },
                             facility: {
                                 facilities: mockFacilities,
                                 loading: false,
@@ -147,6 +161,13 @@ describe("Facilities List Page", () => {
                         createSpy: vi.fn,
                         initialState: {
                         auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
+                            allFacility: {
+                                facilities: mockFacilities,
+                                loading: false,
+                                count: 2,
+                                page: 1,
+                                pageSize: 10,
+                            },
                             facility: {
                                 facilities: mockFacilities,
                                 loading: false,

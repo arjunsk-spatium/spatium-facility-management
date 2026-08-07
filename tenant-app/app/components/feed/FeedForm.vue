@@ -164,6 +164,7 @@ import {
 import dayjs, { type Dayjs } from 'dayjs'
 import { useFeedService, type FeedCategory } from '../../../composables/feedService'
 import { useAllFacilityStore } from '../../../stores/allFacility'
+import { useAllCompanyStore } from '../../../stores/allCompany'
 
 const props = defineProps<{
     submitText?: string
@@ -179,11 +180,10 @@ const emit = defineEmits<{
 
 const { getCategories } = useFeedService()
 const allFacilityStore = useAllFacilityStore()
-const companyStore = useCompanyStore()
+const allCompanyStore = useAllCompanyStore()
 
 const categories = ref<FeedCategory[]>([])
 const categoriesLoading = ref(false)
-const companiesLoading = ref(false)
 const imagePreview = ref<string | null>(null)
 const imageFile = ref<File | null>(null)
 const isDragOver = ref(false)
@@ -210,7 +210,8 @@ const formState = reactive({
     },
 })
 
-const companies = computed(() => companyStore.companies)
+const companies = computed(() => allCompanyStore.companies)
+const companiesLoading = computed(() => allCompanyStore.loading)
 const facilities = computed(() => allFacilityStore.facilities)
 const facilitiesLoading = computed(() => allFacilityStore.loading)
 
@@ -231,13 +232,10 @@ const fetchCategories = async () => {
 }
 
 const fetchCompanies = async () => {
-    companiesLoading.value = true
     try {
-        await companyStore.fetchCompanies()
+        await allCompanyStore.fetchAllCompanies({ page_size: 999 })
     } catch (err) {
         console.error('Failed to fetch companies:', err)
-    } finally {
-        companiesLoading.value = false
     }
 }
 

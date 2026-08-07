@@ -60,7 +60,7 @@ describe('Company Store', () => {
         expect(store.currentCompany).toBeNull()
         expect(store.loading).toBe(false)
         expect(store.page).toBe(1)
-        expect(store.pageSize).toBe(10)
+        expect(store.pageSize).toBe(1)
         expect(store.count).toBe(0)
     })
 

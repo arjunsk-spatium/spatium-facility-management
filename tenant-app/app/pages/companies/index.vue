@@ -139,9 +139,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useCompanyStore } from '../../../stores/company'
+import { useAllCompanyStore } from '../../../stores/allCompany'
 import { useAuthStore } from '../../../stores/auth'
 import { message } from 'ant-design-vue'
 import {
@@ -157,7 +157,7 @@ definePageMeta({
     middleware: 'auth'
 })
 
-const store = useCompanyStore()
+const store = useAllCompanyStore()
 const authStore = useAuthStore()
 
 const { companies, loading, count, page, pageSize } = storeToRefs(store)
@@ -179,7 +179,7 @@ const stats = computed(() => ({
 }))
 
 const handleSearch = () => {
-    store.fetchCompanies({ search: searchText.value || undefined, page: 1 })
+    store.fetchAllCompanies({ search: searchText.value || undefined, page: 1 }, true)
 }
 
 // Download as Excel
@@ -262,22 +262,22 @@ const paginationConfig = computed(() => ({
     showTotal: (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} companies`,
     onChange: (pageNum: number, newPageSize: number) => {
         if (newPageSize !== pageSize.value) {
-            store.fetchCompanies({ search: searchText.value || undefined, page: 1, page_size: newPageSize })
+            store.fetchAllCompanies({ search: searchText.value || undefined, page: 1, page_size: newPageSize }, true)
         } else {
-            store.fetchCompanies({ search: searchText.value || undefined, page: pageNum })
+            store.fetchAllCompanies({ search: searchText.value || undefined, page: pageNum }, true)
         }
     },
 }))
 
 onMounted(() => {
     if (canView.value) {
-        store.fetchCompanies()
+        store.fetchAllCompanies({ page: 1, page_size: 10 }, true)
     }
 })
 
 watch(canView, (newVal) => {
     if (newVal) {
-        store.fetchCompanies()
+        store.fetchAllCompanies({ page: 1, page_size: 10 }, true)
     }
 })
 </script>
