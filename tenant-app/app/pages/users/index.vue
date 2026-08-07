@@ -65,6 +65,12 @@
                             <a-button type="primary" ghost @click="openModuleModal(user)">
                                 Manage Access
                             </a-button>
+                            <a-button @click="openFacilityModal(user)">
+                                Manage Facilities
+                            </a-button>
+                            <a-button type="text" @click="navigateTo(`/users/${user.id}`)">
+                                View
+                            </a-button>
                             <a-button type="text" @click="openEditUserModal(user)">
                                 <EditOutlined />
                             </a-button>
@@ -78,9 +84,15 @@
                     </div>
 
                     <!-- Mobile Actions -->
-                    <div class="mt-4 flex gap-2 sm:hidden">
+                    <div class="mt-4 flex flex-wrap gap-2 sm:hidden">
                         <a-button size="small" type="primary" ghost @click="openModuleModal(user)">
                             Access
+                        </a-button>
+                        <a-button size="small" @click="openFacilityModal(user)">
+                            Facilities
+                        </a-button>
+                        <a-button size="small" @click="navigateTo(`/users/${user.id}`)">
+                            View
                         </a-button>
                         <a-button size="small" @click="openEditUserModal(user)">
                             <EditOutlined /> Edit
@@ -97,80 +109,18 @@
         </div>
 
         <!-- Module Management Modal -->
-        <a-modal v-model:open="moduleModalVisible" 
-            :title="`Manage Access - ${activeModuleUser?.name}`"
-            width="900px"
-            style="top: 20px;"
-            :destroyOnClose="true"
-            @cancel="closeModuleModal">
-            <template #footer>
-                <a-button @click="closeModuleModal">Cancel</a-button>
-                <a-button v-if="activeModuleUser && hasModuleChanges(activeModuleUser)" type="primary" :loading="savingUserId === activeModuleUser.id" @click="saveUserModules(activeModuleUser)">
-                    Save Changes
-                </a-button>
-            </template>
-            
-            <div v-if="activeModuleUser" class="mt-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div v-for="mod in systemModules" :key="mod.id" 
-                        class="module-card p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-medium text-gray-900 dark:text-white">{{ mod.module }}</span>
-                            <a-checkbox 
-                                :checked="isModuleFullyAssigned(activeModuleUser, mod)" 
-                                :indeterminate="isModulePartiallyAssigned(activeModuleUser, mod)"
-                                @change="toggleModuleAll(activeModuleUser, mod)"
-                            >
-                                All
-                            </a-checkbox>
-                        </div>
-                        <div class="space-y-2">
-                            <div v-for="submod in mod.submodules" :key="submod.id" class="submodule-item">
-                                <div class="flex items-center gap-2 text-sm">
-                                    <a-checkbox 
-                                        :checked="isSubmoduleFullyAssigned(activeModuleUser, submod)"
-                                        :indeterminate="isSubmodulePartiallyAssigned(activeModuleUser, submod)"
-                                        @change="toggleSubmoduleAll(activeModuleUser, submod, mod)"
-                                    >
-                                        {{ submod.name }}
-                                    </a-checkbox>
-                                </div>
-                                <div class="ml-6 mt-1 flex flex-wrap gap-1">
-                                    <span v-for="perm in submod.permissions" :key="perm.id"
-                                        :class="[
-                                            'text-xs px-1.5 py-0.5 rounded cursor-pointer',
-                                            isPermissionAssigned(activeModuleUser, perm.id) 
-                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
-                                        ]"
-                                        @click="togglePermission(activeModuleUser, perm.id)">
-                                        {{ perm.name }}
-                                    </span>
-                                </div>
-                                <div v-if="submod.features && submod.features.length" class="ml-6 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                                    <div class="text-xs font-medium text-gray-500 mb-1">Features</div>
-                                    <div class="flex flex-col gap-1.5">
-                                        <div v-for="feat in submod.features" :key="feat.id" class="flex items-center gap-2 flex-wrap">
-                                            <span class="text-xs text-gray-600 dark:text-gray-400 font-medium">{{ feat.name }}:</span>
-                                            <span v-for="perm in feat.permissions" :key="perm.id"
-                                                :class="[
-                                                    'text-xs px-1.5 py-0.5 rounded cursor-pointer',
-                                                    isFeaturePermissionAssigned(activeModuleUser, perm.id) 
-                                                        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
-                                                ]"
-                                                @click="toggleFeaturePermission(activeModuleUser, perm.id)">
-                                                {{ perm.name }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </a-modal>
+        <UserModuleAssignmentModal
+            v-if="activeModuleUser"
+            v-model:open="moduleModalVisible"
+            :user="activeModuleUser"
+            @saved="fetchData" />
+
+        <!-- Facility Management Modal -->
+        <UserFacilityAssignmentModal
+            v-if="activeFacilityUser"
+            v-model:open="facilityModalVisible"
+            :user="activeFacilityUser"
+            @saved="fetchData" />
 
         <!-- Add/Edit User Modal -->
         <a-modal v-model:open="userModalVisible" :title="editingUser ? 'Edit User' : 'Add User'"
@@ -203,34 +153,32 @@ import { message } from 'ant-design-vue'
 import {
     PlusOutlined,
     EditOutlined,
-    DeleteOutlined,
-    DownOutlined,
-    UpOutlined
+    DeleteOutlined
 } from '@ant-design/icons-vue'
-import { useUserService, type User, type SystemModule } from '../../../composables/userService'
+import { useUserService, type User } from '../../../composables/userService'
 import { useSidebar } from '../../../composables/useSidebar'
+import UserModuleAssignmentModal from '../../../components/UserModuleAssignmentModal.vue'
+import UserFacilityAssignmentModal from '../../../components/UserFacilityAssignmentModal.vue'
 
 definePageMeta({
     middleware: 'auth'
 })
 
-const { getUsers, getAllSystemModules, getUserAssignedModules, assignModulesToUser, createUser, updateUser, deleteUser } = useUserService()
+const { getUsers, createUser, updateUser, deleteUser } = useUserService()
 const { isMobile } = useSidebar()
 
 // State
 const loading = ref(true)
 const users = ref<User[]>([])
-const systemModules = ref<SystemModule[]>([])
-const userAssignedPermissions = ref<Record<string, Set<string>>>({})
-const originalUserPermissions = ref<Record<string, Set<string>>>({})
-const userAssignedFeatures = ref<Record<string, Set<string>>>({})
-const originalUserFeatures = ref<Record<string, Set<string>>>({})
 const searchQuery = ref('')
-const savingUserId = ref<string | null>(null)
 
 // Module Modal
 const moduleModalVisible = ref(false)
 const activeModuleUser = ref<User | null>(null)
+
+// Facility Modal
+const facilityModalVisible = ref(false)
+const activeFacilityUser = ref<User | null>(null)
 
 // User Modal
 const userModalVisible = ref(false)
@@ -260,230 +208,11 @@ const filteredUsers = computed(() => {
 const fetchData = async () => {
     loading.value = true
     try {
-        const [usersData, modulesData] = await Promise.all([
-            getUsers(),
-            getAllSystemModules()
-        ])
-        users.value = usersData
-        systemModules.value = modulesData
-        
-        // Load assigned permissions for each user
-        for (const user of usersData) {
-            const assignedPerms = await getUserAssignedModules(user.id)
-            userAssignedPermissions.value[user.id] = new Set(assignedPerms.submodules)
-            originalUserPermissions.value[user.id] = new Set(assignedPerms.submodules)
-            
-            userAssignedFeatures.value[user.id] = new Set(assignedPerms.features)
-            originalUserFeatures.value[user.id] = new Set(assignedPerms.features)
-        }
+        users.value = await getUsers()
     } catch (error) {
         message.error('Failed to load data')
     } finally {
         loading.value = false
-    }
-}
-
-// Methods - Fetch and Utility
-
-const isModuleFullyAssigned = (user: User, mod: SystemModule): boolean => {
-    const userPerms = userAssignedPermissions.value[user.id]
-    const userFeats = userAssignedFeatures.value[user.id]
-    if (!userPerms || !userFeats) return false
-    
-    const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
-    const allFeatPerms = mod.submodules.flatMap(sm => (sm.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id)))
-    
-    const totalCount = allPerms.length + allFeatPerms.length
-    if (totalCount === 0) {
-        // Module has no permissions at all - check if all submodule IDs are assigned
-        return mod.submodules.every((sm: any) => userPerms.has(sm.id))
-    }
-    
-    return allPerms.every(p => userPerms.has(p)) && allFeatPerms.every(p => userFeats.has(p))
-}
-
-const isModulePartiallyAssigned = (user: User, mod: SystemModule): boolean => {
-    const userPerms = userAssignedPermissions.value[user.id]
-    const userFeats = userAssignedFeatures.value[user.id]
-    if (!userPerms || !userFeats) return false
-    
-    const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
-    const allFeatPerms = mod.submodules.flatMap(sm => (sm.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id)))
-    
-    const totalCount = allPerms.length + allFeatPerms.length
-    if (totalCount === 0) {
-        // Module has no permissions at all - check if some submodule IDs are assigned
-        const assignedCount = mod.submodules.filter((sm: any) => userPerms.has(sm.id)).length
-        return assignedCount > 0 && assignedCount < mod.submodules.length
-    }
-    
-    const assignedCount = allPerms.filter(p => userPerms.has(p)).length + allFeatPerms.filter(p => userFeats.has(p)).length
-    return assignedCount > 0 && assignedCount < totalCount
-}
-
-const isSubmoduleFullyAssigned = (user: User, submod: any): boolean => {
-    const userPerms = userAssignedPermissions.value[user.id]
-    const userFeats = userAssignedFeatures.value[user.id]
-    if (!userPerms || !userFeats) return false
-    
-    const allPerms = submod.permissions.map((p: any) => p.id)
-    const allFeatPerms = (submod.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id))
-    
-    const totalCount = allPerms.length + allFeatPerms.length
-    if (totalCount === 0) {
-        // Submodule has no permissions or features - check if submodule ID itself is assigned
-        return userPerms.has(submod.id)
-    }
-    
-    return allPerms.every((p: string) => userPerms.has(p)) && allFeatPerms.every((p: string) => userFeats.has(p))
-}
-
-const isSubmodulePartiallyAssigned = (user: User, submod: any): boolean => {
-    const userPerms = userAssignedPermissions.value[user.id]
-    const userFeats = userAssignedFeatures.value[user.id]
-    if (!userPerms || !userFeats) return false
-    
-    const allPerms = submod.permissions.map((p: any) => p.id)
-    const allFeatPerms = (submod.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id))
-    
-    const totalCount = allPerms.length + allFeatPerms.length
-    if (totalCount === 0) {
-        // Submodule has no permissions or features - cannot be partially assigned
-        return false
-    }
-    
-    const assignedCount = allPerms.filter((p: string) => userPerms.has(p)).length + allFeatPerms.filter((p: string) => userFeats.has(p)).length
-    return assignedCount > 0 && assignedCount < totalCount
-}
-
-const isPermissionAssigned = (user: User, permissionId: string): boolean => {
-    const userPerms = userAssignedPermissions.value[user.id]
-    return userPerms ? userPerms.has(permissionId) : false
-}
-
-const isFeaturePermissionAssigned = (user: User, permissionId: string): boolean => {
-    const userFeats = userAssignedFeatures.value[user.id]
-    return userFeats ? userFeats.has(permissionId) : false
-}
-
-const toggleModuleAll = (user: User, mod: SystemModule) => {
-    const userPerms = userAssignedPermissions.value[user.id]
-    const userFeats = userAssignedFeatures.value[user.id]
-    if (!userPerms || !userFeats) return
-    
-    const allPerms = mod.submodules.flatMap(sm => sm.permissions.map(p => p.id))
-    const allFeatPerms = mod.submodules.flatMap(sm => (sm.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id)))
-    
-    if (allPerms.length === 0 && allFeatPerms.length === 0) {
-        // Module has no permissions at all - toggle all submodule IDs
-        const allAssigned = mod.submodules.every((sm: any) => userPerms.has(sm.id))
-        if (allAssigned) {
-            mod.submodules.forEach((sm: any) => userPerms.delete(sm.id))
-        } else {
-            mod.submodules.forEach((sm: any) => userPerms.add(sm.id))
-        }
-        return
-    }
-    
-    const allAssigned = allPerms.every(p => userPerms.has(p)) && allFeatPerms.every(p => userFeats.has(p))
-    
-    if (allAssigned) {
-        allPerms.forEach(p => userPerms.delete(p))
-        allFeatPerms.forEach(p => userFeats.delete(p))
-    } else {
-        allPerms.forEach(p => userPerms.add(p))
-        allFeatPerms.forEach(p => userFeats.add(p))
-    }
-}
-
-const toggleSubmoduleAll = (user: User, submod: any, mod: SystemModule) => {
-    const userPerms = userAssignedPermissions.value[user.id]
-    const userFeats = userAssignedFeatures.value[user.id]
-    if (!userPerms || !userFeats) return
-    
-    const allPerms: string[] = submod.permissions.map((p: any) => p.id)
-    const allFeatPerms: string[] = (submod.features || []).flatMap((f: any) => f.permissions.map((p: any) => p.id))
-    
-    if (allPerms.length === 0 && allFeatPerms.length === 0) {
-        // Submodule has no permissions or features - toggle submodule ID itself
-        if (userPerms.has(submod.id)) {
-            userPerms.delete(submod.id)
-        } else {
-            userPerms.add(submod.id)
-        }
-        return
-    }
-    
-    const allAssigned = allPerms.every((p: string) => userPerms.has(p)) && allFeatPerms.every((p: string) => userFeats.has(p))
-    
-    if (allAssigned) {
-        allPerms.forEach((p: string) => userPerms.delete(p))
-        allFeatPerms.forEach((p: string) => userFeats.delete(p))
-    } else {
-        allPerms.forEach((p: string) => userPerms.add(p))
-        allFeatPerms.forEach((p: string) => userFeats.add(p))
-    }
-}
-
-const togglePermission = (user: User, permissionId: string) => {
-    const userPerms = userAssignedPermissions.value[user.id]
-    if (!userPerms) return
-    
-    if (userPerms.has(permissionId)) {
-        userPerms.delete(permissionId)
-    } else {
-        userPerms.add(permissionId)
-    }
-}
-
-const toggleFeaturePermission = (user: User, permissionId: string) => {
-    const userFeats = userAssignedFeatures.value[user.id]
-    if (!userFeats) return
-    
-    if (userFeats.has(permissionId)) {
-        userFeats.delete(permissionId)
-    } else {
-        userFeats.add(permissionId)
-    }
-}
-
-const hasModuleChanges = (user: User): boolean => {
-    const original = originalUserPermissions.value[user.id]
-    const current = userAssignedPermissions.value[user.id]
-    const originalFeat = originalUserFeatures.value[user.id]
-    const currentFeat = userAssignedFeatures.value[user.id]
-    
-    if (!original || !current || !originalFeat || !currentFeat) return false
-    if (original.size !== current.size || originalFeat.size !== currentFeat.size) return true
-    
-    for (const p of original) {
-        if (!current.has(p)) return true
-    }
-    for (const p of originalFeat) {
-        if (!currentFeat.has(p)) return true
-    }
-    return false
-}
-
-const saveUserModules = async (user: User) => {
-    savingUserId.value = user.id
-    try {
-        const userPerms = userAssignedPermissions.value[user.id]
-        const permissionArray = Array.from(userPerms || [])
-        
-        const userFeats = userAssignedFeatures.value[user.id]
-        const featureArray = Array.from(userFeats || [])
-        
-        await assignModulesToUser(user.id, permissionArray, featureArray)
-        
-        originalUserPermissions.value[user.id] = new Set(userPerms)
-        originalUserFeatures.value[user.id] = new Set(userFeats)
-        message.success('Modules updated successfully')
-        closeModuleModal()
-    } catch (error) {
-        message.error('Failed to update modules')
-    } finally {
-        savingUserId.value = null
     }
 }
 
@@ -493,9 +222,10 @@ const openModuleModal = (user: User) => {
     moduleModalVisible.value = true
 }
 
-const closeModuleModal = () => {
-    moduleModalVisible.value = false
-    activeModuleUser.value = null
+// Facility Modal Methods
+const openFacilityModal = (user: User) => {
+    activeFacilityUser.value = user
+    facilityModalVisible.value = true
 }
 
 // User Modal Methods
@@ -545,10 +275,6 @@ const handleUserSubmit = async () => {
                 modules: ['Hub']
             })
             users.value.push(newUser)
-            userAssignedPermissions.value[newUser.id] = new Set()
-            originalUserPermissions.value[newUser.id] = new Set()
-            userAssignedFeatures.value[newUser.id] = new Set()
-            originalUserFeatures.value[newUser.id] = new Set()
             message.success('User created successfully')
         }
         closeUserModal()
@@ -579,10 +305,6 @@ const handleDeleteUser = async (userId: string) => {
     try {
         await deleteUser(userId)
         users.value = users.value.filter(u => u.id !== userId)
-        delete userAssignedPermissions.value[userId]
-        delete originalUserPermissions.value[userId]
-        delete userAssignedFeatures.value[userId]
-        delete originalUserFeatures.value[userId]
         message.success('User deleted successfully')
     } catch (error) {
         message.error('Failed to delete user')
@@ -615,27 +337,3 @@ const handleConfirmExistingUser = async () => {
 
 onMounted(fetchData)
 </script>
-
-<style scoped>
-.module-card {
-    background-color: #fafafa;
-    transition: all 0.15s ease;
-}
-
-.dark .module-card {
-    background-color: #1f2937;
-}
-
-.submodule-item {
-    padding: 0.25rem 0;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.dark .submodule-item {
-    border-bottom-color: #374151;
-}
-
-.submodule-item:last-child {
-    border-bottom: none;
-}
-</style>
