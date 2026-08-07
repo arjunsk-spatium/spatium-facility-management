@@ -150,6 +150,6 @@ const handleDeleteFacility = async (id: string) => {
 };
 
 onMounted(() => {
-    facilityStore.fetchFacilities({}, true);
+    facilityStore.fetchAllFacilities({}, true);
 });
 </script>

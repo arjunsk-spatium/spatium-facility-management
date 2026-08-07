@@ -49,7 +49,7 @@ watch(() => props.visible, (isVisible) => {
 const fetchFacilities = async () => {
     facilitiesLoading.value = true
     try {
-        await facilityStore.fetchFacilities()
+        await facilityStore.fetchAllFacilities()
     } catch (err) {
         console.error('Failed to fetch facilities:', err)
     } finally {

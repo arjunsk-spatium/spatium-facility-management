@@ -35,7 +35,7 @@ export const useFacilityStore = defineStore("facility", {
     },
 
     actions: {
-        async fetchFacilities(params: FacilityListParams = {}, force = false) {
+        async fetchFacilities(params: FacilityListParams = {}, force = false, useAllFacilities = false) {
             if (this.init && !force && !params.page) return;
 
             this.loading = true;
@@ -44,7 +44,9 @@ export const useFacilityStore = defineStore("facility", {
 
             try {
                 const { page = this.page, page_size = this.pageSize } = params;
-                const result = await service.getFacilities({ page, page_size });
+                const result = useAllFacilities
+                    ? await service.getAllFacilities({ page, page_size })
+                    : await service.getFacilities({ page, page_size });
 
                 this.facilities = result.facilities;
                 this.count = result.count;
@@ -58,6 +60,10 @@ export const useFacilityStore = defineStore("facility", {
             } finally {
                 this.loading = false;
             }
+        },
+
+        async fetchAllFacilities(params: FacilityListParams = {}, force = false) {
+            return this.fetchFacilities(params, force, true);
         },
 
         async fetchFacilityById(id: string) {
