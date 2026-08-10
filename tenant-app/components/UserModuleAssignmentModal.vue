@@ -41,12 +41,13 @@
                             <div class="ml-6 mt-1 flex flex-wrap gap-1">
                                 <span v-for="perm in submod.permissions" :key="perm.id"
                                     :class="[
-                                        'text-xs px-1.5 py-0.5 rounded cursor-pointer',
+                                        'text-xs px-1.5 py-0.5 rounded',
+                                        isViewDisabled(perm, submod) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
                                         isPermissionAssigned(perm.id) 
                                             ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                                             : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
                                     ]"
-                                    @click="togglePermission(perm.id)">
+                                    @click="togglePermission(perm.id, submod)">
                                     {{ perm.name }}
                                 </span>
                             </div>
@@ -62,7 +63,7 @@
                                                     ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                                                     : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'
                                             ]"
-                                            @click="toggleFeaturePermission(perm.id)">
+                                            @click="toggleFeaturePermission(perm.id, submod)">
                                             {{ perm.name }}
                                         </span>
                                     </div>
@@ -266,21 +267,88 @@ const toggleSubmoduleAll = (submod: any, mod: SystemModule) => {
     }
 }
 
-const togglePermission = (permissionId: string) => {
+const isViewPermission = (perm: any): boolean => {
+    return perm?.name?.toLowerCase() === 'view' || perm?.key?.toLowerCase() === 'view'
+}
+
+const isViewDisabled = (perm: any, submod: any): boolean => {
+    if (!perm || !submod || !isViewPermission(perm)) return false
+
+    if (!userAssignedPermissions.value.has(perm.id)) return false
+
+    const hasOtherPerms = (submod.permissions || []).some((p: any) => 
+        !isViewPermission(p) && userAssignedPermissions.value.has(p.id)
+    )
+    if (hasOtherPerms) return true
+
+    const hasOtherFeatPerms = (submod.features || []).some((f: any) => 
+        (f.permissions || []).some((p: any) => userAssignedFeatures.value.has(p.id))
+    )
+    if (hasOtherFeatPerms) return true
+
+    return false
+}
+
+const togglePermission = (permissionId: string, submod?: any) => {
+    let targetSubmod = submod
+    if (!targetSubmod) {
+        for (const mod of systemModules.value) {
+            const found = mod.submodules.find((sm: any) => sm.permissions?.some((p: any) => p.id === permissionId))
+            if (found) {
+                targetSubmod = found
+                break
+            }
+        }
+    }
+
+    if (targetSubmod) {
+        const perm = targetSubmod.permissions?.find((p: any) => p.id === permissionId)
+        if (perm && isViewDisabled(perm, targetSubmod)) {
+            return
+        }
+    }
+
     const userPerms = userAssignedPermissions.value
     if (userPerms.has(permissionId)) {
         userPerms.delete(permissionId)
     } else {
         userPerms.add(permissionId)
+
+        if (targetSubmod && targetSubmod.permissions) {
+            const viewPerm = targetSubmod.permissions.find((p: any) => isViewPermission(p))
+            if (viewPerm) {
+                userPerms.add(viewPerm.id)
+            }
+        }
     }
 }
 
-const toggleFeaturePermission = (permissionId: string) => {
+const toggleFeaturePermission = (permissionId: string, submod?: any) => {
     const userFeats = userAssignedFeatures.value
     if (userFeats.has(permissionId)) {
         userFeats.delete(permissionId)
     } else {
         userFeats.add(permissionId)
+
+        let targetSubmod = submod
+        if (!targetSubmod) {
+            for (const mod of systemModules.value) {
+                const found = mod.submodules.find((sm: any) => (sm.features || []).some((f: any) => f.permissions?.some((p: any) => p.id === permissionId)))
+                if (found) {
+                    targetSubmod = found
+                    break
+                }
+            }
+        }
+
+        if (targetSubmod && targetSubmod.permissions) {
+            const viewPerm = targetSubmod.permissions.find((p: any) => 
+                p.name?.toLowerCase() === 'view' || p.key?.toLowerCase() === 'view'
+            )
+            if (viewPerm) {
+                userAssignedPermissions.value.add(viewPerm.id)
+            }
+        }
     }
 }
 
