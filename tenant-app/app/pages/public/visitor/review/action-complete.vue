@@ -91,18 +91,6 @@
                     <div class="font-bold text-gray-900">10:00 AM</div>
                 </div>
             </div>
-
-            <div class="flex-1"></div>
-
-            <!-- Footer Actions -->
-            <div class="w-full flex flex-col gap-4">
-                <button class="w-full h-12 rounded-xl bg-blue-600 !text-white font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
-                     <AppstoreOutlined class="!text-white" /> {{ status === 'approved' ? 'Return to Requests' : 'Return to Requests List' }}
-                </button>
-                <button class="w-full h-12 rounded-xl bg-white border border-gray-200 text-gray-700 font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 shadow-sm">
-                     <IdcardOutlined v-if="status === 'approved'" /> {{ status === 'approved' ? 'View Digital ID' : 'View Other Requests' }}
-                </button>
-            </div>
         </div>
     </div>
 </template>
@@ -113,7 +101,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { 
     LeftOutlined, CloseOutlined, CheckOutlined, UserDeleteOutlined, 
     SafetyCertificateFilled, UserOutlined, StopOutlined,
-    CalendarOutlined, ClockCircleOutlined, AppstoreOutlined, IdcardOutlined 
+    CalendarOutlined, ClockCircleOutlined 
 } from '@ant-design/icons-vue'
 
 definePageMeta({
