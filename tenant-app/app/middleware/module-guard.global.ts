@@ -10,9 +10,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         '/visitors': 'visitors',
         '/helpdesk': 'helpdesk',
         '/facilities': 'facilities',
+        '/users/management': 'users-management',
+        '/users/operational': 'users-operational',
         '/users': 'users',
         '/meeting-rooms': 'meeting_rooms',
         '/banners': 'banners',
+        '/feed': 'feed-list',
         '/configure': 'configure',
         '/spoc': 'spoc_dashboard',
         '/spoc/config': 'spoc_config'

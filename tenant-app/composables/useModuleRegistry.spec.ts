@@ -37,4 +37,27 @@ describe('useModuleRegistry', () => {
     expect(dashboardModule?.children).toBeUndefined()
     expect(dashboardModule?.route).toBe('/dashboard')
   })
+
+  it('should contain User Management submodules (Management Staff and Operational Staff)', () => {
+    const { getAllModules } = useModuleRegistry()
+    const modules = getAllModules()
+
+    const usersModule = modules.find(m => m.key === 'users')
+    expect(usersModule).toBeDefined()
+    expect(usersModule?.children).toBeDefined()
+    expect(usersModule?.children?.length).toBe(2)
+    const childKeys = usersModule?.children?.map(c => c.key)
+    expect(childKeys).toContain('users-management')
+    expect(childKeys).toContain('users-operational')
+  })
+
+  it('should contain Feed submodule matching backend Feed label', () => {
+    const { getAllModules } = useModuleRegistry()
+    const modules = getAllModules()
+
+    const feedModule = modules.find(m => m.key === 'feed')
+    expect(feedModule).toBeDefined()
+    expect(feedModule?.children).toBeDefined()
+    expect(feedModule?.children?.[0].label).toBe('Feed')
+  })
 })

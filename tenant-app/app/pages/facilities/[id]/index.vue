@@ -150,64 +150,15 @@
                         </a-descriptions>
                     </div>
                 </a-tab-pane>
-
-                <!-- Tab 3: Staff -->
-                <a-tab-pane key="staff" tab="Staff">
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-medium">Facility Staff</h3>
-                            <a-button type="primary" @click="openAddStaffModal">
-                                <PlusOutlined /> Add Staff
-                            </a-button>
-                        </div>
-
-                        <a-table
-                            :columns="staffColumns"
-                            :data-source="staffList"
-                            :loading="loadingStaff"
-                            :pagination="{ pageSize: 10 }"
-                            row-key="id"
-                        >
-                            <template #bodyCell="{ column, record }">
-                                <template v-if="column.key === 'full_name'">
-                                    <div class="font-medium">{{ record.full_name }}</div>
-                                </template>
-                                <template v-else-if="column.key === 'email'">
-                                    {{ record.email }}
-                                </template>
-                                <template v-else-if="column.key === 'phone_number'">
-                                    {{ record.phone_number || 'N/A' }}
-                                </template>
-                                <template v-else-if="column.key === 'role'">
-                                    {{ record.role_name || record.role_details?.name || 'N/A' }}
-                                </template>
-                                <template v-else-if="column.key === 'status'">
-                                    <a-tag :color="record.status === 'active' ? 'green' : 'default'">
-                                        {{ record.status }}
-                                    </a-tag>
-                                </template>
-                                <template v-else-if="column.key === 'actions'">
-                                    <a-space>
-                                        <a-button type="text" size="small" @click="openEditStaffModal(record)">
-                                            <EditOutlined />
-                                        </a-button>
-                                        <a-popconfirm
-                                            title="Are you sure you want to delete this staff?"
-                                            ok-text="Yes"
-                                            cancel-text="No"
-                                            @confirm="handleDeleteStaff(record.id)"
-                                        >
-                                            <a-button type="text" danger size="small">
-                                                <DeleteOutlined />
-                                            </a-button>
-                                        </a-popconfirm>
-                                    </a-space>
-                                </template>
-                            </template>
-                        </a-table>
-                    </div>
-                </a-tab-pane>
             </a-tabs>
+
+            <!-- Tower Details Drawer -->
+            <FacilitiesTowerDetailsDrawer 
+                :open="isTowerDrawerOpen" 
+                :tower="selectedTower" 
+                @close="isTowerDrawerOpen = false" 
+                @refresh="fetchFacilityDetails" 
+            />
         </div>
 
         <!-- Add/Edit Tower Modal -->
@@ -217,50 +168,6 @@
                 <a-form-item label="Tower Name" required>
                     <a-input v-model:value="towerForm.name" placeholder="e.g. Tower A" @pressEnter="editingTowerId ? handleUpdateTower() : handleAddTower()" />
                 </a-form-item>
-            </a-form>
-        </a-modal>
-
-        <!-- Tower Details Drawer -->
-        <FacilitiesTowerDetailsDrawer 
-            :open="isTowerDrawerOpen" 
-            :tower="selectedTower" 
-            @close="isTowerDrawerOpen = false" 
-            @refresh="fetchFacilityDetails" 
-        />
-
-        <!-- Add/Edit Staff Modal -->
-        <a-modal
-            v-model:open="isAddStaffModalOpen"
-            :title="editingStaffId ? 'Edit Staff' : 'Add Staff'"
-            :confirm-loading="submittingStaff"
-            @ok="editingStaffId ? handleEditStaff() : handleAddStaff()"
-            @cancel="isAddStaffModalOpen = false"
-        >
-            <a-form layout="vertical" class="mt-4">
-                <a-form-item label="Full Name" required>
-                    <a-input v-model:value="staffForm.full_name" placeholder="Enter full name" />
-                </a-form-item>
-                <a-form-item label="Email" required>
-                    <a-input v-model:value="staffForm.email" placeholder="Enter email" type="email" />
-                </a-form-item>
-                <a-form-item label="Phone Number">
-                    <PhoneInput v-model="staffForm.phone_number" />
-                </a-form-item>
-                <a-form-item label="Role">
-                    <a-select v-model:value="staffForm.role_id" placeholder="Select role"
-                        :options="roleOptions" :loading="rolesLoading" allow-clear />
-                </a-form-item>
-                <template v-if="!editingStaffId">
-                    <a-form-item required>
-                        <template #label>
-                            Username <span class="text-xs text-gray-400 ml-2 font-normal">(Case Sensitive)</span>
-                        </template>
-                        <a-input v-model:value="staffForm.username" placeholder="Enter username" />
-                    </a-form-item>
-                    <a-form-item label="Password" required>
-                        <a-input-password v-model:value="staffForm.password" placeholder="Enter password" />
-                    </a-form-item>
-                </template>
             </a-form>
         </a-modal>
     </div>
@@ -456,174 +363,7 @@ const initializeDefaultTower = async () => {
     }
 };
 
-// Staff management
-const staffList = ref<any[]>([]);
-const loadingStaff = ref(false);
-const isAddStaffModalOpen = ref(false);
-const submittingStaff = ref(false);
-
-const staffForm = ref({
-    full_name: '',
-    email: '',
-    phone_number: '',
-    username: '',
-    password: '',
-    role_id: undefined as string | undefined
-});
-const editingStaffId = ref<string | null>(null);
-
-// Roles
-const roles = ref<any[]>([]);
-const rolesLoading = ref(false);
-const roleOptions = computed(() =>
-    roles.value.map(r => ({ label: r.name, value: r.id }))
-);
-
-const fetchRoles = async () => {
-    rolesLoading.value = true;
-    try {
-        const { $api } = useNuxtApp();
-        const response = await $api<any>('/api/portal/helpdesk/roles/');
-        const data = response?.data?.data || response?.data;
-        if (data?.results) {
-            roles.value = data.results;
-        } else if (Array.isArray(data)) {
-            roles.value = data;
-        }
-    } catch (error) {
-        console.error('Failed to fetch roles:', error);
-    } finally {
-        rolesLoading.value = false;
-    }
-};
-
-const staffColumns = [
-    { title: 'Name', dataIndex: 'full_name', key: 'full_name' },
-    { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Phone', dataIndex: 'phone_number', key: 'phone_number' },
-    { title: 'Role', dataIndex: 'role_name', key: 'role' },
-    { title: 'Status', dataIndex: 'status', key: 'status' },
-    { title: 'Actions', key: 'actions', width: 120 }
-];
-
-const fetchStaff = async () => {
-    loadingStaff.value = true;
-    try {
-        const service = useHelpdeskService();
-        staffList.value = await service.getStaffByFacility(facilityId);
-    } catch (e) {
-        console.error('Failed to load staff', e);
-    } finally {
-        loadingStaff.value = false;
-    }
-};
-
-const openAddStaffModal = () => {
-    editingStaffId.value = null;
-    staffForm.value = {
-        full_name: '',
-        email: '',
-        phone_number: '',
-        username: '',
-        password: '',
-        role_id: undefined
-    };
-    isAddStaffModalOpen.value = true;
-};
-
-const openEditStaffModal = (record: any) => {
-    editingStaffId.value = record.id;
-    staffForm.value = {
-        full_name: record.full_name || '',
-        email: record.email || '',
-        phone_number: record.phone_number || '',
-        username: '',
-        password: '',
-        role_id: record.role_id || undefined
-    };
-    isAddStaffModalOpen.value = true;
-};
-
-const handleAddStaff = async () => {
-    if (!staffForm.value.full_name || !staffForm.value.email || !staffForm.value.username || !staffForm.value.password) {
-        message.error('Please fill in all required fields');
-        return;
-    }
-
-    submittingStaff.value = true;
-    try {
-        const service = useHelpdeskService();
-        await service.createStaff({
-            ...staffForm.value,
-            facility_id: facilityId,
-            ...(staffForm.value.role_id && { role_id: staffForm.value.role_id })
-        });
-        message.success('Staff added successfully');
-        isAddStaffModalOpen.value = false;
-        await fetchStaff();
-    } catch (e: any) {
-        console.error('Failed to add staff', e);
-        const { getValidationErrors } = useValidation();
-        const fieldErrors = getValidationErrors(e);
-        if (fieldErrors.length > 0) {
-            message.error(fieldErrors.join(' | '));
-        } else {
-            message.error(e.data?.message || e.message || 'Failed to add staff');
-        }
-    } finally {
-        submittingStaff.value = false;
-    }
-};
-
-const handleEditStaff = async () => {
-    if (!staffForm.value.full_name || !staffForm.value.email) {
-        message.error('Please fill in required fields');
-        return;
-    }
-
-    submittingStaff.value = true;
-    try {
-        const { $api } = useNuxtApp();
-        await $api<any>(`/api/portal/users/opstrack/${editingStaffId.value}/update/`, {
-            method: 'PATCH',
-            body: {
-                full_name: staffForm.value.full_name,
-                email: staffForm.value.email,
-                phone_number: staffForm.value.phone_number,
-                ...(staffForm.value.role_id && { role_id: staffForm.value.role_id })
-            }
-        });
-        message.success('Staff updated successfully');
-        isAddStaffModalOpen.value = false;
-        await fetchStaff();
-    } catch (e) {
-        console.error('Failed to update staff', e);
-        message.error('Failed to update staff');
-    } finally {
-        submittingStaff.value = false;
-    }
-};
-
-const handleDeleteStaff = async (id: string) => {
-    try {
-        const service = useHelpdeskService();
-        await service.deleteStaff(id);
-        message.success('Staff deleted successfully');
-        await fetchStaff();
-    } catch (e) {
-        console.error('Failed to delete staff', e);
-        message.error('Failed to delete staff');
-    }
-};
-
 const activeTab = ref('structure');
-
-watch(activeTab, (newTab) => {
-    if (newTab === 'staff') {
-        fetchStaff();
-        if (roles.value.length === 0) fetchRoles();
-    }
-});
 
 onMounted(() => {
     fetchFacilityDetails();

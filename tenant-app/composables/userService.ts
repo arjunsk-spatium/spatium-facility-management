@@ -45,6 +45,28 @@ export interface UserModule extends SystemModule {
     isAssigned?: boolean
 }
 
+export interface OperationalStaff {
+    id: string
+    full_name: string
+    email: string
+    phone_number?: string
+    username?: string
+    role_id?: string
+    role_name?: string
+    role_details?: {
+        id: string
+        name: string
+    }
+    facility_id?: string
+    facility_name?: string
+    facility_details?: {
+        id: string
+        name: string
+    }
+    status?: string
+    created_at?: string
+}
+
 export const useUserService = () => {
     // Simulate API delay
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -494,6 +516,76 @@ export const useUserService = () => {
         }
     }
 
+    const getOperationalStaff = async (facilityId?: string): Promise<OperationalStaff[]> => {
+        try {
+            const { $api } = useNuxtApp()
+            const query: any = { page_size: 9999 }
+            if (facilityId) query.facility_id = facilityId
+            const response = await $api<any>('/api/portal/users/opstrack/list/', { method: 'GET', query })
+            const data = response?.data?.results || response?.data?.data?.results || response?.results || response?.data || []
+            return Array.isArray(data) ? data : []
+        } catch (error) {
+            console.error('Failed to fetch operational staff:', error)
+            return []
+        }
+    }
+
+    const createOperationalStaff = async (payload: {
+        full_name: string
+        email: string
+        phone_number: string
+        username: string
+        password: string
+        facility_id?: string
+        role_id?: string
+    }): Promise<OperationalStaff> => {
+        try {
+            const { $api } = useNuxtApp()
+            const response = await $api<any>('/api/portal/users/opstrack/create/', {
+                method: 'POST',
+                body: payload
+            })
+            if (response?.data) {
+                return response.data
+            }
+            throw new Error('Failed to create operational staff')
+        } catch (error: any) {
+            const message = extractApiErrorMessage(error)
+            const err = new Error(message) as any
+            err.data = error?.data
+            err.statusCode = error?.statusCode
+            console.error('Failed to create operational staff:', error)
+            throw err
+        }
+    }
+
+    const updateOperationalStaff = async (id: string, payload: Partial<OperationalStaff> & { role_id?: string }): Promise<OperationalStaff> => {
+        try {
+            const { $api } = useNuxtApp()
+            const response = await $api<any>(`/api/portal/users/opstrack/${id}/update/`, {
+                method: 'PATCH',
+                body: payload
+            })
+            return response?.data
+        } catch (error) {
+            console.error('Failed to update operational staff:', error)
+            throw error
+        }
+    }
+
+    const deleteOperationalStaff = async (id: string): Promise<boolean> => {
+        try {
+            const { $api } = useNuxtApp()
+            await $api<any>(`/api/portal/users/opstrack/${id}/delete/`, {
+                method: 'DELETE'
+            })
+            return true
+        } catch (error) {
+            console.error('Failed to delete operational staff:', error)
+            throw error
+        }
+    }
+
     return {
         getUserModules,
         getTenantModules,
@@ -509,6 +601,11 @@ export const useUserService = () => {
         assignModulesToUser,
         getAllSubmodulePermissions,
         getUserFacilities,
-        assignUserFacilities
+        assignUserFacilities,
+        getOperationalStaff,
+        createOperationalStaff,
+        updateOperationalStaff,
+        deleteOperationalStaff
     }
 }
+

@@ -150,14 +150,6 @@ const currentLogo = computed(() => isDark.value ? tenantStore.darkLogo : tenantS
 // Filter modules based on user's access
 const filteredModules = computed(() => {
     return allModules.value.map(m => {
-        // Always show feed modules for all authenticated users (temporary testing)
-        if (m.key === 'feed') {
-            const mod = { ...m };
-            if (mod.children) {
-                mod.children = mod.children.filter(c => c.key === 'feed-list');
-            }
-            return mod;
-        }
         if (!userModuleKeys.value.includes(m.key)) return null;
 
         const mod = { ...m };
@@ -271,13 +263,6 @@ onMounted(async () => {
         // Fetch modules configuration from "API"
         const modulesFromApi = await getTenantModules();
         let hydrated = hydrateModules(modulesFromApi);
-
-        // Inject feed modules from registry if not present in API response
-        // (temporary until backend adds them to tenant modules)
-        const feedModule = registryModules.find(r => r.key === 'feed');
-        if (feedModule && !hydrated.find(m => m.key === feedModule.key)) {
-            hydrated.push(feedModule);
-        }
         allModules.value = hydrated;
 
         // Fetch user's module access if not already loaded

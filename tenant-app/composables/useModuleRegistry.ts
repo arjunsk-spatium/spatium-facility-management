@@ -61,14 +61,22 @@ const registry: Module[] = [
             { key: 'meeting-rooms-bookings', label: 'Bookings', route: '/meeting-rooms/bookings' }
         ]
     },
-    { key: 'users', label: 'User Management', icon: 'TeamOutlined', route: '/users' },
+    {
+        key: 'users',
+        label: 'User Management',
+        icon: 'TeamOutlined',
+        children: [
+            { key: 'users-management', label: 'Management Staff', route: '/users/management' },
+            { key: 'users-operational', label: 'Operational Staff', route: '/users/operational' }
+        ]
+    },
     { key: 'banners', label: 'Banners', icon: 'PictureOutlined', route: '/banners' },
     {
         key: 'feed',
         label: 'Feed',
         icon: 'NotificationOutlined',
         children: [
-            { key: 'feed-list', label: 'Feed Posts', route: '/feed' }
+            { key: 'feed-list', label: 'Feed', route: '/feed' }
         ]
     },
     { key: 'configure', label: 'Configure', icon: 'SettingOutlined', route: '/configure' },
