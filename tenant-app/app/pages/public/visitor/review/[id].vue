@@ -166,10 +166,13 @@ const handleAction = async (action: 'approve' | 'reject') => {
             await router.push({
                 path: '/public/visitor/review/action-complete',
                 query: {
+                    id,
                     status: action === 'approve' ? 'approved' : 'rejected',
                     name: visitor.value.name,
-                    company: visitor.value.company || visitor.value.from_company,
-                    photo: visitor.value.photoUrl
+                    company: visitor.value.from_company || visitor.value.company,
+                    photo: visitor.value.photo_url || visitor.value.photoUrl,
+                    date: visitor.value.checkin_date || visitor.value.appointment_date,
+                    time: visitor.value.checkin_time || visitor.value.appointment_time
                 }
             })
         } else {

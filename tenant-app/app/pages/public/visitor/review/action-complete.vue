@@ -3,20 +3,25 @@
         <!-- Header -->
         <div class="bg-white px-4 py-4 flex items-center justify-center relative border-b border-gray-100 sticky top-0 z-10">
             <template v-if="status === 'approved'">
-                <button class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium flex items-center text-sm" @click="router.back()">
+                <button class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium flex items-center text-sm cursor-pointer hover:text-gray-700" @click="handleBack">
                     <LeftOutlined class="mr-1 text-xs" /> Back
                 </button>
                 <h1 class="font-bold text-lg text-gray-900 !m-0 !mb-0 leading-none">Review Complete</h1>
             </template>
             <template v-else>
                 <h1 class="font-bold text-lg text-gray-900 !m-0 !mb-0 leading-none">Request Rejected</h1>
-                <button class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" @click="router.back()">
+                <button class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer" @click="handleBack">
                     <CloseOutlined class="text-lg" />
                 </button>
             </template>
         </div>
 
-        <div class="flex-1 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+        <!-- Loading State when fetching API and no data yet -->
+        <div v-if="loading && !visitor && !route.query.name" class="flex-1 flex items-center justify-center min-h-[400px]">
+            <LoadingOutlined class="text-3xl text-blue-600 animate-spin" />
+        </div>
+
+        <div v-else class="flex-1 flex flex-col items-center justify-center p-6 text-center animate-fade-in max-w-md mx-auto w-full">
             <!-- Icon -->
             <div class="relative w-32 h-32 mb-6">
                 <!-- Outer Glow/Circle -->
@@ -59,19 +64,19 @@
             <div v-if="status === 'rejected'" class="w-full text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 mb-2">Rejected Visitor</div>
             
             <div class="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 mb-4">
-                <div :class="['w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 text-xl overflow-hidden', status === 'rejected' ? 'grayscale opacity-50' : '']">
-                     <img v-if="photoUrl" :src="photoUrl" class="w-full h-full object-cover" />
+                <div :class="['w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 text-xl overflow-hidden shrink-0', status === 'rejected' ? 'grayscale opacity-50' : '']">
+                     <img v-if="photoUrl" :src="photoUrl" :alt="visitorName" class="w-full h-full object-cover" />
                      <UserOutlined v-else class="text-gray-400" />
                 </div>
-                <div class="flex-1 text-left">
-                    <div :class="['font-bold text-base text-gray-900', status === 'rejected' ? 'line-through text-gray-400' : '']">{{ visitorName }}</div>
-                    <div class="text-xs text-blue-500">{{ company }}</div>
-                    <div v-if="status === 'rejected'" class="text-[10px] text-gray-400 mt-0.5">Fri, Oct 24 • 10:00 AM</div>
+                <div class="flex-1 text-left min-w-0">
+                    <div :class="['font-bold text-base text-gray-900 truncate', status === 'rejected' ? 'line-through text-gray-400' : '']">{{ visitorName }}</div>
+                    <div v-if="company" class="text-xs text-blue-500 truncate">{{ company }}</div>
+                    <div v-if="status === 'rejected' && dateTimeSummary" class="text-[10px] text-gray-400 mt-0.5">{{ dateTimeSummary }}</div>
                 </div>
-                <div v-if="status === 'approved'" class="px-2 py-1 bg-green-50 text-green-600 text-[10px] font-bold rounded uppercase border border-green-100">
+                <div v-if="status === 'approved'" class="px-2 py-1 bg-green-50 text-green-600 text-[10px] font-bold rounded uppercase border border-green-100 shrink-0">
                     Approved
                 </div>
-                <div v-if="status === 'rejected'" class="w-6 h-6 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xs">
+                <div v-if="status === 'rejected'" class="w-6 h-6 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xs shrink-0">
                     <StopOutlined />
                 </div>
             </div>
@@ -82,13 +87,13 @@
                     <div class="flex items-center gap-2 text-gray-400 mb-1">
                         <CalendarOutlined /> <span class="text-xs">Date</span>
                     </div>
-                    <div class="font-bold text-gray-900">Fri, Oct 24</div>
+                    <div class="font-bold text-gray-900 text-sm truncate">{{ visitDate }}</div>
                 </div>
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left">
                      <div class="flex items-center gap-2 text-gray-400 mb-1">
                         <ClockCircleOutlined /> <span class="text-xs">Time</span>
                     </div>
-                    <div class="font-bold text-gray-900">10:00 AM</div>
+                    <div class="font-bold text-gray-900 text-sm truncate">{{ visitTime }}</div>
                 </div>
             </div>
         </div>
@@ -96,13 +101,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { 
     LeftOutlined, CloseOutlined, CheckOutlined, UserDeleteOutlined, 
     SafetyCertificateFilled, UserOutlined, StopOutlined,
-    CalendarOutlined, ClockCircleOutlined 
+    CalendarOutlined, ClockCircleOutlined, LoadingOutlined
 } from '@ant-design/icons-vue'
+import { useNuxtApp } from '#app'
 
 definePageMeta({
     layout: 'public'
@@ -110,12 +116,102 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const { $api } = useNuxtApp()
+const { formatDisplayDate, formatDisplayTime } = useDate()
 
-const status = computed(() => route.query.status as 'approved' | 'rejected' || 'approved')
-const visitorName = computed(() => route.query.name as string || 'Visitor')
-const company = computed(() => route.query.company as string || 'Company')
-const photoUrl = computed(() => route.query.photo as string || '')
+const visitor = ref<any>(null)
+const loading = ref(false)
 
+const status = computed(() => {
+    const s = (route.query.status as string) || visitor.value?.status
+    if (!s) return 'approved'
+    const lower = s.toLowerCase()
+    if (lower === 'rejected' || lower === 'denied' || lower === 'reject') return 'rejected'
+    return 'approved'
+})
+
+const visitorName = computed(() => {
+    return visitor.value?.name || (route.query.name as string) || 'Visitor'
+})
+
+const company = computed(() => {
+    return visitor.value?.from_company || visitor.value?.company || (route.query.company as string) || ''
+})
+
+const photoUrl = computed(() => {
+    return visitor.value?.photo_url || visitor.value?.photoUrl || (route.query.photo as string) || ''
+})
+
+const rawDate = computed(() => {
+    return visitor.value?.checkin_date || 
+           visitor.value?.check_in_date || 
+           visitor.value?.appointment_date || 
+           visitor.value?.date || 
+           (route.query.date as string) || 
+           (route.query.checkin_date as string) || 
+           (route.query.appointment_date as string) || 
+           ''
+})
+
+const rawTime = computed(() => {
+    return visitor.value?.checkin_time || 
+           visitor.value?.check_in_time || 
+           visitor.value?.appointment_time || 
+           visitor.value?.time || 
+           (route.query.time as string) || 
+           (route.query.checkin_time as string) || 
+           (route.query.appointment_time as string) || 
+           ''
+})
+
+const visitDate = computed(() => {
+    if (rawDate.value) {
+        return rawDate.value
+    }
+    if (visitor.value?.created_at) {
+        return formatDisplayDate(visitor.value.created_at)
+    }
+    return formatDisplayDate(new Date().toISOString())
+})
+
+const visitTime = computed(() => {
+    if (rawTime.value) {
+        return rawTime.value
+    }
+    if (visitor.value?.created_at) {
+        return formatDisplayTime(visitor.value.created_at)
+    }
+    return formatDisplayTime(new Date().toISOString())
+})
+
+const dateTimeSummary = computed(() => {
+    return `${visitDate.value} • ${visitTime.value}`
+})
+
+const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+        router.back()
+    } else {
+        router.push('/public/visitor')
+    }
+}
+
+onMounted(async () => {
+    const id = (route.query.id as string) || (route.params.id as string)
+    if (id) {
+        loading.value = true
+        try {
+            const response = await $api<any>(`/api/portal/visitors/public/review/${id}/`)
+            if (response?.success && response?.data) {
+                visitor.value = response.data
+            }
+        } catch (e) {
+            console.error('Failed to load visitor details for action complete:', e)
+        } finally {
+            loading.value = false
+        }
+    }
+})
 </script>
 
 <style scoped>
