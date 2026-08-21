@@ -17,6 +17,8 @@ export const useMeetingRoomStore = defineStore("meetingRoom", {
         bookingsCount: 0,
         bookingsNext: null as string | null,
         bookingsPrevious: null as string | null,
+        bookingsPage: 1,
+        bookingsPageSize: 10,
         currentRoom: null as MeetingRoom | null,
         stats: null as RoomStats | null,
         insights: null as MeetingRoomInsights | null,
@@ -38,6 +40,7 @@ export const useMeetingRoomStore = defineStore("meetingRoom", {
         getRoomById: (state) => (id: string) =>
             state.rooms.find((r) => r.id === id),
         totalRooms: (state) => state.count,
+        totalBookings: (state) => state.bookingsCount,
         hasNext: (state) => state.next !== null,
         hasPrevious: (state) => state.previous !== null,
     },
@@ -70,22 +73,31 @@ export const useMeetingRoomStore = defineStore("meetingRoom", {
             await this.fetchRooms({ page, ...(pageSize ? { page_size: pageSize } : {}) });
         },
 
-        async fetchBookings(params?: BookingListParams) {
+        async fetchBookings(params: BookingListParams = {}) {
             this.loading = true;
             this.error = null;
             try {
                 const service = useMeetingRoomService();
-                const result = await service.getBookings(params);
+                const page = params.page ?? this.bookingsPage;
+                const page_size = params.page_size ?? this.bookingsPageSize;
+                const result = await service.getBookings({ ...params, page, page_size });
                 this.bookings = result.results;
                 this.bookingsCount = result.count;
                 this.bookingsNext = result.next;
                 this.bookingsPrevious = result.previous;
+                this.bookingsPage = page;
+                this.bookingsPageSize = page_size;
             } catch (err: any) {
                 this.error = err.message || "Failed to fetch bookings";
                 this.bookings = [];
+                this.bookingsCount = 0;
             } finally {
                 this.loading = false;
             }
+        },
+
+        async goToBookingPage(page: number, pageSize?: number) {
+            await this.fetchBookings({ page, ...(pageSize ? { page_size: pageSize } : {}) });
         },
 
         async fetchRoomById(id: string) {

@@ -93,6 +93,9 @@ describe('Meeting Room Store', () => {
             expect(store.page).toBe(1)
             expect(store.pageSize).toBe(10)
             expect(store.count).toBe(0)
+            expect(store.bookingsPage).toBe(1)
+            expect(store.bookingsPageSize).toBe(10)
+            expect(store.bookingsCount).toBe(0)
         })
     })
 
@@ -121,6 +124,12 @@ describe('Meeting Room Store', () => {
             store.count = 10
             expect(store.totalRooms).toBe(10)
         })
+
+        it('totalBookings should return bookingsCount', () => {
+            const store = useMeetingRoomStore()
+            store.bookingsCount = 31
+            expect(store.totalBookings).toBe(31)
+        })
     })
 
     describe('Actions', () => {
@@ -148,11 +157,20 @@ describe('Meeting Room Store', () => {
             expect(store.rooms[0].id).toBe('existing')
         })
 
-        it('fetchBookings should populate bookings', async () => {
+        it('fetchBookings should populate bookings and pagination', async () => {
             const store = useMeetingRoomStore()
             await store.fetchBookings()
             
             expect(store.bookings.length).toBe(2)
+            expect(store.bookingsCount).toBe(2)
+            expect(store.bookingsPage).toBe(1)
+        })
+
+        it('goToBookingPage should update booking page', async () => {
+            const store = useMeetingRoomStore()
+            await store.goToBookingPage(2, 20)
+            expect(store.bookingsPage).toBe(2)
+            expect(store.bookingsPageSize).toBe(20)
         })
 
         it('fetchRoomById should set currentRoom for valid id', async () => {

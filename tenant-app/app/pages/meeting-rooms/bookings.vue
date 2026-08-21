@@ -27,22 +27,21 @@
 
 
         <!-- Filters -->
-        <!-- Filters -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                 <a-input-search v-model:value="searchText" placeholder="Search booking ID or user..."
-                    class="w-full md:w-64" />
+                    class="w-full md:w-64" allow-clear @search="handleSearch" />
 
-                <a-range-picker v-model:value="dateRange" class="w-full md:w-auto" />
+                <a-range-picker v-model:value="dateRange" class="w-full md:w-auto" @change="handleDateRangeChange" />
 
-                <a-select v-model:value="statusFilter" placeholder="Filter Status" class="w-full md:w-40" allow-clear>
+                <a-select v-model:value="statusFilter" placeholder="Filter Status" class="w-full md:w-40" allow-clear @change="handleStatusFilterChange">
                     <a-select-option value="PENDING">Pending</a-select-option>
                     <a-select-option value="CONFIRMED">Confirmed</a-select-option>
                     <a-select-option value="COMPLETED">Completed</a-select-option>
                     <a-select-option value="CANCELLED">Cancelled</a-select-option>
                 </a-select>
             </div>
-            <a-button class="w-full md:w-auto">
+            <a-button class="w-full md:w-auto" :loading="exporting" @click="handleExport">
                 <template #icon>
                     <ExportOutlined />
                 </template>
@@ -50,7 +49,7 @@
             </a-button>
         </div>
 
-        <ResponsiveDataView :columns="columns" :data="filteredBookings" :loading="loading" row-key="bookingId">
+        <ResponsiveDataView :columns="columns" :data="bookings" :loading="loading" row-key="id" :pagination="paginationConfig">
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'id'">
                     <a @click="openBookingDetails(record)"
@@ -342,6 +341,7 @@ import { useMeetingRoomStore } from '../../../stores/meetingRoom';
 import { useAuthStore } from '../../../stores/auth';
 import { useCompanyService } from '../../../composables/companyService';
 import { useFacilityService } from '../../../composables/facilityService';
+import type { BookingListParams } from '../../../composables/meetingRoomService';
 import { storeToRefs } from 'pinia';
 import { message } from 'ant-design-vue';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -362,7 +362,7 @@ definePageMeta({
 // Stores
 const roomStore = useMeetingRoomStore();
 const authStore = useAuthStore();
-const { bookings, loading, rooms, timeSlots } = storeToRefs(roomStore);
+const { bookings, loading, rooms, timeSlots, bookingsCount, bookingsPage, bookingsPageSize } = storeToRefs(roomStore);
 
 const canView = computed(() => authStore.hasPermission('meeting-rooms-bookings:view'))
 const canCreate = computed(() => authStore.hasPermission('meeting-rooms-bookings:create'))
@@ -382,6 +382,124 @@ const facilityService = useFacilityService();
 const searchText = ref('');
 const statusFilter = ref<string | undefined>(undefined);
 const dateRange = ref<[Dayjs, Dayjs]>();
+const exporting = ref(false);
+
+const handleExport = async () => {
+    exporting.value = true;
+    try {
+        const XLSX = await import('xlsx');
+        
+        const params: BookingListParams = {
+            page: 1,
+            page_size: bookingsCount.value || 1000
+        };
+        if (statusFilter.value) {
+            params.booking_status = statusFilter.value;
+        }
+        if (searchText.value) {
+            params.search = searchText.value;
+        }
+        if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+            params.start_date = dateRange.value[0].format('YYYY-MM-DD');
+            params.end_date = dateRange.value[1].format('YYYY-MM-DD');
+        }
+
+        const meetingRoomService = useMeetingRoomService();
+        const response = await meetingRoomService.getBookings(params);
+        const exportList = (response?.results && response.results.length > 0) ? response.results : bookings.value;
+
+        if (!exportList || exportList.length === 0) {
+            message.warning('No bookings to export');
+            return;
+        }
+
+        const data = exportList.map(b => ({
+            'Booking ID': b.bookingId || b.id,
+            'Room': b.meetingRoomName || b.roomName || '',
+            'Date': b.bookingDate || '',
+            'Time': `${b.startTime?.substring(0, 5) || ''} - ${b.endTime?.substring(0, 5) || ''}`,
+            'User': b.userName || '',
+            'Company': b.companyName || '',
+            'Status': b.bookingStatus || '',
+            'Amount (₹)': b.amountCharged || '0.00',
+            'Credits Used': b.creditsUsed ?? 0,
+            'Payment Mode': b.paymentMode || '',
+            'Type': b.bookingType || '',
+            'Duration (Hours)': b.bookingHours || '',
+            'Attendees': b.attendees?.map((a: any) => a.user_name || a.name || a.email).filter(Boolean).join(', ') || ''
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Bookings');
+        const now = dayjs().format('YYYY-MM-DD');
+        XLSX.writeFile(workbook, `room-bookings-${now}.xlsx`);
+        message.success('Bookings exported successfully');
+    } catch (error) {
+        console.error('Error exporting bookings to Excel:', error);
+        message.error('Failed to export bookings');
+    } finally {
+        exporting.value = false;
+    }
+};
+
+// Pagination config
+const paginationConfig = computed(() => ({
+    total: bookingsCount.value,
+    current: bookingsPage.value,
+    pageSize: bookingsPageSize.value,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
+    onChange: handlePageChange,
+}));
+
+const handlePageChange = async (pageNum: number, newPageSize: number) => {
+    const params: BookingListParams = { 
+        page: pageNum,
+        page_size: newPageSize
+    };
+    if (statusFilter.value) {
+        params.booking_status = statusFilter.value;
+    }
+    if (searchText.value) {
+        params.search = searchText.value;
+    }
+    if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+        params.start_date = dateRange.value[0].format('YYYY-MM-DD');
+        params.end_date = dateRange.value[1].format('YYYY-MM-DD');
+    }
+    await roomStore.fetchBookings(params);
+};
+
+const handleSearch = () => {
+    fetchBookingsByFilter();
+};
+
+const handleDateRangeChange = () => {
+    fetchBookingsByFilter();
+};
+
+const handleStatusFilterChange = () => {
+    fetchBookingsByFilter();
+};
+
+const fetchBookingsByFilter = async () => {
+    const params: BookingListParams = { 
+        page: 1,
+        page_size: bookingsPageSize.value
+    };
+    if (statusFilter.value) {
+        params.booking_status = statusFilter.value;
+    }
+    if (searchText.value) {
+        params.search = searchText.value;
+    }
+    if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+        params.start_date = dateRange.value[0].format('YYYY-MM-DD');
+        params.end_date = dateRange.value[1].format('YYYY-MM-DD');
+    }
+    await roomStore.fetchBookings(params);
+};
 
 // Booking modal state
 const showBookingModal = ref(false);
@@ -422,23 +540,6 @@ const columns = [
 
 // Computed
 const availableSlots = computed(() => timeSlots.value.filter(s => s.isAvailable));
-
-const filteredBookings = computed(() => {
-    if (!bookings.value || !Array.isArray(bookings.value)) return [];
-    let result = [...bookings.value];
-    if (statusFilter.value) {
-        result = result.filter(b => b.bookingStatus === statusFilter.value);
-    }
-    if (searchText.value) {
-        const query = searchText.value.toLowerCase();
-        result = result.filter(b =>
-            (b.id || '').toLowerCase().includes(query) ||
-            (b.userName || '').toLowerCase().includes(query) ||
-            (b.companyName || '').toLowerCase().includes(query)
-        );
-    }
-    return result;
-});
 
 // Methods
 const filterCompany = (input: string, option: any) => {

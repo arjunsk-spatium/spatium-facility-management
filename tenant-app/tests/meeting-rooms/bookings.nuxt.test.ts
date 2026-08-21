@@ -46,20 +46,36 @@ describe('Meeting Room Bookings Page', () => {
         expect(wrapper.text()).toContain('Conference Room A')
     })
 
-    it('should have filter controls', async () => {
+    it('should configure pagination with bookingsCount', async () => {
         const wrapper = await mountSuspended(BookingsPage, {
             global: {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
                     initialState: {
                         auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
-                        meetingRoom: { bookings: [], rooms: [], loading: false }
+                        meetingRoom: { bookings: mockBookings, rooms: mockRooms, bookingsCount: 31, bookingsPage: 1, bookingsPageSize: 10, loading: false }
                     }
                 })]
             }
         })
         
-        // Page has "Filter Status" dropdown
-        expect(wrapper.text()).toContain('Filter')
+        expect(wrapper.findComponent({ name: 'ResponsiveDataView' }).props('pagination')).toBeDefined()
+    })
+
+    it('should have export button', async () => {
+        const wrapper = await mountSuspended(BookingsPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
+                        meetingRoom: { bookings: mockBookings, rooms: mockRooms, loading: false }
+                    }
+                })]
+            }
+        })
+
+        const exportBtn = wrapper.findAll('button').find(b => b.text().includes('Export'))
+        expect(exportBtn).toBeDefined()
     })
 })

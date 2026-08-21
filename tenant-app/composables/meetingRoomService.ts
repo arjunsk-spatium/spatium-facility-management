@@ -156,6 +156,13 @@ export interface BookingListParams {
     meeting_room__facility?: string;
     company?: string;
     booking_date?: string;
+    booking_status?: string;
+    status?: string;
+    search?: string;
+    start_date?: string;
+    end_date?: string;
+    date_from?: string;
+    date_to?: string;
     page?: number;
     page_size?: number;
 }
@@ -246,6 +253,20 @@ export const useMeetingRoomService = () => {
             if (params.company) queryParams.append("company", params.company);
             if (params.booking_date)
                 queryParams.append("booking_date", params.booking_date);
+            if (params.booking_status)
+                queryParams.append("booking_status", params.booking_status);
+            if (params.status)
+                queryParams.append("status", params.status);
+            if (params.search)
+                queryParams.append("search", params.search);
+            if (params.start_date)
+                queryParams.append("start_date", params.start_date);
+            if (params.end_date)
+                queryParams.append("end_date", params.end_date);
+            if (params.date_from)
+                queryParams.append("date_from", params.date_from);
+            if (params.date_to)
+                queryParams.append("date_to", params.date_to);
             if (params.page) queryParams.append("page", params.page.toString());
             if (params.page_size)
                 queryParams.append("page_size", params.page_size.toString());
