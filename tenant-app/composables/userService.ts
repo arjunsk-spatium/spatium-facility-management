@@ -45,19 +45,28 @@ export interface UserModule extends SystemModule {
     isAssigned?: boolean
 }
 
+export interface OperationalStaffFacility {
+    facility_id: string
+    facility_name: string
+    id?: string
+    name?: string
+}
+
 export interface OperationalStaff {
     id: string
     full_name: string
     email: string
     phone_number?: string
     username?: string
-    role_id?: string
-    role_name?: string
+    tenant_id?: string
+    company_id?: string | null
+    role_id?: string | null
+    role_name?: string | null
     role_details?: {
         id: string
         name: string
     }
-    facility_id?: string
+    facility_id?: string | null
     facility_name?: string
     facility_details?: {
         id: string
@@ -65,7 +74,8 @@ export interface OperationalStaff {
     }
     facility_ids?: string[]
     is_all_facilities?: boolean
-    facilities?: Array<{ id: string; name: string } | string>
+    facilities?: OperationalStaffFacility[]
+    building_pass_enabled?: boolean
     status?: string
     created_at?: string
 }

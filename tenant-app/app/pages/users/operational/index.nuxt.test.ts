@@ -7,10 +7,15 @@ const mockStaff = [
     {
         id: 'staff-1',
         full_name: 'Alice Operational',
-        email: 'alice.op@example.com',
+        email: 'alice@example.com',
         phone_number: '+91 99999 88888',
         username: 'aliceop',
+        facility_id: null,
         facility_ids: ['fac-1', 'fac-2'],
+        facilities: [
+            { facility_id: 'fac-1', facility_name: 'HQ Building' },
+            { facility_id: 'fac-2', facility_name: 'Annex Branch' }
+        ],
         is_all_facilities: false,
         role_id: 'role-1',
         role_name: 'Supervisor',
@@ -22,7 +27,9 @@ const mockStaff = [
         email: 'bob@example.com',
         phone_number: '+91 99999 77777',
         username: 'bobop',
+        facility_id: null,
         facility_ids: [],
+        facilities: [],
         is_all_facilities: true,
         role_id: 'role-2',
         role_name: 'Technician',

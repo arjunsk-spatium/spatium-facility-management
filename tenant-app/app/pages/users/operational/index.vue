@@ -328,12 +328,15 @@ const getFacilityNames = (record: any): string[] => {
     if (!record) return ['N/A']
     if (record.is_all_facilities) return ['All facilities']
 
-    if (Array.isArray(record.facility_ids) && record.facility_ids.length > 0) {
-        return record.facility_ids.map((id: string) => resolveFacilityName(id))
+    if (Array.isArray(record.facilities) && record.facilities.length > 0) {
+        return record.facilities.map((f: any) => {
+            if (typeof f === 'string') return resolveFacilityName(f)
+            return f.facility_name || f.name || resolveFacilityName(f.facility_id || f.id)
+        })
     }
 
-    if (Array.isArray(record.facilities) && record.facilities.length > 0) {
-        return record.facilities.map((f: any) => (typeof f === 'string' ? resolveFacilityName(f) : f.name || resolveFacilityName(f.id)))
+    if (Array.isArray(record.facility_ids) && record.facility_ids.length > 0) {
+        return record.facility_ids.map((id: string) => resolveFacilityName(id))
     }
 
     if (record.facility_name) return [record.facility_name]
@@ -460,7 +463,9 @@ const openEditStaffModal = async (record: OperationalStaff | any) => {
     let currentFacilityIds: string[] = []
     let isAllFacilities = !!record.is_all_facilities
 
-    if (Array.isArray(record.facility_ids)) {
+    if (Array.isArray(record.facilities) && record.facilities.length > 0) {
+        currentFacilityIds = record.facilities.map((f: any) => (typeof f === 'string' ? f : f.facility_id || f.id)).filter(Boolean)
+    } else if (Array.isArray(record.facility_ids)) {
         currentFacilityIds = [...record.facility_ids]
     } else {
         const singleFacId = record.facility_id || (typeof record.facility === 'string' ? record.facility : record.facility?.id)
