@@ -1,6 +1,6 @@
 <template>
     <a-modal :open="visible"
-        :title="`Manage Facilities - ${props.user?.name}`"
+        :title="`Manage Facilities - ${userName}`"
         width="600px"
         style="top: 20px;"
         :destroy-on-close="true"
@@ -44,18 +44,23 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
-import { useUserService, type User } from '../composables/userService'
+import { useUserService, type User, type OperationalStaff } from '../composables/userService'
 import { useFacilityService, type Facility } from '../composables/facilityService'
 
 const props = defineProps<{
-    user: User
+    user: User | OperationalStaff | any
     open: boolean
 }>()
 
 const emit = defineEmits<{
     'update:open': [value: boolean]
-    'saved': []
+    'saved': [payload?: { facility_ids: string[]; is_all_facilities: boolean }]
 }>()
+
+const userName = computed(() => {
+    if (!props.user) return ''
+    return props.user.name || props.user.full_name || props.user.username || ''
+})
 
 const { getUserFacilities, assignUserFacilities } = useUserService()
 const facilityService = useFacilityService()
@@ -119,12 +124,13 @@ const saveFacilities = async () => {
     if (!props.user) return
     saving.value = true
     try {
-        await assignUserFacilities(props.user.id, {
+        const payload = {
             facility_ids: Array.from(selectedFacilityIds.value),
             is_all_facilities: allFacilities.value
-        })
+        }
+        await assignUserFacilities(props.user.id, payload)
         message.success('Facilities updated successfully')
-        emit('saved')
+        emit('saved', payload)
         closeModal()
     } catch (error) {
         message.error('Failed to update facilities')

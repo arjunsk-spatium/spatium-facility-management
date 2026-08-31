@@ -146,4 +146,24 @@ describe('UserFacilityAssignmentModal', () => {
         })
         expect(wrapper.emitted('saved')).toBeTruthy()
     })
+
+    it('mounts and displays operational staff with full_name', async () => {
+        const mockOpStaff = {
+            id: 'staff-1',
+            full_name: 'Bob Operator',
+            email: 'bob@example.com'
+        }
+
+        const wrapper = mount(UserFacilityAssignmentModal, {
+            props: {
+                user: mockOpStaff,
+                open: true
+            },
+            global: { stubs }
+        })
+
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(wrapper.text()).toContain('Manage Facilities - Bob Operator')
+    })
 })

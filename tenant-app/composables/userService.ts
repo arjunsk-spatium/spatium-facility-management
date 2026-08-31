@@ -63,8 +63,25 @@ export interface OperationalStaff {
         id: string
         name: string
     }
+    facility_ids?: string[]
+    is_all_facilities?: boolean
+    facilities?: Array<{ id: string; name: string } | string>
     status?: string
     created_at?: string
+}
+
+export interface OperationalStaffListParams {
+    facility_id?: string
+    page?: number
+    page_size?: number
+    search?: string
+}
+
+export interface OperationalStaffListResponse {
+    results: OperationalStaff[]
+    count: number
+    next?: string | null
+    previous?: string | null
 }
 
 export const useUserService = () => {
@@ -516,17 +533,37 @@ export const useUserService = () => {
         }
     }
 
-    const getOperationalStaff = async (facilityId?: string): Promise<OperationalStaff[]> => {
+    const getOperationalStaff = async (
+        params?: OperationalStaffListParams | string
+    ): Promise<OperationalStaffListResponse> => {
         try {
             const { $api } = useNuxtApp()
-            const query: any = { page_size: 9999 }
-            if (facilityId) query.facility_id = facilityId
+            const query: any = {}
+
+            if (typeof params === 'string') {
+                query.facility_id = params
+                query.page_size = 9999
+            } else if (params) {
+                if (params.page !== undefined) query.page = params.page
+                if (params.page_size !== undefined) query.page_size = params.page_size
+                if (params.facility_id) query.facility_id = params.facility_id
+                if (params.search) query.search = params.search
+            }
+
             const response = await $api<any>('/api/portal/users/opstrack/list/', { method: 'GET', query })
             const data = response?.data?.results || response?.data?.data?.results || response?.results || response?.data || []
-            return Array.isArray(data) ? data : []
+            const results = Array.isArray(data) ? data : []
+            const count = response?.data?.count ?? response?.data?.data?.count ?? response?.count ?? results.length
+
+            return {
+                results,
+                count,
+                next: response?.data?.next || response?.next || null,
+                previous: response?.data?.previous || response?.previous || null
+            }
         } catch (error) {
             console.error('Failed to fetch operational staff:', error)
-            return []
+            return { results: [], count: 0 }
         }
     }
 
