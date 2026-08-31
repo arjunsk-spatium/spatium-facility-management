@@ -60,4 +60,18 @@ describe('useModuleRegistry', () => {
     expect(feedModule?.children).toBeDefined()
     expect(feedModule?.children?.[0].label).toBe('Feed')
   })
+
+  it('should contain Helpdesk Roles submodule under Helpdesk', () => {
+    const { getAllModules } = useModuleRegistry()
+    const modules = getAllModules()
+
+    const helpdeskModule = modules.find(m => m.key === 'helpdesk')
+    expect(helpdeskModule).toBeDefined()
+    expect(helpdeskModule?.children).toBeDefined()
+    const roleChild = helpdeskModule?.children?.find(c => c.key === 'helpdesk-roles')
+    expect(roleChild).toBeDefined()
+    expect(roleChild?.label).toBe('Helpdesk Roles')
+    expect(roleChild?.route).toBe('/helpdesk/roles')
+  })
 })
+

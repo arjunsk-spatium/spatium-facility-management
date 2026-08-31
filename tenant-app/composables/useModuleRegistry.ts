@@ -39,7 +39,8 @@ const registry: Module[] = [
         icon: 'CustomerServiceOutlined',
         children: [
             { key: 'helpdesk-insights', label: 'Insights', route: '/helpdesk/insights' },
-            { key: 'helpdesk-tickets', label: 'Tickets', route: '/helpdesk' }
+            { key: 'helpdesk-tickets', label: 'Tickets', route: '/helpdesk' },
+            { key: 'helpdesk-roles', label: 'Helpdesk Roles', route: '/helpdesk/roles' }
         ]
     },
     {

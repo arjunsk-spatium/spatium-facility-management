@@ -8,6 +8,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const moduleMap: Record<string, string> = {
         '/companies': 'companies',
         '/visitors': 'visitors',
+        '/helpdesk/roles': 'helpdesk-roles',
         '/helpdesk': 'helpdesk',
         '/facilities': 'facilities',
         '/users/management': 'users-management',
