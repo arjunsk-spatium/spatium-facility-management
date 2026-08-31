@@ -49,43 +49,6 @@
                     />
                 </div>
             </a-tab-pane>
-
-            <a-tab-pane key="role" tab="Role">
-                <div class="py-4">
-                    <ConfigTable 
-                        title="Roles" 
-                        singular-title="Role"
-                        :columns="roleColumns" 
-                        :data="roles" 
-                        :loading="loadingRoles"
-                        :fields="roleFields"
-                        :canCreate="canCreate"
-                        :canUpdate="canUpdate"
-                        :canDelete="canDelete"
-                        @add="handleAddRole" 
-                        @edit="handleEditRole" 
-                        @delete="handleDeleteRole" 
-                    />
-                </div>
-            </a-tab-pane>
-
-            <a-tab-pane key="directEscalation" tab="Direct Escalation">
-                <div class="py-4">
-                    <ConfigTable 
-                        title="Direct Escalation Role Mappings" 
-                        :columns="directEscalationColumns" 
-                        :data="directEscalationMappings" 
-                        :loading="loadingDirectEscalation"
-                        :fields="directEscalationFields"
-                        :canCreate="canCreate && directEscalationMappings.length === 0"
-                        :canUpdate="canUpdate"
-                        :canDelete="canDelete"
-                        @add="handleAddDirectEscalation" 
-                        @edit="handleEditDirectEscalation" 
-                        @delete="handleDeleteDirectEscalation" 
-                    />
-                </div>
-            </a-tab-pane>
         </a-tabs>
     </div>
 </template>
@@ -93,7 +56,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
-import { useHelpdeskService, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskRole, type DirectedEscalationRoleMapping, type HelpdeskPriority, type HelpdeskAssignmentMode } from '../../composables/helpdeskService'
+import { useHelpdeskService, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskRole, type HelpdeskPriority, type HelpdeskAssignmentMode } from '../../composables/helpdeskService'
 import ConfigTable from './ConfigTable.vue'
 
 defineProps<{
@@ -105,8 +68,6 @@ defineProps<{
 const activeSubTab = ref('category')
 const loading = ref(false)
 const loadingSubcategories = ref(false)
-const loadingRoles = ref(false)
-const loadingDirectEscalation = ref(false)
 const loadingPriorities = ref(false)
 const loadingAssignmentModes = ref(false)
 
@@ -119,7 +80,7 @@ const selectedCategoryId = ref<string>()
 // Subcategory data
 const subcategories = ref<HelpdeskSubCategory[]>([])
 
-// Role data
+// Role data (kept for subcategory required_role selection)
 const roles = ref<HelpdeskRole[]>([])
 
 // Priority data
@@ -127,11 +88,6 @@ const priorities = ref<HelpdeskPriority[]>([])
 
 // Assignment Mode data
 const assignmentModes = ref<HelpdeskAssignmentMode[]>([])
-
-// Direct Escalation data
-const directEscalationMappings = ref<DirectedEscalationRoleMapping[]>([])
-
-const ASSIGNMENT_MODE = '00000000-0000-0000-0000-000000000303'
 
 // Columns
 const categoryColumns = [
@@ -184,26 +140,6 @@ const subcategoryFields = computed(() => {
 
 const selectedAssignmentMode = ref<string | undefined>()
 
-const roleColumns = [
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Key', dataIndex: 'key', key: 'key' },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
-    { title: 'Display Order', dataIndex: 'display_order', key: 'display_order' },
-    { title: 'Action', key: 'action', width: 150 }
-]
-
-const roleFields = [
-    { name: 'name', label: 'Name', type: 'text' as const },
-    { name: 'description', label: 'Description', type: 'text' as const },
-    { name: 'display_order', label: 'Display Order', type: 'number' as const }
-]
-
-const directEscalationColumns = [
-    { title: 'Role', dataIndex: 'role_name', key: 'role_name' },
-    { title: 'Status', dataIndex: 'is_active', key: 'is_active', customRender: (text: boolean) => text ? 'Active' : 'Inactive' },
-    { title: 'Action', key: 'action', width: 150 }
-]
-
 // Computed options
 const categoryOptions = computed(() =>
     categories.value.map(c => ({ label: c.name, value: c.id }))
@@ -212,11 +148,6 @@ const categoryOptions = computed(() =>
 const roleOptions = computed(() =>
     roles.value.map(r => ({ label: r.name, value: r.id }))
 )
-
-const directEscalationFields = [
-    { name: 'role', label: 'Role', type: 'select' as const, options: roleOptions },
-    { name: 'is_active', label: 'Active', type: 'switch' as const }
-]
 
 const filteredSubcategories = computed(() => {
     if (!selectedCategoryId.value) return subcategories.value
@@ -287,17 +218,6 @@ const fetchAssignmentModes = async () => {
     }
 }
 
-const fetchDirectEscalationMappings = async () => {
-    loadingDirectEscalation.value = true
-    try {
-        directEscalationMappings.value = await service.getDirectedEscalationRoleMappings()
-    } catch (error) {
-        message.error('Failed to load direct escalation mappings')
-    } finally {
-        loadingDirectEscalation.value = false
-    }
-}
-
 // Initial load
 onMounted(async () => {
     await Promise.all([
@@ -305,8 +225,7 @@ onMounted(async () => {
         fetchSubcategories(),
         fetchRoles(),
         fetchPriorities(),
-        fetchAssignmentModes(),
-        fetchDirectEscalationMappings()
+        fetchAssignmentModes()
     ])
 })
 
@@ -406,92 +325,6 @@ const handleDeleteSubcategory = async (record: HelpdeskSubCategory) => {
 const handleSubcategoryFieldChange = (field: string, value: any) => {
     if (field === 'assignment_mode') {
         selectedAssignmentMode.value = value
-    }
-}
-
-const handleAddRole = async (data: any) => {
-    try {
-        const newRole = await service.createRole({
-            key: data.name.toLowerCase().replace(/\s+/g, '_'),
-            name: data.name,
-            description: data.description || '',
-            display_order: data.display_order || 1
-        })
-        roles.value.push(newRole)
-        message.success('Role added successfully')
-    } catch (error) {
-        message.error('Failed to add role')
-    }
-}
-
-const handleEditRole = async (record: HelpdeskRole, data: any) => {
-    try {
-        const updated = await service.updateRole(record.id, {
-            name: data.name,
-            key: record.key,
-            description: data.description,
-            display_order: data.display_order
-        })
-        const index = roles.value.findIndex(r => r.id === record.id)
-        if (index > -1) roles.value[index] = updated
-        message.success('Role updated successfully')
-    } catch (error) {
-        message.error('Failed to update role')
-    }
-}
-
-const handleDeleteRole = async (record: HelpdeskRole) => {
-    try {
-        await service.deleteRole(record.id)
-        roles.value = roles.value.filter(r => r.id !== record.id)
-        message.success('Role deleted successfully')
-    } catch (error) {
-        message.error('Failed to delete role')
-    }
-}
-
-const handleAddDirectEscalation = async (data: any) => {
-    try {
-        const newMapping = await service.createDirectedEscalationRoleMapping({
-            assignment_mode: ASSIGNMENT_MODE,
-            role: data.role,
-            deadline_hours: data.deadline_hours || 2,
-            is_active: data.is_active !== false
-        })
-        const role = roles.value.find(r => r.id === data.role)
-        newMapping.role_name = role?.name || ''
-        directEscalationMappings.value.push(newMapping)
-        message.success('Direct escalation mapping added successfully')
-    } catch (error) {
-        message.error('Failed to add direct escalation mapping')
-    }
-}
-
-const handleEditDirectEscalation = async (record: DirectedEscalationRoleMapping, data: any) => {
-    try {
-        const updated = await service.updateDirectedEscalationRoleMapping(record.id, {
-            role: data.role,
-            deadline_hours: data.deadline_hours,
-            is_active: data.is_active
-        })
-        const index = directEscalationMappings.value.findIndex(m => m.id === record.id)
-        if (index > -1) {
-            const role = roles.value.find(r => r.id === data.role)
-            directEscalationMappings.value[index] = { ...directEscalationMappings.value[index], ...updated, role_name: role?.name || '' }
-        }
-        message.success('Direct escalation mapping updated successfully')
-    } catch (error) {
-        message.error('Failed to update direct escalation mapping')
-    }
-}
-
-const handleDeleteDirectEscalation = async (record: DirectedEscalationRoleMapping) => {
-    try {
-        await service.deleteDirectedEscalationRoleMapping(record.id)
-        directEscalationMappings.value = directEscalationMappings.value.filter(m => m.id !== record.id)
-        message.success('Direct escalation mapping deleted successfully')
-    } catch (error) {
-        message.error('Failed to delete direct escalation mapping')
     }
 }
 </script>

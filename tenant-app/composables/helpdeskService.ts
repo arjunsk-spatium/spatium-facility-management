@@ -178,6 +178,11 @@ export interface CreateRolePayload {
     display_order: number;
 }
 
+export interface AssignRoleUsersPayload {
+    role_id: string;
+    user_ids: string[];
+}
+
 export interface DirectedEscalationRoleMapping {
     id: string;
     tenant_id: string;
@@ -1043,6 +1048,38 @@ export const useHelpdeskService = () => {
                 }
             } catch (error) {
                 console.error("Error deleting role:", error);
+                throw error;
+            }
+        },
+
+        bulkAssignRoleUsers: async (payload: AssignRoleUsersPayload): Promise<any> => {
+            try {
+                const response = await $api<ApiResponse<any>>(
+                    "/api/portal/helpdesk/tenant-roles/bulk-assign-users/",
+                    {
+                        method: "POST",
+                        body: payload,
+                    },
+                );
+                return response?.data || response;
+            } catch (error) {
+                console.error("Error bulk assigning users to role:", error);
+                throw error;
+            }
+        },
+
+        assignUsersToSystemRole: async (payload: AssignRoleUsersPayload): Promise<any> => {
+            try {
+                const response = await $api<ApiResponse<any>>(
+                    "/api/portal/helpdesk/tenant-roles/assign-users-to-system-role/",
+                    {
+                        method: "POST",
+                        body: payload,
+                    },
+                );
+                return response?.data || response;
+            } catch (error) {
+                console.error("Error assigning users to system role:", error);
                 throw error;
             }
         },
