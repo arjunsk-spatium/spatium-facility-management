@@ -68,6 +68,7 @@ defineProps<{
 const activeSubTab = ref('category')
 const loading = ref(false)
 const loadingSubcategories = ref(false)
+const loadingRoles = ref(false)
 const loadingPriorities = ref(false)
 const loadingAssignmentModes = ref(false)
 
@@ -117,6 +118,16 @@ const assignmentModeOptions = computed(() =>
     assignmentModes.value.map(a => ({ label: a.name, value: a.id }))
 )
 
+const isAutoAssignmentMode = (modeIdOrKey?: string) => {
+    if (!modeIdOrKey) return false
+    if (modeIdOrKey === '00000000-0000-0000-0000-000000000301') return true
+    const mode = assignmentModes.value.find(m => m.id === modeIdOrKey || m.key === modeIdOrKey)
+    if (mode) {
+        return mode.key?.toLowerCase() === 'auto' || mode.name?.toLowerCase().includes('auto')
+    }
+    return typeof modeIdOrKey === 'string' && modeIdOrKey.toLowerCase() === 'auto'
+}
+
 const subcategoryFields = computed(() => {
     const priorityOpts = priorityOptions.value?.length ? priorityOptions.value : []
     const assignmentOpts = assignmentModeOptions.value?.length ? assignmentModeOptions.value : []
@@ -131,14 +142,22 @@ const subcategoryFields = computed(() => {
     ]
     
     // Auto assignment mode requires a role
-    if (selectedAssignmentMode.value === '00000000-0000-0000-0000-000000000301') {
-        fields.splice(4, 0, { name: 'required_role', label: 'Required Role', type: 'select' as const, options: roleOpts })
+    if (isAutoAssignmentMode(selectedAssignmentMode.value)) {
+        fields.splice(3, 0, { name: 'required_role', label: 'Required Role', type: 'select' as const, options: roleOpts })
     }
     
     return fields
 })
 
 const selectedAssignmentMode = ref<string | undefined>()
+
+watch(selectedAssignmentMode, (newVal) => {
+    if (isAutoAssignmentMode(newVal)) {
+        if (roles.value.length === 0 && !loadingRoles.value) {
+            fetchRoles()
+        }
+    }
+})
 
 // Computed options
 const categoryOptions = computed(() =>
@@ -322,9 +341,21 @@ const handleDeleteSubcategory = async (record: HelpdeskSubCategory) => {
     }
 }
 
-const handleSubcategoryFieldChange = (field: string, value: any) => {
-    if (field === 'assignment_mode') {
-        selectedAssignmentMode.value = value
+const handleSubcategoryFieldChange = (fieldOrData: any, value?: any) => {
+    let mode: string | undefined
+    if (typeof fieldOrData === 'string') {
+        if (fieldOrData === 'assignment_mode') {
+            mode = value
+        }
+    } else if (fieldOrData && typeof fieldOrData === 'object') {
+        mode = fieldOrData.assignment_mode
+    }
+
+    if (mode !== undefined) {
+        selectedAssignmentMode.value = mode
+        if (isAutoAssignmentMode(mode) && roles.value.length === 0 && !loadingRoles.value) {
+            fetchRoles()
+        }
     }
 }
 </script>
