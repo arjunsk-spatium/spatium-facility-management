@@ -183,6 +183,23 @@ export interface AssignRoleUsersPayload {
     user_ids: string[];
 }
 
+export interface RoleUserItem {
+    user_id: string;
+    name: string;
+}
+
+export interface RoleUsersData {
+    role: {
+        id: string;
+        key: string;
+        name: string;
+        is_system_role?: boolean;
+    };
+    user_ids: string[];
+    users: RoleUserItem[];
+    count: number;
+}
+
 export interface DirectedEscalationRoleMapping {
     id: string;
     tenant_id: string;
@@ -1048,6 +1065,28 @@ export const useHelpdeskService = () => {
                 }
             } catch (error) {
                 console.error("Error deleting role:", error);
+                throw error;
+            }
+        },
+
+        getRoleUsers: async (roleId: string): Promise<RoleUsersData> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<RoleUsersData>>
+                >("/api/portal/helpdesk/tenant-roles/role-users/", {
+                    method: "GET",
+                    query: { role_id: roleId },
+                });
+                if (!response.success || !response.data?.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch role users",
+                    );
+                }
+                return response.data.data;
+            } catch (error) {
+                console.error("Error fetching role users:", error);
                 throw error;
             }
         },

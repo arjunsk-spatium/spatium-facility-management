@@ -470,28 +470,48 @@ const handleDelete = async (record: HelpdeskRole) => {
 // User Assignment Workflow
 const openAssignUsersModal = async (role: HelpdeskRole) => {
     activeAssignRole.value = role
-    selectedUserIds.value = (role as any).user_ids || []
+    selectedUserIds.value = []
     assignModalVisible.value = true
     loadingAssignableUsers.value = true
 
     try {
-        if (isSystemRole(role)) {
-            // For ROLE_HELPDESK_AUTHORIZED_PERSON: list Management Staff users
-            const users = await userService.getUsers()
-            assignableUsers.value = users.map(u => ({
-                id: u.id,
-                name: u.name || u.email,
-                email: u.email
-            }))
-        } else {
-            // For other roles: list Operational Staff users
-            const response = await userService.getOperationalStaff({ page_size: 9999 })
-            const staffList = response?.results || []
-            assignableUsers.value = staffList.map((s: any) => ({
-                id: s.id,
-                name: s.full_name || s.username || s.email,
-                email: s.email
-            }))
+        const [assignedUsersResponse, usersResponse] = await Promise.allSettled([
+            helpdeskService.getRoleUsers(role.id),
+            isSystemRole(role)
+                ? userService.getUsers()
+                : userService.getOperationalStaff({ page_size: 9999 })
+        ])
+
+        if (usersResponse.status === 'fulfilled') {
+            if (isSystemRole(role)) {
+                const users = (usersResponse.value as any[]) || []
+                assignableUsers.value = users.map(u => ({
+                    id: u.id,
+                    name: u.name || u.email,
+                    email: u.email
+                }))
+            } else {
+                const staffList = (usersResponse.value as any)?.results || (usersResponse.value as any) || []
+                assignableUsers.value = staffList.map((s: any) => ({
+                    id: s.id,
+                    name: s.full_name || s.username || s.email,
+                    email: s.email
+                }))
+            }
+        }
+
+        if (assignedUsersResponse.status === 'fulfilled') {
+            const roleData = assignedUsersResponse.value as any
+            if (Array.isArray(roleData?.user_ids)) {
+                selectedUserIds.value = roleData.user_ids
+            } else if (Array.isArray(roleData?.users)) {
+                selectedUserIds.value = roleData.users.map((u: any) => u.user_id || u.id).filter(Boolean)
+            } else if (Array.isArray(roleData)) {
+                selectedUserIds.value = roleData.map((item: any) => {
+                    if (typeof item === 'string') return item
+                    return item.user_id || item.id || item.user?.id || item.user
+                }).filter(Boolean)
+            }
         }
     } catch (err) {
         console.error('Failed to load users for role assignment:', err)

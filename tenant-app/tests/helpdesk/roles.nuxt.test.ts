@@ -34,6 +34,7 @@ const mockRoles = [
 ]
 
 const mockGetRoles = vi.fn()
+const mockGetRoleUsers = vi.fn()
 const mockCreateRole = vi.fn()
 const mockUpdateRole = vi.fn()
 const mockDeleteRole = vi.fn()
@@ -43,6 +44,7 @@ const mockAssignUsersToSystemRole = vi.fn()
 vi.mock('../../composables/helpdeskService', () => ({
     useHelpdeskService: () => ({
         getRoles: mockGetRoles,
+        getRoleUsers: mockGetRoleUsers,
         createRole: mockCreateRole,
         updateRole: mockUpdateRole,
         deleteRole: mockDeleteRole,
@@ -65,6 +67,7 @@ describe('Helpdesk Roles Page', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockGetRoles.mockResolvedValue(mockRoles)
+        mockGetRoleUsers.mockResolvedValue([])
         mockGetUsers.mockResolvedValue([
             { id: 'mgt-1', name: 'Alice Manager', email: 'alice@example.com' },
             { id: 'mgt-2', name: 'Bob Admin', email: 'bob@example.com' }
@@ -170,7 +173,14 @@ describe('Helpdesk Roles Page', () => {
         expect(wrapperWithoutPermission.text()).not.toContain('Add Role')
     })
 
-    it('should open assign users modal and list operational staff for regular roles', async () => {
+    it('should open assign users modal, fetch existing assigned users, and list operational staff for regular roles', async () => {
+        mockGetRoleUsers.mockResolvedValueOnce({
+            role: { id: 'role-1', key: 'technician', name: 'Technician' },
+            user_ids: ['ops-1'],
+            users: [{ user_id: 'ops-1', name: 'John Tech' }],
+            count: 1
+        })
+
         const wrapper = await mountSuspended(HelpdeskRolesPage, {
             global: {
                 plugins: [createTestingPinia({
@@ -191,6 +201,8 @@ describe('Helpdesk Roles Page', () => {
         await wrapper.vm.$nextTick()
 
         expect((wrapper.vm as any).assignModalVisible).toBe(true)
+        expect(mockGetRoleUsers).toHaveBeenCalledWith('role-1')
+        expect((wrapper.vm as any).selectedUserIds).toEqual(['ops-1'])
         expect(mockGetOperationalStaff).toHaveBeenCalledWith({ page_size: 9999 })
         expect((wrapper.vm as any).assignableUsers.length).toBe(2)
         expect((wrapper.vm as any).assignableUsers[0].name).toBe('John Tech')
@@ -205,7 +217,14 @@ describe('Helpdesk Roles Page', () => {
         })
     })
 
-    it('should open assign users modal and list management staff for system role', async () => {
+    it('should open assign users modal, fetch existing assigned users, and list management staff for system role', async () => {
+        mockGetRoleUsers.mockResolvedValueOnce({
+            role: { id: 'role-sys-1', key: 'ROLE_HELPDESK_AUTHORIZED_PERSON', name: 'Authorized Person' },
+            user_ids: ['mgt-1'],
+            users: [{ user_id: 'mgt-1', name: 'Alice Manager' }],
+            count: 1
+        })
+
         const wrapper = await mountSuspended(HelpdeskRolesPage, {
             global: {
                 plugins: [createTestingPinia({
@@ -226,6 +245,8 @@ describe('Helpdesk Roles Page', () => {
         await wrapper.vm.$nextTick()
 
         expect((wrapper.vm as any).assignModalVisible).toBe(true)
+        expect(mockGetRoleUsers).toHaveBeenCalledWith('role-sys-1')
+        expect((wrapper.vm as any).selectedUserIds).toEqual(['mgt-1'])
         expect(mockGetUsers).toHaveBeenCalled()
         expect((wrapper.vm as any).assignableUsers.length).toBe(2)
         expect((wrapper.vm as any).assignableUsers[0].name).toBe('Alice Manager')
