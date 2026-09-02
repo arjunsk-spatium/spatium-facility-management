@@ -377,6 +377,11 @@ export const useSpocStore = defineStore('spoc', {
                     method: 'DELETE'
                 })
 
+                const index = this.employees.findIndex(e => e.id === id)
+                if (index > -1) {
+                    this.employees.splice(index, 1)
+                }
+
                 return true
             } catch (err: any) {
                 this.error = err?.data?.message || err?.message || 'Failed to delete employee'
@@ -440,16 +445,19 @@ export const useSpocStore = defineStore('spoc', {
             try {
                 const { $api } = useNuxtApp()
 
-                const appName = data.role === 'SPOC' ? 'client_portal' : 'hub'
-
                 const body: Record<string, any> = {
                     full_name: data.name,
                     email: data.email,
                     phone_number: data.phone,
                     designation: data.designation,
-                    department_id: data.department_id,
-                    app_name: appName
+                    department_id: data.department_id
                 }
+
+                if (data.buildingPassEnabled !== false) {
+                    const appName = data.role === 'SPOC' ? 'client_portal' : 'hub'
+                    body.app_name = appName
+                }
+
                 if (typeof data.buildingPassEnabled === 'boolean') {
                     body.building_pass_enabled = data.buildingPassEnabled
                 }

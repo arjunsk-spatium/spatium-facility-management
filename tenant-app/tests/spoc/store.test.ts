@@ -354,16 +354,111 @@ describe('SPOC Store', () => {
             expect(result).toBe(true)
         })
 
-        it('should return false when employee not found', async () => {
+        it('should throw error when employee deletion fails', async () => {
             mockFetch.mockResolvedValue({
                 ok: false,
                 status: 404,
-                json: async () => ({ success: false })
+                json: async () => ({ success: false, message: 'Employee not found' })
             });
             const store = useSpocStore()
             
-            const result = await store.deleteEmployee('nonexistent-id')
-            expect(result).toBe(false)
+            await expect(store.deleteEmployee('nonexistent-id')).rejects.toThrow()
+        })
+    })
+
+    describe('updateEmployee', () => {
+        it('should omit app_name from request body when turning off building pass (buildingPassEnabled: false)', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: { id: 'emp-1', name: 'John Doe', email: 'john@example.com' }
+                })
+            })
+            const store = useSpocStore()
+            store.employees = [
+                {
+                    id: 'emp-1',
+                    name: 'John Doe',
+                    email: 'john@example.com',
+                    buildingPassEnabled: true
+                }
+            ]
+
+            await store.updateEmployee('emp-1', {
+                buildingPassEnabled: false
+            })
+
+            expect(mockFetch).toHaveBeenCalled()
+            const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]
+            const requestBody = JSON.parse(lastCall[1].body)
+            
+            expect(requestBody.building_pass_enabled).toBe(false)
+            expect(requestBody.app_name).toBeUndefined()
+            expect(requestBody).not.toHaveProperty('app_name')
+        })
+
+        it('should include app_name in request body when enabling building pass (buildingPassEnabled: true)', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: { id: 'emp-1', name: 'John Doe', email: 'john@example.com' }
+                })
+            })
+            const store = useSpocStore()
+            store.employees = [
+                {
+                    id: 'emp-1',
+                    name: 'John Doe',
+                    email: 'john@example.com',
+                    buildingPassEnabled: false
+                }
+            ]
+
+            await store.updateEmployee('emp-1', {
+                buildingPassEnabled: true
+            })
+
+            expect(mockFetch).toHaveBeenCalled()
+            const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]
+            const requestBody = JSON.parse(lastCall[1].body)
+            
+            expect(requestBody.building_pass_enabled).toBe(true)
+            expect(requestBody.app_name).toBe('hub')
+        })
+
+        it('should include app_name client_portal when role is SPOC', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: { id: 'emp-1', name: 'John Doe', email: 'john@example.com' }
+                })
+            })
+            const store = useSpocStore()
+            store.employees = [
+                {
+                    id: 'emp-1',
+                    name: 'John Doe',
+                    email: 'john@example.com'
+                }
+            ]
+
+            await store.updateEmployee('emp-1', {
+                name: 'John Updated',
+                role: 'SPOC'
+            })
+
+            expect(mockFetch).toHaveBeenCalled()
+            const lastCall = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]
+            const requestBody = JSON.parse(lastCall[1].body)
+            
+            expect(requestBody.full_name).toBe('John Updated')
+            expect(requestBody.app_name).toBe('client_portal')
         })
     })
 })
