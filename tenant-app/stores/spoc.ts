@@ -453,13 +453,10 @@ export const useSpocStore = defineStore('spoc', {
                     department_id: data.department_id
                 }
 
-                if (data.buildingPassEnabled !== false) {
-                    const appName = data.role === 'SPOC' ? 'client_portal' : 'hub'
-                    body.app_name = appName
-                }
-
                 if (typeof data.buildingPassEnabled === 'boolean') {
                     body.building_pass_enabled = data.buildingPassEnabled
+                } else if (data.role) {
+                    body.app_name = data.role === 'SPOC' ? 'client_portal' : 'hub'
                 }
 
                 const response = await $api<any>(`/api/portal/users/client_portal/${id}/update/`, {

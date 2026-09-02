@@ -399,7 +399,7 @@ describe('SPOC Store', () => {
             expect(requestBody).not.toHaveProperty('app_name')
         })
 
-        it('should include app_name in request body when enabling building pass (buildingPassEnabled: true)', async () => {
+        it('should omit app_name from request body when enabling building pass (buildingPassEnabled: true)', async () => {
             mockFetch.mockResolvedValue({
                 ok: true,
                 status: 200,
@@ -427,7 +427,8 @@ describe('SPOC Store', () => {
             const requestBody = JSON.parse(lastCall[1].body)
             
             expect(requestBody.building_pass_enabled).toBe(true)
-            expect(requestBody.app_name).toBe('hub')
+            expect(requestBody.app_name).toBeUndefined()
+            expect(requestBody).not.toHaveProperty('app_name')
         })
 
         it('should include app_name client_portal when role is SPOC', async () => {
