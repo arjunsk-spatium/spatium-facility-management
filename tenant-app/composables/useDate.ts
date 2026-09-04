@@ -58,6 +58,22 @@ export const useDate = () => {
         return d.toISOString()
     }
 
+    const getFinancialYearStartDate = (d: any = new Date()): string => {
+        const date = d?.toDate ? d.toDate() : new Date(d)
+        const year = date.getFullYear()
+        const month = date.getMonth() // 0-indexed: 3 is April
+        const fyYear = month >= 3 ? year : year - 1
+        return `${fyYear}-04-01`
+    }
+
+    const getFinancialYearEndDate = (d: any = new Date()): string => {
+        const date = d?.toDate ? d.toDate() : new Date(d)
+        const year = date.getFullYear()
+        const month = date.getMonth()
+        const fyYear = month >= 3 ? year + 1 : year
+        return `${fyYear}-03-31`
+    }
+
     return {
         toApiDate,
         toApiTime,
@@ -65,6 +81,8 @@ export const useDate = () => {
         formatDisplayDate,
         formatDisplayDateTime,
         formatDisplayTime,
+        getFinancialYearStartDate,
+        getFinancialYearEndDate,
         DEFAULT_TIMEZONE
     }
 }

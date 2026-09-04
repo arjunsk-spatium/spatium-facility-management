@@ -56,6 +56,18 @@ export interface SpocVisitorInsightsSummary {
     expected: number
 }
 
+export interface SpocVisitorInsightsStats {
+    total_visitors: number
+    completed_visits: number
+    walk_in: number
+    pre_invite: number
+    this_month: number
+    checked_in?: number
+    checked_out?: number
+    pending?: number
+    expected?: number
+}
+
 export interface SpocVisitorInsightsTrafficItem {
     date: string
     count: number
@@ -79,11 +91,14 @@ export interface SpocVisitorInsightsTopCompany {
 }
 
 export interface SpocVisitorInsightsData {
+    filters?: { start_date: string; end_date: string }
     date_range?: { start_date: string; end_date: string }
+    stats: SpocVisitorInsightsStats
     summary: SpocVisitorInsightsSummary
+    visit_purpose_breakdown: SpocVisitorInsightsPurpose[]
+    visit_purposes: SpocVisitorInsightsPurpose[]
     traffic?: SpocVisitorInsightsTrafficItem[]
     today_hourly_traffic?: SpocVisitorInsightsHourlyItem[]
-    visit_purposes?: SpocVisitorInsightsPurpose[]
     top_visiting_companies?: SpocVisitorInsightsTopCompany[]
 }
 
@@ -161,20 +176,62 @@ export const useSpocStore = defineStore('spoc', {
                 })
 
                 const data = response?.data ?? response
-                const summaryRaw = data?.summary ?? data
+                const statsRaw = data?.stats ?? data?.summary ?? data
+
+                const totalVisitors = Number(statsRaw?.total_visitors ?? statsRaw?.totalVisitors ?? statsRaw?.total ?? 0)
+                const completedVisits = Number(statsRaw?.completed_visits ?? statsRaw?.completedVisits ?? statsRaw?.checked_out ?? statsRaw?.checkedOut ?? 0)
+                const walkIn = Number(statsRaw?.walk_in ?? statsRaw?.walkIn ?? 0)
+                const preInvite = Number(statsRaw?.pre_invite ?? statsRaw?.preInvite ?? 0)
+                const thisMonth = Number(statsRaw?.this_month ?? statsRaw?.thisMonth ?? 0)
+                const checkedIn = Number(statsRaw?.checked_in ?? statsRaw?.checkedIn ?? walkIn)
+                const pending = Number(statsRaw?.pending ?? preInvite)
+                const expected = Number(statsRaw?.expected ?? preInvite)
+
+                const rawPurposes = Array.isArray(data?.visit_purpose_breakdown)
+                    ? data.visit_purpose_breakdown
+                    : (Array.isArray(data?.visit_purposes) ? data.visit_purposes : (Array.isArray(data?.purposes) ? data.purposes : []))
+
+                const totalPurposeCount = rawPurposes.reduce((acc: number, p: any) => acc + (Number(p.count) || 0), 0) || totalVisitors || 1
+
+                const mappedPurposes: SpocVisitorInsightsPurpose[] = rawPurposes.map((p: any) => {
+                    const count = Number(p.count) || 0
+                    const percentage = p.percentage !== undefined
+                        ? Number(p.percentage)
+                        : Math.round((count / totalPurposeCount) * 100)
+                    return {
+                        purpose: p.purpose || p.name || 'Other',
+                        count,
+                        percentage
+                    }
+                })
+
+                const filterRange = data?.filters ?? data?.date_range ?? { start_date: startDate || '', end_date: endDate || '' }
 
                 this.insights = {
-                    date_range: data?.date_range ?? { start_date: startDate || '', end_date: endDate || '' },
-                    summary: {
-                        total_visitors: Number(summaryRaw?.total_visitors ?? summaryRaw?.totalVisitors ?? summaryRaw?.total ?? 0),
-                        checked_in: Number(summaryRaw?.checked_in ?? summaryRaw?.checkedIn ?? 0),
-                        checked_out: Number(summaryRaw?.checked_out ?? summaryRaw?.checkedOut ?? summaryRaw?.completed ?? 0),
-                        pending: Number(summaryRaw?.pending ?? 0),
-                        expected: Number(summaryRaw?.expected ?? 0)
+                    filters: filterRange,
+                    date_range: filterRange,
+                    stats: {
+                        total_visitors: totalVisitors,
+                        completed_visits: completedVisits,
+                        walk_in: walkIn,
+                        pre_invite: preInvite,
+                        this_month: thisMonth,
+                        checked_in: checkedIn,
+                        checked_out: completedVisits,
+                        pending,
+                        expected
                     },
+                    summary: {
+                        total_visitors: totalVisitors,
+                        checked_in: checkedIn,
+                        checked_out: completedVisits,
+                        pending,
+                        expected
+                    },
+                    visit_purpose_breakdown: mappedPurposes,
+                    visit_purposes: mappedPurposes,
                     traffic: Array.isArray(data?.traffic) ? data.traffic : (Array.isArray(data?.trends) ? data.trends : []),
                     today_hourly_traffic: Array.isArray(data?.today_hourly_traffic) ? data.today_hourly_traffic : (Array.isArray(data?.hourly_traffic) ? data.hourly_traffic : []),
-                    visit_purposes: Array.isArray(data?.visit_purposes) ? data.visit_purposes : (Array.isArray(data?.purposes) ? data.purposes : []),
                     top_visiting_companies: Array.isArray(data?.top_visiting_companies) ? data.top_visiting_companies : []
                 }
                 return this.insights

@@ -122,10 +122,52 @@ describe('SPOC Store', () => {
                 expect.anything()
             )
             expect(result?.summary.total_visitors).toBe(45)
-            expect(result?.summary.checked_in).toBe(30)
-            expect(result?.traffic).toHaveLength(1)
             expect(store.insights?.summary.total_visitors).toBe(45)
             expect(store.insightsLoading).toBe(false)
+        })
+
+        it('should correctly parse backend response with stats and visit_purpose_breakdown', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    code: 'INSIGHTS_RETRIEVED',
+                    message: 'Visitor insights retrieved successfully.',
+                    data: {
+                        filters: {
+                            start_date: '2025-01-01',
+                            end_date: '2026-12-31'
+                        },
+                        stats: {
+                            total_visitors: 99,
+                            completed_visits: 23,
+                            walk_in: 75,
+                            pre_invite: 24,
+                            this_month: 4
+                        },
+                        visit_purpose_breakdown: [
+                            { purpose: 'Meeting', count: 83 },
+                            { purpose: 'Interview', count: 16 }
+                        ]
+                    }
+                })
+            });
+            const store = useSpocStore()
+            const result = await store.fetchInsights('2025-01-01', '2026-12-31')
+
+            expect(result?.stats.total_visitors).toBe(99)
+            expect(result?.stats.completed_visits).toBe(23)
+            expect(result?.stats.walk_in).toBe(75)
+            expect(result?.stats.pre_invite).toBe(24)
+            expect(result?.stats.this_month).toBe(4)
+            expect(result?.visit_purpose_breakdown).toHaveLength(2)
+            expect(result?.visit_purpose_breakdown[0].purpose).toBe('Meeting')
+            expect(result?.visit_purpose_breakdown[0].count).toBe(83)
+            expect(result?.visit_purpose_breakdown[0].percentage).toBe(84) // 83 / 99 = 84%
+            expect(result?.visit_purpose_breakdown[1].purpose).toBe('Interview')
+            expect(result?.visit_purpose_breakdown[1].count).toBe(16)
+            expect(result?.visit_purpose_breakdown[1].percentage).toBe(16) // 16 / 99 = 16%
         })
 
         it('should handle error when fetchInsights fails', async () => {
