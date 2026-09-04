@@ -145,5 +145,25 @@ describe("Auth Store", () => {
             expect(store.modules).toContain("spoc-visitors-invite");
             expect(store.permissions).toEqual([]);
         });
+
+        it("isSpoc should correctly identify SPOC users", () => {
+            const store = useAuthStore();
+            expect(store.isSpoc).toBe(false);
+
+            store.user = { id: "1", email: "user@test.com", is_spoc: true };
+            expect(store.isSpoc).toBe(true);
+
+            store.user = { id: "2", email: "user@test.com", role: "spoc" };
+            expect(store.isSpoc).toBe(true);
+
+            store.user = { id: "3", email: "user@test.com", apps: ["client_portal"] };
+            expect(store.isSpoc).toBe(true);
+
+            store.user = { id: "4", email: "regular@test.com" };
+            expect(store.isSpoc).toBe(false);
+
+            store.modules = ["spoc_dashboard"];
+            expect(store.isSpoc).toBe(true);
+        });
     });
 });

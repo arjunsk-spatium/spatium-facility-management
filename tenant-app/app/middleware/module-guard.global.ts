@@ -22,19 +22,29 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         '/spoc/config': 'spoc_config'
     };
 
+    // Ensure modules are loaded
+    if (authStore.modules.length === 0 && authStore.isAuthenticated) {
+        await authStore.fetchModules();
+    }
+
+    // If SPOC accesses /dashboard, redirect to /spoc
+    if (to.path === '/dashboard' || to.path === '/dashboard/') {
+        if (authStore.isSpoc || (authStore.hasModule('spoc_dashboard') && !authStore.hasModule('dashboard'))) {
+            return navigateTo('/spoc');
+        }
+    }
+
     // Find matching restricted module
     const restrictedModuleKey = Object.keys(moduleMap).find(path => to.path.startsWith(path));
 
     if (restrictedModuleKey) {
         const requiredModule = moduleMap[restrictedModuleKey];
-        
-        // Ensure modules are loaded
-        if (authStore.modules.length === 0) {
-           await authStore.fetchModules();
-        }
 
         if (requiredModule && !authStore.hasModule(requiredModule)) {
-            // Redirect to dashboard or home if access denied
+            // Redirect to spoc for SPOC users, or dashboard for regular users
+            if (authStore.isSpoc || authStore.hasModule('spoc_dashboard')) {
+                return navigateTo('/spoc');
+            }
             return navigateTo('/dashboard');
         }
     }

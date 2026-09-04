@@ -36,6 +36,15 @@ export const useAuthStore = defineStore("auth", {
             state.modules.includes(module),
         hasPermission: (state) => (permission: string) =>
             state.permissions.includes(permission),
+        isSpoc: (state): boolean => {
+            if (!state.user && !state.modules.length) return false;
+            const user = state.user;
+            if (user?.is_spoc === true || user?.is_spoc === "true" || user?.is_spoc === 1) return true;
+            if (user?.role && String(user.role).toLowerCase() === "spoc") return true;
+            if (Array.isArray(user?.apps) && user.apps.some((app: string) => app.toLowerCase().replace(/\s/g, "_") === "client_portal")) return true;
+            if (state.modules.includes("spoc_dashboard")) return true;
+            return false;
+        },
         userFullName: (state) => {
             if (!state.user) return "";
             if (state.user.full_name) return state.user.full_name;
@@ -103,6 +112,13 @@ export const useAuthStore = defineStore("auth", {
                         );
                         // Keep legacy key for backward compatibility
                         localStorage.setItem("auth_token", this.token || "");
+                    }
+
+                    // Automatically fetch and populate modules
+                    try {
+                        await this.fetchModules();
+                    } catch (e) {
+                        console.error("Error fetching modules after login", e);
                     }
                 } else {
                     throw new Error(response.message || "Login failed");
@@ -200,7 +216,7 @@ export const useAuthStore = defineStore("auth", {
 
         async fetchModules() {
             // If user is SPOC, skip API call and use static SPOC modules
-            if (this.user?.is_spoc) {
+            if (this.isSpoc) {
                 this.modules = [
                     'spoc_dashboard',
                     'spoc_visitors',

@@ -48,6 +48,45 @@ export interface SpocStats {
     totalEmployees: number
 }
 
+export interface SpocVisitorInsightsSummary {
+    total_visitors: number
+    checked_in: number
+    checked_out: number
+    pending: number
+    expected: number
+}
+
+export interface SpocVisitorInsightsTrafficItem {
+    date: string
+    count: number
+}
+
+export interface SpocVisitorInsightsHourlyItem {
+    hour: string
+    count: number
+}
+
+export interface SpocVisitorInsightsPurpose {
+    purpose: string
+    count: number
+    percentage: number
+}
+
+export interface SpocVisitorInsightsTopCompany {
+    company_id: string
+    name: string
+    count: number
+}
+
+export interface SpocVisitorInsightsData {
+    date_range?: { start_date: string; end_date: string }
+    summary: SpocVisitorInsightsSummary
+    traffic?: SpocVisitorInsightsTrafficItem[]
+    today_hourly_traffic?: SpocVisitorInsightsHourlyItem[]
+    visit_purposes?: SpocVisitorInsightsPurpose[]
+    top_visiting_companies?: SpocVisitorInsightsTopCompany[]
+}
+
 export interface PurposeOfVisit {
     id: string
     name: string
@@ -62,27 +101,89 @@ export const useSpocStore = defineStore('spoc', {
         employeePage: 1,
         employeePageSize: 10,
         stats: null as SpocStats | null,
+        dashboardData: null as any,
+        insights: null as SpocVisitorInsightsData | null,
+        insightsLoading: false,
+        insightsError: null as string | null,
         purposes: [] as PurposeOfVisit[],
         facilities: [] as { id: string; name: string; companyId?: string }[],
         loading: false,
         error: null as string | null
     }),
     actions: {
-        async fetchStats() {
+        async fetchStats(facilityId?: string) {
             this.loading = true
+            this.error = null
             try {
-                // Mock stats - replace with API call
-                await new Promise(resolve => setTimeout(resolve, 300))
-                this.stats = {
-                    totalVisitors: 156,
-                    pendingApprovals: 5,
-                    checkedInToday: 12,
-                    totalEmployees: 24
+                const { $api } = useNuxtApp()
+                const query: Record<string, any> = {}
+                if (facilityId) {
+                    query.facility_id = facilityId
                 }
-            } catch (err) {
-                this.error = 'Failed to fetch stats'
+                const response = await $api<any>('/api/portal/visitors/client/dashboard/', {
+                    method: 'GET',
+                    query
+                })
+                const data = response?.data ?? response
+                this.dashboardData = data
+                this.stats = {
+                    totalVisitors: Number(data?.total_visitors ?? data?.totalVisitors ?? data?.visitors ?? data?.total ?? 0),
+                    pendingApprovals: Number(data?.pending_approvals ?? data?.pendingApprovals ?? data?.pending ?? 0),
+                    checkedInToday: Number(data?.checked_in_today ?? data?.checkedInToday ?? data?.checked_in ?? 0),
+                    totalEmployees: Number(data?.total_employees ?? data?.totalEmployees ?? data?.employees ?? 0)
+                }
+                return this.stats
+            } catch (err: any) {
+                console.error('Failed to fetch stats:', err)
+                this.error = err?.message || 'Failed to fetch stats'
+                return null
             } finally {
                 this.loading = false
+            }
+        },
+
+        async fetchDashboard(facilityId?: string) {
+            return await this.fetchStats(facilityId)
+        },
+
+        async fetchInsights(startDate?: string, endDate?: string) {
+            this.insightsLoading = true
+            this.insightsError = null
+            try {
+                const { $api } = useNuxtApp()
+                const query: Record<string, any> = {}
+                if (startDate) query.start_date = startDate
+                if (endDate) query.end_date = endDate
+
+                const response = await $api<any>('/api/portal/visitors/client/insights/', {
+                    method: 'GET',
+                    query
+                })
+
+                const data = response?.data ?? response
+                const summaryRaw = data?.summary ?? data
+
+                this.insights = {
+                    date_range: data?.date_range ?? { start_date: startDate || '', end_date: endDate || '' },
+                    summary: {
+                        total_visitors: Number(summaryRaw?.total_visitors ?? summaryRaw?.totalVisitors ?? summaryRaw?.total ?? 0),
+                        checked_in: Number(summaryRaw?.checked_in ?? summaryRaw?.checkedIn ?? 0),
+                        checked_out: Number(summaryRaw?.checked_out ?? summaryRaw?.checkedOut ?? summaryRaw?.completed ?? 0),
+                        pending: Number(summaryRaw?.pending ?? 0),
+                        expected: Number(summaryRaw?.expected ?? 0)
+                    },
+                    traffic: Array.isArray(data?.traffic) ? data.traffic : (Array.isArray(data?.trends) ? data.trends : []),
+                    today_hourly_traffic: Array.isArray(data?.today_hourly_traffic) ? data.today_hourly_traffic : (Array.isArray(data?.hourly_traffic) ? data.hourly_traffic : []),
+                    visit_purposes: Array.isArray(data?.visit_purposes) ? data.visit_purposes : (Array.isArray(data?.purposes) ? data.purposes : []),
+                    top_visiting_companies: Array.isArray(data?.top_visiting_companies) ? data.top_visiting_companies : []
+                }
+                return this.insights
+            } catch (err: any) {
+                console.error('Failed to fetch insights:', err)
+                this.insightsError = err?.message || 'Failed to fetch visitor insights'
+                throw err
+            } finally {
+                this.insightsLoading = false
             }
         },
 

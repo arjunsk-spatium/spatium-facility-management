@@ -221,7 +221,11 @@ const handleLogin = async () => {
 
   try {
     await authStore.login(form.email, form.otp, config.public.tenantClientAppId)
-    navigateTo('/dashboard')
+    if (authStore.isSpoc || authStore.hasModule('spoc_dashboard')) {
+      navigateTo('/spoc')
+    } else {
+      navigateTo('/dashboard')
+    }
   } catch (error: any) {
     console.error('Login failed', sanitizeError(error))
     errorMsg.value = sanitizeError(error)
@@ -237,14 +241,21 @@ const goBack = () => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   currentImage.value = getRandomItem(images)
   currentQuote.value = getRandomItem(quotes)
 
-  // If already logged in, redirect to dashboard
+  // If already logged in, redirect to appropriate home
   const authStore = useAuthStore();
   if (authStore.isAuthenticated) {
-    navigateTo('/dashboard');
+    if (authStore.modules.length === 0) {
+      await authStore.fetchModules();
+    }
+    if (authStore.isSpoc || authStore.hasModule('spoc_dashboard')) {
+      navigateTo('/spoc');
+    } else {
+      navigateTo('/dashboard');
+    }
   }
 })
 </script>

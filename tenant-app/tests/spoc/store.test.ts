@@ -49,28 +49,32 @@ describe('SPOC Store', () => {
     })
 
     describe('fetchStats', () => {
-        it('should fetch and populate stats', async () => {
+        it('should fetch and populate stats from client dashboard API', async () => {
             mockFetch.mockResolvedValue({
                 ok: true,
                 status: 200,
                 json: async () => ({
                     success: true,
                     data: {
-                        totalVisitors: 10,
-                        pendingApprovals: 2,
-                        checkedInToday: 5,
-                        totalEmployees: 20
+                        total_visitors: 10,
+                        pending_approvals: 2,
+                        checked_in_today: 5,
+                        total_employees: 20
                     }
                 })
             });
             const store = useSpocStore()
             await store.fetchStats()
             
+            expect(mockFetch).toHaveBeenCalledWith(
+                expect.stringContaining('/api/portal/visitors/client/dashboard/'),
+                expect.anything()
+            )
             expect(store.stats).not.toBeNull()
-            expect(store.stats?.totalVisitors).toBeDefined()
-            expect(store.stats?.pendingApprovals).toBeDefined()
-            expect(store.stats?.checkedInToday).toBeDefined()
-            expect(store.stats?.totalEmployees).toBeDefined()
+            expect(store.stats?.totalVisitors).toBe(10)
+            expect(store.stats?.pendingApprovals).toBe(2)
+            expect(store.stats?.checkedInToday).toBe(5)
+            expect(store.stats?.totalEmployees).toBe(20)
         })
 
         it('should set loading to false after fetch', async () => {
@@ -83,6 +87,57 @@ describe('SPOC Store', () => {
             await store.fetchStats()
             
             expect(store.loading).toBe(false)
+        })
+    })
+
+    describe('fetchInsights', () => {
+        it('should fetch insights with start_date and end_date filters', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        summary: {
+                            total_visitors: 45,
+                            checked_in: 30,
+                            checked_out: 25,
+                            pending: 5,
+                            expected: 10
+                        },
+                        traffic: [
+                            { date: '2025-01-01', count: 12 }
+                        ],
+                        visit_purposes: [
+                            { purpose: 'Meeting', count: 20, percentage: 50 }
+                        ]
+                    }
+                })
+            });
+            const store = useSpocStore()
+            const result = await store.fetchInsights('2025-01-01', '2025-12-31')
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                expect.stringMatching(/\/api\/portal\/visitors\/client\/insights\/\?.*start_date=2025-01-01.*end_date=2025-12-31/),
+                expect.anything()
+            )
+            expect(result?.summary.total_visitors).toBe(45)
+            expect(result?.summary.checked_in).toBe(30)
+            expect(result?.traffic).toHaveLength(1)
+            expect(store.insights?.summary.total_visitors).toBe(45)
+            expect(store.insightsLoading).toBe(false)
+        })
+
+        it('should handle error when fetchInsights fails', async () => {
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 500,
+                json: async () => ({ success: false, message: 'Server error' })
+            });
+            const store = useSpocStore()
+            await expect(store.fetchInsights('2025-01-01', '2025-12-31')).rejects.toThrow()
+            expect(store.insightsError).toBeDefined()
+            expect(store.insightsLoading).toBe(false)
         })
     })
 
