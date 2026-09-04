@@ -20,7 +20,7 @@
                         <template #icon>
                             <PlusOutlined />
                         </template>
-                        Invite <hide class="hidden sm:inline">Visitor</hide>
+                        Invite <span class="hidden sm:inline">Visitor</span>
                     </a-button>
                 </NuxtLink>
             </div>
@@ -46,9 +46,11 @@
             </a-button>
 
             <a-select v-model:value="selectedStatus" placeholder="All Status" allow-clear style="min-width: 150px"
-                class="w-full sm:w-auto">
+                class="w-full sm:w-auto" @change="handleStatusChange">
                 <a-select-option value="Pending">Pending</a-select-option>
                 <a-select-option value="Approved">Approved</a-select-option>
+                <a-select-option value="Checked In">Checked In</a-select-option>
+                <a-select-option value="Checked Out">Checked Out</a-select-option>
                 <a-select-option value="Rejected">Rejected</a-select-option>
             </a-select>
 
@@ -87,7 +89,7 @@
                         >
                             {{ record.name }}
                         </a>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone_number }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone_number || record.phone }}</p>
                     </div>
                 </template>
 
@@ -98,7 +100,7 @@
 
                 <template v-if="column.key === 'status'">
                     <a-tag :color="getStatusColor(record.status)">
-                        {{ record.status }}
+                        {{ formatStatus(record.status) }}
                     </a-tag>
                 </template>
 
@@ -140,10 +142,10 @@
                                     >
                                         {{ record.name }}
                                     </a>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone_number }}</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ record.phone_number || record.phone }}</p>
                                 </div>
                                 <a-tag :color="getStatusColor(record.status)" class="ml-2 flex-shrink-0">
-                                    {{ record.status }}
+                                    {{ formatStatus(record.status) }}
                                 </a-tag>
                             </div>
                         </div>
@@ -156,7 +158,7 @@
                         </div>
                         <div>
                             <p class="text-gray-400 dark:text-gray-500 text-xs">Purpose</p>
-                            <p class="text-gray-600 dark:text-gray-300">{{ record.purpose_of_visit }}</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ record.purpose_of_visit || record.purpose }}</p>
                         </div>
                         <div>
                             <p class="text-gray-400 dark:text-gray-500 text-xs">Facility</p>
@@ -187,7 +189,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { PlusOutlined, BarChartOutlined, QrcodeOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
@@ -202,6 +205,9 @@ definePageMeta({
     middleware: 'auth'
 })
 
+const route = useRoute()
+const router = useRouter()
+
 const { formatDisplayDate, formatDisplayTime } = useDate()
 
 const store = useSpocStore()
@@ -209,12 +215,70 @@ const authStore = useAuthStore()
 const companyStore = useCompanyStore()
 const { visitors, loading, facilities } = storeToRefs(store)
 
-const selectedStatus = ref<string | null>(null)
-const selectedFacility = ref<string | null>(null)
-const searchQuery = ref('')
+const normalizeStatus = (status: string | undefined | null): string => {
+    if (!status) return ''
+    const s = status.trim().toLowerCase().replace(/[-_]/g, ' ')
+    if (s === 'pending') return 'Pending'
+    if (s === 'approved') return 'Approved'
+    if (s === 'checked in' || s === 'checkedin') return 'Checked In'
+    if (s === 'checked out' || s === 'checkedout') return 'Checked Out'
+    if (s === 'rejected') return 'Rejected'
+    return status
+}
+
+const parseStatusFromQuery = (q: any): string | null => {
+    if (!q || typeof q !== 'string') return null
+    const s = q.trim().toLowerCase().replace(/[-_]/g, ' ')
+    if (s === 'pending') return 'Pending'
+    if (s === 'approved') return 'Approved'
+    if (s === 'checked in' || s === 'checkedin') return 'Checked In'
+    if (s === 'checked out' || s === 'checkedout') return 'Checked Out'
+    if (s === 'rejected') return 'Rejected'
+    return null
+}
+
+const selectedStatus = ref<string | null>(parseStatusFromQuery(route.query.status))
+const selectedFacility = ref<string | null>((route.query.facility_id || route.query.facility as string) || null)
+const searchQuery = ref(typeof route.query.search === 'string' ? route.query.search : '')
 const generatingQR = ref(false)
 
+watch(
+    () => route.query.status,
+    (newStatus) => {
+        selectedStatus.value = parseStatusFromQuery(newStatus)
+    }
+)
+
+watch(
+    () => route.query.facility_id || route.query.facility,
+    (newFacility) => {
+        if (newFacility) {
+            selectedFacility.value = String(newFacility)
+        } else {
+            selectedFacility.value = null
+        }
+    }
+)
+
+const handleStatusChange = (val: any) => {
+    const query = { ...route.query }
+    if (val) {
+        query.status = String(val).toLowerCase().replace(/\s+/g, '_')
+    } else {
+        delete query.status
+    }
+    router.replace({ query })
+}
+
 const handleFacilityChange = () => {
+    const query = { ...route.query }
+    if (selectedFacility.value) {
+        query.facility_id = selectedFacility.value
+    } else {
+        delete query.facility_id
+        delete query.facility
+    }
+    router.replace({ query })
     store.fetchVisitors(selectedFacility.value || undefined)
 }
 
@@ -281,21 +345,15 @@ const filteredVisitors = computed(() => {
     let result = visitors.value
 
     if (selectedStatus.value) {
-        const statusMap: Record<string, string> = {
-            'pending': 'Pending',
-            'approved': 'Approved',
-            'checked_in': 'Approved',
-            'checked_out': 'Approved',
-            'rejected': 'Rejected'
-        }
-        result = result.filter(v => statusMap[v.status] === selectedStatus.value)
+        result = result.filter(v => normalizeStatus(v.status) === selectedStatus.value)
     }
 
     if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase()
+        const query = searchQuery.value.toLowerCase().trim()
         result = result.filter(v =>
-            v.name.toLowerCase().includes(query) ||
+            v.name?.toLowerCase().includes(query) ||
             v.phone_number?.includes(query) ||
+            v.phone?.includes(query) ||
             v.facility_name?.toLowerCase().includes(query)
         )
     }
@@ -311,17 +369,24 @@ const formatTime = (dateStr: string | null | undefined) => {
     return formatDisplayTime(dateStr)
 }
 
-const getStatusColor = (status: string) => {
-    switch (status) {
+const getStatusColor = (status: string | undefined | null) => {
+    const s = normalizeStatus(status)
+    switch (s) {
         case 'Approved': return 'green'
+        case 'Checked In': return 'blue'
+        case 'Checked Out': return 'default'
         case 'Pending': return 'orange'
         case 'Rejected': return 'red'
         default: return 'default'
     }
 }
 
+const formatStatus = (status: string | undefined | null) => {
+    return normalizeStatus(status) || status || '-'
+}
+
 onMounted(async () => {
     await store.fetchFacilities()
-    store.fetchVisitors()
+    store.fetchVisitors(selectedFacility.value || undefined)
 })
 </script>

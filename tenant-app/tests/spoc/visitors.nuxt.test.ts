@@ -1,9 +1,33 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import SpocVisitorListPage from '../../app/pages/spoc/visitors/index.vue'
 import { createTestingPinia } from '@pinia/testing'
 
+let mockRouteQuery: Record<string, string> = {}
+const mockReplace = vi.fn()
+
+vi.mock('vue-router', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('vue-router')>()
+    return {
+        ...actual,
+        useRoute: () => ({
+            query: mockRouteQuery,
+            params: {}
+        }),
+        useRouter: () => ({
+            back: vi.fn(),
+            push: vi.fn(),
+            replace: mockReplace
+        })
+    }
+})
+
 describe('SPOC Visitor List Page', () => {
+    beforeEach(() => {
+        mockRouteQuery = {}
+        mockReplace.mockClear()
+    })
+
     const mockVisitors = [
         {
             id: '1',
@@ -151,4 +175,123 @@ describe('SPOC Visitor List Page', () => {
         
         expect(wrapper.text()).toContain('Generated')
     })
+
+    it('should filter visitors by status=pending from route query', async () => {
+        mockRouteQuery = { status: 'pending' }
+        const wrapper = await mountSuspended(SpocVisitorListPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        spoc: { visitors: mockVisitors, loading: false }
+                    }
+                })]
+            }
+        })
+
+        // Priya Patel is Pending
+        expect(wrapper.text()).toContain('Priya Patel')
+        // Rahul Sharma is Checked In, Amit Kumar is Approved -> should NOT be visible in filtered list
+        expect(wrapper.text()).not.toContain('Rahul Sharma')
+        expect(wrapper.text()).not.toContain('Amit Kumar')
+    })
+
+    it('should filter visitors by status=approved from route query', async () => {
+        mockRouteQuery = { status: 'approved' }
+        const wrapper = await mountSuspended(SpocVisitorListPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        spoc: { visitors: mockVisitors, loading: false }
+                    }
+                })]
+            }
+        })
+
+        expect(wrapper.text()).toContain('Amit Kumar')
+        expect(wrapper.text()).not.toContain('Priya Patel')
+        expect(wrapper.text()).not.toContain('Rahul Sharma')
+    })
+
+    it('should filter visitors by status=checked_in from route query', async () => {
+        mockRouteQuery = { status: 'checked_in' }
+        const wrapper = await mountSuspended(SpocVisitorListPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        spoc: { visitors: mockVisitors, loading: false }
+                    }
+                })]
+            }
+        })
+
+        expect(wrapper.text()).toContain('Rahul Sharma')
+        expect(wrapper.text()).not.toContain('Priya Patel')
+        expect(wrapper.text()).not.toContain('Amit Kumar')
+    })
+
+    it('should correctly filter even if visitor status in store is lowercase', async () => {
+        const lowercaseVisitors = [
+            { id: '1', name: 'User Pending', status: 'pending', purpose: 'Visit' },
+            { id: '2', name: 'User Approved', status: 'approved', purpose: 'Meeting' }
+        ]
+        mockRouteQuery = { status: 'pending' }
+        const wrapper = await mountSuspended(SpocVisitorListPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        spoc: { visitors: lowercaseVisitors, loading: false }
+                    }
+                })]
+            }
+        })
+
+        expect(wrapper.text()).toContain('User Pending')
+        expect(wrapper.text()).not.toContain('User Approved')
+    })
+
+    it('should support capitalized query param status=Pending', async () => {
+        mockRouteQuery = { status: 'Pending' }
+        const wrapper = await mountSuspended(SpocVisitorListPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        spoc: { visitors: mockVisitors, loading: false }
+                    }
+                })]
+            }
+        })
+
+        expect(wrapper.text()).toContain('Priya Patel')
+        expect(wrapper.text()).not.toContain('Rahul Sharma')
+        expect(wrapper.text()).not.toContain('Amit Kumar')
+    })
+
+    it('should update route query when status filter changes', async () => {
+        mockRouteQuery = {}
+        const wrapper = await mountSuspended(SpocVisitorListPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        spoc: { visitors: mockVisitors, loading: false }
+                    }
+                })]
+            }
+        })
+
+        // Call handleStatusChange directly or via component
+        const vm = wrapper.vm as any
+        vm.handleStatusChange('Pending')
+        expect(mockReplace).toHaveBeenCalledWith({ query: { status: 'pending' } })
+
+        vm.handleStatusChange(null)
+        expect(mockReplace).toHaveBeenCalledWith({ query: {} })
+    })
 })
+
+
