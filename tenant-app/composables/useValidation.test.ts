@@ -59,6 +59,30 @@ describe('useValidation', () => {
             expect(sanitizeError(error)).toBe('Email is invalid.')
         })
 
+        it('handles USER_CREATION_ERROR with email domain mismatch', () => {
+            const { sanitizeError } = useValidation()
+            const error = {
+                data: {
+                    success: false,
+                    code: 'USER_CREATION_ERROR',
+                    message: 'Failed to create user.',
+                    data: null,
+                    error: {
+                        type: 'VALIDATION_ERROR',
+                        fields: {
+                            email: [
+                                {
+                                    code: 'INVALID',
+                                    message: 'Email domain must match the company domain (@gmail.com).'
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+            expect(sanitizeError(error)).toBe('Email domain must match the company domain (@gmail.com).')
+        })
+
         it('falls back to error.message', () => {
             const { sanitizeError } = useValidation()
             const error = { message: 'Network error' }

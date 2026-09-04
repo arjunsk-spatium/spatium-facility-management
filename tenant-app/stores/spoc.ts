@@ -516,10 +516,13 @@ export const useSpocStore = defineStore('spoc', {
                     this.employees.push(newEmployee)
                     return newEmployee
                 } else {
-                    throw new Error(response.message || 'Failed to add employee')
+                    const error: any = new Error(response.message || 'Failed to add employee')
+                    error.data = response
+                    throw error
                 }
             } catch (err: any) {
-                this.error = err?.data?.message || err?.message || 'Failed to add employee'
+                const { sanitizeError } = useValidation()
+                this.error = sanitizeError(err) || 'Failed to add employee'
                 throw err
             } finally {
                 this.loading = false
@@ -629,9 +632,12 @@ export const useSpocStore = defineStore('spoc', {
                         return this.employees[index]
                     }
                 }
-                throw new Error(response.message || 'Failed to update employee')
+                const error: any = new Error(response.message || 'Failed to update employee')
+                error.data = response
+                throw error
             } catch (err: any) {
-                this.error = err?.data?.message || err?.message || 'Failed to update employee'
+                const { sanitizeError } = useValidation()
+                this.error = sanitizeError(err) || 'Failed to update employee'
                 throw err
             } finally {
                 this.loading = false

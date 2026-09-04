@@ -11,10 +11,11 @@ export const useValidation = () => {
     if (error) {
        if (typeof error === 'string') return error;
 
-       if ((error.data?.error?.type === 'VALIDATION' || error.data?.error?.type === 'VALIDATION_ERROR') && error.data?.error?.fields) {
-         const fields = error.data.error.fields;
+       const errObj = error.data?.error || error.error;
+       if ((errObj?.type === 'VALIDATION' || errObj?.type === 'VALIDATION_ERROR') && errObj?.fields) {
+         const fields = errObj.fields;
          for (const key in fields) {
-           if (Array.isArray(fields[key]) && fields[key].length > 0 && fields[key][0].message) {
+           if (Array.isArray(fields[key]) && fields[key].length > 0 && fields[key][0]?.message) {
              return fields[key][0].message;
            }
          }
@@ -30,8 +31,8 @@ export const useValidation = () => {
 
   const getValidationErrors = (error: any): string[] => {
     const errors: string[] = [];
-    if (error?.data?.error?.fields) {
-      const fields = error.data.error.fields;
+    const fields = error?.data?.error?.fields || error?.error?.fields;
+    if (fields) {
       for (const key in fields) {
         if (Array.isArray(fields[key])) {
           fields[key].forEach((err: any) => {

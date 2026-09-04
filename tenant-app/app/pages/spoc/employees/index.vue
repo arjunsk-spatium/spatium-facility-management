@@ -24,7 +24,7 @@
                     </template>
                     Bulk <hide class="hidden md:inline">Upload</hide>
                 </a-button>
-                <a-button type="primary" @click="showAddModal = true">
+                <a-button type="primary" @click="openAddModal">
                     <template #icon>
                         <PlusOutlined />
                     </template>
@@ -156,19 +156,37 @@
 
         <!-- Add/Edit Employee Modal -->
         <a-modal v-model:open="showAddModal" :title="editingEmployee ? 'Edit Employee' : 'Add Employee'" centered
-            @ok="handleSaveEmployee" :confirm-loading="loading">
+            @ok="handleSaveEmployee" :confirm-loading="loading" @cancel="clearAllFormErrors">
             <a-form :model="newEmployee" layout="vertical">
-                <a-form-item label="Name" required>
-                    <a-input v-model:value="newEmployee.name" placeholder="Employee name" />
+                <a-form-item
+                    label="Name"
+                    required
+                    :validate-status="formErrors.name ? 'error' : ''"
+                    :help="formErrors.name"
+                >
+                    <a-input v-model:value="newEmployee.name" placeholder="Employee name" @input="clearFieldError('name')" />
                 </a-form-item>
-                <a-form-item label="Email" required>
-                    <a-input v-model:value="newEmployee.email" placeholder="employee@company.com" />
+                <a-form-item
+                    label="Email"
+                    required
+                    :validate-status="formErrors.email ? 'error' : ''"
+                    :help="formErrors.email"
+                >
+                    <a-input v-model:value="newEmployee.email" placeholder="employee@company.com" @input="clearFieldError('email')" />
                 </a-form-item>
-                <a-form-item label="Phone">
-                    <PhoneInput v-model="newEmployee.phone" />
+                <a-form-item
+                    label="Phone"
+                    :validate-status="formErrors.phone ? 'error' : ''"
+                    :help="formErrors.phone"
+                >
+                    <PhoneInput v-model="newEmployee.phone" @input="clearFieldError('phone')" />
                 </a-form-item>
-                <a-form-item label="Department">
-                    <a-select v-model:value="newEmployee.departmentId" placeholder="Select department">
+                <a-form-item
+                    label="Department"
+                    :validate-status="formErrors.departmentId ? 'error' : ''"
+                    :help="formErrors.departmentId"
+                >
+                    <a-select v-model:value="newEmployee.departmentId" placeholder="Select department" @change="clearFieldError('departmentId')">
                         <a-select-option v-for="dept in departments" :key="dept.id" :value="dept.id">
                             {{ dept.name }}
                         </a-select-option>
@@ -428,6 +446,39 @@ const newEmployee = reactive({
     buildingPassEnabled: false
 })
 
+const formErrors = reactive<Record<string, string>>({
+    name: '',
+    email: '',
+    phone: '',
+    departmentId: ''
+})
+
+const clearFieldError = (field: string) => {
+    if (formErrors[field]) {
+        formErrors[field] = ''
+    }
+}
+
+const clearAllFormErrors = () => {
+    formErrors.name = ''
+    formErrors.email = ''
+    formErrors.phone = ''
+    formErrors.departmentId = ''
+}
+
+const openAddModal = () => {
+    editingEmployee.value = null
+    newEmployee.name = ''
+    newEmployee.email = ''
+    newEmployee.phone = ''
+    newEmployee.departmentId = null
+    newEmployee.designation = ''
+    newEmployee.role = 'Employee'
+    newEmployee.buildingPassEnabled = false
+    clearAllFormErrors()
+    showAddModal.value = true
+}
+
 // Table columns
 const columns = [
     { title: 'Employee', key: 'employee', dataIndex: 'name' },
@@ -480,8 +531,17 @@ const getInitials = (name: string) => {
 }
 
 const handleSaveEmployee = async () => {
-    if (!newEmployee.name || !newEmployee.email) {
-        message.error('Name and email are required')
+    clearAllFormErrors()
+
+    if (!newEmployee.name || !newEmployee.name.trim()) {
+        formErrors.name = 'Name is required'
+        message.error('Name is required')
+        return
+    }
+
+    if (!newEmployee.email || !newEmployee.email.trim()) {
+        formErrors.email = 'Email is required'
+        message.error('Email is required')
         return
     }
 
@@ -522,12 +582,34 @@ const handleSaveEmployee = async () => {
         newEmployee.designation = ''
         newEmployee.role = 'Employee'
         newEmployee.buildingPassEnabled = false
-    } catch (err) {
-        message.error(editingEmployee.value ? 'Failed to update employee' : 'Failed to add employee')
+        clearAllFormErrors()
+    } catch (err: any) {
+        const errData = err?.data || err
+        const fields = errData?.error?.fields
+
+        if (fields) {
+            if (fields.email?.[0]?.message) {
+                formErrors.email = fields.email[0].message
+            }
+            if (fields.full_name?.[0]?.message || fields.name?.[0]?.message) {
+                formErrors.name = fields.full_name?.[0]?.message || fields.name?.[0]?.message
+            }
+            if (fields.phone_number?.[0]?.message || fields.phone?.[0]?.message) {
+                formErrors.phone = fields.phone_number?.[0]?.message || fields.phone?.[0]?.message
+            }
+            if (fields.department_id?.[0]?.message) {
+                formErrors.departmentId = fields.department_id[0].message
+            }
+        }
+
+        const { sanitizeError } = useValidation()
+        const errorMsg = sanitizeError(err) || (editingEmployee.value ? 'Failed to update employee' : 'Failed to add employee')
+        message.error(errorMsg)
     }
 }
 
 const handleEdit = (employee: any) => {
+    clearAllFormErrors()
     editingEmployee.value = employee
     newEmployee.name = employee.name
     newEmployee.email = employee.email

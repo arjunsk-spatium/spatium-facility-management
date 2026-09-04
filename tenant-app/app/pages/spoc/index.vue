@@ -86,7 +86,7 @@
         <!-- Quick Actions -->
         <div class="bg-white dark:bg-transparent rounded-xl border border-gray-100 dark:border-neutral-700 p-4 sm:p-6">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
                 <QuickActionCard title="Pre-register Visitor" description="Send invite link" to="/spoc/visitors/invite"
                     :icon="UserAddOutlined" icon-bg-class="bg-blue-50 dark:bg-blue-900/30"
                     icon-class="text-blue-600 dark:text-blue-400" />

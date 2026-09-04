@@ -193,6 +193,30 @@ describe('SPOC Dashboard Page', () => {
             expect(wrapper.text()).toContain('Pending Approvals')
             expect(wrapper.text()).toContain('5 waiting') // mockStats.pendingApprovals
         })
+
+        it('should render quick actions grid with items-stretch and h-full cards', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            const quickActionsCard = wrapper.findAll('div').find(w => w.text().startsWith('Quick Actions') && w.classes().includes('rounded-xl'))
+            const grid = quickActionsCard?.find('.grid')
+            expect(grid).toBeDefined()
+            expect(grid?.classes()).toContain('items-stretch')
+            
+            const actionLinks = grid?.findAll('a') || []
+            expect(actionLinks.length).toBe(4)
+            actionLinks.forEach(link => {
+                expect(link.classes()).toContain('h-full')
+            })
+        })
     })
 
     describe('Credit Transaction History', () => {

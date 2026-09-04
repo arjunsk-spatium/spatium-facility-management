@@ -390,6 +390,78 @@ describe('SPOC Store', () => {
             expect(employee.email).toBe('new@company.com')
             expect(employee.department).toBe('Engineering')
         })
+
+        it('should handle USER_CREATION_ERROR with email domain mismatch on HTTP error', async () => {
+            const errorPayload = {
+                success: false,
+                code: 'USER_CREATION_ERROR',
+                message: 'Failed to create user.',
+                data: null,
+                error: {
+                    type: 'VALIDATION_ERROR',
+                    fields: {
+                        email: [
+                            {
+                                code: 'INVALID',
+                                message: 'Email domain must match the company domain (@gmail.com).'
+                            }
+                        ]
+                    }
+                },
+                meta: {
+                    request_id: '5b99ad9d-9e95-4638-bd71-04a079991c35',
+                    timestamp: '2026-09-04T08:59:44.518876Z'
+                }
+            }
+
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 400,
+                json: async () => errorPayload
+            });
+
+            const store = useSpocStore()
+            await expect(store.addEmployee({
+                name: 'Test User',
+                email: 'test@wrongdomain.com'
+            })).rejects.toThrow()
+
+            expect(store.error).toBe('Email domain must match the company domain (@gmail.com).')
+        })
+
+        it('should handle 200 response with success: false and VALIDATION_ERROR', async () => {
+            const errorPayload = {
+                success: false,
+                code: 'USER_CREATION_ERROR',
+                message: 'Failed to create user.',
+                data: null,
+                error: {
+                    type: 'VALIDATION_ERROR',
+                    fields: {
+                        email: [
+                            {
+                                code: 'INVALID',
+                                message: 'Email domain must match the company domain (@gmail.com).'
+                            }
+                        ]
+                    }
+                }
+            }
+
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => errorPayload
+            });
+
+            const store = useSpocStore()
+            await expect(store.addEmployee({
+                name: 'Test User',
+                email: 'test@wrongdomain.com'
+            })).rejects.toThrow()
+
+            expect(store.error).toBe('Email domain must match the company domain (@gmail.com).')
+        })
     })
 
     describe('deleteEmployee', () => {

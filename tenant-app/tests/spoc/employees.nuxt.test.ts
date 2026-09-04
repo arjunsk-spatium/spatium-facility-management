@@ -183,6 +183,72 @@ describe('SPOC Employees Page', () => {
             const vm = wrapper.vm as any
             expect(typeof vm.handleSaveEmployee).toBe('function')
         })
+
+        it('should have formErrors reactive object and clearFieldError method', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: mockEmployees, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            const vm = wrapper.vm as any
+            expect(vm.formErrors).toBeDefined()
+            expect(typeof vm.clearFieldError).toBe('function')
+            expect(typeof vm.openAddModal).toBe('function')
+        })
+
+        it('should set formErrors.email when addEmployee fails with email domain mismatch', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: mockEmployees, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+            
+            const validationError: any = new Error('Failed to create user.')
+            validationError.data = {
+                success: false,
+                code: 'USER_CREATION_ERROR',
+                message: 'Failed to create user.',
+                error: {
+                    type: 'VALIDATION_ERROR',
+                    fields: {
+                        email: [
+                            {
+                                code: 'INVALID',
+                                message: 'Email domain must match the company domain (@gmail.com).'
+                            }
+                        ]
+                    }
+                }
+            }
+            vi.mocked(spocStore.addEmployee).mockRejectedValueOnce(validationError)
+
+            vm.newEmployee.name = 'Test User'
+            vm.newEmployee.email = 'test@wrong.com'
+            vm.showAddModal = true
+
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.email).toBe('Email domain must match the company domain (@gmail.com).')
+            expect(vm.showAddModal).toBe(true)
+
+            // clearing field error
+            vm.clearFieldError('email')
+            expect(vm.formErrors.email).toBe('')
+        })
     })
 
     describe('Building Pass Toggle', () => {
