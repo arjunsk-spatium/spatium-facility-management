@@ -137,15 +137,13 @@
                             <td class="px-4 sm:px-6 py-4">
                                 <div>
                                     <p class="font-medium text-gray-900 dark:text-white">{{ visitor.name }}</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ visitor.phone }}</p>
+                                    <p v-if="visitor.phone || visitor.phone_number" class="text-sm text-gray-500 dark:text-gray-400">{{ visitor.phone || visitor.phone_number }}</p>
                                 </div>
                             </td>
                             <td class="px-4 sm:px-6 py-4 text-sm text-gray-600 dark:text-gray-300 hidden sm:table-cell">
-                                {{
-                                    visitor.purpose }}</td>
+                                {{ visitor.purpose }}</td>
                             <td class="px-4 sm:px-6 py-4 text-sm text-gray-600 dark:text-gray-300 hidden md:table-cell">
-                                {{
-                                    visitor.hostName }}</td>
+                                {{ visitor.hostName || visitor.host || '-' }}</td>
                             <td class="px-4 sm:px-6 py-4">
                                 <span :class="getStatusClass(visitor.status)"
                                     class="px-2 py-1 text-xs font-medium rounded-full">
@@ -168,10 +166,7 @@
             class="bg-white dark:bg-transparent rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
             <div
                 class="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-neutral-700 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <WalletOutlined class="text-lg text-primary-600 dark:text-primary-400" />
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Credit Transaction History</h2>
-                </div>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Credit Transaction History</h2>
                 <div v-if="walletSummary" class="flex items-center gap-3">
                     <span class="text-sm text-gray-500 dark:text-gray-400">Balance:</span>
                     <span class="text-lg font-bold text-green-600">{{ walletSummary.current_balance }}</span>
@@ -226,8 +221,7 @@ import {
     CheckCircleOutlined,
     TeamOutlined,
     UserAddOutlined,
-    DownloadOutlined,
-    WalletOutlined
+    DownloadOutlined
 } from '@ant-design/icons-vue'
 import QuickActionCard from '../../../components/common/QuickActionCard.vue'
 
@@ -236,9 +230,14 @@ definePageMeta({
 })
 
 const store = useSpocStore()
-const { stats, visitors } = storeToRefs(store)
+const { stats, visitors, recentVisitors: storeRecentVisitors } = storeToRefs(store)
 
-const recentVisitors = computed(() => visitors.value.slice(0, 5))
+const recentVisitors = computed(() => {
+    if (storeRecentVisitors.value && storeRecentVisitors.value.length > 0) {
+        return storeRecentVisitors.value.slice(0, 5)
+    }
+    return visitors.value.slice(0, 5)
+})
 
 // --- Credit System ---
 const creditSystemEnabled = ref(false)

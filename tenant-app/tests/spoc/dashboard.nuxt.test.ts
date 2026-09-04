@@ -99,6 +99,49 @@ describe('SPOC Dashboard Page', () => {
         expect(wrapper.text()).toContain('Business Meeting')
     })
 
+    it('should show recent visitors from store.recentVisitors (dashboard API)', async () => {
+        const dashboardVisitors = [
+            {
+                id: '2d5b9111-a696-4181-bdf7-625da2622d06',
+                name: 'Hariharan',
+                purpose: 'Meeting',
+                host: 'Hari',
+                status: 'Approved',
+                created_at: '2026-09-03T05:44:03.497722+00:00'
+            },
+            {
+                id: '7e58d760-3b05-4e5e-b217-2a1ea8538340',
+                name: 'Gowtham',
+                purpose: 'Interview',
+                host: 'Ashwini',
+                status: 'Pending',
+                created_at: '2026-09-02T09:36:23.201567+00:00'
+            }
+        ]
+
+        const wrapper = await mountSuspended(SpocDashboardPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        spoc: {
+                            stats: { totalVisitors: 99, pendingApprovals: 27, checkedInToday: 23, totalEmployees: 8 },
+                            recentVisitors: dashboardVisitors,
+                            visitors: [],
+                            loading: false
+                        }
+                    }
+                })]
+            }
+        })
+
+        expect(wrapper.text()).toContain('Hariharan')
+        expect(wrapper.text()).toContain('Hari')
+        expect(wrapper.text()).toContain('Gowtham')
+        expect(wrapper.text()).toContain('Ashwini')
+        expect(wrapper.text()).toContain('Interview')
+    })
+
     it('should have "Invite Visitor" button linking to invite page', async () => {
         const wrapper = await mountSuspended(SpocDashboardPage, {
             global: {

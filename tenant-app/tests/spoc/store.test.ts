@@ -77,6 +77,57 @@ describe('SPOC Store', () => {
             expect(store.stats?.totalEmployees).toBe(20)
         })
 
+        it('should parse nested stats and recent_visitors from dashboard response', async () => {
+            const dashboardPayload = {
+                success: true,
+                code: 'DASHBOARD_RETRIEVED',
+                message: 'Dashboard data retrieved successfully.',
+                data: {
+                    stats: {
+                        total_visitors: 99,
+                        pending: 27,
+                        checked_in: 23,
+                        employees: 8
+                    },
+                    recent_visitors: [
+                        {
+                            id: '2d5b9111-a696-4181-bdf7-625da2622d06',
+                            name: 'Hariharan',
+                            purpose: 'Meeting',
+                            host: 'Hari',
+                            status: 'Approved',
+                            created_at: '2026-09-03T05:44:03.497722+00:00'
+                        },
+                        {
+                            id: '7e58d760-3b05-4e5e-b217-2a1ea8538340',
+                            name: 'Gowtham',
+                            purpose: 'Meeting',
+                            host: 'Ashwini',
+                            status: 'Pending',
+                            created_at: '2026-09-02T09:36:23.201567+00:00'
+                        }
+                    ]
+                }
+            }
+
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => dashboardPayload
+            });
+            const store = useSpocStore()
+            await store.fetchStats()
+
+            expect(store.stats?.totalVisitors).toBe(99)
+            expect(store.stats?.pendingApprovals).toBe(27)
+            expect(store.stats?.checkedInToday).toBe(23)
+            expect(store.stats?.totalEmployees).toBe(8)
+            expect(store.recentVisitors.length).toBe(2)
+            expect(store.recentVisitors[0].name).toBe('Hariharan')
+            expect(store.recentVisitors[0].host).toBe('Hari')
+            expect(store.recentVisitors[0].status).toBe('Approved')
+        })
+
         it('should set loading to false after fetch', async () => {
             mockFetch.mockResolvedValue({
                 ok: true,

@@ -4,25 +4,27 @@ import { defineStore } from 'pinia'
 export interface SpocVisitor {
     id: string
     name: string
-    phone_number: string
+    phone_number?: string
+    phone?: string
     email?: string | null
     from_company?: string | null
-    visitDate: string
+    visitDate?: string
     visitTime?: string | null
-    purpose: string
-    purpose_of_visit: string
-    status: 'Pending' | 'Approved' | 'Rejected'
-    facility_name: string
-    facility_id: string
-    company_name: string | null
+    purpose?: string
+    purpose_of_visit?: string
+    status: 'Pending' | 'Approved' | 'Rejected' | string
+    facility_name?: string
+    facility_id?: string
+    company_name?: string | null
+    host?: string
     hostName?: string
     passcode?: string
-    created_at: string
+    created_at?: string
     image_url?: string | null
     appointment_time?: string | null
     check_in_time?: string | null
     check_out_time?: string | null
-    is_on_premises: boolean
+    is_on_premises?: boolean
     visitor_type?: 'walk_in' | 'pre_invite'
 }
 
@@ -111,6 +113,7 @@ export interface PurposeOfVisit {
 export const useSpocStore = defineStore('spoc', {
     state: () => ({
         visitors: [] as SpocVisitor[],
+        recentVisitors: [] as SpocVisitor[],
         employees: [] as SpocEmployee[],
         employeeCount: 0,
         employeePage: 1,
@@ -141,12 +144,33 @@ export const useSpocStore = defineStore('spoc', {
                 })
                 const data = response?.data ?? response
                 this.dashboardData = data
+                const statsData = data?.stats ?? data
+
                 this.stats = {
-                    totalVisitors: Number(data?.total_visitors ?? data?.totalVisitors ?? data?.visitors ?? data?.total ?? 0),
-                    pendingApprovals: Number(data?.pending_approvals ?? data?.pendingApprovals ?? data?.pending ?? 0),
-                    checkedInToday: Number(data?.checked_in_today ?? data?.checkedInToday ?? data?.checked_in ?? 0),
-                    totalEmployees: Number(data?.total_employees ?? data?.totalEmployees ?? data?.employees ?? 0)
+                    totalVisitors: Number(statsData?.total_visitors ?? statsData?.totalVisitors ?? statsData?.visitors ?? statsData?.total ?? 0),
+                    pendingApprovals: Number(statsData?.pending ?? statsData?.pending_approvals ?? statsData?.pendingApprovals ?? 0),
+                    checkedInToday: Number(statsData?.checked_in ?? statsData?.checked_in_today ?? statsData?.checkedInToday ?? 0),
+                    totalEmployees: Number(statsData?.employees ?? statsData?.total_employees ?? statsData?.totalEmployees ?? 0)
                 }
+
+                if (Array.isArray(data?.recent_visitors)) {
+                    this.recentVisitors = data.recent_visitors.map((v: any) => ({
+                        id: v.id || String(Date.now()),
+                        name: v.name || 'Unknown',
+                        phone: v.phone || v.phone_number || '',
+                        phone_number: v.phone_number || v.phone || '',
+                        email: v.email || null,
+                        purpose: v.purpose || v.purpose_of_visit || 'Meeting',
+                        purpose_of_visit: v.purpose_of_visit || v.purpose || 'Meeting',
+                        host: v.host || v.hostName || '',
+                        hostName: v.hostName || v.host || '',
+                        status: v.status || 'Pending',
+                        created_at: v.created_at || '',
+                        visitDate: v.created_at ? v.created_at.split('T')[0] : '',
+                        is_on_premises: String(v.status || '').toLowerCase() === 'checked_in'
+                    }))
+                }
+
                 return this.stats
             } catch (err: any) {
                 console.error('Failed to fetch stats:', err)
