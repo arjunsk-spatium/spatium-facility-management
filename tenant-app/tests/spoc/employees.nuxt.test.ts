@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import SpocEmployeesPage from '../../app/pages/spoc/employees/index.vue'
 import { createTestingPinia } from '@pinia/testing'
+import dayjs from 'dayjs'
 
 describe('SPOC Employees Page', () => {
     const mockEmployees = [
@@ -579,6 +580,200 @@ describe('SPOC Employees Page', () => {
             expect(typeof vm.formatJobDateTime).toBe('function')
             expect(vm.formatJobDate(null)).toBe('-')
             expect(vm.formatJobDateTime(null)).toBe('-')
+        })
+    })
+
+    describe('Gender, Date of Joining, and Date of Birth fields', () => {
+        it('should initialize newEmployee with null gender, date_of_joining, and date_of_birth', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+
+            const vm = wrapper.vm as any
+            expect(vm.newEmployee.gender).toBe(null)
+            expect(vm.newEmployee.date_of_joining).toBe(null)
+            expect(vm.newEmployee.date_of_birth).toBe(null)
+        })
+
+        it('should have gender, date_of_joining, and date_of_birth in newEmployee and formErrors', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+
+            const vm = wrapper.vm as any
+            expect('gender' in vm.newEmployee).toBe(true)
+            expect('date_of_joining' in vm.newEmployee).toBe(true)
+            expect('date_of_birth' in vm.newEmployee).toBe(true)
+            expect('gender' in vm.formErrors).toBe(true)
+            expect('date_of_joining' in vm.formErrors).toBe(true)
+            expect('date_of_birth' in vm.formErrors).toBe(true)
+        })
+
+        it('should reset gender, date_of_joining, and date_of_birth when openAddModal is called', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+
+            const vm = wrapper.vm as any
+            vm.newEmployee.gender = 'male'
+            vm.newEmployee.date_of_joining = '2025-01-15'
+            vm.newEmployee.date_of_birth = '1995-05-20'
+
+            vm.openAddModal()
+
+            expect(vm.newEmployee.gender).toBe(null)
+            expect(vm.newEmployee.date_of_joining).toBe(null)
+            expect(vm.newEmployee.date_of_birth).toBe(null)
+        })
+
+        it('should populate gender, date_of_joining, and date_of_birth in handleEdit', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+
+            const vm = wrapper.vm as any
+            vm.handleEdit({
+                id: '123',
+                name: 'Alice',
+                email: 'alice@company.com',
+                gender: 'female',
+                date_of_joining: '2024-06-01',
+                date_of_birth: '1998-10-12'
+            })
+
+            expect(vm.newEmployee.gender).toBe('female')
+            expect(vm.newEmployee.date_of_joining).toBe('2024-06-01')
+            expect(vm.newEmployee.date_of_birth).toBe('1998-10-12')
+        })
+
+        it('should pass gender, date_of_joining, and date_of_birth when saving a new employee', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+            vi.mocked(spocStore.addEmployee).mockResolvedValueOnce({} as any)
+
+            vm.newEmployee.name = 'Bob Ross'
+            vm.newEmployee.email = 'bob@company.com'
+            vm.newEmployee.gender = 'male'
+            vm.newEmployee.date_of_joining = '2024-01-01'
+            vm.newEmployee.date_of_birth = '1990-01-01'
+
+            await vm.handleSaveEmployee()
+
+            expect(spocStore.addEmployee).toHaveBeenCalledWith(expect.objectContaining({
+                name: 'Bob Ross',
+                email: 'bob@company.com',
+                gender: 'male',
+                date_of_joining: '2024-01-01',
+                date_of_birth: '1990-01-01'
+            }))
+        })
+
+        it('should disable birth dates less than 18 years ago in disabledBirthDate', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+
+            const vm = wrapper.vm as any
+            const today = dayjs()
+            const seventeenYearsAgo = today.subtract(17, 'year')
+            const eighteenYearsAgo = today.subtract(18, 'year')
+            const twentyYearsAgo = today.subtract(20, 'year')
+            const futureDate = today.add(1, 'day')
+
+            expect(vm.disabledBirthDate(futureDate)).toBe(true)
+            expect(vm.disabledBirthDate(seventeenYearsAgo)).toBe(true)
+            expect(vm.disabledBirthDate(eighteenYearsAgo)).toBe(false)
+            expect(vm.disabledBirthDate(twentyYearsAgo)).toBe(false)
+        })
+
+        it('should reject employee creation if date_of_birth is less than 18 years old', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.newEmployee.name = 'Young Employee'
+            vm.newEmployee.email = 'young@company.com'
+            // Born 10 years ago
+            vm.newEmployee.date_of_birth = dayjs().subtract(10, 'year').format('YYYY-MM-DD')
+
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.date_of_birth).toBe('Employee must be at least 18 years old')
+            expect(spocStore.addEmployee).not.toHaveBeenCalled()
+        })
+
+        it('should have defaultBirthDatePickerValue set to 18 years ago (allowed year)', async () => {
+            const wrapper = await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+
+            const vm = wrapper.vm as any
+            expect(vm.defaultBirthDatePickerValue).toBeDefined()
+            const expectedYear = dayjs().subtract(18, 'year').year()
+            expect(dayjs(vm.defaultBirthDatePickerValue).year()).toBe(expectedYear)
         })
     })
 })

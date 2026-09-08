@@ -41,6 +41,9 @@ export interface SpocEmployee {
     avatar?: string
     createdAt?: string
     buildingPassEnabled?: boolean
+    gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | string | null
+    date_of_joining?: string | null
+    date_of_birth?: string | null
 }
 
 export interface SpocStats {
@@ -364,7 +367,10 @@ export const useSpocStore = defineStore('spoc', {
                         buildingPassEnabled: u.building_pass_enabled || false,
                         role: u.apps && u.apps.some((app: string) => app.toLowerCase().replace(/\s/g, '_') === 'client_portal')
                             ? 'SPOC'
-                            : 'Employee'
+                            : 'Employee',
+                        gender: u.gender || null,
+                        date_of_joining: u.date_of_joining || null,
+                        date_of_birth: u.date_of_birth || null
                     }))
                 } else {
                     this.employees = []
@@ -511,17 +517,29 @@ export const useSpocStore = defineStore('spoc', {
 
                 const appName = data.role === 'SPOC' ? 'client_portal' : 'hub'
 
+                const body: Record<string, any> = {
+                    app_name: appName,
+                    full_name: data.name,
+                    email: data.email,
+                    phone_number: data.phone,
+                    company_id: data.companyId || authStore.user?.company_id,
+                    designation: data.designation,
+                    department_id: data.department_id
+                }
+
+                if (data.gender) {
+                    body.gender = data.gender
+                }
+                if (data.date_of_joining) {
+                    body.date_of_joining = data.date_of_joining
+                }
+                if (data.date_of_birth) {
+                    body.date_of_birth = data.date_of_birth
+                }
+
                 const response = await $api<any>('/api/portal/users/client_portal/create/', {
                     method: 'POST',
-                    body: {
-                        app_name: appName,
-                        full_name: data.name,
-                        email: data.email,
-                        phone_number: data.phone,
-                        company_id: data.companyId || authStore.user?.company_id,
-                        designation: data.designation,
-                        department_id: data.department_id
-                    }
+                    body
                 })
 
                 if (response.success && response.data) {
@@ -535,7 +553,10 @@ export const useSpocStore = defineStore('spoc', {
                         designation: data.designation,
                         role: data.role || 'Employee',
                         status: 'active',
-                        createdAt: new Date().toISOString()
+                        createdAt: new Date().toISOString(),
+                        gender: response.data.gender ?? data.gender ?? null,
+                        date_of_joining: response.data.date_of_joining ?? data.date_of_joining ?? null,
+                        date_of_birth: response.data.date_of_birth ?? data.date_of_birth ?? null
                     }
                     this.employees.push(newEmployee)
                     return newEmployee
@@ -636,6 +657,16 @@ export const useSpocStore = defineStore('spoc', {
                     phone_number: data.phone,
                     designation: data.designation,
                     department_id: data.department_id
+                }
+
+                if (data.gender !== undefined) {
+                    body.gender = data.gender
+                }
+                if (data.date_of_joining !== undefined) {
+                    body.date_of_joining = data.date_of_joining
+                }
+                if (data.date_of_birth !== undefined) {
+                    body.date_of_birth = data.date_of_birth
                 }
 
                 if (typeof data.buildingPassEnabled === 'boolean') {

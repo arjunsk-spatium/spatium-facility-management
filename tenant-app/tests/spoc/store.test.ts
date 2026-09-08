@@ -442,6 +442,42 @@ describe('SPOC Store', () => {
             expect(employee.department).toBe('Engineering')
         })
 
+        it('should pass gender, date_of_joining, and date_of_birth in addEmployee', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        id: 'new-e2',
+                        name: 'Jane Developer',
+                        email: 'jane@company.com',
+                        gender: 'female',
+                        date_of_joining: '2025-02-01',
+                        date_of_birth: '1996-08-14'
+                    }
+                })
+            });
+            const store = useSpocStore()
+
+            const employee = await store.addEmployee({
+                name: 'Jane Developer',
+                email: 'jane@company.com',
+                gender: 'female',
+                date_of_joining: '2025-02-01',
+                date_of_birth: '1996-08-14'
+            })
+
+            expect(employee.gender).toBe('female')
+            expect(employee.date_of_joining).toBe('2025-02-01')
+            expect(employee.date_of_birth).toBe('1996-08-14')
+
+            const lastCallBody = JSON.parse(mockFetch.mock.calls[mockFetch.mock.calls.length - 1][1].body)
+            expect(lastCallBody.gender).toBe('female')
+            expect(lastCallBody.date_of_joining).toBe('2025-02-01')
+            expect(lastCallBody.date_of_birth).toBe('1996-08-14')
+        })
+
         it('should handle USER_CREATION_ERROR with email domain mismatch on HTTP error', async () => {
             const errorPayload = {
                 success: false,

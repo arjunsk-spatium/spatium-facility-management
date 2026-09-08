@@ -22,13 +22,13 @@
                     <template #icon>
                         <UploadOutlined />
                     </template>
-                    Bulk <hide class="hidden md:inline">Upload</hide>
+                    Bulk <span class="hidden md:inline">Upload</span>
                 </a-button>
                 <a-button type="primary" @click="openAddModal">
                     <template #icon>
                         <PlusOutlined />
                     </template>
-                    Add <hide class="hidden md:inline">Employee</hide>
+                    Add <span class="hidden md:inline">Employee</span>
                 </a-button>
             </div>
         </div>
@@ -201,6 +201,50 @@
                         <a-select-option value="SPOC">SPOC</a-select-option>
                     </a-select>
                 </a-form-item>
+                <a-form-item
+                    label="Gender"
+                    :validate-status="formErrors.gender ? 'error' : ''"
+                    :help="formErrors.gender"
+                >
+                    <a-select v-model:value="newEmployee.gender" placeholder="Select gender" allow-clear @change="clearFieldError('gender')">
+                        <a-select-option value="male">Male</a-select-option>
+                        <a-select-option value="female">Female</a-select-option>
+                        <a-select-option value="other">Other</a-select-option>
+                        <a-select-option value="prefer_not_to_say">Prefer not to say</a-select-option>
+                    </a-select>
+                </a-form-item>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <a-form-item
+                        label="Date of Joining"
+                        :validate-status="formErrors.date_of_joining ? 'error' : ''"
+                        :help="formErrors.date_of_joining"
+                    >
+                        <a-date-picker
+                            v-model:value="newEmployee.date_of_joining"
+                            placeholder="Select joining date"
+                            class="w-full"
+                            format="YYYY-MM-DD"
+                            value-format="YYYY-MM-DD"
+                            @change="clearFieldError('date_of_joining')"
+                        />
+                    </a-form-item>
+                    <a-form-item
+                        label="Date of Birth"
+                        :validate-status="formErrors.date_of_birth ? 'error' : ''"
+                        :help="formErrors.date_of_birth"
+                    >
+                        <a-date-picker
+                            v-model:value="newEmployee.date_of_birth"
+                            placeholder="Select date of birth"
+                            class="w-full"
+                            format="YYYY-MM-DD"
+                            value-format="YYYY-MM-DD"
+                            :disabled-date="disabledBirthDate"
+                            :default-picker-value="defaultBirthDatePickerValue"
+                            @change="clearFieldError('date_of_birth')"
+                        />
+                    </a-form-item>
+                </div>
                 <a-form-item v-if="editingEmployee" label="Building Pass">
                     <a-switch v-model:checked="newEmployee.buildingPassEnabled" checked-children="Enabled" un-checked-children="Disabled" />
                 </a-form-item>
@@ -443,6 +487,9 @@ const newEmployee = reactive({
     departmentId: null as string | null,
     designation: '',
     role: 'Employee' as 'Employee' | 'SPOC',
+    gender: null as string | null,
+    date_of_joining: null as string | null,
+    date_of_birth: null as string | null,
     buildingPassEnabled: false
 })
 
@@ -450,7 +497,10 @@ const formErrors = reactive<Record<string, string>>({
     name: '',
     email: '',
     phone: '',
-    departmentId: ''
+    departmentId: '',
+    gender: '',
+    date_of_joining: '',
+    date_of_birth: ''
 })
 
 const clearFieldError = (field: string) => {
@@ -464,7 +514,16 @@ const clearAllFormErrors = () => {
     formErrors.email = ''
     formErrors.phone = ''
     formErrors.departmentId = ''
+    formErrors.gender = ''
+    formErrors.date_of_joining = ''
+    formErrors.date_of_birth = ''
 }
+
+const disabledBirthDate = (current: dayjs.Dayjs) => {
+    return current && current.isAfter(dayjs().subtract(18, 'year'), 'day')
+}
+
+const defaultBirthDatePickerValue = computed(() => dayjs().subtract(18, 'year'))
 
 const openAddModal = () => {
     editingEmployee.value = null
@@ -474,6 +533,9 @@ const openAddModal = () => {
     newEmployee.departmentId = null
     newEmployee.designation = ''
     newEmployee.role = 'Employee'
+    newEmployee.gender = null
+    newEmployee.date_of_joining = null
+    newEmployee.date_of_birth = null
     newEmployee.buildingPassEnabled = false
     clearAllFormErrors()
     showAddModal.value = true
@@ -545,6 +607,20 @@ const handleSaveEmployee = async () => {
         return
     }
 
+    if (newEmployee.date_of_birth) {
+        const dob = dayjs(newEmployee.date_of_birth)
+        if (!dob.isValid()) {
+            formErrors.date_of_birth = 'Invalid date of birth'
+            message.error('Invalid date of birth')
+            return
+        }
+        if (dob.isAfter(dayjs().subtract(18, 'year'), 'day')) {
+            formErrors.date_of_birth = 'Employee must be at least 18 years old'
+            message.error('Employee must be at least 18 years old')
+            return
+        }
+    }
+
     const selectedDept = departments.value.find(d => d.id === newEmployee.departmentId)
 
     try {
@@ -557,6 +633,9 @@ const handleSaveEmployee = async () => {
                 department_id: newEmployee.departmentId || undefined,
                 designation: newEmployee.designation || undefined,
                 role: newEmployee.role,
+                gender: newEmployee.gender || undefined,
+                date_of_joining: newEmployee.date_of_joining || undefined,
+                date_of_birth: newEmployee.date_of_birth || undefined,
                 buildingPassEnabled: newEmployee.buildingPassEnabled
             })
             message.success('Employee updated successfully')
@@ -568,7 +647,10 @@ const handleSaveEmployee = async () => {
                 department: selectedDept?.name,
                 department_id: newEmployee.departmentId || undefined,
                 designation: newEmployee.designation || undefined,
-                role: newEmployee.role
+                role: newEmployee.role,
+                gender: newEmployee.gender || undefined,
+                date_of_joining: newEmployee.date_of_joining || undefined,
+                date_of_birth: newEmployee.date_of_birth || undefined
             })
             message.success('Employee added successfully')
         }
@@ -581,6 +663,9 @@ const handleSaveEmployee = async () => {
         newEmployee.departmentId = null
         newEmployee.designation = ''
         newEmployee.role = 'Employee'
+        newEmployee.gender = null
+        newEmployee.date_of_joining = null
+        newEmployee.date_of_birth = null
         newEmployee.buildingPassEnabled = false
         clearAllFormErrors()
     } catch (err: any) {
@@ -600,6 +685,15 @@ const handleSaveEmployee = async () => {
             if (fields.department_id?.[0]?.message) {
                 formErrors.departmentId = fields.department_id[0].message
             }
+            if (fields.gender?.[0]?.message) {
+                formErrors.gender = fields.gender[0].message
+            }
+            if (fields.date_of_joining?.[0]?.message) {
+                formErrors.date_of_joining = fields.date_of_joining[0].message
+            }
+            if (fields.date_of_birth?.[0]?.message) {
+                formErrors.date_of_birth = fields.date_of_birth[0].message
+            }
         }
 
         const { sanitizeError } = useValidation()
@@ -617,6 +711,9 @@ const handleEdit = (employee: any) => {
     newEmployee.departmentId = employee.department_id || null
     newEmployee.designation = employee.designation || ''
     newEmployee.role = employee.role || 'Employee'
+    newEmployee.gender = employee.gender || null
+    newEmployee.date_of_joining = employee.date_of_joining || null
+    newEmployee.date_of_birth = employee.date_of_birth || null
     newEmployee.buildingPassEnabled = employee.buildingPassEnabled || false
     showAddModal.value = true
 }
