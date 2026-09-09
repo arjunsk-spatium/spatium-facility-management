@@ -7,6 +7,7 @@ export interface Banner {
     category: string
     is_active: boolean
     link: string | null
+    link_title: string | null
     is_global: boolean
     tenant: string | string[] | null
     is_archive: boolean
@@ -30,6 +31,7 @@ export interface CreateBannerPayload {
     is_active: boolean
     is_global: boolean
     link?: string
+    link_title?: string
     image?: File | null
     tenant?: string[]
 }
@@ -41,6 +43,7 @@ export interface UpdateBannerPayload {
     is_active?: boolean
     is_global?: boolean
     link?: string
+    link_title?: string
     image?: File | null
     tenant?: string[]
 }
@@ -72,6 +75,7 @@ const buildBannerFormData = (payload: CreateBannerPayload | UpdateBannerPayload)
     if (payload.is_active !== undefined) formData.append('is_active', String(payload.is_active))
     if (payload.is_global !== undefined) formData.append('is_global', String(payload.is_global))
     if (payload.link !== undefined) formData.append('link', payload.link)
+    if (payload.link_title !== undefined) formData.append('link_title', payload.link_title)
     if (payload.image instanceof File) formData.append('image', payload.image)
     if (payload.tenant && payload.tenant.length > 0) {
         payload.tenant.forEach(id => formData.append('tenant', id))
@@ -143,6 +147,7 @@ export const useBannerService = () => {
                 is_global: payload.is_global,
             }
             if (payload.link) body.link = payload.link
+            if (payload.link_title) body.link_title = payload.link_title
             if (payload.tenant && payload.tenant.length > 0) body.tenant = payload.tenant
             options.body = body
         }
@@ -168,6 +173,7 @@ export const useBannerService = () => {
             if (payload.is_active !== undefined) body.is_active = payload.is_active
             if (payload.is_global !== undefined) body.is_global = payload.is_global
             if (payload.link !== undefined) body.link = payload.link
+            if (payload.link_title !== undefined) body.link_title = payload.link_title
             if (payload.tenant !== undefined) body.tenant = payload.tenant
             options.body = body
         }

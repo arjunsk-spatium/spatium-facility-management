@@ -30,6 +30,12 @@
                     <a-input v-model:value="formState.link" placeholder="https://example.com" :maxlength="500" />
                 </a-form-item>
 
+                <!-- Button Text (Link Title) -->
+                <a-form-item label="Button Text (Link Title)" name="link_title"
+                    extra="Label shown on the banner action button (e.g. Book Now, Learn More)">
+                    <a-input v-model:value="formState.link_title" placeholder="e.g. Book Now" :maxlength="50" />
+                </a-form-item>
+
                 <!-- Status -->
                 <a-form-item label="Status" name="is_active">
                     <a-switch v-model:checked="formState.is_active" checked-children="Active"
@@ -72,6 +78,7 @@
                 :description="formState.description"
                 :image-url="previewImageUrl"
                 :link="formState.link"
+                :link-title="formState.link_title"
                 :category="formState.category"
                 :tenant-name="tenantName"
                 :user-name="userName"
@@ -95,8 +102,8 @@ interface FormState {
     description: string
     category: string
     link: string
+    link_title: string
     is_active: boolean
-
     image: string | File | null
 }
 
@@ -120,6 +127,7 @@ const formState = ref<FormState>({
     description: '',
     category: 'general',
     link: '',
+    link_title: '',
     is_active: true,
     image: null
 })
@@ -196,6 +204,7 @@ const populateForm = () => {
             description: props.initialValues.description || '',
             category: props.initialValues.category || 'general',
             link: props.initialValues.link || '',
+            link_title: props.initialValues.link_title || '',
             is_active: props.initialValues.is_active !== undefined ? props.initialValues.is_active : true,
             image: props.initialValues.image || null
         }
@@ -243,6 +252,7 @@ const handleSubmit = async () => {
             description: formState.value.description || undefined,
             category: formState.value.category,
             link: formState.value.link || undefined,
+            link_title: formState.value.link_title || undefined,
             is_active: formState.value.is_active,
         }
 

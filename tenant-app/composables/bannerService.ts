@@ -8,6 +8,7 @@ export interface Banner {
     is_active: boolean;
     is_global: boolean;
     link?: string | null;
+    link_title?: string | null;
     tenant?: string;
     tenant_name?: string;
     is_archive?: boolean;
@@ -31,6 +32,7 @@ export interface CreateBannerPayload {
     is_global?: boolean;
     image?: File;
     link?: string;
+    link_title?: string;
 }
 
 export interface UpdateBannerPayload {
@@ -41,6 +43,7 @@ export interface UpdateBannerPayload {
     is_global?: boolean;
     image?: File;
     link?: string;
+    link_title?: string;
 }
 
 export interface BannerListResponse {
@@ -114,6 +117,9 @@ export const useBannerService = () => {
         if (data.link) {
             formData.append('link', data.link);
         }
+        if (data.link_title) {
+            formData.append('link_title', data.link_title);
+        }
 
         const response = await $api<{
             success: boolean;
@@ -138,6 +144,9 @@ export const useBannerService = () => {
         }
         if (data.link !== undefined) {
             formData.append('link', data.link);
+        }
+        if (data.link_title !== undefined) {
+            formData.append('link_title', data.link_title);
         }
 
         const response = await $api<{

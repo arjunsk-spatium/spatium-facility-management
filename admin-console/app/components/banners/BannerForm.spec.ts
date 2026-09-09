@@ -133,6 +133,33 @@ describe('BannerForm.vue', () => {
         expect(payload.tenant).toEqual(['tenant-1'])
     })
 
+    it('renders link_title field and includes it in submit payload', async () => {
+        const wrapper = mountForm({
+            initialValues: {
+                title: 'New Banner',
+                description: 'Banner description',
+                category: 'promotion',
+                link: 'https://example.com',
+                link_title: 'Shop Now',
+                is_active: true,
+                is_global: true,
+                image_url: null,
+            },
+        })
+
+        await wrapper.vm.$nextTick()
+
+        expect(wrapper.text()).toContain('Button Text (Link Title)')
+        expect(wrapper.text()).toContain('Shop Now')
+
+        const form = wrapper.findComponent({ name: 'AForm' })
+        await form.vm.$emit('finish')
+        await wrapper.vm.$nextTick()
+
+        const payload = wrapper.emitted('submit')![0][0] as any
+        expect(payload.link_title).toBe('Shop Now')
+    })
+
     it('emits cancel event', async () => {
         const wrapper = mountForm()
 

@@ -76,10 +76,19 @@
                 <!-- Sits over the boundary between the blue header and the light body -->
                 <div class="px-3.5 -mt-8 relative z-10">
                     <div class="rounded-2xl relative overflow-hidden shadow-lg border border-white/40 aspect-[16/9] w-full bg-neutral-900">
-                        <!-- When an image is uploaded: The uploaded 16:9 image fills the entire card -->
+                        <!-- When an image is uploaded: The uploaded 16:9 image fills the entire card with the action button -->
                         <div v-if="imageUrl" class="relative w-full h-full group">
                             <img :src="imageUrl" alt="Uploaded Banner" class="w-full h-full object-cover" />
-                            <div class="absolute bottom-1.5 right-2 bg-black/60 backdrop-blur-sm text-[9px] text-white/90 px-1.5 py-0.5 rounded font-medium">
+                            <!-- Subtle bottom gradient for button contrast -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none"></div>
+                            <!-- Action Button (using link_title / buttonText) -->
+                            <div class="absolute bottom-3 left-3.5 z-10">
+                                <span
+                                    class="inline-flex items-center px-3 py-1 bg-white text-[#1b449c] font-bold text-[11px] rounded-full shadow-md select-none">
+                                    {{ buttonText }}
+                                </span>
+                            </div>
+                            <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-[9px] text-white/90 px-1.5 py-0.5 rounded font-medium">
                                 16:9 Banner
                             </div>
                         </div>
@@ -192,10 +201,17 @@
         <!-- Banner Card 16:9 View (Expanded) -->
         <div v-else class="w-full max-w-[380px]">
             <div class="relative w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-900">
-                <!-- When an image is uploaded: The uploaded 16:9 image fills the entire card -->
+                <!-- When an image is uploaded: The uploaded 16:9 image fills the entire card with action button -->
                 <template v-if="imageUrl">
                     <img :src="imageUrl" alt="Uploaded Banner" class="w-full h-full object-cover" />
-                    <div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-[10px] text-white/90 px-2 py-0.5 rounded font-medium">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none"></div>
+                    <div class="absolute bottom-4 left-4 z-10">
+                        <span
+                            class="inline-flex items-center px-4 py-1.5 bg-white text-[#1b449c] font-bold text-xs rounded-full shadow-md select-none">
+                            {{ buttonText }}
+                        </span>
+                    </div>
+                    <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-[10px] text-white/90 px-2 py-0.5 rounded font-medium">
                         16:9 Banner
                     </div>
                 </template>
@@ -242,6 +258,7 @@ interface Props {
     description?: string
     imageUrl?: string | null
     link?: string
+    linkTitle?: string
     category?: string
     tenantName?: string
     userName?: string
@@ -252,6 +269,7 @@ const props = withDefaults(defineProps<Props>(), {
     description: '',
     imageUrl: null,
     link: '',
+    linkTitle: '',
     category: 'general',
     tenantName: '',
     userName: ''
@@ -276,6 +294,9 @@ const displayUserName = computed(() => {
 })
 
 const buttonText = computed(() => {
+    if (props.linkTitle && props.linkTitle.trim()) {
+        return props.linkTitle.trim()
+    }
     if (props.category === 'maintenance') return 'View Details'
     if (props.category === 'announcement') return 'Learn More'
     if (props.category === 'promotion') return 'Claim Now'

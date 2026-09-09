@@ -52,6 +52,22 @@ describe('BannerForm.vue (tenant-app)', () => {
         expect(wrapper.emitted('cancel')).toBeTruthy()
     })
 
+    it('renders the link_title form field and populates it from initialValues', async () => {
+        const wrapper = mountComponent({
+            initialValues: {
+                title: 'Exclusive Meeting Perk',
+                link_title: 'Claim Offer',
+            },
+        })
+        await wrapper.vm.$nextTick()
+        expect(wrapper.text()).toContain('Button Text (Link Title)')
+        const linkTitleInput = wrapper.find('input[placeholder="e.g. Book Now"]')
+        expect(linkTitleInput.exists()).toBe(true)
+        expect((linkTitleInput.element as HTMLInputElement).value).toBe('Claim Offer')
+        // Live preview also shows the button text
+        expect(wrapper.text()).toContain('Claim Offer')
+    })
+
     it('renders the live mobile preview with initial or default content', async () => {
         const wrapper = mountComponent({
             initialValues: {

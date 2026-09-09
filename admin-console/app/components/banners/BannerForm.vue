@@ -31,6 +31,12 @@
                     </a-input>
                 </a-form-item>
 
+                <!-- Button Text (Link Title) -->
+                <a-form-item label="Button Text (Link Title)" name="link_title"
+                    extra="Label shown on the banner action button (e.g. Book Now, Learn More)">
+                    <a-input v-model:value="formState.link_title" placeholder="e.g. Book Now" size="middle" :maxlength="50" />
+                </a-form-item>
+
                 <!-- Image Upload -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
@@ -111,6 +117,7 @@
                 :description="formState.description"
                 :image-url="imagePreview"
                 :link="formState.link"
+                :link-title="formState.link_title"
                 :category="formState.category"
                 :tenant-name="firstSelectedTenantName"
             />
@@ -132,6 +139,7 @@ interface BannerFormValues {
     description: string
     category: string
     link: string
+    link_title?: string | null
     is_active: boolean
     is_global: boolean
     image_url?: string | null
@@ -174,6 +182,7 @@ const formState = reactive({
     description: '',
     category: '',
     link: '',
+    link_title: '',
     is_active: true,
     is_global: true,
     tenant_ids: [] as string[],
@@ -196,6 +205,7 @@ const setInitialValues = () => {
     formState.description = values.description || ''
     formState.category = values.category || ''
     formState.link = values.link || ''
+    formState.link_title = values.link_title || ''
     formState.is_active = values.is_active !== undefined ? values.is_active : true
     formState.is_global = values.is_global !== undefined ? values.is_global : true
 
@@ -260,6 +270,10 @@ const handleSubmit = () => {
 
     if (formState.link) {
         payload.link = formState.link
+    }
+
+    if (formState.link_title) {
+        payload.link_title = formState.link_title
     }
 
     if (props.isEditing) {

@@ -39,13 +39,22 @@ describe('BannerMobilePreview.vue (admin-console)', () => {
         expect(wrapper.text()).toContain('Learn More')
     })
 
-    it('renders image when imageUrl is provided', () => {
+    it('renders image and displays action button when imageUrl is provided', () => {
         const wrapper = mountComponent({
             imageUrl: 'https://example.com/banner.png',
+            linkTitle: 'Register Now',
         })
         const img = wrapper.find('img[alt="Uploaded Banner"]')
         expect(img.exists()).toBe(true)
         expect(img.attributes('src')).toBe('https://example.com/banner.png')
+        expect(wrapper.text()).toContain('Register Now')
+    })
+
+    it('displays custom linkTitle as button name on the banner card', () => {
+        const wrapper = mountComponent({
+            linkTitle: 'Reserve Seat',
+        })
+        expect(wrapper.text()).toContain('Reserve Seat')
     })
 
     it('switches between mobile view and card 16:9 view', async () => {
