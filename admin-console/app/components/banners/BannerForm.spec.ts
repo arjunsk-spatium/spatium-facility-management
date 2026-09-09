@@ -38,6 +38,13 @@ describe('BannerForm.vue', () => {
         expect(wrapper.text()).toContain('Description')
     })
 
+    it('mentions 16:9 aspect ratio for banner image upload', () => {
+        const wrapper = mountForm()
+
+        expect(wrapper.text()).toContain('16:9')
+        expect(wrapper.text()).toContain('Recommended aspect ratio: 16:9')
+    })
+
     it('populates form with initial values when editing', async () => {
         const wrapper = mountForm({
             isEditing: true,

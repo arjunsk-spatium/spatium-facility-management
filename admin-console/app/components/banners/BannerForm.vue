@@ -32,7 +32,7 @@
             <!-- Image Upload -->
             <div class="mb-6">
                 <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    Banner Image
+                    Banner Image <span class="text-xs font-normal text-neutral-500 dark:text-neutral-400">(Aspect ratio 16:9)</span>
                 </label>
                 <div v-if="!imagePreview"
                     class="upload-zone"
@@ -45,7 +45,7 @@
                     <div class="flex flex-col items-center gap-2 py-8 cursor-pointer" @click="fileInput?.click()">
                         <PictureOutlined class="text-3xl text-neutral-400" />
                         <span class="text-sm text-neutral-500">Click or drag an image here</span>
-                        <span class="text-xs text-neutral-400">Optional for create</span>
+                        <span class="text-xs text-neutral-400">Recommended aspect ratio: 16:9 (e.g. 1920×1080) &middot; Optional for create</span>
                     </div>
                 </div>
                 <div v-else class="relative rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-700">
@@ -56,6 +56,7 @@
                         <CloseOutlined class="text-sm" />
                     </button>
                 </div>
+                <p class="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">Recommended aspect ratio: 16:9 (e.g. 1920×1080)</p>
             </div>
 
             <!-- Toggles -->

@@ -34,12 +34,14 @@
         </a-form-item>
 
         <!-- Banner Image -->
-        <a-form-item label="Banner Image" name="image">
+        <a-form-item label="Banner Image (16:9)" name="image"
+            extra="Recommended aspect ratio: 16:9 (e.g. 1920×1080). Max file size: 5MB.">
             <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" :max-count="1" list-type="picture-card"
                 accept="image/*">
                 <div v-if="fileList.length < 1">
                     <PlusOutlined />
                     <div style="margin-top: 8px">Upload</div>
+                    <div class="text-[11px] text-neutral-400 mt-0.5">16:9</div>
                 </div>
             </a-upload>
         </a-form-item>
