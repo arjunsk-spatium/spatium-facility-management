@@ -4,7 +4,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Create Banner</h1>
         </div>
         <div class="flex justify-center">
-            <a-card class="w-full sm:max-w-4xl" :bodyStyle="{ padding: '16px 24px' }">
+            <a-card class="w-full max-w-6xl" :bodyStyle="{ padding: '24px' }">
                 <BannerForm submit-text="Create Banner" :loading="loading" @submit="handleCreate"
                     @cancel="handleCancel" />
             </a-card>

@@ -1,111 +1,131 @@
 <template>
-    <div class="max-w-2xl mx-auto">
-        <a-form layout="vertical" :model="formState" @finish="handleSubmit">
-            <!-- Title -->
-            <a-form-item label="Title" name="title" :rules="[{ required: true, message: 'Please enter a title' }]">
-                <a-input v-model:value="formState.title" size="large" placeholder="e.g. Platform-wide Maintenance" />
-            </a-form-item>
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start max-w-6xl mx-auto">
+        <!-- Form Fields Column -->
+        <div class="xl:col-span-7">
+            <a-form layout="vertical" :model="formState" @finish="handleSubmit">
+                <!-- Title -->
+                <a-form-item label="Title" name="title" :rules="[{ required: true, message: 'Please enter a title' }]">
+                    <a-input v-model:value="formState.title" size="large" placeholder="e.g. Platform-wide Maintenance" />
+                </a-form-item>
 
-            <!-- Description -->
-            <a-form-item label="Description" name="description" :rules="[{ required: true, message: 'Please enter a description' }]">
-                <a-textarea v-model:value="formState.description" :rows="4" placeholder="Describe the banner message" />
-            </a-form-item>
+                <!-- Description -->
+                <a-form-item label="Description" name="description" :rules="[{ required: true, message: 'Please enter a description' }]">
+                    <a-textarea v-model:value="formState.description" :rows="4" placeholder="Describe the banner message" />
+                </a-form-item>
 
-            <!-- Category -->
-            <a-form-item label="Category" name="category" :rules="[{ required: true, message: 'Please select a category' }]">
-                <a-select v-model:value="formState.category" placeholder="Select category" size="large">
-                    <a-select-option v-for="cat in categories" :key="cat.value" :value="cat.value">
-                        {{ cat.label }}
-                    </a-select-option>
-                </a-select>
-            </a-form-item>
+                <!-- Category -->
+                <a-form-item label="Category" name="category" :rules="[{ required: true, message: 'Please select a category' }]">
+                    <a-select v-model:value="formState.category" placeholder="Select category" size="large">
+                        <a-select-option v-for="cat in categories" :key="cat.value" :value="cat.value">
+                            {{ cat.label }}
+                        </a-select-option>
+                    </a-select>
+                </a-form-item>
 
-            <!-- Link -->
-            <a-form-item label="Link (Optional)" name="link">
-                <a-input v-model:value="formState.link" placeholder="https://example.com" size="middle">
-                    <template #prefix>
-                        <LinkOutlined class="text-neutral-400" />
-                    </template>
-                </a-input>
-            </a-form-item>
+                <!-- Link -->
+                <a-form-item label="Link (Optional)" name="link">
+                    <a-input v-model:value="formState.link" placeholder="https://example.com" size="middle">
+                        <template #prefix>
+                            <LinkOutlined class="text-neutral-400" />
+                        </template>
+                    </a-input>
+                </a-form-item>
 
-            <!-- Image Upload -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    Banner Image <span class="text-xs font-normal text-neutral-500 dark:text-neutral-400">(Aspect ratio 16:9)</span>
-                </label>
-                <div v-if="!imagePreview"
-                    class="upload-zone"
-                    :class="{ 'upload-zone--dragover': isDragOver }"
-                    @dragenter.prevent="isDragOver = true"
-                    @dragleave.prevent="isDragOver = false"
-                    @dragover.prevent
-                    @drop.prevent="handleDrop">
-                    <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileChange">
-                    <div class="flex flex-col items-center gap-2 py-8 cursor-pointer" @click="fileInput?.click()">
-                        <PictureOutlined class="text-3xl text-neutral-400" />
-                        <span class="text-sm text-neutral-500">Click or drag an image here</span>
-                        <span class="text-xs text-neutral-400">Recommended aspect ratio: 16:9 (e.g. 1920×1080) &middot; Optional for create</span>
+                <!-- Image Upload -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                        Banner Image <span class="text-xs font-normal text-neutral-500 dark:text-neutral-400">(Aspect ratio 16:9)</span>
+                    </label>
+                    <div v-if="!imagePreview"
+                        class="upload-zone"
+                        :class="{ 'upload-zone--dragover': isDragOver }"
+                        @dragenter.prevent="isDragOver = true"
+                        @dragleave.prevent="isDragOver = false"
+                        @dragover.prevent
+                        @drop.prevent="handleDrop">
+                        <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileChange">
+                        <div class="flex flex-col items-center gap-2 py-8 cursor-pointer" @click="fileInput?.click()">
+                            <PictureOutlined class="text-3xl text-neutral-400" />
+                            <span class="text-sm text-neutral-500">Click or drag an image here</span>
+                            <span class="text-xs text-neutral-400">Recommended aspect ratio: 16:9 (e.g. 1920×1080) &middot; Optional for create</span>
+                        </div>
+                    </div>
+                    <div v-else class="relative rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-700">
+                        <img :src="imagePreview" alt="Preview" class="w-full max-h-80 object-cover" />
+                        <button type="button"
+                            class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors"
+                            @click="clearImage">
+                            <CloseOutlined class="text-sm" />
+                        </button>
+                    </div>
+                    <p class="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">Recommended aspect ratio: 16:9 (e.g. 1920×1080)</p>
+                </div>
+
+                <!-- Toggles -->
+                <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 mb-6 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Active</div>
+                            <div class="text-xs text-neutral-500">Show this banner to users</div>
+                        </div>
+                        <a-switch v-model:checked="formState.is_active" size="small" />
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Global</div>
+                            <div class="text-xs text-neutral-500">Show across all tenants</div>
+                        </div>
+                        <a-switch v-model:checked="formState.is_global" size="small" />
                     </div>
                 </div>
-                <div v-else class="relative rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-700">
-                    <img :src="imagePreview" alt="Preview" class="w-full max-h-80 object-cover" />
-                    <button type="button"
-                        class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors"
-                        @click="clearImage">
-                        <CloseOutlined class="text-sm" />
-                    </button>
-                </div>
-                <p class="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">Recommended aspect ratio: 16:9 (e.g. 1920×1080)</p>
-            </div>
 
-            <!-- Toggles -->
-            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 mb-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Active</div>
-                        <div class="text-xs text-neutral-500">Show this banner to users</div>
-                    </div>
-                    <a-switch v-model:checked="formState.is_active" size="small" />
-                </div>
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Global</div>
-                        <div class="text-xs text-neutral-500">Show across all tenants</div>
-                    </div>
-                    <a-switch v-model:checked="formState.is_global" size="small" />
-                </div>
-            </div>
+                <!-- Tenant Selection -->
+                <a-form-item v-if="!formState.is_global" label="Tenants" name="tenant_ids"
+                    :rules="[{ required: true, message: 'Please select at least one tenant', type: 'array' }]">
+                    <a-select v-model:value="formState.tenant_ids" mode="multiple" placeholder="Select tenants"
+                        :loading="tenantsLoading" show-search option-filter-prop="label" size="large">
+                        <a-select-option v-for="tenant in tenants" :key="tenant.id" :value="tenant.id" :label="tenant.name">
+                            {{ tenant.name }}
+                        </a-select-option>
+                    </a-select>
+                </a-form-item>
 
-            <!-- Tenant Selection -->
-            <a-form-item v-if="!formState.is_global" label="Tenants" name="tenant_ids"
-                :rules="[{ required: true, message: 'Please select at least one tenant', type: 'array' }]">
-                <a-select v-model:value="formState.tenant_ids" mode="multiple" placeholder="Select tenants"
-                    :loading="tenantsLoading" show-search option-filter-prop="label" size="large">
-                    <a-select-option v-for="tenant in tenants" :key="tenant.id" :value="tenant.id" :label="tenant.name">
-                        {{ tenant.name }}
-                    </a-select-option>
-                </a-select>
-            </a-form-item>
+                <!-- Actions -->
+                <div class="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                    <a-button size="large" @click="handleCancel">Cancel</a-button>
+                    <a-button type="primary" size="large" html-type="submit" :loading="submitting">
+                        {{ submitText }}
+                    </a-button>
+                </div>
+            </a-form>
+        </div>
 
-            <!-- Actions -->
-            <div class="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-700">
-                <a-button size="large" @click="handleCancel">Cancel</a-button>
-                <a-button type="primary" size="large" html-type="submit" :loading="submitting">
-                    {{ submitText }}
-                </a-button>
+        <!-- Live Mobile Preview Column -->
+        <div class="xl:col-span-5 flex flex-col items-center xl:sticky xl:top-6 bg-neutral-50/70 dark:bg-neutral-800/40 rounded-2xl p-4 border border-neutral-200/70 dark:border-neutral-700/60">
+            <div class="w-full mb-3 text-center">
+                <h3 class="text-sm font-bold text-neutral-800 dark:text-neutral-200">Mobile Live Preview</h3>
+                <p class="text-xs text-neutral-500 mt-0.5">Real-time preview of how the banner appears in Spatium</p>
             </div>
-        </a-form>
+            <BannerMobilePreview
+                :title="formState.title"
+                :description="formState.description"
+                :image-url="imagePreview"
+                :link="formState.link"
+                :category="formState.category"
+                :tenant-name="firstSelectedTenantName"
+            />
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import {
     PictureOutlined,
     CloseOutlined,
     LinkOutlined,
 } from '@ant-design/icons-vue'
+import BannerMobilePreview from './BannerMobilePreview.vue'
 
 interface BannerFormValues {
     title: string
@@ -157,6 +177,15 @@ const formState = reactive({
     is_active: true,
     is_global: true,
     tenant_ids: [] as string[],
+})
+
+const firstSelectedTenantName = computed(() => {
+    if (formState.is_global) return 'Spatium Commercio'
+    if (formState.tenant_ids.length > 0) {
+        const found = tenants.value?.find(t => t.id === formState.tenant_ids[0])
+        return found?.name || 'Spatium Commercio'
+    }
+    return 'Spatium Commercio'
 })
 
 const setInitialValues = () => {

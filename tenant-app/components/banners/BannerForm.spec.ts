@@ -51,4 +51,17 @@ describe('BannerForm.vue (tenant-app)', () => {
         await cancelButton?.trigger('click')
         expect(wrapper.emitted('cancel')).toBeTruthy()
     })
+
+    it('renders the live mobile preview with initial or default content', async () => {
+        const wrapper = mountComponent({
+            initialValues: {
+                title: 'Exclusive Meeting Perk',
+                description: 'Enjoy 20% off all boardroom bookings',
+            },
+        })
+        await wrapper.vm.$nextTick()
+        expect(wrapper.text()).toContain('Mobile Live Preview')
+        expect(wrapper.text()).toContain('Exclusive Meeting Perk')
+        expect(wrapper.text()).toContain('Enjoy 20% off all boardroom bookings')
+    })
 })
