@@ -9,16 +9,20 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { ClockCircleOutlined, SyncOutlined, CheckCircleOutlined, StopOutlined } from '@ant-design/icons-vue';
+import { ClockCircleOutlined, SyncOutlined, CheckCircleOutlined, StopOutlined, PauseCircleOutlined } from '@ant-design/icons-vue';
 
 const props = defineProps<{
     status: string;
 }>();
 
 const color = computed(() => {
-    switch (props.status.toLowerCase()) {
+    switch (props.status?.toLowerCase()) {
         case 'open': return 'error'; // Red
-        case 'in progress': return 'processing'; // Blue
+        case 'in progress':
+        case 'inprogress':
+        case 'in_progress': return 'processing'; // Blue
+        case 'on hold':
+        case 'on_hold': return 'warning'; // Orange
         case 'resolved': return 'success'; // Green
         case 'closed': return 'default'; // Gray
         default: return 'default';
@@ -26,9 +30,13 @@ const color = computed(() => {
 });
 
 const icon = computed(() => {
-    switch (props.status.toLowerCase()) {
+    switch (props.status?.toLowerCase()) {
         case 'open': return ClockCircleOutlined;
-        case 'in progress': return SyncOutlined;
+        case 'in progress':
+        case 'inprogress':
+        case 'in_progress': return SyncOutlined;
+        case 'on hold':
+        case 'on_hold': return PauseCircleOutlined;
         case 'resolved': return CheckCircleOutlined;
         case 'closed': return StopOutlined;
         default: return null;

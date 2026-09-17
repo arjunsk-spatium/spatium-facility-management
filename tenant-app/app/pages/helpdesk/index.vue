@@ -69,6 +69,7 @@
                                 :options="subCategoryOptions"
                                 :loading="loadingSubCategories"
                                 :disabled="!createForm.category"
+                                @change="handleSubCategoryChange"
                             >
                                 <template #notFoundContent>
                                     <div class="flex flex-col items-center justify-center py-4 gap-3">
@@ -166,12 +167,27 @@
                     </a-col>
                 </a-row>
 
-                <a-form-item label="Location" name="location_text">
-                    <a-input
-                        v-model:value="createForm.location_text"
-                        placeholder="e.g., Building A, Room 101"
-                    />
-                </a-form-item>
+                <a-row :gutter="16">
+                    <a-col :span="14">
+                        <a-form-item label="Location" name="location_text">
+                            <a-input
+                                v-model:value="createForm.location_text"
+                                placeholder="e.g., Building A, Room 101"
+                            />
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="10">
+                        <a-form-item label="Estimated Effort (mins)" name="estimated_effort_min" :extra="effortHint">
+                            <a-input-number
+                                v-model:value="createForm.estimated_effort_min"
+                                :min="1"
+                                :max="1440"
+                                class="w-full"
+                                placeholder="e.g. 30"
+                            />
+                        </a-form-item>
+                    </a-col>
+                </a-row>
             </a-form>
         </a-modal>
 
@@ -192,6 +208,12 @@
             <a-tab-pane key="inprogress">
                 <template #tab>
                     In Progress <a-badge :count="ticketCounts.inprogress" :number-style="{ backgroundColor: '#f59e0b' }"
+                        :offset="[6, 0]" />
+                </template>
+            </a-tab-pane>
+            <a-tab-pane key="on_hold">
+                <template #tab>
+                    On Hold <a-badge :count="ticketCounts.onhold" :number-style="{ backgroundColor: '#d97706' }"
                         :offset="[6, 0]" />
                 </template>
             </a-tab-pane>
@@ -359,7 +381,7 @@ const helpdeskStore = useHelpdeskStore();
 const facilityStore = useFacilityStore();
 const authStore = useAuthStore();
 const { setItem, getItem, removeItem } = useIndexedDB();
-const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, pendingCount, closedCount, allCount, count, page, pageSize } = storeToRefs(helpdeskStore);
+const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, onHoldCount, pendingCount, closedCount, allCount, count, page, pageSize } = storeToRefs(helpdeskStore);
 const { facilities } = storeToRefs(facilityStore);
 
 // Permission checks
@@ -381,7 +403,8 @@ const createForm = ref({
     facility: undefined as string | undefined,
     tower: undefined as string | undefined,
     floor: undefined as string | undefined,
-    location_text: ''
+    location_text: '',
+    estimated_effort_min: undefined as number | undefined
 });
 
 const formRules = {
@@ -441,11 +464,30 @@ const closeCreateModal = () => {
         facility: undefined,
         tower: undefined,
         floor: undefined,
-        location_text: ''
+        location_text: '',
+        estimated_effort_min: undefined
     };
     towerOptions.value = [];
     floorOptions.value = [];
     formRef.value?.resetFields();
+};
+
+const selectedSubCategory = computed(() =>
+    subCategories.value.find(s => s.id === createForm.value.subcategory)
+);
+
+const effortHint = computed(() => {
+    if (selectedSubCategory.value?.default_estimated_effort_min) {
+        return `Default for ${selectedSubCategory.value.name}: ${selectedSubCategory.value.default_estimated_effort_min} mins`;
+    }
+    return 'Expected duration to resolve (mins)';
+});
+
+const handleSubCategoryChange = (val: any) => {
+    const sub = subCategories.value.find(s => s.id === val);
+    if (sub?.default_estimated_effort_min && !createForm.value.estimated_effort_min) {
+        createForm.value.estimated_effort_min = sub.default_estimated_effort_min;
+    }
 };
 
 const loadCategories = async () => {
@@ -468,6 +510,7 @@ const loadPriorities = async () => {
 
 const handleCategoryChange = async () => {
     createForm.value.subcategory = undefined;
+    createForm.value.estimated_effort_min = undefined;
     if (createForm.value.category) {
         loadingSubCategories.value = true;
         try {
@@ -519,6 +562,7 @@ const handleCreateTicket = async () => {
             tower: createForm.value.tower,
             floor: createForm.value.floor,
             location_text: createForm.value.location_text,
+            estimated_effort_min: createForm.value.estimated_effort_min ? Number(createForm.value.estimated_effort_min) : null,
             company: null
         });
         message.success('Ticket created successfully');
@@ -562,6 +606,7 @@ const ticketCounts = computed(() => {
         priority: priorityCount.value, 
         open: openCount.value, 
         inprogress: inprogressCount.value, 
+        onhold: onHoldCount.value,
         pending: pendingCount.value, 
         closed: closedCount.value,
         all: allCount.value
@@ -592,6 +637,8 @@ const fetchTicketsByFilter = async () => {
         params.states = 'open';
     } else if (activeTab.value === 'inprogress') {
         params.states = 'inprogress';
+    } else if (activeTab.value === 'on_hold') {
+        params.states = 'on_hold';
     } else if (activeTab.value === 'pending') {
         params.states = 'pending_confirmation';
     } else if (activeTab.value === 'closed') {
@@ -638,6 +685,8 @@ const handlePageChange = async (pageNum: number, newPageSize: number) => {
         params.states = 'open';
     } else if (activeTab.value === 'inprogress') {
         params.states = 'inprogress';
+    } else if (activeTab.value === 'on_hold') {
+        params.states = 'on_hold';
     } else if (activeTab.value === 'pending') {
         params.states = 'pending_confirmation';
     } else if (activeTab.value === 'closed') {

@@ -24,6 +24,7 @@ export const useHelpdeskStore = defineStore('helpdesk', {
         priorityCount: 0,
         openCount: 0,
         inprogressCount: 0,
+        onHoldCount: 0,
         pendingCount: 0,
         closedCount: 0,
         allCount: 0
@@ -32,12 +33,10 @@ export const useHelpdeskStore = defineStore('helpdesk', {
         totalTickets: (state) => state.count,
         hasNext: (state) => state.next !== null,
         hasPrevious: (state) => state.previous !== null,
-    },
-
-    getters: {
         getTicketById: (state) => (id: string) => state.tickets.find(t => t.id === id),
         openTickets: (state) => state.tickets.filter(t => t.state?.key === 'OPEN'),
         inProgressTickets: (state) => state.tickets.filter(t => t.state?.key === 'INPROGRESS'),
+        onHoldTickets: (state) => state.tickets.filter(t => t.state?.key === 'ON_HOLD'),
         activeTicketsCount: (state): number => state.tickets.filter(t => ['OPEN', 'INPROGRESS'].includes(t.state?.key || '')).length
     },
 
@@ -91,16 +90,18 @@ export const useHelpdeskStore = defineStore('helpdesk', {
         async fetchTicketCounts() {
             const service = useHelpdeskService();
             try {
-                const [allResult, openResult, inprogressResult, pendingResult, closedResult] = await Promise.all([
+                const [allResult, openResult, inprogressResult, onHoldResult, pendingResult, closedResult] = await Promise.all([
                     service.getTickets({ page_size: 1 }),
                     service.getTickets({ states: 'open', page_size: 1 }),
                     service.getTickets({ states: 'inprogress', page_size: 1 }),
+                    service.getTickets({ states: 'on_hold', page_size: 1 }),
                     service.getTickets({ states: 'pending_confirmation', page_size: 1 }),
                     service.getTickets({ states: 'closed', page_size: 1 })
                 ]);
                 this.allCount = allResult.count;
                 this.openCount = openResult.count;
                 this.inprogressCount = inprogressResult.count;
+                this.onHoldCount = onHoldResult.count;
                 this.pendingCount = pendingResult.count;
                 this.closedCount = closedResult.count;
             } catch (err) {

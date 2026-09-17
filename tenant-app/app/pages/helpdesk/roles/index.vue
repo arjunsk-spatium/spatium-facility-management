@@ -262,8 +262,40 @@
                         </a-select-option>
                     </a-select>
                 </div>
+
+                <!-- Configured Staff Scopes & Capacity Shortcuts -->
+                <div v-if="assignedUsersDetails.length" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <div class="text-xs font-semibold uppercase text-gray-500 mb-2">Staff Scope & Capacity</div>
+                    <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-48 overflow-y-auto">
+                        <div v-for="user in assignedUsersDetails" :key="user.id" class="py-2 flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-medium dark:text-white">{{ user.name }}</span>
+                                <span class="text-xs text-gray-400 block">{{ user.email }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a-button size="small" @click="openWorkerScopeModal(user)">
+                                    Scope
+                                </a-button>
+                                <a-button size="small" @click="openWorkerCapacityModal(user)">
+                                    Capacity
+                                </a-button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </a-modal>
+
+        <WorkerLocationScopeModal
+            v-model:open="scopeModalVisible"
+            :user-id="selectedWorker?.id || ''"
+            :user-name="selectedWorker?.name || ''"
+        />
+        <WorkerCapacityModal
+            v-model:open="capacityModalVisible"
+            :user-id="selectedWorker?.id || ''"
+            :user-name="selectedWorker?.name || ''"
+        />
     </div>
 </template>
 
@@ -272,6 +304,8 @@ import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, EditOutlined, DeleteOutlined, UsergroupAddOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../components/ResponsiveDataView.vue'
+import WorkerLocationScopeModal from '../../../components/helpdesk/staff/WorkerLocationScopeModal.vue'
+import WorkerCapacityModal from '../../../components/helpdesk/staff/WorkerCapacityModal.vue'
 import { useHelpdeskService, type HelpdeskRole } from '../../../composables/helpdeskService'
 import { useUserService } from '../../../composables/userService'
 import { useAuthStore } from '../../../stores/auth'
@@ -326,6 +360,25 @@ const loadingAssignableUsers = ref(false)
 const activeAssignRole = ref<HelpdeskRole | null>(null)
 const selectedUserIds = ref<string[]>([])
 const assignableUsers = ref<{ id: string; name: string; email: string }[]>([])
+
+// Scope & Capacity State
+const scopeModalVisible = ref(false)
+const capacityModalVisible = ref(false)
+const selectedWorker = ref<{ id: string; name: string } | null>(null)
+
+const assignedUsersDetails = computed(() => {
+    return assignableUsers.value.filter(u => selectedUserIds.value.includes(u.id))
+})
+
+const openWorkerScopeModal = (user: { id: string; name: string }) => {
+    selectedWorker.value = user
+    scopeModalVisible.value = true
+}
+
+const openWorkerCapacityModal = (user: { id: string; name: string }) => {
+    selectedWorker.value = user
+    capacityModalVisible.value = true
+}
 
 // Columns
 const columns = [

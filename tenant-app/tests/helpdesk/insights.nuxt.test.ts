@@ -139,4 +139,57 @@ describe('Helpdesk Insights Page', () => {
 
         expect(wrapper.text()).toContain('Export Report')
     })
+
+    it('should display operational dispatch health KPIs and hold breakdown when present', async () => {
+        const mockInsightsWithKpis = {
+            ...createMockInsights(),
+            kpis: {
+                reassignments_24h: 3,
+                reassignment_rate_24h: 0.06,
+                worker_acceptance_rate: 0.92,
+                first_time_fix_rate: 0.88,
+                load_variance_cv: 0.42,
+                unassigned_queue_age_minutes_avg: 14.5,
+                hold_reason_breakdown: {
+                    parts_needed: 7,
+                    user_unavailable: 4
+                },
+                worker_hold_rates: [
+                    {
+                        worker_id: 'w1',
+                        worker_name: 'John Doe',
+                        requested_count: 5,
+                        rejected_count: 1,
+                        rejection_rate: 0.2
+                    }
+                ]
+            }
+        }
+
+        const wrapper = await mountSuspended(InsightsPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        helpdesk: {
+                            insights: mockInsightsWithKpis,
+                            loading: false
+                        }
+                    }
+                })]
+            }
+        })
+
+        expect(wrapper.text()).toContain('Operational & Dispatch Health')
+        expect(wrapper.text()).toContain('6.0%') // reassignment rate
+        expect(wrapper.text()).toContain('92.0%') // worker acceptance
+        expect(wrapper.text()).toContain('88.0%') // first-time-fix
+        expect(wrapper.text()).toContain('0.42') // load variance CV
+        expect(wrapper.text()).toContain('15 min') // queue age rounded
+        expect(wrapper.text()).toContain('Hold Reason Breakdown')
+        expect(wrapper.text()).toContain('Parts Needed')
+        expect(wrapper.text()).toContain('User Unavailable')
+        expect(wrapper.text()).toContain('Worker Hold Rejection Rates')
+        expect(wrapper.text()).toContain('John Doe')
+    })
 })

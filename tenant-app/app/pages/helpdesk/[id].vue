@@ -9,11 +9,21 @@
                     </template>
                 </a-button>
                 <div>
-                    <div class="flex items-center gap-3 mb-1">
+                    <div class="flex items-center gap-3 mb-1 flex-wrap">
                         <h1 class="text-2xl font-bold dark:text-white">{{ currentTicket.ticket_number }}</h1>
                         <StatusBadge :status="currentTicket.state?.label || currentTicket.state?.key" />
-                        <a-tag :color="getPriorityColor(currentTicket.priority)">{{ currentTicket.priority?.label
-                        }}</a-tag>
+                        <a-tag :color="getPriorityColor(currentTicket.priority)">
+                            {{ typeof currentTicket.priority === 'object' ? currentTicket.priority?.label : currentTicket.priority }}
+                        </a-tag>
+                        <a-tag v-if="hasEffectivePriority" color="volcano" title="Priority aged up due to wait time">
+                            Effective: {{ effectivePriorityLabel }}
+                        </a-tag>
+                        <a-tag v-if="currentTicket.estimated_effort_min" color="blue">
+                            ⏱ {{ currentTicket.estimated_effort_min }} min
+                        </a-tag>
+                        <a-tag v-if="currentTicket.escalation_count && currentTicket.escalation_count > 0" color="red">
+                            Declined {{ currentTicket.escalation_count }}x
+                        </a-tag>
                     </div>
                     <p class="text-gray-500 text-sm">
                         Created on {{ new Date(currentTicket.created_at).toLocaleString() }}
@@ -21,12 +31,40 @@
                 </div>
             </div>
 
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-wrap items-center">
+                <!-- Decline Ticket (Assignee only on ASSIGNED state) -->
+                <a-button
+                    v-if="canDecline"
+                    danger
+                    @click="showRejectModal = true"
+                >
+                    Decline
+                </a-button>
+
+                <!-- Request Hold (Assignee only on active work) -->
+                <a-button
+                    v-if="canRequestHold"
+                    @click="openHoldModal(false)"
+                >
+                    Request Hold
+                </a-button>
+
+                <!-- Resume Ticket (Assignee only on ON_HOLD state) -->
+                <a-button
+                    v-if="canResume"
+                    type="primary"
+                    :loading="resuming"
+                    @click="handleResumeTicket"
+                >
+                    Resume Work
+                </a-button>
+
                 <a-dropdown v-if="canAction">
                     <template #overlay>
                         <a-menu @click="handleMenuClick">
                             <a-menu-item v-if="canReassign" key="reassign">Reassign Ticket</a-menu-item>
                             <a-menu-item v-if="canAssign" key="assign">Assign Ticket</a-menu-item>
+                            <a-menu-item v-if="canDirectHold" key="directHold">Hold Ticket</a-menu-item>
                             <a-menu-item key="changePriority">Change Priority</a-menu-item>
                             <a-menu-item v-if="canReopen" key="reopen">Reopen Ticket</a-menu-item>
                             <a-menu-item v-if="canForceClose" key="forceClose">Force Close</a-menu-item>
@@ -52,6 +90,13 @@
             <!-- Assign Modal -->
             <a-modal v-model:open="showAssignModal" :title="isReassign ? 'Reassign Ticket' : 'Assign Ticket'" :confirm-loading="assigning"
                 @ok="handleAssignTicket" @cancel="showAssignModal = false">
+                <a-alert
+                    v-if="assignWarnings.length"
+                    type="warning"
+                    show-icon
+                    class="mb-3"
+                    :message="assignWarnings.join(' ')"
+                />
                 <a-form layout="vertical" class="mt-4">
                     <a-form-item label="Assign To">
                         <a-select v-model:value="selectedAssignee" placeholder="Select assignee"
@@ -152,6 +197,42 @@
                         </a-timeline-item>
                     </a-timeline>
                     <a-empty v-else description="No timeline available" :image="false" />
+                </a-card>
+
+                <!-- ScopeLadder Dispatch Reasoning -->
+                <a-card v-if="scopeLadderReasoning" title="ScopeLadder Dispatch Reasoning" :bordered="true">
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-500 font-medium">Location Scope Match:</span>
+                            <a-tag color="blue">{{ scopeLadderReasoning.scope_type }}</a-tag>
+                        </div>
+                        <div v-if="scopeLadderReasoning.score_breakdown" class="space-y-2">
+                            <span class="text-xs text-gray-500 uppercase font-semibold">Candidate Score Breakdown:</span>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <div
+                                    v-for="(val, metric) in scopeLadderReasoning.score_breakdown"
+                                    :key="metric"
+                                    class="p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700"
+                                >
+                                    <div class="text-xs text-gray-400 capitalize">{{ String(metric).replace(/_/g, ' ') }}</div>
+                                    <div class="font-mono text-sm font-semibold text-gray-900 dark:text-white">
+                                        {{ typeof val === 'number' ? val.toFixed(2) : val }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a-card>
+
+                <!-- Dependencies & Hold Audit History -->
+                <a-card title="Dependencies & Hold History" :bordered="true">
+                    <TicketDependencyList
+                        :ticket-id="currentTicket.id"
+                        :dependencies="dependencies"
+                        :loading="loadingDependencies"
+                        :can-decide="isHelpdeskUser"
+                        @refresh="loadTicketAndDependencies"
+                    />
                 </a-card>
             </div>
 
@@ -273,6 +354,18 @@
                 </a-card>
             </div>
         </div>
+
+        <TicketHoldModal
+            v-model:open="showHoldModal"
+            :ticket-id="currentTicket.id"
+            :is-direct-hold="isDirectHoldAction"
+            @success="handleHoldSuccess"
+        />
+        <RejectAssignmentModal
+            v-model:open="showRejectModal"
+            :ticket-id="currentTicket.id"
+            @declined="handleDeclineSuccess"
+        />
     </div>
 
     <div v-else-if="loading" class="flex items-center justify-center h-screen">
@@ -295,6 +388,10 @@ import { useAuthStore } from '../../../stores/auth';
 import { storeToRefs } from 'pinia';
 import { message } from 'ant-design-vue';
 import StatusBadge from '../../../components/helpdesk/StatusBadge.vue';
+import TicketHoldModal from '../../../components/helpdesk/tickets/TicketHoldModal.vue';
+import RejectAssignmentModal from '../../../components/helpdesk/tickets/RejectAssignmentModal.vue';
+import TicketDependencyList from '../../../components/helpdesk/tickets/TicketDependencyList.vue';
+import type { TicketDependency } from '../../../composables/helpdeskService';
 import {
     ArrowLeftOutlined,
     DownOutlined,
@@ -320,6 +417,15 @@ const canUpdate = computed(() => authStore.hasPermission('helpdesk-tickets:updat
 const canAction = computed(() => authStore.hasPermission('helpdesk-tickets:action'))
 
 const ticketId = route.params.id as string;
+
+// Hold, Reject & Dependency State
+const dependencies = ref<TicketDependency[]>([]);
+const loadingDependencies = ref(false);
+const showHoldModal = ref(false);
+const isDirectHoldAction = ref(false);
+const showRejectModal = ref(false);
+const resuming = ref(false);
+const assignWarnings = ref<string[]>([]);
 
 // Assign modal state
 const showAssignModal = ref(false);
@@ -374,6 +480,114 @@ const canConfirmClose = computed(() => {
     return canUpdate.value && (state === 'PENDING_CONFIRMATION' || state === 'RESOLVED');
 });
 
+const isCurrentUserAssignee = computed(() => {
+    if (!currentTicket.value || !authStore.user) return false;
+    return currentTicket.value.assignee === authStore.user.id;
+});
+
+const isHelpdeskUser = computed(() => {
+    return canAction.value || authStore.user?.role?.key === 'helpdesk';
+});
+
+const canDecline = computed(() => {
+    if (!currentTicket.value) return false;
+    const state = currentTicket.value.state?.key?.toUpperCase();
+    return state === 'ASSIGNED' && isCurrentUserAssignee.value;
+});
+
+const canRequestHold = computed(() => {
+    if (!currentTicket.value) return false;
+    const state = currentTicket.value.state?.key?.toUpperCase();
+    return ['ACKNOWLEDGED', 'IN_PROGRESS'].includes(state || '') && isCurrentUserAssignee.value;
+});
+
+const canDirectHold = computed(() => {
+    if (!currentTicket.value) return false;
+    const state = currentTicket.value.state?.key?.toUpperCase();
+    return isHelpdeskUser.value && ['ACKNOWLEDGED', 'IN_PROGRESS'].includes(state || '');
+});
+
+const canResume = computed(() => {
+    if (!currentTicket.value) return false;
+    const state = currentTicket.value.state?.key?.toUpperCase();
+    return state === 'ON_HOLD' && isCurrentUserAssignee.value;
+});
+
+const hasEffectivePriority = computed(() => {
+    if (!currentTicket.value?.effective_priority) return false;
+    const eff = currentTicket.value.effective_priority;
+    const prio = currentTicket.value.priority;
+    const effKey = typeof eff === 'object' ? eff.key : eff;
+    const prioKey = typeof prio === 'object' ? prio.key : prio;
+    return effKey && prioKey && effKey.toLowerCase() !== prioKey.toLowerCase();
+});
+
+const effectivePriorityLabel = computed(() => {
+    if (!currentTicket.value?.effective_priority) return '';
+    if (typeof currentTicket.value.effective_priority === 'object') {
+        return currentTicket.value.effective_priority.label;
+    }
+    return currentTicket.value.effective_priority;
+});
+
+const scopeLadderReasoning = computed(() => {
+    if (!currentTicket.value?.timeline?.length) return null;
+    const entry = [...currentTicket.value.timeline].reverse().find(item =>
+        item.metadata && (item.metadata.scope_type || item.metadata.score_breakdown)
+    );
+    return entry?.metadata || null;
+});
+
+const loadDependencies = async () => {
+    loadingDependencies.value = true;
+    try {
+        const service = useHelpdeskService();
+        dependencies.value = await service.getTicketDependencies(ticketId);
+    } catch (err) {
+        console.error('Failed to load dependencies:', err);
+    } finally {
+        loadingDependencies.value = false;
+    }
+};
+
+const loadTicketAndDependencies = async () => {
+    await Promise.all([
+        store.fetchTicketById(ticketId),
+        loadDependencies()
+    ]);
+};
+
+const openHoldModal = (direct: boolean) => {
+    isDirectHoldAction.value = direct;
+    showHoldModal.value = true;
+};
+
+const handleHoldSuccess = async () => {
+    await loadTicketAndDependencies();
+};
+
+const handleResumeTicket = async () => {
+    resuming.value = true;
+    try {
+        const service = useHelpdeskService();
+        const updated = await service.resumeTicket(ticketId);
+        message.success('Ticket resumed and back in active work');
+        store.currentTicket = updated;
+        await loadTicketAndDependencies();
+    } catch (err: any) {
+        message.error(err.message || 'Failed to resume ticket');
+    } finally {
+        resuming.value = false;
+    }
+};
+
+const handleDeclineSuccess = async (updatedTicket: any) => {
+    if (updatedTicket) {
+        store.currentTicket = updatedTicket;
+    }
+    await loadTicketAndDependencies();
+};
+
 const ticketLocationUrl = computed(() => {
     if (!currentTicket.value?.proofs?.length) return null;
     const proofWithGeo = currentTicket.value.proofs.find(p => p.geo_lat && p.geo_lon);
@@ -398,6 +612,7 @@ const assigneeOptions = computed(() =>
 
 const openAssignModal = async (reassign = false) => {
     isReassign.value = reassign;
+    assignWarnings.value = [];
     showAssignModal.value = true;
     loadingUsers.value = true;
     try {
@@ -417,6 +632,8 @@ const handleMenuClick = async ({ key }: { key: string }) => {
     } else if (key === 'reassign') {
         isReassign.value = true;
         await openAssignModal(true);
+    } else if (key === 'directHold') {
+        openHoldModal(true);
     } else if (key === 'changePriority') {
         await openPriorityModal();
     } else if (key === 'reopen') {
@@ -475,16 +692,25 @@ const handleAssignTicket = async () => {
 
     assigning.value = true;
     try {
+        let res: any;
         if (isReassign.value) {
-            await store.reassignTicket(ticketId, selectedAssignee.value, assignNotes.value);
+            res = await store.reassignTicket(ticketId, selectedAssignee.value, assignNotes.value);
             message.success('Ticket reassigned successfully');
         } else {
-            await store.assignTicket(ticketId, selectedAssignee.value, assignNotes.value);
+            res = await store.assignTicket(ticketId, selectedAssignee.value, assignNotes.value);
             message.success('Ticket assigned successfully');
         }
-        showAssignModal.value = false;
-        selectedAssignee.value = undefined;
-        assignNotes.value = '';
+
+        if (res?.warnings?.length) {
+            assignWarnings.value = res.warnings;
+            message.warning(res.warnings.join(' '));
+        } else {
+            showAssignModal.value = false;
+            selectedAssignee.value = undefined;
+            assignNotes.value = '';
+            assignWarnings.value = [];
+        }
+        await loadTicketAndDependencies();
     } catch (error) {
         message.error(isReassign.value ? 'Failed to reassign ticket' : 'Failed to assign ticket');
     } finally {
@@ -563,7 +789,7 @@ const getTimelineColor = (state: string) => {
     if (!state) return 'gray';
     const s = state.toUpperCase();
     if (['OPEN', 'ASSIGNED', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(s)) return 'blue';
-    if (['PENDING_CONFIRMATION'].includes(s)) return 'orange';
+    if (['PENDING_CONFIRMATION', 'ON_HOLD'].includes(s)) return 'orange';
     if (['RESOLVED', 'CLOSED'].includes(s)) return 'green';
     return 'gray';
 };
@@ -575,6 +801,7 @@ const getStateLabel = (state: string) => {
         'ASSIGNED': 'Assigned',
         'ACKNOWLEDGED': 'Acknowledged',
         'IN_PROGRESS': 'Work Started',
+        'ON_HOLD': 'On Hold',
         'PENDING_CONFIRMATION': 'Pending Confirmation',
         'RESOLVED': 'Resolved',
         'CLOSED': 'Closed'
@@ -584,7 +811,7 @@ const getStateLabel = (state: string) => {
 
 onMounted(() => {
     if (ticketId) {
-        store.fetchTicketById(ticketId);
+        loadTicketAndDependencies();
     }
 });
 </script>

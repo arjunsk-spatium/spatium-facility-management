@@ -76,6 +76,87 @@
                 </a-card>
             </div>
 
+            <!-- ScopeLadder & Operational KPIs -->
+            <div v-if="insights.kpis" class="space-y-6">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Operational & Dispatch Health</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <a-card>
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Reassignment Rate (24h)</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                                {{ formatPercent(insights.kpis.reassignment_rate_24h) }}
+                            </div>
+                            <div v-if="insights.kpis.reassignments_24h != null" class="text-xs text-gray-500 mt-1">
+                                {{ insights.kpis.reassignments_24h }} tickets
+                            </div>
+                        </a-card>
+
+                        <a-card>
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Worker Acceptance</div>
+                            <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                                {{ formatPercent(insights.kpis.worker_acceptance_rate) }}
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">First assignment</div>
+                        </a-card>
+
+                        <a-card>
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">First-Time-Fix Rate</div>
+                            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                {{ formatPercent(insights.kpis.first_time_fix_rate) }}
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">No reassignments</div>
+                        </a-card>
+
+                        <a-card>
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Load Variance (CV)</div>
+                            <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                                {{ formatDecimal(insights.kpis.load_variance_cv) }}
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">Staff balance (lower = even)</div>
+                        </a-card>
+
+                        <a-card>
+                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Unassigned Queue Age</div>
+                            <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                                {{ formatMinutes(insights.kpis.unassigned_queue_age_minutes_avg) }}
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">Avg wait time</div>
+                        </a-card>
+                    </div>
+                </div>
+
+                <!-- Hold Analytics -->
+                <div v-if="hasHoldAnalytics" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <a-card v-if="holdReasonItems.length > 0">
+                        <template #title>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Hold Reason Breakdown</h3>
+                        </template>
+                        <a-table
+                            :dataSource="holdReasonItems"
+                            :columns="holdReasonColumns"
+                            :pagination="false"
+                            size="small"
+                            class="mt-4"
+                            rowKey="reason"
+                        />
+                    </a-card>
+
+                    <a-card v-if="insights.kpis.worker_hold_rates && insights.kpis.worker_hold_rates.length > 0">
+                        <template #title>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Worker Hold Rejection Rates</h3>
+                        </template>
+                        <a-table
+                            :dataSource="insights.kpis.worker_hold_rates"
+                            :columns="workerHoldRatesColumns"
+                            :pagination="false"
+                            size="small"
+                            class="mt-4"
+                            rowKey="worker_id"
+                        />
+                    </a-card>
+                </div>
+            </div>
+
             <!-- Charts -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <a-card class="lg:col-span-2">
@@ -207,6 +288,63 @@ const slaPerformanceColumns = [
         key: 'breach_rate_percentage',
         customRender: ({ text }: any) => `${text}%`
     },
+]
+
+const formatPercent = (val: number | null | undefined): string => {
+    if (val === null || val === undefined) return '—'
+    return `${(val * 100).toFixed(1)}%`
+}
+
+const formatMinutes = (val: number | null | undefined): string => {
+    if (val === null || val === undefined) return '—'
+    return `${Math.round(val)} min`
+}
+
+const formatDecimal = (val: number | null | undefined): string => {
+    if (val === null || val === undefined) return '—'
+    return val.toFixed(2)
+}
+
+const formatHoldReason = (reason: string): string => {
+    const map: Record<string, string> = {
+        parts_needed: 'Parts Needed',
+        user_unavailable: 'User Unavailable',
+        vendor_dependency: 'Vendor Dependency',
+        access_restricted: 'Access Restricted',
+        other: 'Other'
+    }
+    return map[reason] || reason.replace(/_/g, ' ')
+}
+
+const holdReasonItems = computed(() => {
+    const breakdown = insights.value?.kpis?.hold_reason_breakdown
+    if (!breakdown) return []
+    return Object.entries(breakdown).map(([reason, count]) => ({
+        reason,
+        label: formatHoldReason(reason),
+        count
+    }))
+})
+
+const hasHoldAnalytics = computed(() => {
+    return holdReasonItems.value.length > 0 || !!(insights.value?.kpis?.worker_hold_rates && insights.value.kpis.worker_hold_rates.length > 0)
+})
+
+const holdReasonColumns = [
+    { title: 'Reason', dataIndex: 'label', key: 'label' },
+    { title: 'Count', dataIndex: 'count', key: 'count' }
+]
+
+const workerHoldRatesColumns = [
+    { title: 'Worker', dataIndex: 'worker_name', key: 'worker_name' },
+    { title: 'Requested', dataIndex: 'requested_count', key: 'requested_count' },
+    { title: 'Rejected', dataIndex: 'rejected_count', key: 'rejected_count' },
+    {
+        title: 'Rejection Rate',
+        dataIndex: 'rejection_rate',
+        key: 'rejection_rate',
+        customRender: ({ text }: any) => formatPercent(text)
+    }
 ]
 
 const ticketsOverTimeData = computed(() => {
@@ -430,6 +568,37 @@ const exportReport = () => {
                 rows.push(`${escapeCsv(f.facility_name)},${escapeCsv(f.total_tickets)},${escapeCsv(f.sla_met)},${escapeCsv(f.sla_breached)},${escapeCsv(f.breach_rate_percentage)}%`)
             })
             rows.push('')
+        }
+
+        // Operational & Dispatch Health KPIs
+        if (data.kpis) {
+            rows.push('Operational & Dispatch Health')
+            rows.push('Metric,Value')
+            rows.push(`Reassignment Rate (24h),${escapeCsv(data.kpis.reassignment_rate_24h != null ? `${(data.kpis.reassignment_rate_24h * 100).toFixed(1)}%` : '')}`)
+            rows.push(`Reassignments (24h),${escapeCsv(data.kpis.reassignments_24h ?? '')}`)
+            rows.push(`Worker Acceptance Rate,${escapeCsv(data.kpis.worker_acceptance_rate != null ? `${(data.kpis.worker_acceptance_rate * 100).toFixed(1)}%` : '')}`)
+            rows.push(`First Time Fix Rate,${escapeCsv(data.kpis.first_time_fix_rate != null ? `${(data.kpis.first_time_fix_rate * 100).toFixed(1)}%` : '')}`)
+            rows.push(`Load Variance (CV),${escapeCsv(data.kpis.load_variance_cv != null ? data.kpis.load_variance_cv.toFixed(2) : '')}`)
+            rows.push(`Unassigned Queue Age (min),${escapeCsv(data.kpis.unassigned_queue_age_minutes_avg != null ? Math.round(data.kpis.unassigned_queue_age_minutes_avg) : '')}`)
+            rows.push('')
+
+            if (data.kpis.hold_reason_breakdown) {
+                rows.push('Hold Reason Breakdown')
+                rows.push('Reason,Count')
+                Object.entries(data.kpis.hold_reason_breakdown).forEach(([reason, count]) => {
+                    rows.push(`${escapeCsv(formatHoldReason(reason))},${escapeCsv(count)}`)
+                })
+                rows.push('')
+            }
+
+            if (data.kpis.worker_hold_rates && data.kpis.worker_hold_rates.length > 0) {
+                rows.push('Worker Hold Rejection Rates')
+                rows.push('Worker,Requested,Rejected,Rejection Rate')
+                data.kpis.worker_hold_rates.forEach(w => {
+                    rows.push(`${escapeCsv(w.worker_name)},${escapeCsv(w.requested_count)},${escapeCsv(w.rejected_count)},${escapeCsv(w.rejection_rate != null ? `${(w.rejection_rate * 100).toFixed(1)}%` : '')}`)
+                })
+                rows.push('')
+            }
         }
 
         const csvContent = rows.join('\n')
