@@ -517,17 +517,19 @@ const hasEffectivePriority = computed(() => {
     if (!currentTicket.value?.effective_priority) return false;
     const eff = currentTicket.value.effective_priority;
     const prio = currentTicket.value.priority;
-    const effKey = typeof eff === 'object' ? eff.key : eff;
-    const prioKey = typeof prio === 'object' ? prio.key : prio;
-    return effKey && prioKey && effKey.toLowerCase() !== prioKey.toLowerCase();
+    const effVal = typeof eff === 'object' && eff !== null ? (eff.key ?? eff.id ?? eff.name ?? eff.label) : eff;
+    const prioVal = typeof prio === 'object' && prio !== null ? (prio.key ?? prio.id ?? prio.name ?? prio.label) : prio;
+    if (effVal == null || prioVal == null) return false;
+    return String(effVal).trim().toLowerCase() !== String(prioVal).trim().toLowerCase();
 });
 
 const effectivePriorityLabel = computed(() => {
-    if (!currentTicket.value?.effective_priority) return '';
-    if (typeof currentTicket.value.effective_priority === 'object') {
-        return currentTicket.value.effective_priority.label;
+    const eff = currentTicket.value?.effective_priority;
+    if (!eff) return '';
+    if (typeof eff === 'object' && eff !== null) {
+        return eff.label || eff.name || eff.key || String(eff.id || '');
     }
-    return currentTicket.value.effective_priority;
+    return String(eff);
 });
 
 const scopeLadderReasoning = computed(() => {
@@ -775,12 +777,13 @@ const handleForceCloseTicket = async () => {
 };
 
 const getPriorityColor = (priority: any) => {
-    const key = priority?.key || priority;
-    switch (key?.toUpperCase()) {
-        case 'P1': return 'red';
-        case 'P2': return 'orange';
-        case 'P3': return 'blue';
-        case 'P4': return 'green';
+    const key = typeof priority === 'object' && priority !== null ? (priority.key ?? priority.name ?? priority.label ?? priority.id) : priority;
+    const normalized = String(key || '').toUpperCase();
+    switch (normalized) {
+        case 'P1': case 'HIGH': case 'CRITICAL': case '1': return 'red';
+        case 'P2': case 'MEDIUM': case '2': return 'orange';
+        case 'P3': case 'LOW': case '3': return 'blue';
+        case 'P4': case '4': return 'green';
         default: return 'default';
     }
 };

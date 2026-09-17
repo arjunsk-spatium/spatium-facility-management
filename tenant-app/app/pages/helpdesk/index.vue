@@ -659,12 +659,13 @@ const fetchTicketsByFilter = async () => {
 };
 
 const getPriorityColor = (priority: any) => {
-    const key = priority?.key || priority;
-    switch (key?.toUpperCase()) {
-        case 'P1': return 'red';
-        case 'P2': return 'orange';
-        case 'P3': return 'blue';
-        case 'P4': return 'green';
+    const key = typeof priority === 'object' && priority !== null ? (priority.key ?? priority.name ?? priority.label ?? priority.id) : priority;
+    const normalized = String(key || '').toUpperCase();
+    switch (normalized) {
+        case 'P1': case 'HIGH': case 'CRITICAL': case '1': return 'red';
+        case 'P2': case 'MEDIUM': case '2': return 'orange';
+        case 'P3': case 'LOW': case '3': return 'blue';
+        case 'P4': case '4': return 'green';
         default: return 'default';
     }
 };

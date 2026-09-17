@@ -89,21 +89,30 @@ export const useHelpdeskStore = defineStore('helpdesk', {
 
         async fetchTicketCounts() {
             const service = useHelpdeskService();
+            const safeCount = async (params: TicketListParams) => {
+                try {
+                    const res = await service.getTickets(params);
+                    return res?.count || 0;
+                } catch (e) {
+                    console.warn('Failed to fetch count for', params, e);
+                    return 0;
+                }
+            };
             try {
-                const [allResult, openResult, inprogressResult, onHoldResult, pendingResult, closedResult] = await Promise.all([
-                    service.getTickets({ page_size: 1 }),
-                    service.getTickets({ states: 'open', page_size: 1 }),
-                    service.getTickets({ states: 'inprogress', page_size: 1 }),
-                    service.getTickets({ states: 'on_hold', page_size: 1 }),
-                    service.getTickets({ states: 'pending_confirmation', page_size: 1 }),
-                    service.getTickets({ states: 'closed', page_size: 1 })
+                const [allCount, openCount, inprogressCount, onHoldCount, pendingCount, closedCount] = await Promise.all([
+                    safeCount({ page_size: 1 }),
+                    safeCount({ states: 'open', page_size: 1 }),
+                    safeCount({ states: 'inprogress', page_size: 1 }),
+                    safeCount({ states: 'on_hold', page_size: 1 }),
+                    safeCount({ states: 'pending_confirmation', page_size: 1 }),
+                    safeCount({ states: 'closed', page_size: 1 })
                 ]);
-                this.allCount = allResult.count;
-                this.openCount = openResult.count;
-                this.inprogressCount = inprogressResult.count;
-                this.onHoldCount = onHoldResult.count;
-                this.pendingCount = pendingResult.count;
-                this.closedCount = closedResult.count;
+                this.allCount = allCount;
+                this.openCount = openCount;
+                this.inprogressCount = inprogressCount;
+                this.onHoldCount = onHoldCount;
+                this.pendingCount = pendingCount;
+                this.closedCount = closedCount;
             } catch (err) {
                 console.error('Failed to fetch ticket counts', err);
             }
