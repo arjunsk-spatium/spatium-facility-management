@@ -21,6 +21,14 @@ const mockGetDependencyReasonTypes = vi.fn().mockResolvedValue([
 ]);
 const mockGetRequestPendingTickets = vi.fn().mockResolvedValue({ tickets: [], count: 0, next: null, previous: null });
 const mockGetOnHoldTickets = vi.fn().mockResolvedValue({ tickets: [], count: 0, next: null, previous: null });
+const mockGetExcludeClosedTickets = vi.fn().mockResolvedValue([
+    {
+        id: 'c327626a-1c1e-45d9-b829-9f4a349188c4',
+        ticket_number: 'TKT-1042',
+        title: 'Elevator power fluctuation',
+        state: { key: 'IN_PROGRESS', label: 'In Progress' }
+    }
+]);
 const mockDeclineAssignment = vi.fn().mockResolvedValue({ id: 't1', state: { key: 'OPEN' } });
 const mockGetStaffLocationScopes = vi.fn().mockResolvedValue([
     { id: '1', scope_type: 'FACILITY', facility_id: 'fac-1' }
@@ -49,6 +57,7 @@ vi.mock('../../composables/helpdeskService', async (importOriginal) => {
             rejectAssignment: mockDeclineAssignment,
             getStaffLocationScopes: mockGetStaffLocationScopes,
             getTicketDependencies: vi.fn().mockResolvedValue([]),
+            getExcludeClosedTickets: mockGetExcludeClosedTickets,
         })
     };
 });
@@ -184,6 +193,50 @@ describe('Hold & Resume Workflow Components', () => {
                 linked_ticket: 'c327626a-1c1e-45d9-b829-9f4a349188c4'
             });
             expect(wrapper.emitted('success')).toBeTruthy();
+        });
+
+        it('searches exclude-closed tickets for linked ticket dependency with facility_id and search term', async () => {
+            const wrapper = await mountSuspended(TicketHoldModal, {
+                props: {
+                    open: true,
+                    ticketId: '0b1b5692-bf07-4937-a8e9-030746997b32',
+                    facilityId: 'a23cd9ff-f044-4067-9d79-27e692ac9a90',
+                    isDirectHold: true
+                }
+            });
+
+            (wrapper.vm as any).form.reason_type = 'DEPENDENT_TICKET';
+            await (wrapper.vm as any).loadExcludeClosedTickets('TKT-1042');
+
+            expect(mockGetExcludeClosedTickets).toHaveBeenCalledWith({
+                facility_id: 'a23cd9ff-f044-4067-9d79-27e692ac9a90',
+                search: 'TKT-1042'
+            });
+
+            const options = (wrapper.vm as any).linkedTicketOptions;
+            expect(options.length).toBeGreaterThan(0);
+            expect(options[0].value).toBe('c327626a-1c1e-45d9-b829-9f4a349188c4');
+            expect(options[0].label).toContain('TKT-1042');
+        });
+    });
+
+    describe('Direct Hold State Eligibility', () => {
+        const isEligibleForDirectHold = (role: string, state: string) => {
+            const isHelpdesk = role === 'helpdesk';
+            const stateKey = state.toUpperCase();
+            return isHelpdesk && ['ACKNOWLEDGED', 'ACKNOWLEDGE', 'ASSIGNED', 'IN_PROGRESS', 'INPROGRESS'].includes(stateKey);
+        };
+
+        it('allows direct hold for ACKNOWLEDGED, ASSIGNED, and IN_PROGRESS states', () => {
+            expect(isEligibleForDirectHold('helpdesk', 'ASSIGNED')).toBe(true);
+            expect(isEligibleForDirectHold('helpdesk', 'ACKNOWLEDGED')).toBe(true);
+            expect(isEligibleForDirectHold('helpdesk', 'ACKNOWLEDGE')).toBe(true);
+            expect(isEligibleForDirectHold('helpdesk', 'IN_PROGRESS')).toBe(true);
+            expect(isEligibleForDirectHold('helpdesk', 'INPROGRESS')).toBe(true);
+            expect(isEligibleForDirectHold('helpdesk', 'OPEN')).toBe(false);
+            expect(isEligibleForDirectHold('helpdesk', 'RESOLVED')).toBe(false);
+            expect(isEligibleForDirectHold('helpdesk', 'CLOSED')).toBe(false);
+            expect(isEligibleForDirectHold('user', 'ASSIGNED')).toBe(false);
         });
     });
 

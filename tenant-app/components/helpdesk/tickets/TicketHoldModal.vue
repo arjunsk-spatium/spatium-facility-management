@@ -38,11 +38,19 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Linked Ticket ID *
                 </label>
-                <a-input
+                <a-select
                     v-model:value="form.linked_ticket"
-                    placeholder="Enter blocking ticket UUID / number"
+                    show-search
+                    allow-clear
+                    :filter-option="false"
+                    :loading="searchingTickets"
+                    placeholder="Search by ticket number or title (e.g. TKT-1042)..."
+                    class="w-full"
+                    :options="linkedTicketOptions"
+                    @search="handleTicketSearch"
+                    @focus="handleTicketFocus"
                 />
-                <p class="text-xs text-gray-500 mt-1">Required when hold reason is Dependent Ticket.</p>
+                <p class="text-xs text-gray-500 mt-1">Required when hold reason is Dependent Ticket. Search by ticket number or title.</p>
             </div>
 
             <div>
@@ -75,11 +83,13 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { useHelpdeskService, type RequestHoldPayload, type DependencyReasonType } from '../../../composables/helpdeskService'
+import { useHelpdeskStore } from '../../../stores/helpdesk'
 import dayjs, { type Dayjs } from 'dayjs'
 
 const props = defineProps<{
     open: boolean
     ticketId: string
+    facilityId?: string
     isDirectHold?: boolean
 }>()
 
@@ -89,10 +99,17 @@ const emit = defineEmits<{
 }>()
 
 const helpdeskService = useHelpdeskService()
+const helpdeskStore = useHelpdeskStore()
 const submitting = ref(false)
 const loadingReasons = ref(false)
 const dynamicReasons = ref<DependencyReasonType[]>([])
 const etaDate = ref<Dayjs | null>(null)
+
+// Linked Ticket Search State
+const searchingTickets = ref(false)
+const searchedTickets = ref<any[]>([])
+const lastSearchQuery = ref('')
+let searchTimeout: any = null
 
 const defaultReasonOptions = [
     { label: 'Parts Awaited', value: 'PARTS_AWAITED' },
@@ -133,6 +150,76 @@ const isDependentTicket = computed(() => {
     }
     return false
 })
+
+const effectiveFacilityId = computed(() => {
+    return props.facilityId || helpdeskStore.currentTicket?.facility || undefined
+})
+
+const linkedTicketOptions = computed(() => {
+    const list = searchedTickets.value.map((t: any) => {
+        const num = t.ticket_number || t.id
+        const title = t.title ? ` - ${t.title}` : ''
+        return {
+            label: `${num}${title}`,
+            value: t.id
+        }
+    })
+
+    // If a custom linked_ticket value is set, ensure it is in the options list so Ant Design Select displays it properly
+    if (form.value.linked_ticket && !list.some(item => item.value === form.value.linked_ticket)) {
+        list.unshift({
+            label: form.value.linked_ticket,
+            value: form.value.linked_ticket
+        })
+    }
+
+    // If user typed a search query that doesn't match any returned id, allow selecting it directly
+    const query = lastSearchQuery.value.trim()
+    if (query && !list.some(item => item.value === query || item.label.toLowerCase().includes(query.toLowerCase()))) {
+        list.push({
+            label: `Use "${query}"`,
+            value: query
+        })
+    }
+
+    return list
+})
+
+const loadExcludeClosedTickets = async (query: string = '') => {
+    searchingTickets.value = true
+    try {
+        const params: { facility_id?: string; search?: string } = {}
+        if (effectiveFacilityId.value) {
+            params.facility_id = effectiveFacilityId.value
+        }
+        if (query?.trim()) {
+            params.search = query.trim()
+        }
+
+        const results = await helpdeskService.getExcludeClosedTickets(params)
+        searchedTickets.value = (Array.isArray(results) ? results : []).filter(
+            (t: any) => t.id !== props.ticketId
+        )
+    } catch (err) {
+        console.error('Failed to search tickets for hold dependency:', err)
+    } finally {
+        searchingTickets.value = false
+    }
+}
+
+const handleTicketSearch = (val: string) => {
+    lastSearchQuery.value = val || ''
+    if (searchTimeout) clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+        loadExcludeClosedTickets(val)
+    }, 300)
+}
+
+const handleTicketFocus = () => {
+    if (searchedTickets.value.length === 0) {
+        loadExcludeClosedTickets('')
+    }
+}
 
 const loadReasons = async () => {
     loadingReasons.value = true
@@ -206,9 +293,21 @@ watch(() => props.open, (isOpen) => {
             linked_ticket: undefined
         }
         etaDate.value = null
+        searchedTickets.value = []
+        lastSearchQuery.value = ''
         if (dynamicReasons.value.length === 0) {
             loadReasons()
         }
+        if (isDependentTicket.value) {
+            loadExcludeClosedTickets('')
+        }
+    }
+})
+
+watch(isDependentTicket, (val) => {
+    if (val && searchedTickets.value.length === 0) {
+        loadExcludeClosedTickets('')
     }
 })
 </script>
+

@@ -244,4 +244,37 @@ describe('Helpdesk Service - Hold Workflow Endpoints', () => {
         expect(result).toHaveLength(1);
         expect(result[0].extend_minutes).toBe(120);
     });
+
+    it('9. GET /api/portal/helpdesk/tickets/exclude-closed-tickets/ - searches open tickets for linked ticket dependency', async () => {
+        mockFetch.mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: async () => ({
+                success: true,
+                data: [
+                    {
+                        id: 'a23cd9ff-f044-4067-9d79-27e692ac9a90',
+                        ticket_number: 'TKT-1042',
+                        title: 'Air conditioner leaking',
+                        state: { key: 'IN_PROGRESS', label: 'In Progress' }
+                    }
+                ]
+            })
+        });
+
+        const result = await service.getExcludeClosedTickets({
+            facility_id: 'a23cd9ff-f044-4067-9d79-27e692ac9a90',
+            search: 'TKT-1042'
+        });
+
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        const [url, options] = mockFetch.mock.calls[0];
+        expect(url).toContain('/api/portal/helpdesk/tickets/exclude-closed-tickets/');
+        expect(url).toContain('facility_id=a23cd9ff-f044-4067-9d79-27e692ac9a90');
+        expect(url).toContain('search=TKT-1042');
+        expect(options.method).toBe('GET');
+        expect(result).toHaveLength(1);
+        expect(result[0].ticket_number).toBe('TKT-1042');
+    });
 });
+

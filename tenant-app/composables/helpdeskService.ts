@@ -1885,5 +1885,43 @@ export const useHelpdeskService = () => {
                 throw error;
             }
         },
+
+        getExcludeClosedTickets: async (params?: {
+            facility_id?: string;
+            search?: string;
+        }): Promise<any[]> => {
+            try {
+                const query: Record<string, string> = {};
+                if (params?.facility_id) query.facility_id = params.facility_id;
+                if (params?.search) query.search = params.search;
+
+                const response = await $api<any>(
+                    "/api/portal/helpdesk/tickets/exclude-closed-tickets/",
+                    {
+                        method: "GET",
+                        query,
+                    },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch tickets",
+                    );
+                }
+                const resData = response.data?.data ?? response.data;
+                if (Array.isArray(resData)) {
+                    return resData;
+                }
+                if (Array.isArray(resData?.results)) {
+                    return resData.results;
+                }
+                return [];
+            } catch (error) {
+                console.error("Error fetching exclude closed tickets:", error);
+                throw error;
+            }
+        },
     };
 };
+

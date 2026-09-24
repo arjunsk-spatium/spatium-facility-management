@@ -247,6 +247,7 @@
             v-if="selectedRowTicketId"
             v-model:open="showRowHoldModal"
             :ticket-id="selectedRowTicketId"
+            :facility-id="selectedRowFacilityId"
             :is-direct-hold="true"
             @success="handleRowHoldSuccess"
         />
@@ -438,15 +439,17 @@ const isHelpdeskUser = computed(() => {
 
 // Row hold state
 const selectedRowTicketId = ref<string>('');
+const selectedRowFacilityId = ref<string>('');
 const showRowHoldModal = ref<boolean>(false);
 
 const canHoldTicketRow = (record: any) => {
     const stateKey = String(record.state?.key || record.state || '').toUpperCase();
-    return isHelpdeskUser.value && ['ACKNOWLEDGED', 'IN_PROGRESS', 'INPROGRESS'].includes(stateKey);
+    return isHelpdeskUser.value && ['ACKNOWLEDGED', 'ACKNOWLEDGE', 'ASSIGNED', 'IN_PROGRESS', 'INPROGRESS'].includes(stateKey);
 };
 
 const openDirectHoldModalFromRow = (record: any) => {
     selectedRowTicketId.value = record.id;
+    selectedRowFacilityId.value = record.facility || (typeof record.facility_id === 'string' ? record.facility_id : '') || facilityFilter.value || '';
     showRowHoldModal.value = true;
 };
 

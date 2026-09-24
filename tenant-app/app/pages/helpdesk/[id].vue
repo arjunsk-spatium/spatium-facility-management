@@ -49,7 +49,7 @@
                     Request Hold
                 </a-button>
 
-                <!-- Direct Hold (Helpdesk role on ACKNOWLEDGED or IN_PROGRESS state) -->
+                <!-- Direct Hold (Helpdesk role on ACKNOWLEDGED, ASSIGNED, or IN_PROGRESS state) -->
                 <a-button
                     v-if="canDirectHold"
                     @click="openHoldModal(true)"
@@ -375,6 +375,7 @@
         <TicketHoldModal
             v-model:open="showHoldModal"
             :ticket-id="currentTicket.id"
+            :facility-id="currentTicket.facility || undefined"
             :is-direct-hold="isDirectHoldAction"
             @success="handleHoldSuccess"
         />
@@ -534,8 +535,8 @@ const canRequestHold = computed(() => {
 
 const canDirectHold = computed(() => {
     if (!currentTicket.value) return false;
-    const state = currentTicket.value.state?.key?.toUpperCase();
-    return isHelpdeskUser.value && ['ACKNOWLEDGED', 'IN_PROGRESS', 'INPROGRESS'].includes(state || '');
+    const state = (currentTicket.value.state?.key || currentTicket.value.state || '').toUpperCase();
+    return isHelpdeskUser.value && ['ACKNOWLEDGED', 'ACKNOWLEDGE', 'ASSIGNED', 'IN_PROGRESS', 'INPROGRESS'].includes(state);
 });
 
 const canResume = computed(() => {
