@@ -375,7 +375,7 @@ const loading = ref(false);
 const showBrandingPreview = ref(false);
 const tenantId = ref<string | null>(null);
 
-const { createTenant, updateTenant, assignPlan, assignModules, getTenantModules, updateBranding, updatePii, getFeatures, assignFeatures } = useTenantService();
+const { createTenant, updateTenant, assignPlan, assignModules, getTenantModules, updateBranding, updatePii, getFeatures, assignFeatures, createTenantFeature } = useTenantService();
 const { getRegistry, getActiveRegistry } = useModuleRegistry();
 const { getPlans } = usePlanService();
 
@@ -624,14 +624,17 @@ const handleStep3 = async () => {
         }
 
         // 3. Assign Features
-        if (subscriptionForm.selectedFeatures.length > 0) {
-            const featurePayload = {
-                tenant: tenantId.value,
-                features: subscriptionForm.selectedFeatures,
-                is_active: true
-            };
-            console.log('Assigning features (Step 3):', featurePayload);
-            await assignFeatures(featurePayload);
+        if (subscriptionForm.selectedFeatures.length > 0 && tenantId.value) {
+            console.log('Assigning features (Step 3):', subscriptionForm.selectedFeatures);
+            await Promise.all(
+                subscriptionForm.selectedFeatures.map(featureId =>
+                    createTenantFeature({
+                        tenant: tenantId.value!,
+                        feature: featureId,
+                        is_active: true
+                    })
+                )
+            );
         }
 
         message.success('Modules & Features assigned successfully');

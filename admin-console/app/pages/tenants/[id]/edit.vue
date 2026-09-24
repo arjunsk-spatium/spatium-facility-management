@@ -375,7 +375,8 @@ const {
     getTenantPii,
     getFeatures,
     getTenantFeatures,
-    assignFeatures
+    assignFeatures,
+    toggleTenantFeature
 } = useTenantService();
 const { getRegistry, getActiveRegistry } = useModuleRegistry();
 const { getPlans } = usePlanService();
@@ -389,6 +390,7 @@ const subscriptionForm = reactive({ plan: '', start_date: '', end_date: '', bill
 const selectedModules = ref<string[]>([]);
 const featuresList = ref<any[]>([]);
 const selectedFeatures = ref<string[]>([]);
+const tenantFeatureAssignments = ref<any[]>([]);
 const brandingForm = reactive({
     primary_color: '#ffffff',
     logo: null as File | null,
@@ -507,7 +509,10 @@ const fetchData = async () => {
             if (featRes && featRes.data) {
                 const assignments = featRes.data.results || featRes.data || [];
                 if (Array.isArray(assignments)) {
-                    selectedFeatures.value = assignments.map((a: any) => a.feature || a.feature_id);
+                    tenantFeatureAssignments.value = assignments;
+                    selectedFeatures.value = assignments
+                        .filter((a: any) => a.is_active !== false)
+                        .map((a: any) => a.feature || a.feature_id);
                 }
             }
         } catch (e) { console.warn('No modules/features found', e); }
@@ -585,16 +590,39 @@ const updateModules = async () => {
         };
         await assignModules(modulePayload);
         
-        const featurePayload = {
-            tenant: tenantId,
-            features: selectedFeatures.value,
-            is_active: true
-        };
-        await assignFeatures(featurePayload);
+        // Update features per backend API spec
+        await Promise.all(
+            featuresList.value.map(async (feat) => {
+                const isSelected = selectedFeatures.value.includes(feat.id);
+                const existing = tenantFeatureAssignments.value.find(
+                    (a: any) => (a.feature === feat.id || a.feature_id === feat.id)
+                );
+                if (isSelected) {
+                    if (!existing || !existing.is_active) {
+                        return toggleTenantFeature(tenantId, feat.id, true, existing?.id);
+                    }
+                } else if (existing && existing.is_active) {
+                    return toggleTenantFeature(tenantId, feat.id, false, existing.id);
+                }
+            })
+        );
+        
+        // Refresh feature assignments
+        const refreshed = await getTenantFeatures(tenantId);
+        if (refreshed && refreshed.data) {
+            const results = refreshed.data.results || refreshed.data || [];
+            if (Array.isArray(results)) {
+                tenantFeatureAssignments.value = results;
+            }
+        }
         
         message.success('Modules & Features updated');
-    } catch (e) { message.error('Failed to update modules/features'); }
-    finally { loadingModules.value = false; }
+    } catch (e) { 
+        console.error('Failed to update modules/features', e);
+        message.error('Failed to update modules/features'); 
+    } finally { 
+        loadingModules.value = false; 
+    }
 };
 
 const handleFileSelect = (event: any, field: 'logo' | 'dark_logo' | 'favicon') => {

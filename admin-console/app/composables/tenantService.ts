@@ -30,6 +30,28 @@ export interface SubscriptionPayload {
     modules?: string[];
 }
 
+export interface TenantFeature {
+    id: string;
+    tenant: string;
+    feature: string;
+    feature_name?: string;
+    feature_key?: string;
+    submodule_name?: string;
+    is_active: boolean;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface CreateTenantFeaturePayload {
+    tenant: string;
+    feature: string;
+    is_active?: boolean;
+}
+
+export interface UpdateTenantFeaturePayload {
+    is_active: boolean;
+}
+
 // Mock data for display purposes until real APIs are ready
 const mockTenants: Tenant[] = [
     {
@@ -103,17 +125,68 @@ export const useTenantService = () => {
         });
     };
 
-    const getTenantFeatures = async (tenantId: string) => {
-        return request<any>(`/api/platform/modules/tenant-features/?tenant_id=${tenantId}`, {
+    const getTenantFeatures = async (tenantId?: string) => {
+        const query = tenantId ? `?tenant_id=${tenantId}` : '';
+        return request<any>(`/api/platform/modules/tenant-features/${query}`, {
             method: 'GET',
         });
     };
 
-    const assignFeatures = async (payload: { tenant: string; features: string[]; is_active: boolean }) => {
-        return request('/api/platform/modules/tenant-features/', {
+    const createTenantFeature = async (payload: CreateTenantFeaturePayload) => {
+        return request<TenantFeature>('/api/platform/modules/tenant-features/', {
             method: 'POST',
+            body: {
+                tenant: payload.tenant,
+                feature: payload.feature,
+                is_active: payload.is_active ?? true,
+            },
+        });
+    };
+
+    const updateTenantFeature = async (id: string, payload: UpdateTenantFeaturePayload) => {
+        return request<TenantFeature>(`/api/platform/modules/tenant-features/${id}/`, {
+            method: 'PATCH',
             body: payload,
         });
+    };
+
+    const deleteTenantFeature = async (id: string) => {
+        return request(`/api/platform/modules/tenant-features/${id}/`, {
+            method: 'DELETE',
+        });
+    };
+
+    const toggleTenantFeature = async (
+        tenantId: string,
+        featureId: string,
+        isActive: boolean,
+        existingAssignmentId?: string
+    ): Promise<TenantFeature> => {
+        if (existingAssignmentId) {
+            return await updateTenantFeature(existingAssignmentId, { is_active: isActive });
+        }
+        // Check if an assignment exists
+        const res = await getTenantFeatures(tenantId);
+        const results = res?.data?.results || res?.data || (Array.isArray(res) ? res : []);
+        const existing = results.find(
+            (item: any) => (item.feature === featureId || item.feature_id === featureId) && (item.tenant === tenantId || !item.tenant)
+        );
+        if (existing?.id) {
+            return await updateTenantFeature(existing.id, { is_active: isActive });
+        }
+        return await createTenantFeature({
+            tenant: tenantId,
+            feature: featureId,
+            is_active: isActive,
+        });
+    };
+
+    const assignFeatures = async (payload: { tenant: string; features: string[]; is_active: boolean }) => {
+        return Promise.all(
+            payload.features.map(featureId =>
+                toggleTenantFeature(payload.tenant, featureId, payload.is_active)
+            )
+        );
     };
 
     const updateBranding = async (formData: FormData) => {
@@ -206,6 +279,10 @@ export const useTenantService = () => {
         getTenantModules,
         getFeatures,
         getTenantFeatures,
+        createTenantFeature,
+        updateTenantFeature,
+        deleteTenantFeature,
+        toggleTenantFeature,
         assignFeatures,
         getTenantSubscription,
         getTenantBranding,

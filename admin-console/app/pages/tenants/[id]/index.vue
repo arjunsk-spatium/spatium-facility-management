@@ -255,25 +255,47 @@
                 <section
                     class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                        <h3 class="font-semibold text-gray-900 dark:text-white">Enabled Features</h3>
-                        <a-badge :count="assignedFeatures.length"
+                        <div>
+                            <h3 class="font-semibold text-gray-900 dark:text-white">Tenant Features</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Toggle capabilities like ScopeLadder Dispatch</p>
+                        </div>
+                        <a-badge :count="activeFeaturesCount"
                             :number-style="{ backgroundColor: '#fffbe6', color: '#faad14', boxShadow: '0 0 0 1px #ffe58f inset' }" />
                     </div>
                     <div class="p-6">
-                        <div v-if="assignedFeatures.length" class="grid grid-cols-1 gap-3">
-                            <div v-for="feat in assignedFeatures" :key="feat.id"
-                                class="flex flex-col gap-1 p-3 rounded-lg border border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/50">
-                                <div class="flex items-center gap-3">
-                                    <CheckCircleFilled class="text-yellow-500 text-lg" />
-                                    <span class="font-medium text-gray-700 dark:text-gray-200 capitalize">
-                                        {{ feat.feature_name || feat.feature?.name || feat.feature }}
-                                    </span>
+                        <div v-if="displayFeatures.length" class="grid grid-cols-1 gap-3">
+                            <div v-for="feat in displayFeatures" :key="feat.feature_id"
+                                class="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/50">
+                                <div class="flex items-start gap-3 min-w-0 pr-3">
+                                    <ThunderboltFilled v-if="feat.feature_key === 'scope_ladder_dispatch'" class="text-amber-500 text-lg mt-0.5 flex-shrink-0" />
+                                    <CheckCircleFilled v-else-if="feat.is_active" class="text-green-500 text-lg mt-0.5 flex-shrink-0" />
+                                    <CloseCircleFilled v-else class="text-gray-400 text-lg mt-0.5 flex-shrink-0" />
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-medium text-gray-800 dark:text-gray-100 text-sm">
+                                                {{ feat.feature_name }}
+                                            </span>
+                                            <a-tag v-if="feat.feature_key === 'scope_ladder_dispatch'" color="processing" class="text-xs">ScopeLadder</a-tag>
+                                            <a-tag :color="feat.is_active ? 'green' : 'default'" class="text-xs">
+                                                {{ feat.is_active ? 'Active' : 'Inactive' }}
+                                            </a-tag>
+                                        </div>
+                                        <p v-if="feat.description || feat.submodule_name" class="text-xs text-gray-500 mt-0.5 truncate">
+                                            {{ feat.description || feat.submodule_name }}
+                                        </p>
+                                    </div>
                                 </div>
-                                <span v-if="feat.submodule_name" class="text-xs text-gray-500 ml-8">{{ feat.submodule_name }}</span>
+                                <div class="flex-shrink-0">
+                                    <a-switch
+                                        :checked="feat.is_active"
+                                        :loading="togglingFeatureId === feat.feature_id"
+                                        @change="(checked: any) => handleToggleFeature(feat, checked)"
+                                    />
+                                </div>
                             </div>
                         </div>
                         <div v-else class="text-center py-8 text-gray-400 italic">
-                            No features enabled
+                            No features found
                         </div>
                     </div>
                 </section>
@@ -308,22 +330,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { ArrowLeftOutlined, EditOutlined, CheckCircleFilled, PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { 
+    ArrowLeftOutlined, 
+    EditOutlined, 
+    CheckCircleFilled, 
+    CloseCircleFilled, 
+    ThunderboltFilled, 
+    PlusOutlined, 
+    DeleteOutlined 
+} from '@ant-design/icons-vue';
 import { useTenantService } from '../../../composables/tenantService';
 import { useUserService } from '../../../composables/userService';
 import { message } from 'ant-design-vue';
 
 const route = useRoute();
 const tenantId = route.params.id as string;
-const { getTenantById, getTenantModules, getTenantFeatures } = useTenantService();
+const { 
+    getTenantById, 
+    getTenantModules, 
+    getTenantFeatures, 
+    getFeatures, 
+    toggleTenantFeature 
+} = useTenantService();
 const { getUsers, createUser, deleteUser } = useUserService();
 
 const loading = ref(true);
 const tenant = ref<any>(null);
 const assignedModules = ref<any[]>([]);
 const assignedFeatures = ref<any[]>([]);
+const systemFeatures = ref<any[]>([]);
+const togglingFeatureId = ref<string | null>(null);
 const tenantUsers = ref<any[]>([]);
 
 const showCreateUserModal = ref(false);
@@ -341,13 +379,66 @@ const userColumns = [
     { title: '', key: 'actions', width: 60 },
 ];
 
+// Unified list of features with tenant activation status
+const displayFeatures = computed(() => {
+    if (systemFeatures.value.length > 0) {
+        return systemFeatures.value.map(sf => {
+            const assignment = assignedFeatures.value.find((af: any) =>
+                (af.feature === sf.id || af.feature_id === sf.id || af.feature_key === sf.key)
+            );
+            return {
+                feature_id: sf.id,
+                feature_name: sf.name,
+                feature_key: sf.key,
+                submodule_name: sf.submodule_name || assignment?.submodule_name,
+                description: sf.description,
+                assignment_id: assignment?.id,
+                is_active: assignment ? !!assignment.is_active : false,
+            };
+        });
+    }
+
+    return assignedFeatures.value.map(af => ({
+        feature_id: af.feature || af.feature_id || af.id,
+        feature_name: af.feature_name || af.feature?.name || 'Feature',
+        feature_key: af.feature_key || af.feature?.key || '',
+        submodule_name: af.submodule_name || af.feature?.submodule_name,
+        description: af.description || af.feature?.description,
+        assignment_id: af.id,
+        is_active: !!af.is_active,
+    }));
+});
+
+const activeFeaturesCount = computed(() => {
+    return displayFeatures.value.filter(f => f.is_active).length;
+});
+
+const handleToggleFeature = async (feat: any, checked: boolean) => {
+    togglingFeatureId.value = feat.feature_id;
+    try {
+        await toggleTenantFeature(tenantId, feat.feature_id, checked, feat.assignment_id);
+        message.success(`${feat.feature_name} ${checked ? 'enabled' : 'disabled'} successfully`);
+        // Refresh assigned features
+        const featuresRes = await getTenantFeatures(tenantId);
+        if (featuresRes && featuresRes.data) {
+            const results = featuresRes.data.results || featuresRes.data;
+            assignedFeatures.value = Array.isArray(results) ? results : [];
+        }
+    } catch (err: any) {
+        message.error(err?.data?.message || err?.message || 'Failed to update feature');
+    } finally {
+        togglingFeatureId.value = null;
+    }
+};
+
 const fetchData = async () => {
     loading.value = true;
     try {
-        const [fetchedTenant, modulesRes, featuresRes, users] = await Promise.all([
+        const [fetchedTenant, modulesRes, featuresRes, allFeaturesRes, users] = await Promise.all([
             getTenantById(tenantId),
             getTenantModules(tenantId),
             getTenantFeatures(tenantId),
+            getFeatures().catch(() => null),
             getUsers({ tenant_id: tenantId })
         ]);
 
@@ -363,6 +454,11 @@ const fetchData = async () => {
         if (featuresRes && featuresRes.data) {
             const results = featuresRes.data.results || featuresRes.data;
             assignedFeatures.value = Array.isArray(results) ? results : [];
+        }
+
+        if (allFeaturesRes && allFeaturesRes.data) {
+            const results = allFeaturesRes.data.results || allFeaturesRes.data;
+            systemFeatures.value = Array.isArray(results) ? results : [];
         }
 
         if (users) {
