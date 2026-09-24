@@ -27,12 +27,18 @@
                     </a-form-item>
 
                     <a-form-item label="Phone Number" name="phone"
-                        :rules="[{ required: true, message: 'Please enter phone number' }]">
+                        :rules="[
+                            { required: true, message: 'Please enter phone number' },
+                            { pattern: /^\+91\d{10}$/, message: 'Please enter a valid 10-digit phone number' }
+                        ]">
                         <PhoneInput v-model="formState.phone" size="large" selectWidth="90px" />
                     </a-form-item>
 
                     <a-form-item v-if="visitorEmailRequired" label="Email" name="email" class="sm:col-span-2"
-                        :rules="[{ required: true, message: 'Please enter email' }]">
+                        :rules="[
+                            { required: true, message: 'Please enter email' },
+                            { type: 'email', message: 'Please enter a valid email address' }
+                        ]">
                         <a-input v-model:value="formState.email" placeholder="visitor@email.com" size="large" />
                     </a-form-item>
 
@@ -211,15 +217,39 @@ const resetForm = () => {
     formState.facilityId = null
 }
 
+const buildAppointment = (): Dayjs => {
+    const now = dayjs()
+    let appointment = formState.visitDate ? dayjs(formState.visitDate) : now
+
+    if (formState.visitTime) {
+        appointment = appointment
+            .hour(formState.visitTime.hour())
+            .minute(formState.visitTime.minute())
+            .second(0)
+    } else if (appointment.isSame(now, 'day')) {
+        // Visit Time is optional — when left blank for today, default to the current time
+        appointment = now
+    }
+
+    // The chosen slot may have just slipped into the past while the user was
+    // filling the form (e.g. picked 10:35, submits at 10:36) — fall back to now
+    if (appointment.isBefore(now)) {
+        appointment = now
+    }
+
+    return appointment
+}
+
 const handleSubmit = async () => {
     try {
+        const appointment = buildAppointment()
         const data = {
             name: formState.name,
             phone: formState.phone,
             email: formState.email || undefined,
             from_company: formState.fromCompany || undefined,
             visitDate: toApiDate(formState.visitDate),
-            visitTime: toApiTime(formState.visitTime) || undefined,
+            visitTime: toApiTime(appointment),
             purpose: formState.purpose || 'General Visit',
             facility_id: formState.facilityId || undefined,
             purpose_of_visit_id: formState.purpose || undefined

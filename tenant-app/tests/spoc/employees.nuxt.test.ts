@@ -252,6 +252,123 @@ describe('SPOC Employees Page', () => {
         })
     })
 
+    describe('Validation and Error Details', () => {
+        const mountPage = async () => {
+            return await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+        }
+
+        it('should reject a phone number with fewer than 10 digits (BUG_09)', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.newEmployee.name = 'Short Phone'
+            vm.newEmployee.email = 'short@company.com'
+            vm.newEmployee.phone = '+911234'
+
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.phone).toContain('10-digit')
+            expect(spocStore.addEmployee).not.toHaveBeenCalled()
+        })
+
+        it('should disable future joining dates in disabledJoiningDate (BUG_09)', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+
+            expect(vm.disabledJoiningDate(dayjs().add(1, 'day'))).toBe(true)
+            expect(vm.disabledJoiningDate(dayjs().add(1, 'month'))).toBe(true)
+            expect(vm.disabledJoiningDate(dayjs())).toBe(false)
+            expect(vm.disabledJoiningDate(dayjs().subtract(1, 'day'))).toBe(false)
+        })
+
+        it('should reject a future date of joining on save (BUG_09)', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.newEmployee.name = 'Future Joiner'
+            vm.newEmployee.email = 'future@company.com'
+            vm.newEmployee.date_of_joining = dayjs().add(1, 'month').format('YYYY-MM-DD')
+
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.date_of_joining).toContain('future')
+            expect(spocStore.addEmployee).not.toHaveBeenCalled()
+        })
+
+        it('should map duplicate-phone server errors sent under details to the phone field (BUG_12)', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            const duplicateError: any = new Error('Failed to update client portal user')
+            duplicateError.data = {
+                success: false,
+                message: 'Failed to update client portal user',
+                error: {
+                    details: {
+                        phone_number: ['Phone number already exists']
+                    }
+                }
+            }
+            vi.mocked(spocStore.updateEmployee).mockRejectedValueOnce(duplicateError)
+
+            vm.editingEmployee = { id: 'emp-1' }
+            vm.newEmployee.name = 'Dup Phone'
+            vm.newEmployee.email = 'dup@company.com'
+            vm.newEmployee.phone = '+919876543210'
+
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.phone).toBe('Phone number already exists')
+        })
+
+        it('should download the sample CSV as a client-generated Blob (BUG_11)', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+
+            const originalCreate = URL.createObjectURL
+            const originalRevoke = URL.revokeObjectURL
+            const createObjectURL = vi.fn(() => 'blob:mock-url')
+            const revokeObjectURL = vi.fn()
+            URL.createObjectURL = createObjectURL
+            URL.revokeObjectURL = revokeObjectURL
+
+            try {
+                vm.downloadSampleCsv()
+
+                expect(createObjectURL).toHaveBeenCalledTimes(1)
+                const blob = createObjectURL.mock.calls[0][0] as Blob
+                expect(blob).toBeInstanceOf(Blob)
+                const text = await blob.text()
+                const columns = text.split('\n')[0].split(',')
+                expect(columns).toEqual([
+                    'full_name',
+                    'phone_number',
+                    'email',
+                    'department_slug',
+                    'designation',
+                    'app_name'
+                ])
+                expect(text).toContain('John Doe')
+                expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url')
+            } finally {
+                URL.createObjectURL = originalCreate
+                URL.revokeObjectURL = originalRevoke
+            }
+        })
+    })
+
     describe('Building Pass Toggle', () => {
         it('should have handleBuildingPassToggle method', async () => {
             const wrapper = await mountSuspended(SpocEmployeesPage, {

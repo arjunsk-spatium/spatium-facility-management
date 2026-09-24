@@ -288,6 +288,25 @@ describe('SPOC Store', () => {
             expect(visitor.purpose_of_visit).toBeDefined()
             expect(visitor.status).toBeDefined()
         })
+
+        it('should pass facility, page and page_size as query params and store the count', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: { count: 25, results: [] }
+                })
+            });
+            const store = useSpocStore()
+            await store.fetchVisitors({ facilityId: 'fac-1', page: 2, page_size: 10 })
+
+            const url = mockFetch.mock.calls[0][0] as string
+            expect(url).toContain('facility_id=fac-1')
+            expect(url).toContain('page=2')
+            expect(url).toContain('page_size=10')
+            expect(store.visitorCount).toBe(25)
+        })
     })
 
     describe('fetchEmployees', () => {
@@ -326,6 +345,31 @@ describe('SPOC Store', () => {
             expect(employee.id).toBeDefined()
             expect(employee.name).toBeDefined()
             expect(employee.email).toBeDefined()
+        })
+
+        it('should filter out archived (soft-deleted) users from the list', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        count: 2,
+                        results: [
+                            { id: '1', full_name: 'Active User', email: 'active@example.com', status: 'active' },
+                            { id: '2', full_name: 'Archived User', email: 'archived@example.com', status: 'archived' },
+                            { id: '3', full_name: 'Flagged User', email: 'flagged@example.com', is_archived: true }
+                        ]
+                    }
+                })
+            });
+            const store = useSpocStore()
+            await store.fetchEmployees()
+
+            expect(store.employees.length).toBe(1)
+            expect(store.employees[0].name).toBe('Active User')
+            expect(store.employees.find(e => e.id === '2')).toBeUndefined()
+            expect(store.employees.find(e => e.id === '3')).toBeUndefined()
         })
     })
 
@@ -396,6 +440,34 @@ describe('SPOC Store', () => {
             })
             
             expect(visitor.status).toBe('pending')
+        })
+
+        it('should surface detailed field errors from the server response body', async () => {
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 400,
+                json: async () => ({
+                    success: false,
+                    message: 'Invalid request',
+                    error: {
+                        details: {
+                            appointment_date: ['Appointment date must be in the future']
+                        }
+                    }
+                })
+            });
+            const store = useSpocStore()
+
+            await expect(store.inviteVisitor({
+                name: 'Test Visitor',
+                phone: '+91 12345 67890',
+                visitDate: '2026-01-01',
+                visitTime: '10:35',
+                facility_id: 'fac-1',
+                purpose_of_visit_id: 'purpose-1'
+            })).rejects.toThrow()
+
+            expect(store.error).toBe('Appointment date must be in the future')
         })
     })
 
@@ -619,6 +691,28 @@ describe('SPOC Store', () => {
             const store = useSpocStore()
             
             await expect(store.deleteEmployee('nonexistent-id')).rejects.toThrow()
+        })
+
+        it('should throw and keep the employee when the server responds 200 with success:false (already archived)', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: false,
+                    message: 'User already archieved'
+                })
+            });
+            const store = useSpocStore()
+            store.employees = [
+                { id: 'emp-1', name: 'Archived User', email: 'arch@company.com' } as any
+            ]
+            store.employeeCount = 1
+
+            await expect(store.deleteEmployee('emp-1')).rejects.toThrow('User already archieved')
+
+            expect(store.error).toBe('User already archieved')
+            expect(store.employees.find(e => e.id === 'emp-1')).toBeDefined()
+            expect(store.employeeCount).toBe(1)
         })
     })
 

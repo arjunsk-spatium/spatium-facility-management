@@ -89,7 +89,7 @@
                 <div class="flex items-center justify-between mb-2">
                   <label for="otp" class="label mb-0">One-Time Password</label>
                   <button type="button" @click="goBack"
-                    class="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                    class="text-xs text-primary-600 hover:text-primary-700 font-medium cursor-pointer hover:underline">
                     Change Email
                   </button>
                 </div>
@@ -194,7 +194,10 @@ const getRandomItem = <T>(arr: T[]): T => {
 }
 
 const handleEmailSubmit = async () => {
-  if (!form.email) return
+  if (!form.email || !form.email.trim()) {
+    errorMsg.value = 'Please enter your email address.'
+    return
+  }
 
   if (!isValidEmail(form.email)) {
     errorMsg.value = 'Please enter a valid email address.'

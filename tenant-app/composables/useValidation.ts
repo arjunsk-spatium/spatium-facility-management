@@ -11,17 +11,35 @@ export const useValidation = () => {
     if (error) {
        if (typeof error === 'string') return error;
 
-       const errObj = error.data?.error || error.error;
-       if ((errObj?.type === 'VALIDATION' || errObj?.type === 'VALIDATION_ERROR') && errObj?.fields) {
-         const fields = errObj.fields;
-         for (const key in fields) {
-           if (Array.isArray(fields[key]) && fields[key].length > 0 && fields[key][0]?.message) {
-             return fields[key][0].message;
+       const container = error.data || error;
+       const errObj = container?.error || error.error;
+
+       // Pull the first human-readable message out of a field error map
+       // ({ fields: {...} } or { details: {...} }, values may be strings,
+       // string arrays, or [{ message }] objects)
+       const collectFrom = (source: any): string | null => {
+         if (!source) return null;
+         for (const key in source) {
+           const value = source[key];
+           if (Array.isArray(value)) {
+             const first = value.find(v => (typeof v === 'string' && v) || (v && typeof v.message === 'string' && v.message));
+             if (first) return typeof first === 'string' ? first : first.message;
+           } else if (typeof value === 'string' && value) {
+             return value;
            }
          }
+         return null;
+       };
+
+       if (errObj) {
+         const fromFields = collectFrom(errObj.fields);
+         if (fromFields) return fromFields;
+         const fromDetails = collectFrom(errObj.details);
+         if (fromDetails) return fromDetails;
+         if (typeof errObj.message === 'string' && errObj.message) return errObj.message;
        }
 
-       const message = error.data?.message || error.message;
+       const message = container?.message || error.message;
        if (message && typeof message === 'string') {
          return message;
        }

@@ -1,6 +1,6 @@
 <template>
     <a-input-group compact>
-        <a-select :value="prefix" disabled :style="{ width: selectWidth }">
+        <a-select :value="prefix" disabled :size="size" :style="{ width: selectWidth }">
             <a-select-option value="+91">+91</a-select-option>
         </a-select>
         <a-input

@@ -225,6 +225,7 @@
                             class="w-full"
                             format="YYYY-MM-DD"
                             value-format="YYYY-MM-DD"
+                            :disabled-date="disabledJoiningDate"
                             @change="clearFieldError('date_of_joining')"
                         />
                     </a-form-item>
@@ -523,6 +524,10 @@ const disabledBirthDate = (current: dayjs.Dayjs) => {
     return current && current.isAfter(dayjs().subtract(18, 'year'), 'day')
 }
 
+const disabledJoiningDate = (current: dayjs.Dayjs) => {
+    return current && current.isAfter(dayjs(), 'day')
+}
+
 const defaultBirthDatePickerValue = computed(() => dayjs().subtract(18, 'year'))
 
 const openAddModal = () => {
@@ -607,6 +612,25 @@ const handleSaveEmployee = async () => {
         return
     }
 
+    const { isValidEmail } = useValidation()
+    if (!isValidEmail(newEmployee.email.trim())) {
+        formErrors.email = 'Please enter a valid email address'
+        message.error('Please enter a valid email address')
+        return
+    }
+
+    if (newEmployee.phone && !/^\+91\d{10}$/.test(newEmployee.phone)) {
+        formErrors.phone = 'Please enter a valid 10-digit phone number'
+        message.error('Please enter a valid 10-digit phone number')
+        return
+    }
+
+    if (newEmployee.date_of_joining && dayjs(newEmployee.date_of_joining).isAfter(dayjs(), 'day')) {
+        formErrors.date_of_joining = 'Date of joining cannot be in the future'
+        message.error('Date of joining cannot be in the future')
+        return
+    }
+
     if (newEmployee.date_of_birth) {
         const dob = dayjs(newEmployee.date_of_birth)
         if (!dob.isValid()) {
@@ -670,31 +694,32 @@ const handleSaveEmployee = async () => {
         clearAllFormErrors()
     } catch (err: any) {
         const errData = err?.data || err
-        const fields = errData?.error?.fields
+        // Backend may send field errors under either `fields` or `details`
+        const fields = errData?.error?.fields || errData?.error?.details || {}
 
-        if (fields) {
-            if (fields.email?.[0]?.message) {
-                formErrors.email = fields.email[0].message
+        const firstMessage = (value: any): string | undefined => {
+            if (Array.isArray(value)) {
+                const first = value.find(v => (typeof v === 'string' && v) || v?.message)
+                return typeof first === 'string' ? first : first?.message
             }
-            if (fields.full_name?.[0]?.message || fields.name?.[0]?.message) {
-                formErrors.name = fields.full_name?.[0]?.message || fields.name?.[0]?.message
-            }
-            if (fields.phone_number?.[0]?.message || fields.phone?.[0]?.message) {
-                formErrors.phone = fields.phone_number?.[0]?.message || fields.phone?.[0]?.message
-            }
-            if (fields.department_id?.[0]?.message) {
-                formErrors.departmentId = fields.department_id[0].message
-            }
-            if (fields.gender?.[0]?.message) {
-                formErrors.gender = fields.gender[0].message
-            }
-            if (fields.date_of_joining?.[0]?.message) {
-                formErrors.date_of_joining = fields.date_of_joining[0].message
-            }
-            if (fields.date_of_birth?.[0]?.message) {
-                formErrors.date_of_birth = fields.date_of_birth[0].message
-            }
+            return typeof value === 'string' ? value : undefined
         }
+
+        const emailErr = firstMessage(fields.email)
+        const nameErr = firstMessage(fields.full_name) || firstMessage(fields.name)
+        const phoneErr = firstMessage(fields.phone_number) || firstMessage(fields.phone)
+        const deptErr = firstMessage(fields.department_id)
+        const genderErr = firstMessage(fields.gender)
+        const dojErr = firstMessage(fields.date_of_joining)
+        const dobErr = firstMessage(fields.date_of_birth)
+
+        if (emailErr) formErrors.email = emailErr
+        if (nameErr) formErrors.name = nameErr
+        if (phoneErr) formErrors.phone = phoneErr
+        if (deptErr) formErrors.departmentId = deptErr
+        if (genderErr) formErrors.gender = genderErr
+        if (dojErr) formErrors.date_of_joining = dojErr
+        if (dobErr) formErrors.date_of_birth = dobErr
 
         const { sanitizeError } = useValidation()
         const errorMsg = sanitizeError(err) || (editingEmployee.value ? 'Failed to update employee' : 'Failed to add employee')
@@ -723,8 +748,8 @@ const handleDelete = async (id: string) => {
         await store.deleteEmployee(id)
         message.success('Employee deleted')
         refreshEmployees()
-    } catch (err) {
-        message.error('Failed to delete employee')
+    } catch (err: any) {
+        message.error(err?.data?.message || err?.message || store.error || 'Failed to delete employee')
     }
 }
 
@@ -790,10 +815,22 @@ const refreshEmployees = () => {
 }
 
 const downloadSampleCsv = () => {
+    // Build the CSV client-side — linking to a static file can fall through to
+    // the SPA fallback and download HTML instead of CSV in some deployments
+    const header = 'full_name,phone_number,email,department_slug,designation,app_name'
+    const rows = [
+        'John Doe,+91 9876543210,john.doe@company.com,engineering,SPOC,client_portal',
+        'Jane Smith,+91 8765432109,jane.smith@company.com,engineering,Sales Manager,hub'
+    ]
+    const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = '/employees.csv'
+    link.href = url
     link.download = 'employees_sample.csv'
+    document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
 }
 
 // Jobs drawer handlers

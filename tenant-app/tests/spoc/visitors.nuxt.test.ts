@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import SpocVisitorListPage from '../../app/pages/spoc/visitors/index.vue'
 import { createTestingPinia } from '@pinia/testing'
+import { useFacilityStore } from '../../stores/facility'
+import { useSpocStore } from '../../stores/spoc'
 
 let mockRouteQuery: Record<string, string> = {}
 const mockReplace = vi.fn()
@@ -291,6 +293,103 @@ describe('SPOC Visitor List Page', () => {
 
         vm.handleStatusChange(null)
         expect(mockReplace).toHaveBeenCalledWith({ query: {} })
+    })
+
+    it('should call the facility store QR action when QR Code is clicked', async () => {
+        mockRouteQuery = { facility_id: 'fac-1' }
+        const pinia = createTestingPinia({
+            createSpy: vi.fn,
+            initialState: {
+                spoc: {
+                    visitors: [],
+                    loading: false,
+                    facilities: [{ id: 'fac-1', name: 'Innovations Lab' }]
+                }
+            }
+        })
+        const wrapper = await mountSuspended(SpocVisitorListPage, {
+            global: { plugins: [pinia] }
+        })
+        const facilityStore = useFacilityStore(pinia)
+
+        const vm = wrapper.vm as any
+        await vm.generateQR()
+
+        expect(facilityStore.generateFacilityQRCode).toHaveBeenCalledWith('fac-1', 'Innovations Lab')
+    })
+
+    it('should not call the QR action when no facility is selected', async () => {
+        mockRouteQuery = {}
+        const pinia = createTestingPinia({
+            createSpy: vi.fn,
+            initialState: {
+                spoc: {
+                    visitors: [],
+                    loading: false,
+                    facilities: [{ id: 'fac-1', name: 'Innovations Lab' }]
+                }
+            }
+        })
+        const wrapper = await mountSuspended(SpocVisitorListPage, {
+            global: { plugins: [pinia] }
+        })
+        const facilityStore = useFacilityStore(pinia)
+
+        const vm = wrapper.vm as any
+        await vm.generateQR()
+
+        expect(facilityStore.generateFacilityQRCode).not.toHaveBeenCalled()
+    })
+
+    it('should only show visitors of the selected facility', async () => {
+        mockRouteQuery = { facility_id: 'fac-2' }
+        const facilityVisitors = [
+            { id: '1', name: 'HQ Visitor', status: 'Pending', facility_id: 'fac-1' },
+            { id: '2', name: 'Lab Visitor', status: 'Pending', facility_id: 'fac-2' }
+        ]
+        const wrapper = await mountSuspended(SpocVisitorListPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        spoc: { visitors: facilityVisitors, loading: false }
+                    }
+                })]
+            }
+        })
+
+        expect(wrapper.text()).toContain('Lab Visitor')
+        expect(wrapper.text()).not.toContain('HQ Visitor')
+    })
+
+    it('should request the given page from the store when pagination changes', async () => {
+        mockRouteQuery = {}
+        const pinia = createTestingPinia({
+            createSpy: vi.fn,
+            initialState: {
+                spoc: {
+                    visitors: [],
+                    loading: false,
+                    visitorCount: 25,
+                    visitorPage: 1,
+                    visitorPageSize: 10
+                }
+            }
+        })
+        const wrapper = await mountSuspended(SpocVisitorListPage, {
+            global: { plugins: [pinia] }
+        })
+        const store = useSpocStore(pinia)
+
+        const vm = wrapper.vm as any
+        expect(vm.paginationConfig.total).toBe(25)
+
+        await vm.handleVisitorPageChange(2, 20)
+        expect(store.fetchVisitors).toHaveBeenCalledWith({
+            facilityId: undefined,
+            page: 2,
+            page_size: 20
+        })
     })
 })
 

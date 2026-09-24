@@ -59,7 +59,8 @@
         </div>
 
         <!-- Visitor Table/Cards using ResponsiveDataView -->
-        <ResponsiveDataView :columns="columns" :data="filteredVisitors" :loading="loading" row-key="id">
+        <ResponsiveDataView :columns="columns" :data="filteredVisitors" :loading="loading" row-key="id"
+            :pagination="paginationConfig">
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'photo'">
                     <a-avatar 
@@ -198,8 +199,7 @@ import VisitorDetailsModal from '../../../../components/visitors/VisitorDetailsM
 import ImagePreviewModal from '../../../../components/visitors/ImagePreviewModal.vue'
 import type { SpocVisitor } from '../../../../stores/spoc'
 import { message } from 'ant-design-vue'
-import { useAuthStore } from '../../../../stores/auth'
-import { useCompanyStore } from '../../../../stores/company'
+import { useFacilityStore } from '../../../../stores/facility'
 
 definePageMeta({
     middleware: 'auth'
@@ -211,9 +211,30 @@ const router = useRouter()
 const { formatDisplayDate, formatDisplayTime } = useDate()
 
 const store = useSpocStore()
-const authStore = useAuthStore()
-const companyStore = useCompanyStore()
-const { visitors, loading, facilities } = storeToRefs(store)
+const facilityStore = useFacilityStore()
+const { visitors, loading, facilities, visitorCount, visitorPage, visitorPageSize } = storeToRefs(store)
+
+// Pagination config for the visitor table
+const paginationConfig = computed(() => ({
+    total: visitorCount.value,
+    current: visitorPage.value,
+    pageSize: visitorPageSize.value,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50'],
+    onChange: handleVisitorPageChange,
+}))
+
+const handleVisitorPageChange = (page: number, newPageSize?: number) => {
+    store.visitorPage = page
+    if (newPageSize) {
+        store.visitorPageSize = newPageSize
+    }
+    store.fetchVisitors({
+        facilityId: selectedFacility.value || undefined,
+        page,
+        page_size: newPageSize || visitorPageSize.value
+    })
+}
 
 const normalizeStatus = (status: string | undefined | null): string => {
     if (!status) return ''
@@ -279,19 +300,22 @@ const handleFacilityChange = () => {
         delete query.facility
     }
     router.replace({ query })
-    store.fetchVisitors(selectedFacility.value || undefined)
+    store.visitorPage = 1
+    store.fetchVisitors({
+        facilityId: selectedFacility.value || undefined,
+        page: 1,
+        page_size: visitorPageSize.value
+    })
 }
 
 const generateQR = async () => {
     if (!selectedFacility.value) return
     const facility = facilities.value.find(f => f.id === selectedFacility.value)
     if (!facility) return
-    
+
     generatingQR.value = true
     try {
-        const companyId = facility.companyId || authStore.user?.company_id || authStore.user?.tenant_id || ''
-        const companyName = authStore.user?.company_name || authStore.userFullName || 'Company'
-        await companyStore.generateCompanyQRCodeAction(companyId, companyName, facility.id)
+        await facilityStore.generateFacilityQRCode(facility.id, facility.name)
         message.success('QR Code generated successfully')
     } catch (err) {
         message.error('Failed to generate QR Code')
@@ -344,6 +368,12 @@ const getInitials = (name: string) => {
 const filteredVisitors = computed(() => {
     let result = visitors.value
 
+    // Safety net: when the backend returns visitors from all company facilities
+    // even with a facility_id filter, keep only the selected facility's visitors
+    if (selectedFacility.value) {
+        result = result.filter(v => v.facility_id === selectedFacility.value)
+    }
+
     if (selectedStatus.value) {
         result = result.filter(v => normalizeStatus(v.status) === selectedStatus.value)
     }
@@ -387,6 +417,10 @@ const formatStatus = (status: string | undefined | null) => {
 
 onMounted(async () => {
     await store.fetchFacilities()
-    store.fetchVisitors(selectedFacility.value || undefined)
+    store.fetchVisitors({
+        facilityId: selectedFacility.value || undefined,
+        page: visitorPage.value,
+        page_size: visitorPageSize.value
+    })
 })
 </script>

@@ -86,7 +86,7 @@
         <!-- Add/Edit Modal -->
         <a-modal v-model:open="modalVisible" :title="isEditing ? `Edit ${singularTitle}` : `Add ${singularTitle}`"
             :confirm-loading="modalLoading" @ok="handleSubmit" @cancel="closeModal">
-            <a-form :model="formData" layout="vertical" class="mt-4">
+            <a-form ref="formRef" :model="formData" layout="vertical" class="mt-4">
                 <!-- Parent Select (for dependent entities) -->
                 <a-form-item v-if="parentOptions && parentOptions.length > 0" :label="parentLabel">
                     <a-select v-model:value="formData.parent_id" :placeholder="`Select ${parentLabel}`"
@@ -95,7 +95,8 @@
 
                 <!-- Dynamic Fields -->
                 <template v-if="fields && fields.length > 0">
-                    <a-form-item v-for="field in fields" :key="field.name" :label="field.label">
+                    <a-form-item v-for="field in fields" :key="field.name" :label="field.label" :name="field.name"
+                        :rules="field.required ? [{ required: true, message: `Please enter ${field.label.toLowerCase()}` }] : []">
                         <a-switch v-if="field.type === 'switch'" v-model:checked="formData[field.name]" @change="handleFieldChange(field.name, $event)" />
                         <a-select v-else-if="field.type === 'select'" v-model:value="formData[field.name]"
                             :placeholder="`Select ${field.label.toLowerCase()}`" :options="field.options" @change="handleFieldChange(field.name, $event)" />
@@ -114,7 +115,8 @@
                 </template>
 
                 <!-- Default Name Field -->
-                <a-form-item v-else label="Name">
+                <a-form-item v-else label="Name" name="name"
+                    :rules="[{ required: true, message: 'Please enter name' }]">
                     <a-input v-model:value="formData.name" placeholder="Enter name" />
                 </a-form-item>
 
@@ -128,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../ResponsiveDataView.vue'
 
@@ -145,6 +147,7 @@ interface Field {
     label: string
     type: 'text' | 'number' | 'file' | 'select' | 'switch'
     options?: { label: string; value: string | number }[]
+    required?: boolean
 }
 
 interface ParentOption {
@@ -201,6 +204,7 @@ const modalLoading = ref(false)
 const isEditing = ref(false)
 const editingRecord = ref<any>(null)
 const formData = ref<any>({})
+const formRef = ref()
 
 // Watch for form data changes to emit updates
 watch(() => formData.value, (newVal) => {
@@ -213,6 +217,7 @@ const openAddModal = () => {
     editingRecord.value = null
     formData.value = {}
     modalVisible.value = true
+    nextTick(() => formRef.value?.clearValidate())
 }
 
 const openEditModal = (record: any) => {
@@ -253,6 +258,7 @@ const openEditModal = (record: any) => {
         })
     }
     modalVisible.value = true
+    nextTick(() => formRef.value?.clearValidate())
 }
 
 const closeModal = () => {
@@ -260,17 +266,23 @@ const closeModal = () => {
     formData.value = {}
 }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
+    // Client-side validation first — keep the modal open so the user can
+    // fix the fields instead of losing what they typed
+    try {
+        await formRef.value?.validate()
+    } catch {
+        return
+    }
+
     modalLoading.value = true
-    setTimeout(() => {
-        if (isEditing.value) {
-            emit('edit', editingRecord.value, formData.value)
-        } else {
-            emit('add', formData.value)
-        }
-        modalLoading.value = false
-        closeModal()
-    }, 300)
+    if (isEditing.value) {
+        emit('edit', editingRecord.value, formData.value)
+    } else {
+        emit('add', formData.value)
+    }
+    modalLoading.value = false
+    closeModal()
 }
 
 const handleDelete = (record: any) => {

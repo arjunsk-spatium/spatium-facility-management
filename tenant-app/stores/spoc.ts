@@ -117,6 +117,9 @@ export const useSpocStore = defineStore('spoc', {
     state: () => ({
         visitors: [] as SpocVisitor[],
         recentVisitors: [] as SpocVisitor[],
+        visitorCount: 0,
+        visitorPage: 1,
+        visitorPageSize: 10,
         employees: [] as SpocEmployee[],
         employeeCount: 0,
         employeePage: 1,
@@ -271,26 +274,33 @@ export const useSpocStore = defineStore('spoc', {
             }
         },
 
-        async fetchVisitors(facilityId?: string) {
+        async fetchVisitors(params: { facilityId?: string; page?: number; page_size?: number } = {}) {
             this.loading = true
             this.error = null
             try {
                 const { $api } = useNuxtApp()
-                
+
                 const query: Record<string, any> = {}
-                if (facilityId) {
-                    query.facility_id = facilityId
+                if (params.facilityId) {
+                    query.facility_id = params.facilityId
                 }
-                
+                if (params.page) {
+                    query.page = params.page
+                }
+                if (params.page_size) {
+                    query.page_size = params.page_size
+                }
+
                 const response = await $api<any>('/api/portal/visitors/client/visitors/by-company/', {
                     method: 'GET',
                     query
                 })
-                
+
                 if (response.success && response.data) {
-                    const results = response.data.results || response.data
+                    const rawResults = Array.isArray(response.data) ? response.data : (response.data.results || [])
+                    this.visitorCount = response.data.count ?? rawResults.length
                     // Map API response to SpocVisitor format
-                    this.visitors = results.map((v: any) => ({
+                    this.visitors = rawResults.map((v: any) => ({
                         id: v.id,
                         name: v.name,
                         phone_number: v.phone_number || v.phone || '',
@@ -316,11 +326,13 @@ export const useSpocStore = defineStore('spoc', {
                     }))
                 } else {
                     this.visitors = []
+                    this.visitorCount = 0
                 }
             } catch (err) {
                 console.error('Failed to fetch visitors:', err)
                 this.error = 'Failed to fetch visitors'
                 this.visitors = []
+                this.visitorCount = 0
             } finally {
                 this.loading = false
             }
@@ -352,7 +364,12 @@ export const useSpocStore = defineStore('spoc', {
                 })
 
                 if (response.success && response.data) {
-                    const results = response.data.results || response.data
+                    const rawResults = response.data.results || response.data
+                    // The backend soft-deletes (archives) users — keep archived
+                    // users out of the active employee list
+                    const results = (Array.isArray(rawResults) ? rawResults : []).filter(
+                        (u: any) => u.status !== 'archived' && !u.is_archived
+                    )
                     this.employeeCount = response.data.count || results.length
                     // Map all users with role based on apps array
                     this.employees = results.map((u: any) => ({
@@ -446,9 +463,18 @@ export const useSpocStore = defineStore('spoc', {
                     return newVisitor
                 }
             } catch (err: any) {
-                this.error = err?.response?.data?.error?.details?.appointment_date?.[0] 
-                    || err?.response?.data?.message 
-                    || err?.message 
+                // The $api plugin attaches the parsed response body to err.data
+                // (not err.response.data) — dig out the detailed field errors
+                // the backend sends so the UI can show a meaningful message.
+                const data = err?.data || {}
+                const details = data?.error?.details || {}
+                const detailMessage = Object.keys(details)
+                    .map(key => details[key]?.[0])
+                    .find((msg: any) => typeof msg === 'string' && msg)
+                this.error = detailMessage
+                    || data?.error?.message
+                    || data?.message
+                    || err?.message
                     || 'Failed to invite visitor'
                 throw err
             } finally {
@@ -579,18 +605,29 @@ export const useSpocStore = defineStore('spoc', {
             try {
                 const { $api } = useNuxtApp()
 
-                await $api<any>(`/api/portal/users/client_portal/${id}/delete/`, {
+                const response = await $api<any>(`/api/portal/users/client_portal/${id}/delete/`, {
                     method: 'DELETE'
                 })
+
+                // A 200 with success:false (e.g. "User already archived") is a
+                // failure — surface it instead of silently "succeeding"
+                if (response && typeof response === 'object' && response.success === false) {
+                    const error: any = new Error(response.message || 'Failed to delete employee')
+                    error.data = response
+                    throw error
+                }
 
                 const index = this.employees.findIndex(e => e.id === id)
                 if (index > -1) {
                     this.employees.splice(index, 1)
                 }
+                if (this.employeeCount > 0) {
+                    this.employeeCount -= 1
+                }
 
                 return true
             } catch (err: any) {
-                this.error = err?.data?.message || err?.message || 'Failed to delete employee'
+                this.error = err?.data?.message || err?.data?.error?.message || err?.message || 'Failed to delete employee'
                 throw err
             } finally {
                 this.loading = false

@@ -40,7 +40,7 @@ const departmentColumns = [
 ]
 
 const departmentFields = [
-    { name: 'name', label: 'Name', type: 'text' as const },
+    { name: 'name', label: 'Name', type: 'text' as const, required: true },
     { name: 'description', label: 'Description', type: 'text' as const }
 ]
 
@@ -64,8 +64,8 @@ const handleAddDepartment = async (data: { name: string; description?: string })
         } else {
             message.error('Failed to create department')
         }
-    } catch {
-        message.error('Failed to create department')
+    } catch (e: any) {
+        message.error(e?.data?.message || e?.message || 'Failed to create department')
     }
 }
 
@@ -78,8 +78,8 @@ const handleEditDepartment = async (record: Department, data: { name?: string; d
         } else {
             message.error('Failed to update department')
         }
-    } catch {
-        message.error('Failed to update department')
+    } catch (e: any) {
+        message.error(e?.data?.message || e?.message || 'Failed to update department')
     }
 }
 
@@ -92,8 +92,8 @@ const handleDeleteDepartment = async (record: Department) => {
         } else {
             message.error('Failed to delete department')
         }
-    } catch {
-        message.error('Failed to delete department')
+    } catch (e: any) {
+        message.error(e?.data?.message || e?.message || 'Failed to delete department')
     }
 }
 

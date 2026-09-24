@@ -3,6 +3,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import Login from '../app/pages/login.vue'
 import { createTestingPinia } from '@pinia/testing'
 import { useTenantStore } from '../stores/tenant'
+import { useAuthStore } from '../stores/auth'
 
 // Mock the layout since we only want to test the page content
 vi.mock('../layouts/auth.vue', () => ({
@@ -80,5 +81,54 @@ describe('Login Page', () => {
         
         // Should show default Nexspace Hub text
         expect(wraper.text()).toContain('Nexspace Hub')
+    })
+
+    it('should show a validation message and not request an OTP when email is empty (BUG_01)', async () => {
+        const wraper = await mountSuspended(Login, {
+            global: {
+                plugins: [createTestingPinia({ createSpy: vi.fn })]
+            }
+        })
+        const authStore = useAuthStore()
+
+        const vm = wraper.vm as any
+        vm.form.email = ''
+        await vm.handleEmailSubmit()
+
+        expect(vm.errorMsg).toBe('Please enter your email address.')
+        expect(authStore.requestOtp).not.toHaveBeenCalled()
+        expect(vm.step).toBe('email')
+    })
+
+    it('should show a validation message for an invalid email format (BUG_01)', async () => {
+        const wraper = await mountSuspended(Login, {
+            global: {
+                plugins: [createTestingPinia({ createSpy: vi.fn })]
+            }
+        })
+        const authStore = useAuthStore()
+
+        const vm = wraper.vm as any
+        vm.form.email = 'not-an-email'
+        await vm.handleEmailSubmit()
+
+        expect(vm.errorMsg).toBe('Please enter a valid email address.')
+        expect(authStore.requestOtp).not.toHaveBeenCalled()
+    })
+
+    it('should style the Change Email control as a link with a pointer cursor (BUG_02)', async () => {
+        const wraper = await mountSuspended(Login, {
+            global: {
+                plugins: [createTestingPinia({ createSpy: vi.fn })]
+            }
+        })
+
+        const vm = wraper.vm as any
+        vm.step = 'otp'
+        await wraper.vm.$nextTick()
+
+        const button = wraper.findAll('button').find(b => b.text().includes('Change Email'))
+        expect(button).toBeDefined()
+        expect(button!.attributes('class')).toContain('cursor-pointer')
     })
 })
