@@ -1,6 +1,17 @@
 
 import { defineStore } from 'pinia';
-import { useHelpdeskService, type Ticket, type HelpdeskStats, type HelpdeskInsights, type CreateTicketPayload, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskPriority, type TicketListParams } from '../composables/helpdeskService';
+import {
+    useHelpdeskService,
+    type Ticket,
+    type HelpdeskStats,
+    type HelpdeskInsights,
+    type CreateTicketPayload,
+    type HelpdeskCategory,
+    type HelpdeskSubCategory,
+    type HelpdeskPriority,
+    type DependencyReasonType,
+    type TicketListParams,
+} from '../composables/helpdeskService';
 
 export const useHelpdeskStore = defineStore('helpdesk', {
     state: () => ({
@@ -11,6 +22,7 @@ export const useHelpdeskStore = defineStore('helpdesk', {
         categories: [] as HelpdeskCategory[],
         subCategories: [] as HelpdeskSubCategory[],
         priorities: [] as HelpdeskPriority[],
+        dependencyReasonTypes: [] as DependencyReasonType[],
         loading: false,
         creating: false,
         error: null as string | null,
@@ -25,6 +37,7 @@ export const useHelpdeskStore = defineStore('helpdesk', {
         openCount: 0,
         inprogressCount: 0,
         onHoldCount: 0,
+        holdRequestsCount: 0,
         pendingCount: 0,
         closedCount: 0,
         allCount: 0
@@ -98,12 +111,30 @@ export const useHelpdeskStore = defineStore('helpdesk', {
                     return 0;
                 }
             };
+            const safeHoldRequestsCount = async () => {
+                try {
+                    const res = await service.getRequestPendingTickets(1, 1);
+                    return res?.count || 0;
+                } catch (e) {
+                    console.warn('Failed to fetch request pending count', e);
+                    return 0;
+                }
+            };
+            const safeOnHoldCount = async () => {
+                try {
+                    const res = await service.getOnHoldTickets(1, 1);
+                    return res?.count || 0;
+                } catch (e) {
+                    return safeCount({ states: 'on_hold', page_size: 1 });
+                }
+            };
             try {
-                const [allCount, openCount, inprogressCount, onHoldCount, pendingCount, closedCount] = await Promise.all([
+                const [allCount, openCount, inprogressCount, onHoldCount, holdRequestsCount, pendingCount, closedCount] = await Promise.all([
                     safeCount({ page_size: 1 }),
                     safeCount({ states: 'open', page_size: 1 }),
                     safeCount({ states: 'inprogress', page_size: 1 }),
-                    safeCount({ states: 'on_hold', page_size: 1 }),
+                    safeOnHoldCount(),
+                    safeHoldRequestsCount(),
                     safeCount({ states: 'pending_confirmation', page_size: 1 }),
                     safeCount({ states: 'closed', page_size: 1 })
                 ]);
@@ -111,6 +142,7 @@ export const useHelpdeskStore = defineStore('helpdesk', {
                 this.openCount = openCount;
                 this.inprogressCount = inprogressCount;
                 this.onHoldCount = onHoldCount;
+                this.holdRequestsCount = holdRequestsCount;
                 this.pendingCount = pendingCount;
                 this.closedCount = closedCount;
             } catch (err) {
@@ -339,6 +371,80 @@ export const useHelpdeskStore = defineStore('helpdesk', {
                 return updatedTicket;
             } catch (err: any) {
                 this.error = err.message || 'Failed to update ticket';
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async fetchRequestPendingTickets(page = 1, pageSize = 20, facilityId?: string, search?: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+
+            try {
+                const result = await service.getRequestPendingTickets(page, pageSize, facilityId, search);
+                this.tickets = result.tickets;
+                this.count = result.count;
+                this.next = result.next;
+                this.previous = result.previous;
+                this.page = page;
+                this.pageSize = pageSize;
+                this.holdRequestsCount = result.count;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to fetch hold request tickets';
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async fetchOnHoldTickets(page = 1, pageSize = 20, facilityId?: string, search?: string) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+
+            try {
+                const result = await service.getOnHoldTickets(page, pageSize, facilityId, search);
+                this.tickets = result.tickets;
+                this.count = result.count;
+                this.next = result.next;
+                this.previous = result.previous;
+                this.page = page;
+                this.pageSize = pageSize;
+                this.onHoldCount = result.count;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to fetch on-hold tickets';
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async fetchDependencyReasonTypes() {
+            const service = useHelpdeskService();
+            try {
+                this.dependencyReasonTypes = await service.getDependencyReasonTypes();
+            } catch (err) {
+                console.error('Failed to fetch dependency reason types', err);
+            }
+        },
+
+        async changeResolutionSla(ticketId: string, payload: { extend_minutes: number; decision_notes?: string } | number) {
+            this.loading = true;
+            this.error = null;
+            const service = useHelpdeskService();
+
+            try {
+                const updatedTicket = await service.changeResolutionSla(ticketId, payload);
+                const index = this.tickets.findIndex(t => t.id === ticketId);
+                if (index > -1) {
+                    this.tickets[index] = updatedTicket;
+                }
+                if (this.currentTicket?.id === ticketId) {
+                    this.currentTicket = updatedTicket;
+                }
+                return updatedTicket;
+            } catch (err: any) {
+                this.error = err.message || 'Failed to change resolution SLA';
                 throw err;
             } finally {
                 this.loading = false;

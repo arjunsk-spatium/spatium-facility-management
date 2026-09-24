@@ -199,6 +199,12 @@
                         :offset="[6, 0]" />
                 </template>
             </a-tab-pane>
+            <a-tab-pane key="hold_requests">
+                <template #tab>
+                    Hold Requests <a-badge :count="ticketCounts.holdRequests" :number-style="{ backgroundColor: '#f97316' }"
+                        :offset="[6, 0]" />
+                </template>
+            </a-tab-pane>
             <a-tab-pane key="open">
                 <template #tab>
                     Open <a-badge :count="ticketCounts.open" :number-style="{ backgroundColor: '#3b82f6' }"
@@ -236,6 +242,14 @@
                 </template>
             </a-tab-pane>
         </a-tabs>
+
+        <TicketHoldModal
+            v-if="selectedRowTicketId"
+            v-model:open="showRowHoldModal"
+            :ticket-id="selectedRowTicketId"
+            :is-direct-hold="true"
+            @success="handleRowHoldSuccess"
+        />
 
         <div v-if="canView">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -279,31 +293,50 @@
                     </template>
 
                     <template v-else-if="column.key === 'actions'">
-                        <a-dropdown v-if="canAction">
-                            <a-button type="text" size="small">
-                                <template #icon>
-                                    <MoreOutlined />
-                                </template>
+                        <div class="flex items-center justify-end gap-1">
+                            <a-button
+                                v-if="activeTab === 'hold_requests'"
+                                type="primary"
+                                size="small"
+                                ghost
+                                @click="navigateTo(`/helpdesk/${record.id}`)"
+                            >
+                                Review Hold
                             </a-button>
-                            <template #overlay>
-                                <a-menu>
-                                    <a-menu-item key="view" @click="navigateTo(`/helpdesk/${record.id}`)">
-                                        <EyeOutlined /> View Details
-                                    </a-menu-item>
-                                    <a-menu-item v-if="canUpdate && record.state?.key !== 'closed'" key="close"
-                                        @click="handleCloseTicket(record)">
-                                        <CheckCircleOutlined /> Close Ticket
-                                    </a-menu-item>
-                                </a-menu>
-                            </template>
-                        </a-dropdown>
-                        <a-tooltip v-else title="View Details">
-                            <a-button type="text" shape="circle" @click="navigateTo(`/helpdesk/${record.id}`)">
-                                <template #icon>
-                                    <EyeOutlined />
+
+                            <a-dropdown v-if="canAction">
+                                <a-button type="text" size="small">
+                                    <template #icon>
+                                        <MoreOutlined />
+                                    </template>
+                                </a-button>
+                                <template #overlay>
+                                    <a-menu>
+                                        <a-menu-item key="view" @click="navigateTo(`/helpdesk/${record.id}`)">
+                                            <EyeOutlined /> View Details
+                                        </a-menu-item>
+                                        <a-menu-item
+                                            v-if="canHoldTicketRow(record)"
+                                            key="hold"
+                                            @click="openDirectHoldModalFromRow(record)"
+                                        >
+                                            <PauseCircleOutlined /> Hold Ticket
+                                        </a-menu-item>
+                                        <a-menu-item v-if="canUpdate && record.state?.key !== 'closed'" key="close"
+                                            @click="handleCloseTicket(record)">
+                                            <CheckCircleOutlined /> Close Ticket
+                                        </a-menu-item>
+                                    </a-menu>
                                 </template>
-                            </a-button>
-                        </a-tooltip>
+                            </a-dropdown>
+                            <a-tooltip v-else title="View Details">
+                                <a-button type="text" shape="circle" @click="navigateTo(`/helpdesk/${record.id}`)">
+                                    <template #icon>
+                                        <EyeOutlined />
+                                    </template>
+                                </a-button>
+                            </a-tooltip>
+                        </div>
                     </template>
                 </template>
 
@@ -366,10 +399,12 @@ import {
     ExportOutlined,
     EyeOutlined,
     MoreOutlined,
-    CheckCircleOutlined
+    CheckCircleOutlined,
+    PauseCircleOutlined
 } from '@ant-design/icons-vue';
 import StatusBadge from '../../../components/helpdesk/StatusBadge.vue';
 import ResponsiveDataView from '../../../components/ResponsiveDataView.vue';
+import TicketHoldModal from '../../../components/helpdesk/tickets/TicketHoldModal.vue';
 import { useIndexedDB, HELPDESK_FACILITY_KEY } from '../../../composables/useIndexedDB';
 
 definePageMeta({
@@ -381,7 +416,7 @@ const helpdeskStore = useHelpdeskStore();
 const facilityStore = useFacilityStore();
 const authStore = useAuthStore();
 const { setItem, getItem, removeItem } = useIndexedDB();
-const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, onHoldCount, pendingCount, closedCount, allCount, count, page, pageSize } = storeToRefs(helpdeskStore);
+const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, onHoldCount, holdRequestsCount, pendingCount, closedCount, allCount, count, page, pageSize } = storeToRefs(helpdeskStore);
 const { facilities } = storeToRefs(facilityStore);
 
 // Permission checks
@@ -390,6 +425,35 @@ const canCreate = computed(() => authStore.hasPermission('helpdesk-tickets:creat
 const canUpdate = computed(() => authStore.hasPermission('helpdesk-tickets:update'))
 const canAction = computed(() => authStore.hasPermission('helpdesk-tickets:action'))
 const canConfigure = computed(() => authStore.hasPermission('configure:create'))
+const isHelpdeskUser = computed(() => {
+    const roleKey = typeof authStore.user?.role === 'object' ? authStore.user?.role?.key : authStore.user?.role;
+    const roleName = typeof authStore.user?.role === 'object' ? authStore.user?.role?.name : authStore.user?.role_name;
+    const isHelpdeskRole = String(roleKey || '').toLowerCase() === 'helpdesk' ||
+        String(roleName || '').toLowerCase().includes('helpdesk');
+    return canAction.value ||
+        authStore.hasPermission('helpdesk-tickets:action') ||
+        isHelpdeskRole ||
+        Boolean(authStore.user?.is_superuser || authStore.user?.is_admin);
+});
+
+// Row hold state
+const selectedRowTicketId = ref<string>('');
+const showRowHoldModal = ref<boolean>(false);
+
+const canHoldTicketRow = (record: any) => {
+    const stateKey = String(record.state?.key || record.state || '').toUpperCase();
+    return isHelpdeskUser.value && ['ACKNOWLEDGED', 'IN_PROGRESS', 'INPROGRESS'].includes(stateKey);
+};
+
+const openDirectHoldModalFromRow = (record: any) => {
+    selectedRowTicketId.value = record.id;
+    showRowHoldModal.value = true;
+};
+
+const handleRowHoldSuccess = async () => {
+    await fetchTicketsByFilter();
+    await helpdeskStore.fetchTicketCounts();
+};
 
 // Form state
 const showCreateModal = ref(false);
@@ -604,6 +668,7 @@ const columns = [
 const ticketCounts = computed(() => {
     return { 
         priority: priorityCount.value, 
+        holdRequests: holdRequestsCount.value,
         open: openCount.value, 
         inprogress: inprogressCount.value, 
         onhold: onHoldCount.value,
@@ -633,12 +698,13 @@ const fetchTicketsByFilter = async () => {
     if (activeTab.value === 'priority') {
         await helpdeskStore.fetchPriorityTickets(1, pageSize.value, facilityFilter.value, searchText.value || undefined);
         return;
-    } else if (activeTab.value === 'open') {
-        params.states = 'open';
-    } else if (activeTab.value === 'inprogress') {
-        params.states = 'inprogress';
+    } else if (activeTab.value === 'hold_requests') {
+        await helpdeskStore.fetchRequestPendingTickets(1, pageSize.value, facilityFilter.value, searchText.value || undefined);
+        return;
     } else if (activeTab.value === 'on_hold') {
-        params.states = 'on_hold';
+        await helpdeskStore.fetchOnHoldTickets(1, pageSize.value, facilityFilter.value, searchText.value || undefined);
+        return;
+    } else if (activeTab.value === 'open') {
     } else if (activeTab.value === 'pending') {
         params.states = 'pending_confirmation';
     } else if (activeTab.value === 'closed') {
@@ -686,8 +752,12 @@ const handlePageChange = async (pageNum: number, newPageSize: number) => {
         params.states = 'open';
     } else if (activeTab.value === 'inprogress') {
         params.states = 'inprogress';
+    } else if (activeTab.value === 'hold_requests') {
+        await helpdeskStore.fetchRequestPendingTickets(pageNum, newPageSize, facilityFilter.value, searchText.value || undefined);
+        return;
     } else if (activeTab.value === 'on_hold') {
-        params.states = 'on_hold';
+        await helpdeskStore.fetchOnHoldTickets(pageNum, newPageSize, facilityFilter.value, searchText.value || undefined);
+        return;
     } else if (activeTab.value === 'pending') {
         params.states = 'pending_confirmation';
     } else if (activeTab.value === 'closed') {

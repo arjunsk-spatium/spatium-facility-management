@@ -222,10 +222,20 @@ export interface HelpdeskScoringConfig {
     updated_at?: string;
 }
 
+export interface DependencyReasonType {
+    id: string;
+    key?: string;
+    name: string;
+    description?: string;
+    is_active?: boolean;
+}
+
 export interface TicketDependency {
     id: string;
     ticket?: string;
-    reason_type: 'PARTS_AWAITED' | 'VENDOR_VISIT' | 'APPROVAL_PENDING' | 'ACCESS_UNAVAILABLE' | 'DEPENDENT_TICKET' | 'OTHER';
+    ticket_id?: string;
+    reason_type: string;
+    reason_type_name?: string;
     notes?: string;
     expected_resolution_at?: string | null;
     linked_ticket?: string | null;
@@ -242,11 +252,12 @@ export interface TicketDependency {
     hold_started_at?: string | null;
     resumed_at?: string | null;
     cumulative_hold_minutes?: number;
+    extend_minutes?: number | null;
     created_at?: string;
 }
 
 export interface RequestHoldPayload {
-    reason_type: 'PARTS_AWAITED' | 'VENDOR_VISIT' | 'APPROVAL_PENDING' | 'ACCESS_UNAVAILABLE' | 'DEPENDENT_TICKET' | 'OTHER';
+    reason_type: string;
     notes?: string;
     expected_resolution_at?: string | null;
     linked_ticket?: string | null;
@@ -255,6 +266,12 @@ export interface RequestHoldPayload {
 export interface DirectHoldPayload extends RequestHoldPayload {}
 
 export interface HoldDecisionPayload {
+    decision_notes?: string;
+    extend_minutes?: number;
+}
+
+export interface ChangeResolutionSlaPayload {
+    extend_minutes: number;
     decision_notes?: string;
 }
 
@@ -1594,15 +1611,130 @@ export const useHelpdeskService = () => {
             }
         },
 
+        // Hold & Dependency Endpoints
+        getRequestPendingTickets: async (
+            page = 1,
+            pageSize = 20,
+            facilityId?: string,
+            search?: string,
+        ): Promise<{
+            tickets: Ticket[];
+            count: number;
+            next: string | null;
+            previous: string | null;
+        }> => {
+            try {
+                const query: Record<string, any> = { page, page_size: pageSize };
+                if (facilityId) query.facility_id = facilityId;
+                if (search) query.search = search;
+
+                const response = await $api<any>(
+                    "/api/portal/helpdesk/tickets/request-pending-tickets/",
+                    {
+                        method: "GET",
+                        query,
+                    },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch request pending tickets",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                const results = Array.isArray(data) ? data : data?.results || [];
+                const count = typeof data?.count === 'number' ? data.count : results.length;
+                return {
+                    tickets: results,
+                    count,
+                    next: data?.next || null,
+                    previous: data?.previous || null,
+                };
+            } catch (error) {
+                console.error("Error fetching request pending tickets:", error);
+                throw error;
+            }
+        },
+
+        getOnHoldTickets: async (
+            page = 1,
+            pageSize = 20,
+            facilityId?: string,
+            search?: string,
+        ): Promise<{
+            tickets: Ticket[];
+            count: number;
+            next: string | null;
+            previous: string | null;
+        }> => {
+            try {
+                const query: Record<string, any> = { page, page_size: pageSize };
+                if (facilityId) query.facility_id = facilityId;
+                if (search) query.search = search;
+
+                const response = await $api<any>(
+                    "/api/portal/helpdesk/tickets/on-hold-tickets/",
+                    {
+                        method: "GET",
+                        query,
+                    },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch on-hold tickets",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                const results = Array.isArray(data) ? data : data?.results || [];
+                const count = typeof data?.count === 'number' ? data.count : results.length;
+                return {
+                    tickets: results,
+                    count,
+                    next: data?.next || null,
+                    previous: data?.previous || null,
+                };
+            } catch (error) {
+                console.error("Error fetching on-hold tickets:", error);
+                throw error;
+            }
+        },
+
+        getDependencyReasonTypes: async (): Promise<DependencyReasonType[]> => {
+            try {
+                const response = await $api<any>(
+                    "/api/portal/helpdesk/dependency-reason-types/",
+                    { method: "GET" },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch dependency reason types",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                return Array.isArray(data) ? data : data?.results || [];
+            } catch (error) {
+                console.error("Error fetching dependency reason types:", error);
+                throw error;
+            }
+        },
+
         approveHold: async (
             ticketId: string,
             dependencyId: string,
-            decisionNotes?: string,
+            payload?: { decision_notes?: string; extend_minutes?: number } | string,
         ): Promise<Ticket> => {
             try {
+                const body = typeof payload === "string"
+                    ? { decision_notes: payload }
+                    : (payload || {});
                 const response = await $api<any>(
                     `/api/portal/helpdesk/tickets/${ticketId}/approve-hold/${dependencyId}/`,
-                    { method: "POST", body: { decision_notes: decisionNotes } },
+                    { method: "POST", body },
                 );
                 if (!response.success || (response.data && response.data.success === false)) {
                     throw new Error(
@@ -1661,6 +1793,52 @@ export const useHelpdeskService = () => {
                 return response.data?.data || response.data;
             } catch (error) {
                 console.error("Error putting ticket on hold:", error);
+                throw error;
+            }
+        },
+
+        changeResolutionSla: async (
+            ticketId: string,
+            payload: { extend_minutes: number; decision_notes?: string } | number,
+        ): Promise<Ticket> => {
+            try {
+                const body = typeof payload === "number"
+                    ? { extend_minutes: payload }
+                    : payload;
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/change-resolution-sla/`,
+                    { method: "POST", body },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to change resolution SLA",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error changing resolution SLA:", error);
+                throw error;
+            }
+        },
+
+        resumeDirect: async (ticketId: string): Promise<Ticket> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/resume-direct/`,
+                    { method: "POST", body: {} },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to resume ticket",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error resuming ticket directly:", error);
                 throw error;
             }
         },

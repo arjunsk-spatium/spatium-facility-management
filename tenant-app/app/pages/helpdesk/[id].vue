@@ -49,7 +49,15 @@
                     Request Hold
                 </a-button>
 
-                <!-- Resume Ticket (Assignee only on ON_HOLD state) -->
+                <!-- Direct Hold (Helpdesk role on ACKNOWLEDGED or IN_PROGRESS state) -->
+                <a-button
+                    v-if="canDirectHold"
+                    @click="openHoldModal(true)"
+                >
+                    Hold Ticket
+                </a-button>
+
+                <!-- Resume Ticket (Assignee or Helpdesk on ON_HOLD state) -->
                 <a-button
                     v-if="canResume"
                     type="primary"
@@ -59,12 +67,21 @@
                     Resume Work
                 </a-button>
 
+                <!-- Change Resolution SLA (Helpdesk user on ON_HOLD state) -->
+                <a-button
+                    v-if="canChangeSla"
+                    @click="showChangeSlaModal = true"
+                >
+                    Change SLA
+                </a-button>
+
                 <a-dropdown v-if="canAction">
                     <template #overlay>
                         <a-menu @click="handleMenuClick">
                             <a-menu-item v-if="canReassign" key="reassign">Reassign Ticket</a-menu-item>
                             <a-menu-item v-if="canAssign" key="assign">Assign Ticket</a-menu-item>
                             <a-menu-item v-if="canDirectHold" key="directHold">Hold Ticket</a-menu-item>
+                            <a-menu-item v-if="canChangeSla" key="changeSla">Change Resolution SLA</a-menu-item>
                             <a-menu-item key="changePriority">Change Priority</a-menu-item>
                             <a-menu-item v-if="canReopen" key="reopen">Reopen Ticket</a-menu-item>
                             <a-menu-item v-if="canForceClose" key="forceClose">Force Close</a-menu-item>
@@ -361,6 +378,11 @@
             :is-direct-hold="isDirectHoldAction"
             @success="handleHoldSuccess"
         />
+        <ChangeResolutionSlaModal
+            v-model:open="showChangeSlaModal"
+            :ticket-id="currentTicket.id"
+            @success="loadTicketAndDependencies"
+        />
         <RejectAssignmentModal
             v-model:open="showRejectModal"
             :ticket-id="currentTicket.id"
@@ -389,6 +411,7 @@ import { storeToRefs } from 'pinia';
 import { message } from 'ant-design-vue';
 import StatusBadge from '../../../components/helpdesk/StatusBadge.vue';
 import TicketHoldModal from '../../../components/helpdesk/tickets/TicketHoldModal.vue';
+import ChangeResolutionSlaModal from '../../../components/helpdesk/tickets/ChangeResolutionSlaModal.vue';
 import RejectAssignmentModal from '../../../components/helpdesk/tickets/RejectAssignmentModal.vue';
 import TicketDependencyList from '../../../components/helpdesk/tickets/TicketDependencyList.vue';
 import type { TicketDependency } from '../../../composables/helpdeskService';
@@ -422,6 +445,7 @@ const ticketId = route.params.id as string;
 const dependencies = ref<TicketDependency[]>([]);
 const loadingDependencies = ref(false);
 const showHoldModal = ref(false);
+const showChangeSlaModal = ref(false);
 const isDirectHoldAction = ref(false);
 const showRejectModal = ref(false);
 const resuming = ref(false);
@@ -486,7 +510,14 @@ const isCurrentUserAssignee = computed(() => {
 });
 
 const isHelpdeskUser = computed(() => {
-    return canAction.value || authStore.user?.role?.key === 'helpdesk';
+    const roleKey = typeof authStore.user?.role === 'object' ? authStore.user?.role?.key : authStore.user?.role;
+    const roleName = typeof authStore.user?.role === 'object' ? authStore.user?.role?.name : authStore.user?.role_name;
+    const isHelpdeskRole = String(roleKey || '').toLowerCase() === 'helpdesk' ||
+        String(roleName || '').toLowerCase().includes('helpdesk');
+    return canAction.value ||
+        authStore.hasPermission('helpdesk-tickets:action') ||
+        isHelpdeskRole ||
+        Boolean(authStore.user?.is_superuser || authStore.user?.is_admin);
 });
 
 const canDecline = computed(() => {
@@ -498,19 +529,25 @@ const canDecline = computed(() => {
 const canRequestHold = computed(() => {
     if (!currentTicket.value) return false;
     const state = currentTicket.value.state?.key?.toUpperCase();
-    return ['ACKNOWLEDGED', 'IN_PROGRESS'].includes(state || '') && isCurrentUserAssignee.value;
+    return ['ACKNOWLEDGED', 'IN_PROGRESS', 'INPROGRESS'].includes(state || '') && isCurrentUserAssignee.value;
 });
 
 const canDirectHold = computed(() => {
     if (!currentTicket.value) return false;
     const state = currentTicket.value.state?.key?.toUpperCase();
-    return isHelpdeskUser.value && ['ACKNOWLEDGED', 'IN_PROGRESS'].includes(state || '');
+    return isHelpdeskUser.value && ['ACKNOWLEDGED', 'IN_PROGRESS', 'INPROGRESS'].includes(state || '');
 });
 
 const canResume = computed(() => {
     if (!currentTicket.value) return false;
     const state = currentTicket.value.state?.key?.toUpperCase();
-    return state === 'ON_HOLD' && isCurrentUserAssignee.value;
+    return (state === 'ON_HOLD' || state === 'ONHOLD') && (isCurrentUserAssignee.value || isHelpdeskUser.value);
+});
+
+const canChangeSla = computed(() => {
+    if (!currentTicket.value) return false;
+    const state = currentTicket.value.state?.key?.toUpperCase();
+    return isHelpdeskUser.value && (state === 'ON_HOLD' || state === 'ONHOLD');
 });
 
 const hasEffectivePriority = computed(() => {
@@ -572,7 +609,7 @@ const handleResumeTicket = async () => {
     resuming.value = true;
     try {
         const service = useHelpdeskService();
-        const updated = await service.resumeTicket(ticketId);
+        const updated = await service.resumeDirect(ticketId);
         message.success('Ticket resumed and back in active work');
         store.currentTicket = updated;
         await loadTicketAndDependencies();
@@ -636,6 +673,8 @@ const handleMenuClick = async ({ key }: { key: string }) => {
         await openAssignModal(true);
     } else if (key === 'directHold') {
         openHoldModal(true);
+    } else if (key === 'changeSla') {
+        showChangeSlaModal.value = true;
     } else if (key === 'changePriority') {
         await openPriorityModal();
     } else if (key === 'reopen') {

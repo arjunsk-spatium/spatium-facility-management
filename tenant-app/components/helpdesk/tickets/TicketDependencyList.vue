@@ -11,7 +11,7 @@
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'reason_type'">
                     <div>
-                        <span class="font-medium dark:text-white">{{ formatReason(record.reason_type) }}</span>
+                        <span class="font-medium dark:text-white">{{ formatReason(record.reason_type, record) }}</span>
                         <p v-if="record.notes" class="text-xs text-gray-500 mt-0.5">{{ record.notes }}</p>
                     </div>
                 </template>
@@ -28,10 +28,13 @@
                 </template>
 
                 <template v-else-if="column.key === 'decision'">
-                    <div class="text-xs">
-                        <span v-if="record.decided_by_name" class="block font-medium dark:text-white">By {{ record.decided_by_name }}</span>
-                        <span v-if="record.decision_notes" class="text-gray-500 italic">"{{ record.decision_notes }}"</span>
-                        <span v-if="!record.decided_by_name && !record.decision_notes" class="text-gray-400">—</span>
+                    <div class="text-xs space-y-1">
+                        <div v-if="record.decided_by_name" class="font-medium dark:text-white">By {{ record.decided_by_name }}</div>
+                        <div v-if="record.extend_minutes" class="text-xs text-blue-600 dark:text-blue-400 font-semibold">
+                            +{{ record.extend_minutes }} min SLA extension
+                        </div>
+                        <div v-if="record.decision_notes" class="text-gray-500 italic">"{{ record.decision_notes }}"</div>
+                        <div v-if="!record.decided_by_name && !record.decision_notes && !record.extend_minutes" class="text-gray-400">—</div>
                     </div>
                 </template>
 
@@ -96,7 +99,8 @@ const columns = [
     { title: 'Action', key: 'action', width: 80 }
 ]
 
-const formatReason = (type: string) => {
+const formatReason = (type: string, record?: TicketDependency) => {
+    if (record?.reason_type_name) return record.reason_type_name
     switch (type) {
         case 'PARTS_AWAITED': return 'Parts Awaited'
         case 'VENDOR_VISIT': return 'Vendor Visit'

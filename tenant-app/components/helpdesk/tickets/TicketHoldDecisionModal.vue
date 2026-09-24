@@ -27,6 +27,30 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Extend Resolution SLA (Minutes)
+                </label>
+                <div class="flex flex-wrap gap-2 mb-2">
+                    <a-button
+                        v-for="mins in [30, 60, 120, 240]"
+                        :key="mins"
+                        size="small"
+                        :type="extendMinutes === mins ? 'primary' : 'default'"
+                        @click="extendMinutes = mins"
+                    >
+                        +{{ mins }} min
+                    </a-button>
+                </div>
+                <a-input-number
+                    v-model:value="extendMinutes"
+                    :min="0"
+                    class="w-full"
+                    placeholder="Optional minutes to extend SLA (e.g. 120)"
+                />
+                <p class="text-xs text-gray-500 mt-1">Optional. Adds extra resolution time upon hold approval.</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Decision Notes
                 </label>
                 <a-textarea
@@ -67,6 +91,7 @@ const emit = defineEmits<{
 
 const helpdeskService = useHelpdeskService()
 const decisionNotes = ref('')
+const extendMinutes = ref<number | null>(null)
 const approving = ref(false)
 const rejecting = ref(false)
 
@@ -85,10 +110,14 @@ const handleApprove = async () => {
     if (!props.dependency) return
     approving.value = true
     try {
+        const payload: { decision_notes?: string; extend_minutes?: number } = {
+            decision_notes: decisionNotes.value.trim() || undefined,
+            extend_minutes: extendMinutes.value ? Number(extendMinutes.value) : undefined
+        }
         const res = await helpdeskService.approveHold(
             props.ticketId,
             props.dependency.id,
-            decisionNotes.value.trim() || undefined
+            payload
         )
         message.success('Hold request approved — ticket is now ON HOLD')
         emit('decided', res)
@@ -126,6 +155,7 @@ const handleClose = () => {
 watch(() => props.open, (isOpen) => {
     if (isOpen) {
         decisionNotes.value = ''
+        extendMinutes.value = null
     }
 })
 </script>

@@ -34,7 +34,7 @@
                 />
             </div>
 
-            <div v-if="form.reason_type === 'DEPENDENT_TICKET'">
+            <div v-if="isDependentTicket">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Linked Ticket ID *
                 </label>
@@ -72,9 +72,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { useHelpdeskService, type RequestHoldPayload } from '../../../composables/helpdeskService'
+import { useHelpdeskService, type RequestHoldPayload, type DependencyReasonType } from '../../../composables/helpdeskService'
 import dayjs, { type Dayjs } from 'dayjs'
 
 const props = defineProps<{
@@ -90,9 +90,11 @@ const emit = defineEmits<{
 
 const helpdeskService = useHelpdeskService()
 const submitting = ref(false)
+const loadingReasons = ref(false)
+const dynamicReasons = ref<DependencyReasonType[]>([])
 const etaDate = ref<Dayjs | null>(null)
 
-const reasonOptions = [
+const defaultReasonOptions = [
     { label: 'Parts Awaited', value: 'PARTS_AWAITED' },
     { label: 'Vendor Visit', value: 'VENDOR_VISIT' },
     { label: 'Approval Pending', value: 'APPROVAL_PENDING' },
@@ -101,8 +103,18 @@ const reasonOptions = [
     { label: 'Other', value: 'OTHER' },
 ]
 
+const reasonOptions = computed(() => {
+    if (dynamicReasons.value.length > 0) {
+        return dynamicReasons.value.map(r => ({
+            label: r.name,
+            value: r.id
+        }))
+    }
+    return defaultReasonOptions
+})
+
 const form = ref<{
-    reason_type: 'PARTS_AWAITED' | 'VENDOR_VISIT' | 'APPROVAL_PENDING' | 'ACCESS_UNAVAILABLE' | 'DEPENDENT_TICKET' | 'OTHER'
+    reason_type: string
     notes: string
     linked_ticket?: string
 }>({
@@ -111,13 +123,45 @@ const form = ref<{
     linked_ticket: undefined
 })
 
+const isDependentTicket = computed(() => {
+    if (!form.value.reason_type) return false
+    if (form.value.reason_type === 'DEPENDENT_TICKET') return true
+    const selected = dynamicReasons.value.find(r => r.id === form.value.reason_type)
+    if (selected) {
+        return selected.key === 'DEPENDENT_TICKET' ||
+            selected.name?.toLowerCase().includes('dependent')
+    }
+    return false
+})
+
+const loadReasons = async () => {
+    loadingReasons.value = true
+    try {
+        const reasons = await helpdeskService.getDependencyReasonTypes()
+        if (Array.isArray(reasons) && reasons.length > 0) {
+            dynamicReasons.value = reasons
+            if (!form.value.reason_type || form.value.reason_type === 'PARTS_AWAITED') {
+                form.value.reason_type = reasons[0].id
+            }
+        }
+    } catch (err) {
+        // Fallback to default reasons gracefully
+    } finally {
+        loadingReasons.value = false
+    }
+}
+
+onMounted(() => {
+    loadReasons()
+})
+
 const handleSubmit = async () => {
     if (!form.value.reason_type) {
         message.warning('Please select a reason for the hold')
         return
     }
 
-    if (form.value.reason_type === 'DEPENDENT_TICKET' && !form.value.linked_ticket?.trim()) {
+    if (isDependentTicket.value && !form.value.linked_ticket?.trim()) {
         message.warning('Linked ticket is required for Dependent Ticket holds')
         return
     }
@@ -155,12 +199,16 @@ const handleClose = () => {
 
 watch(() => props.open, (isOpen) => {
     if (isOpen) {
+        const defaultVal = dynamicReasons.value.length > 0 ? dynamicReasons.value[0].id : 'PARTS_AWAITED'
         form.value = {
-            reason_type: 'PARTS_AWAITED',
+            reason_type: defaultVal,
             notes: '',
             linked_ticket: undefined
         }
         etaDate.value = null
+        if (dynamicReasons.value.length === 0) {
+            loadReasons()
+        }
     }
 })
 </script>

@@ -3,6 +3,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime';
 import StatusBadge from '../../components/helpdesk/StatusBadge.vue';
 import TicketHoldModal from '../../components/helpdesk/tickets/TicketHoldModal.vue';
 import TicketHoldDecisionModal from '../../components/helpdesk/tickets/TicketHoldDecisionModal.vue';
+import ChangeResolutionSlaModal from '../../components/helpdesk/tickets/ChangeResolutionSlaModal.vue';
 import RejectAssignmentModal from '../../components/helpdesk/tickets/RejectAssignmentModal.vue';
 import TicketDependencyList from '../../components/helpdesk/tickets/TicketDependencyList.vue';
 import WorkerLocationScopeModal from '../../components/helpdesk/staff/WorkerLocationScopeModal.vue';
@@ -12,6 +13,14 @@ const mockRequestHold = vi.fn().mockResolvedValue({ id: 't1', state: { key: 'ON_
 const mockDirectHold = vi.fn().mockResolvedValue({ id: 't1', state: { key: 'ON_HOLD' } });
 const mockApproveHold = vi.fn().mockResolvedValue({ id: 't1', state: { key: 'ON_HOLD' } });
 const mockRejectHold = vi.fn().mockResolvedValue({ id: 't1', state: { key: 'IN_PROGRESS' } });
+const mockChangeResolutionSla = vi.fn().mockResolvedValue({ id: 't1', state: { key: 'ON_HOLD' } });
+const mockResumeDirect = vi.fn().mockResolvedValue({ id: 't1', state: { key: 'IN_PROGRESS' } });
+const mockGetDependencyReasonTypes = vi.fn().mockResolvedValue([
+    { id: '00000000-0000-0000-0000-000000000405', name: 'Spare Parts Delayed', key: 'PARTS_AWAITED' },
+    { id: '00000000-0000-0000-0000-000000000406', name: 'Vendor Field Visit', key: 'VENDOR_VISIT' }
+]);
+const mockGetRequestPendingTickets = vi.fn().mockResolvedValue({ tickets: [], count: 0, next: null, previous: null });
+const mockGetOnHoldTickets = vi.fn().mockResolvedValue({ tickets: [], count: 0, next: null, previous: null });
 const mockDeclineAssignment = vi.fn().mockResolvedValue({ id: 't1', state: { key: 'OPEN' } });
 const mockGetStaffLocationScopes = vi.fn().mockResolvedValue([
     { id: '1', scope_type: 'FACILITY', facility_id: 'fac-1' }
@@ -31,6 +40,12 @@ vi.mock('../../composables/helpdeskService', async (importOriginal) => {
             directHold: mockDirectHold,
             approveHold: mockApproveHold,
             rejectHold: mockRejectHold,
+            changeResolutionSla: mockChangeResolutionSla,
+            resumeDirect: mockResumeDirect,
+            resumeTicket: mockResumeDirect,
+            getDependencyReasonTypes: mockGetDependencyReasonTypes,
+            getRequestPendingTickets: mockGetRequestPendingTickets,
+            getOnHoldTickets: mockGetOnHoldTickets,
             rejectAssignment: mockDeclineAssignment,
             getStaffLocationScopes: mockGetStaffLocationScopes,
             getTicketDependencies: vi.fn().mockResolvedValue([]),
@@ -144,6 +159,32 @@ describe('Hold & Resume Workflow Components', () => {
             });
             expect(wrapper.emitted('success')).toBeTruthy();
         });
+
+        it('loads dynamic reason types and allows direct hold with UUID reason type', async () => {
+            const wrapper = await mountSuspended(TicketHoldModal, {
+                props: {
+                    open: true,
+                    ticketId: '0b1b5692-bf07-4937-a8e9-030746997b32',
+                    isDirectHold: true
+                }
+            });
+
+            await (wrapper.vm as any).loadReasons();
+
+            (wrapper.vm as any).form.reason_type = '00000000-0000-0000-0000-000000000405';
+            (wrapper.vm as any).form.notes = 'Testing hold workflow';
+            (wrapper.vm as any).form.linked_ticket = 'c327626a-1c1e-45d9-b829-9f4a349188c4';
+
+            await (wrapper.vm as any).handleSubmit();
+
+            expect(mockDirectHold).toHaveBeenCalledWith('0b1b5692-bf07-4937-a8e9-030746997b32', {
+                reason_type: '00000000-0000-0000-0000-000000000405',
+                notes: 'Testing hold workflow',
+                expected_resolution_at: undefined,
+                linked_ticket: 'c327626a-1c1e-45d9-b829-9f4a349188c4'
+            });
+            expect(wrapper.emitted('success')).toBeTruthy();
+        });
     });
 
     describe('TicketHoldDecisionModal', () => {
@@ -186,7 +227,37 @@ describe('Hold & Resume Workflow Components', () => {
             (wrapper.vm as any).decisionNotes = 'Approved - parts on order';
             await (wrapper.vm as any).handleApprove();
 
-            expect(mockApproveHold).toHaveBeenCalledWith('tick-123', 'dep-1', 'Approved - parts on order');
+            expect(mockApproveHold).toHaveBeenCalledWith('tick-123', 'dep-1', {
+                decision_notes: 'Approved - parts on order',
+                extend_minutes: undefined
+            });
+            expect(wrapper.emitted('decided')).toBeTruthy();
+        });
+
+        it('handles approve hold with extend_minutes and decision_notes', async () => {
+            const wrapper = await mountSuspended(TicketHoldDecisionModal, {
+                props: {
+                    open: true,
+                    ticketId: '29718858-b14c-4c92-b421-635be1f15b54',
+                    dependency: {
+                        ...mockDependency,
+                        id: '9de56f9f-4096-433f-86ed-4d5715ecebdf'
+                    }
+                }
+            });
+
+            (wrapper.vm as any).decisionNotes = 'Approved for testing';
+            (wrapper.vm as any).extendMinutes = 120;
+            await (wrapper.vm as any).handleApprove();
+
+            expect(mockApproveHold).toHaveBeenCalledWith(
+                '29718858-b14c-4c92-b421-635be1f15b54',
+                '9de56f9f-4096-433f-86ed-4d5715ecebdf',
+                {
+                    decision_notes: 'Approved for testing',
+                    extend_minutes: 120
+                }
+            );
             expect(wrapper.emitted('decided')).toBeTruthy();
         });
 
@@ -282,6 +353,41 @@ describe('Hold & Resume Workflow Components', () => {
             await (wrapper.vm as any).loadScopes();
 
             expect(document.body.textContent).toContain('Main Campus HQ');
+        });
+    });
+
+    describe('ChangeResolutionSlaModal', () => {
+        it('renders change resolution SLA modal with input and quick buttons', async () => {
+            await mountSuspended(ChangeResolutionSlaModal, {
+                props: {
+                    open: true,
+                    ticketId: '29718858-b14c-4c92-b421-635be1f15b54'
+                }
+            });
+
+            expect(document.body.textContent).toContain('Change Resolution SLA');
+            expect(document.body.textContent).toContain('Extension Minutes');
+            expect(document.body.textContent).toContain('+45 min');
+        });
+
+        it('submits resolution SLA change with extend_minutes and notes', async () => {
+            const wrapper = await mountSuspended(ChangeResolutionSlaModal, {
+                props: {
+                    open: true,
+                    ticketId: '29718858-b14c-4c92-b421-635be1f15b54'
+                }
+            });
+
+            (wrapper.vm as any).extendMinutes = 45;
+            (wrapper.vm as any).decisionNotes = 'Awaiting courier delivery';
+
+            await (wrapper.vm as any).handleSubmit();
+
+            expect(mockChangeResolutionSla).toHaveBeenCalledWith('29718858-b14c-4c92-b421-635be1f15b54', {
+                extend_minutes: 45,
+                decision_notes: 'Awaiting courier delivery'
+            });
+            expect(wrapper.emitted('success')).toBeTruthy();
         });
     });
 });
