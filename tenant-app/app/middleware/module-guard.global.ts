@@ -18,6 +18,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         '/banners': 'banners',
         '/feed': 'feed-list',
         '/configure': 'configure',
+        '/frontdesk': 'frontdesk',
         '/spoc': 'spoc_dashboard',
         '/spoc/config': 'spoc_config'
     };

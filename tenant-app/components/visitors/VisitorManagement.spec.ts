@@ -22,7 +22,8 @@ vi.mock('../../stores/company', () => ({
 }))
 vi.mock('../../stores/auth', () => ({
     useAuthStore: vi.fn(() => ({
-        hasPermission: vi.fn(() => true)
+        hasPermission: vi.fn(() => true),
+        hasModule: vi.fn(() => false)
     }))
 }))
 
@@ -30,6 +31,7 @@ vi.mock('../../stores/auth', () => ({
 import { useVisitorStore } from '../../stores/visitor'
 import { useFacilityStore } from '../../stores/facility'
 import { useCompanyStore } from '../../stores/company'
+import { useAuthStore } from '../../stores/auth'
 
 describe('VisitorManagement', () => {
     let wrapper: any;
@@ -206,4 +208,89 @@ describe('VisitorManagement', () => {
         );
     });
 
+})
+
+describe('VisitorManagement frontdesk permissions', () => {
+    const visitors = ref<any[]>([])
+    const loading = ref(false)
+    const count = ref(27)
+    const page = ref(1)
+    const pageSize = ref(10)
+
+    const mountPage = (options: { permissions?: string[]; modules?: string[]; frontdesk?: boolean }) => {
+        const permissions = options.permissions ?? []
+        const modules = options.modules ?? []
+
+        ;(useAuthStore as any).mockReturnValue({
+            hasPermission: vi.fn((p: string) => permissions.includes(p)),
+            hasModule: vi.fn((m: string) => modules.includes(m))
+        })
+        ;(useVisitorStore as any).mockReturnValue({
+            visitors,
+            loading,
+            count,
+            page,
+            pageSize,
+            fetchVisitors: vi.fn().mockResolvedValue(true),
+            updateStatus: vi.fn()
+        })
+        ;(useFacilityStore as any).mockReturnValue({
+            facilities: ref([]),
+            fetchFacilities: vi.fn().mockResolvedValue(true)
+        })
+        ;(useCompanyStore as any).mockReturnValue({
+            companies: ref([]),
+            fetchCompanies: vi.fn().mockResolvedValue(true)
+        })
+
+        return mount(VisitorManagement, {
+            props: { frontdesk: options.frontdesk ?? false },
+            global: {
+                stubs: {
+                    'a-button': { template: '<button><slot/></button>' },
+                    'a-select': { template: '<select><slot/></select>' },
+                    'a-select-option': { template: '<option><slot/></option>' },
+                    'a-input-search': { template: '<input />' },
+                    'a-range-picker': { template: '<div />' },
+                    'a-pagination': { template: '<div />' },
+                    'VisitorList': true,
+                    'ExportOutlined': true
+                }
+            }
+        })
+    }
+
+    it('grants view and action to frontdesk users via the frontdesk module', () => {
+        const wrapper = mountPage({
+            modules: ['frontdesk'],
+            permissions: [],
+            frontdesk: true
+        })
+
+        expect(wrapper.vm.canView).toBe(true)
+        expect(wrapper.vm.canAction).toBe(true)
+        expect(wrapper.text()).not.toContain("You don't have permission to view visitors.")
+    })
+
+    it('still shows the permission message for frontdesk users on the regular visitors page', () => {
+        const wrapper = mountPage({
+            modules: ['frontdesk'],
+            permissions: [],
+            frontdesk: false
+        })
+
+        expect(wrapper.vm.canView).toBe(false)
+        expect(wrapper.text()).toContain("You don't have permission to view visitors.")
+    })
+
+    it('grants access via the visitors-list feature permissions', () => {
+        const wrapper = mountPage({
+            modules: ['visitors'],
+            permissions: ['visitors-list:view', 'visitors-list:action'],
+            frontdesk: false
+        })
+
+        expect(wrapper.vm.canView).toBe(true)
+        expect(wrapper.vm.canAction).toBe(true)
+    })
 })

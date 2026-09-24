@@ -75,9 +75,20 @@ const { visitors, loading, count, page, pageSize } = storeToRefs(store)
 
 const exporting = ref(false)
 
-// Permission checks
-const canView = computed(() => authStore.hasPermission('visitors-list:view'))
-const canAction = computed(() => authStore.hasPermission('visitors-list:action'))
+// Permission checks — the frontdesk module grants its own users access to the
+// frontdesk visitor log even without the visitors-list feature permissions
+const props = withDefaults(defineProps<{ frontdesk?: boolean }>(), {
+    frontdesk: false
+})
+
+const canView = computed(() =>
+    authStore.hasPermission('visitors-list:view') ||
+    (props.frontdesk && authStore.hasModule('frontdesk'))
+)
+const canAction = computed(() =>
+    authStore.hasPermission('visitors-list:action') ||
+    (props.frontdesk && authStore.hasModule('frontdesk'))
+)
 
 // Filter state
 const selectedFacility = ref<string | null>(null)
