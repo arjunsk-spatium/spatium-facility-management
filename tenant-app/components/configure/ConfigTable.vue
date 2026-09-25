@@ -216,6 +216,7 @@ const openAddModal = () => {
     isEditing.value = false
     editingRecord.value = null
     formData.value = {}
+    emit('fieldChange', {})
     modalVisible.value = true
     nextTick(() => formRef.value?.clearValidate())
 }
@@ -223,6 +224,7 @@ const openAddModal = () => {
 const openEditModal = (record: any) => {
     isEditing.value = true
     editingRecord.value = record
+    emit('fieldChange', record)
     formData.value = { ...record }
     if (props.parentOptions) {
         // Try to find the parent key from parentLabel first
@@ -241,7 +243,7 @@ const openEditModal = (record: any) => {
         }
     }
 
-    // Normalize select fields: if the current value is an object, map it to the matching option value
+    // Normalize select fields: if current value is object or doesn't match option values, resolve to option value
     if (props.fields) {
         props.fields.forEach(field => {
             if (field.type === 'select') {
@@ -253,6 +255,40 @@ const openEditModal = (record: any) => {
                         opt.label === current.label
                     )
                     formData.value[field.name] = match ? match.value : undefined
+                } else if (current && typeof current === 'string' && field.options) {
+                    const directMatch = field.options.find(opt => opt.value === current)
+                    if (!directMatch) {
+                        const match = field.options.find(opt =>
+                            String(opt.value).toLowerCase() === current.toLowerCase() ||
+                            opt.label?.toLowerCase() === current.toLowerCase()
+                        )
+                        if (match) {
+                            formData.value[field.name] = match.value
+                        }
+                    }
+                }
+                // Fallback for assignment_mode if missing on formData but assignment_mode_key exists on record
+                if (field.name === 'assignment_mode' && !formData.value.assignment_mode && record.assignment_mode_key && field.options) {
+                    const match = field.options.find(opt =>
+                        String(opt.value).toLowerCase() === record.assignment_mode_key.toLowerCase() ||
+                        opt.label?.toLowerCase() === record.assignment_mode_key.toLowerCase()
+                    )
+                    if (match) {
+                        formData.value.assignment_mode = match.value
+                    }
+                }
+                // Fallback for required_role if missing on formData but required_role_name / required_role_key exists on record
+                if (field.name === 'required_role' && !formData.value.required_role && field.options) {
+                    const roleRef = record.required_role_name || record.required_role_key
+                    if (roleRef) {
+                        const match = field.options.find(opt =>
+                            String(opt.value).toLowerCase() === roleRef.toLowerCase() ||
+                            opt.label?.toLowerCase() === roleRef.toLowerCase()
+                        )
+                        if (match) {
+                            formData.value.required_role = match.value
+                        }
+                    }
                 }
             }
         })
@@ -264,6 +300,7 @@ const openEditModal = (record: any) => {
 const closeModal = () => {
     modalVisible.value = false
     formData.value = {}
+    emit('fieldChange', {})
 }
 
 const handleSubmit = async () => {

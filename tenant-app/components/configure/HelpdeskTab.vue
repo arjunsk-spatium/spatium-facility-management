@@ -254,11 +254,7 @@ const scoringConfig = ref<HelpdeskScoringConfig>({
 })
 
 const isScopeLadderEntitled = computed(() => {
-    return assignmentModes.value.some(m =>
-        m.key?.toLowerCase() === 'scope_ladder' ||
-        m.name?.toLowerCase().includes('scopeladder') ||
-        m.name?.toLowerCase().includes('scope ladder')
-    )
+    return assignmentModes.value.some(m => isScopeLadderAssignmentMode(m.id || m.key || m.name))
 })
 
 // Columns
@@ -295,9 +291,47 @@ const isAutoAssignmentMode = (modeIdOrKey?: string) => {
     if (modeIdOrKey === '00000000-0000-0000-0000-000000000301') return true
     const mode = assignmentModes.value.find(m => m.id === modeIdOrKey || m.key === modeIdOrKey)
     if (mode) {
-        return mode.key?.toLowerCase() === 'auto' || mode.name?.toLowerCase().includes('auto')
+        const key = mode.key?.toLowerCase() || ''
+        const name = mode.name?.toLowerCase() || ''
+        return key.includes('auto') || name.includes('auto')
     }
-    return typeof modeIdOrKey === 'string' && modeIdOrKey.toLowerCase() === 'auto'
+    const str = String(modeIdOrKey).toLowerCase()
+    return str.includes('auto')
+}
+
+const isScopeLadderAssignmentMode = (modeIdOrKey?: string) => {
+    if (!modeIdOrKey) return false
+    // Known default UUIDs for scope ladder dispatch in seed/fixtures
+    if (
+        modeIdOrKey === '00000000-0000-0000-0000-000000000302' ||
+        modeIdOrKey === '00000000-0000-0000-0000-000000000303' ||
+        modeIdOrKey === '00000000-0000-0000-0000-000000000304'
+    ) {
+        return true
+    }
+    const mode = assignmentModes.value.find(m => m.id === modeIdOrKey || m.key === modeIdOrKey)
+    if (mode) {
+        const key = mode.key?.toLowerCase() || ''
+        const name = mode.name?.toLowerCase() || ''
+        return (
+            key.includes('scope') ||
+            key.includes('ladder') ||
+            key.includes('scop') ||
+            name.includes('scope') ||
+            name.includes('ladder') ||
+            name.includes('scop')
+        )
+    }
+    const str = String(modeIdOrKey).toLowerCase()
+    return (
+        str.includes('scope') ||
+        str.includes('ladder') ||
+        str.includes('scop')
+    )
+}
+
+const isRequiresRoleAssignmentMode = (modeIdOrKey?: string) => {
+    return isAutoAssignmentMode(modeIdOrKey) || isScopeLadderAssignmentMode(modeIdOrKey)
 }
 
 const subcategoryFields = computed(() => {
@@ -314,8 +348,8 @@ const subcategoryFields = computed(() => {
         { name: 'resolution_sla', label: 'Resolution SLA (minutes)', type: 'number' as const }
     ]
     
-    // Auto assignment mode requires a role
-    if (isAutoAssignmentMode(selectedAssignmentMode.value)) {
+    // Auto and ScopeLadder assignment modes require a role
+    if (isRequiresRoleAssignmentMode(selectedAssignmentMode.value)) {
         fields.splice(3, 0, { name: 'required_role', label: 'Required Role', type: 'select' as const, options: roleOpts })
     }
     
@@ -325,7 +359,7 @@ const subcategoryFields = computed(() => {
 const selectedAssignmentMode = ref<string | undefined>()
 
 watch(selectedAssignmentMode, (newVal) => {
-    if (isAutoAssignmentMode(newVal)) {
+    if (isRequiresRoleAssignmentMode(newVal)) {
         if (roles.value.length === 0 && !loadingRoles.value) {
             fetchRoles()
         }
@@ -535,6 +569,7 @@ const handleAddSubcategory = async (data: any) => {
         const category = categories.value.find(c => c.id === data.parent_id)
         newSubcategory.category_name = category?.name || ''
         subcategories.value.push(newSubcategory)
+        selectedAssignmentMode.value = undefined
         message.success('Subcategory added successfully')
     } catch (error) {
         message.error('Failed to add subcategory')
@@ -558,6 +593,7 @@ const handleEditSubcategory = async (record: HelpdeskSubCategory, data: any) => 
         if (index > -1) {
             subcategories.value[index] = { ...subcategories.value[index], ...updated }
         }
+        selectedAssignmentMode.value = undefined
         message.success('Subcategory updated successfully')
     } catch (error) {
         message.error('Failed to update subcategory')
@@ -578,15 +614,24 @@ const handleSubcategoryFieldChange = (fieldOrData: any, value?: any) => {
     let mode: string | undefined
     if (typeof fieldOrData === 'string') {
         if (fieldOrData === 'assignment_mode') {
-            mode = value
+            mode = typeof value === 'object' && value !== null ? (value.id || value.key) : value
         }
     } else if (fieldOrData && typeof fieldOrData === 'object') {
-        mode = fieldOrData.assignment_mode
+        // If formData was reset (empty object on add modal open or close), clear selectedAssignmentMode
+        if (Object.keys(fieldOrData).length === 0 || (!fieldOrData.assignment_mode && !fieldOrData.assignment_mode_key)) {
+            selectedAssignmentMode.value = undefined
+            return
+        }
+        const rawMode = fieldOrData.assignment_mode || fieldOrData.assignment_mode_key
+        mode = typeof rawMode === 'object' && rawMode !== null ? (rawMode.id || rawMode.key) : rawMode
+        if (!mode && fieldOrData.assignment_mode_key) {
+            mode = fieldOrData.assignment_mode_key
+        }
     }
 
     if (mode !== undefined) {
         selectedAssignmentMode.value = mode
-        if (isAutoAssignmentMode(mode) && roles.value.length === 0 && !loadingRoles.value) {
+        if (isRequiresRoleAssignmentMode(mode) && roles.value.length === 0 && !loadingRoles.value) {
             fetchRoles()
         }
     }

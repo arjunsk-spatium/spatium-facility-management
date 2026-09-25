@@ -227,11 +227,25 @@
                             <span class="text-xs text-gray-500 uppercase font-semibold">Candidate Score Breakdown:</span>
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 <div
-                                    v-for="(val, metric) in scopeLadderReasoning.score_breakdown"
-                                    :key="metric"
-                                    class="p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700"
+                                    v-for="(val, candidateId) in scopeLadderReasoning.score_breakdown"
+                                    :key="candidateId"
+                                    class="p-2.5 bg-gray-50 dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700 flex flex-col justify-between"
                                 >
-                                    <div class="text-xs text-gray-400 capitalize">{{ String(metric).replace(/_/g, ' ') }}</div>
+                                    <div class="flex items-center justify-between gap-1.5 mb-1.5 min-w-0">
+                                        <span
+                                            class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate"
+                                            :title="getCandidateTooltip(candidateId)"
+                                        >
+                                            {{ getCandidateName(candidateId) }}
+                                        </span>
+                                        <a-tag
+                                            v-if="currentTicket?.assignee === candidateId"
+                                            color="success"
+                                            class="!text-[10px] !leading-[16px] !px-1 !m-0 !font-normal shrink-0"
+                                        >
+                                            Assigned
+                                        </a-tag>
+                                    </div>
                                     <div class="font-mono text-sm font-semibold text-gray-900 dark:text-white">
                                         {{ typeof val === 'number' ? val.toFixed(2) : val }}
                                     </div>
@@ -578,6 +592,102 @@ const scopeLadderReasoning = computed(() => {
     return entry?.metadata || null;
 });
 
+const candidateUsersMap = ref<Record<string, string>>({});
+
+const isUuid = (str: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+const getCandidateName = (candidateKey: string | number) => {
+    const key = String(candidateKey);
+
+    // 1. Metadata candidate_names map if provided by backend
+    if (scopeLadderReasoning.value?.candidate_names?.[key]) {
+        return scopeLadderReasoning.value.candidate_names[key];
+    }
+
+    // 2. Metadata candidates array if provided by backend
+    if (Array.isArray(scopeLadderReasoning.value?.candidates)) {
+        const match = scopeLadderReasoning.value.candidates.find(
+            (c: any) => c.id === key || c.user_id === key
+        );
+        if (match?.name || match?.full_name) {
+            return match.name || match.full_name;
+        }
+    }
+
+    // 3. Current ticket assignee match
+    if (currentTicket.value?.assignee === key && currentTicket.value?.assignee_name) {
+        return currentTicket.value.assignee_name;
+    }
+
+    // 4. Candidate users map from loaded staff
+    if (candidateUsersMap.value[key]) {
+        return candidateUsersMap.value[key];
+    }
+
+    // 5. Assignable users ref
+    const foundInAssignable = assignableUsers.value.find((u: any) => u.id === key);
+    if (foundInAssignable) {
+        return foundInAssignable.full_name || foundInAssignable.name || foundInAssignable.email;
+    }
+
+    // 6. Timeline actors match
+    if (currentTicket.value?.timeline?.length) {
+        const actorMatch = currentTicket.value.timeline.find((t: any) => t.actor === key && t.actor_name);
+        if (actorMatch?.actor_name) {
+            return actorMatch.actor_name;
+        }
+    }
+
+    // 7. Fallback for UUID: short user-friendly label
+    if (isUuid(key)) {
+        return `Candidate (${key.slice(0, 8)})`;
+    }
+
+    // 8. Normal metric label if non-UUID
+    return key.replace(/_/g, ' ');
+};
+
+const getCandidateTooltip = (candidateKey: string | number) => {
+    const key = String(candidateKey);
+    const resolvedName = getCandidateName(key);
+    if (resolvedName !== key && isUuid(key)) {
+        return `${resolvedName} (ID: ${key})`;
+    }
+    return key;
+};
+
+const loadCandidateUsers = async () => {
+    const facilityId = currentTicket.value?.facility;
+    if (!facilityId) return;
+    try {
+        const service = useHelpdeskService();
+        const users = await service.getAssignableUsers(facilityId);
+        if (users?.length) {
+            assignableUsers.value = users;
+            users.forEach((u: any) => {
+                if (u.id) {
+                    candidateUsersMap.value[u.id] = u.full_name || u.name || u.email;
+                }
+            });
+        }
+        try {
+            const staffList = await service.getStaffByFacility(facilityId);
+            if (staffList?.length) {
+                staffList.forEach((u: any) => {
+                    if (u.id) {
+                        candidateUsersMap.value[u.id] = u.full_name || u.name || u.email;
+                    }
+                });
+            }
+        } catch (_) {
+            // Silently ignore if getStaffByFacility is not supported/permitted
+        }
+    } catch (err) {
+        console.error('Failed to load candidate users:', err);
+    }
+};
+
 const loadDependencies = async () => {
     loadingDependencies.value = true;
     try {
@@ -595,6 +705,9 @@ const loadTicketAndDependencies = async () => {
         store.fetchTicketById(ticketId),
         loadDependencies()
     ]);
+    if (currentTicket.value?.facility) {
+        await loadCandidateUsers();
+    }
 };
 
 const openHoldModal = (direct: boolean) => {
