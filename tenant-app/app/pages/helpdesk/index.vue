@@ -708,6 +708,9 @@ const fetchTicketsByFilter = async () => {
         await helpdeskStore.fetchOnHoldTickets(1, pageSize.value, facilityFilter.value, searchText.value || undefined);
         return;
     } else if (activeTab.value === 'open') {
+        params.states = 'open';
+    } else if (activeTab.value === 'inprogress') {
+        params.states = 'inprogress';
     } else if (activeTab.value === 'pending') {
         params.states = 'pending_confirmation';
     } else if (activeTab.value === 'closed') {

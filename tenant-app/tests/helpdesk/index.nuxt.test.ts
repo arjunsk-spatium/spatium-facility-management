@@ -387,4 +387,61 @@ describe('Helpdesk Page', () => {
             expect(lastCall).toEqual([1, 10, undefined, 'urgent'])
         })
     })
+
+    describe('Tab Filtering', () => {
+        it('should pass states: open when switching to open tab', async () => {
+            mockGetItem.mockResolvedValue(null)
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk'], permissions: ['helpdesk-tickets:view'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const store = useHelpdeskStore()
+            const vm = wrapper.vm as any
+            vm.activeTab = 'open'
+            await vm.handleTabChange()
+
+            const lastCall = store.fetchTickets.mock.calls[store.fetchTickets.mock.calls.length - 1]
+            expect(lastCall[0]).toMatchObject({ states: 'open', page: 1 })
+        })
+
+        it('should pass states: inprogress when switching to inprogress tab', async () => {
+            mockGetItem.mockResolvedValue(null)
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk'], permissions: ['helpdesk-tickets:view'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const store = useHelpdeskStore()
+            const vm = wrapper.vm as any
+            vm.activeTab = 'inprogress'
+            await vm.handleTabChange()
+
+            const lastCall = store.fetchTickets.mock.calls[store.fetchTickets.mock.calls.length - 1]
+            expect(lastCall[0]).toMatchObject({ states: 'inprogress', page: 1 })
+        })
+    })
 })
+
