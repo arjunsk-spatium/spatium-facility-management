@@ -62,9 +62,10 @@
                     v-if="canResume"
                     type="primary"
                     :loading="resuming"
+                    :disabled="isResumeRequested"
                     @click="handleResumeTicket"
                 >
-                    Request Resume
+                    {{ isResumeRequested ? 'Resume Requested' : 'Request Resume' }}
                 </a-button>
 
                 <!-- Change Resolution SLA (Helpdesk user on ON_HOLD state) -->
@@ -559,6 +560,10 @@ const canResume = computed(() => {
     return (state === 'ON_HOLD' || state === 'ONHOLD') && (isCurrentUserAssignee.value || isHelpdeskUser.value);
 });
 
+const isResumeRequested = computed(() => {
+    return Boolean(currentTicket.value?.has_pending_resume_request);
+});
+
 const canChangeSla = computed(() => {
     if (!currentTicket.value) return false;
     const state = currentTicket.value.state?.key?.toUpperCase();
@@ -720,11 +725,12 @@ const handleHoldSuccess = async () => {
 };
 
 const handleResumeTicket = async () => {
+    if (isResumeRequested.value) return;
     resuming.value = true;
     try {
         const service = useHelpdeskService();
         const updated = await service.resumeDirect(ticketId);
-        message.success('Ticket resumed and back in active work');
+        message.success(updated?.has_pending_resume_request ? 'Resume request sent' : 'Ticket resumed and back in active work');
         store.currentTicket = updated;
         await loadTicketAndDependencies();
     } catch (err: any) {

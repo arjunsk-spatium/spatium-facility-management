@@ -48,6 +48,8 @@ export interface Ticket {
     location_text?: string | null;
     force_close_notes?: string;
     reopen_notes?: string;
+    has_pending_hold_request?: boolean;
+    has_pending_resume_request?: boolean;
     created_at: string;
     updated_at?: string;
 

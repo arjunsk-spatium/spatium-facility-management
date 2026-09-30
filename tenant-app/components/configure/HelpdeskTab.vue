@@ -100,7 +100,8 @@
                 </div>
             </a-tab-pane>
 
-            <a-tab-pane v-if="isScopeLadderEntitled" key="scoring" tab="ScopeLadder Scoring">
+            <!-- ScopeLadder Scoring tab (hidden for now) -->
+            <a-tab-pane v-if="false && isScopeLadderEntitled" key="scoring" tab="ScopeLadder Scoring">
                 <div class="py-4 max-w-2xl">
                     <a-card title="ScopeLadder Multi-Factor Scoring Weights" :bordered="true">
                         <div class="space-y-6">

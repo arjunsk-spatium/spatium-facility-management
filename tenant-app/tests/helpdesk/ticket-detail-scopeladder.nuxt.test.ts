@@ -219,10 +219,11 @@ describe('Ticket Detail Page - ScopeLadder Candidate Score Breakdown', () => {
         expect(text).toContain('Hold Ticket')
     })
 
-    it('displays Request Resume button when state is ON_HOLD', async () => {
+    it('displays Request Resume button when state is ON_HOLD and has_pending_resume_request is false', async () => {
         const onHoldTicket = {
             ...mockTicket,
-            state: { key: 'ON_HOLD', label: 'On Hold' }
+            state: { key: 'ON_HOLD', label: 'On Hold' },
+            has_pending_resume_request: false
         }
 
         const wrapper = await mountSuspended(TicketDetailPage, {
@@ -248,5 +249,39 @@ describe('Ticket Detail Page - ScopeLadder Candidate Score Breakdown', () => {
         await flushPromises()
         const text = wrapper.text()
         expect(text).toContain('Request Resume')
+        expect(text).not.toContain('Resume Requested')
+    })
+
+    it('displays disabled Resume Requested button when state is ON_HOLD and has_pending_resume_request is true', async () => {
+        const onHoldTicket = {
+            ...mockTicket,
+            state: { key: 'ON_HOLD', label: 'On Hold' },
+            has_pending_resume_request: true
+        }
+
+        const wrapper = await mountSuspended(TicketDetailPage, {
+            global: {
+                plugins: [
+                    createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: {
+                                user: { id: 'user-admin', role: 'admin' },
+                                permissions: ['helpdesk-tickets:view', 'helpdesk-tickets:action']
+                            },
+                            helpdesk: {
+                                currentTicket: onHoldTicket,
+                                loading: false
+                            }
+                        }
+                    })
+                ]
+            }
+        })
+
+        await flushPromises()
+        const text = wrapper.text()
+        expect(text).toContain('Resume Requested')
+        expect(text).not.toContain('Request Resume')
     })
 })
