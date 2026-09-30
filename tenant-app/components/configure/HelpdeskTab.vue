@@ -100,76 +100,102 @@
                 </div>
             </a-tab-pane>
 
-            <!-- ScopeLadder Scoring tab (hidden for now) -->
-            <a-tab-pane v-if="false && isScopeLadderEntitled" key="scoring" tab="ScopeLadder Scoring">
+            <a-tab-pane v-if="isScopeLadderEntitled" key="scoring" tab="ScopeLadder Scoring">
                 <div class="py-4 max-w-2xl">
-                    <a-card title="ScopeLadder Multi-Factor Scoring Weights" :bordered="true">
+                    <a-card title="ScopeLadder Settings" :bordered="true">
                         <div class="space-y-6">
-                            <a-alert
-                                type="info"
-                                show-icon
-                                message="Weights customize candidate selection during location-scope cascades. Higher weights increase importance of that dimension."
-                                class="mb-2"
-                            />
+                            <!-- Multi-factor weights sliders (hidden for now) -->
+                            <div v-if="false" class="space-y-6">
+                                <a-alert
+                                    type="info"
+                                    show-icon
+                                    message="Weights customize candidate selection during location-scope cascades. Higher weights increase importance of that dimension."
+                                    class="mb-2"
+                                />
 
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-sm font-medium dark:text-white">α — Skill Match Weight</span>
-                                    <span class="font-mono text-sm">{{ scoringConfig.alpha }}</span>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium dark:text-white">α — Skill Match Weight</span>
+                                        <span class="font-mono text-sm">{{ scoringConfig.alpha }}</span>
+                                    </div>
+                                    <a-slider v-model:value="scoringConfig.alpha" :min="0" :max="5" :step="0.1" />
                                 </div>
-                                <a-slider v-model:value="scoringConfig.alpha" :min="0" :max="5" :step="0.1" />
-                            </div>
 
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-sm font-medium dark:text-white">β — Load Headroom Weight</span>
-                                    <span class="font-mono text-sm">{{ scoringConfig.beta }}</span>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium dark:text-white">β — Load Headroom Weight</span>
+                                        <span class="font-mono text-sm">{{ scoringConfig.beta }}</span>
+                                    </div>
+                                    <a-slider v-model:value="scoringConfig.beta" :min="0" :max="5" :step="0.1" />
                                 </div>
-                                <a-slider v-model:value="scoringConfig.beta" :min="0" :max="5" :step="0.1" />
-                            </div>
 
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-sm font-medium dark:text-white">γ — Availability Weight</span>
-                                    <span class="font-mono text-sm">{{ scoringConfig.gamma }}</span>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium dark:text-white">γ — Availability Weight</span>
+                                        <span class="font-mono text-sm">{{ scoringConfig.gamma }}</span>
+                                    </div>
+                                    <a-slider v-model:value="scoringConfig.gamma" :min="0" :max="5" :step="0.1" />
                                 </div>
-                                <a-slider v-model:value="scoringConfig.gamma" :min="0" :max="5" :step="0.1" />
-                            </div>
 
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-sm font-medium dark:text-white">δ — Fairness (Even Distribution) Weight</span>
-                                    <span class="font-mono text-sm">{{ scoringConfig.delta }}</span>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium dark:text-white">δ — Fairness (Even Distribution) Weight</span>
+                                        <span class="font-mono text-sm">{{ scoringConfig.delta }}</span>
+                                    </div>
+                                    <a-slider v-model:value="scoringConfig.delta" :min="0" :max="5" :step="0.1" />
                                 </div>
-                                <a-slider v-model:value="scoringConfig.delta" :min="0" :max="5" :step="0.1" />
-                            </div>
 
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-sm font-medium dark:text-white">ε — Proximity Weight</span>
-                                    <span class="font-mono text-sm">{{ scoringConfig.epsilon }}</span>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium dark:text-white">ε — Proximity Weight</span>
+                                        <span class="font-mono text-sm">{{ scoringConfig.epsilon }}</span>
+                                    </div>
+                                    <a-slider v-model:value="scoringConfig.epsilon" :min="0" :max="5" :step="0.1" />
                                 </div>
-                                <a-slider v-model:value="scoringConfig.epsilon" :min="0" :max="5" :step="0.1" />
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-500 mb-1">Reassign Threshold</label>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-xs font-medium text-gray-500">Reassign Threshold</label>
+                                        <a-button
+                                            type="link"
+                                            size="small"
+                                            class="!p-0 !h-auto text-xs"
+                                            @click="scoringConfig.reassign_threshold = 0.1"
+                                        >
+                                            Reset (0.10)
+                                        </a-button>
+                                    </div>
                                     <a-input-number
                                         v-model:value="scoringConfig.reassign_threshold"
                                         :min="0"
                                         :step="0.05"
+                                        :precision="2"
                                         class="w-full"
                                     />
+                                    <div class="text-xs text-gray-400 mt-0.5">Default: 0.10</div>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-gray-500 mb-1">Handover Penalty</label>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-xs font-medium text-gray-500">Handover Penalty</label>
+                                        <a-button
+                                            type="link"
+                                            size="small"
+                                            class="!p-0 !h-auto text-xs"
+                                            @click="scoringConfig.handover_penalty = 0.15"
+                                        >
+                                            Reset (0.15)
+                                        </a-button>
+                                    </div>
                                     <a-input-number
                                         v-model:value="scoringConfig.handover_penalty"
                                         :min="0"
                                         :step="0.05"
+                                        :precision="2"
                                         class="w-full"
                                     />
+                                    <div class="text-xs text-gray-400 mt-0.5">Default: 0.15</div>
                                 </div>
                             </div>
 
@@ -181,9 +207,12 @@
                                 <a-switch v-model:checked="scoringConfig.night_mode_enabled" />
                             </div>
 
-                            <div class="pt-4 flex justify-end">
+                            <div class="pt-4 flex justify-between items-center">
+                                <a-button @click="handleResetScoringDefaults">
+                                    Reset to Defaults
+                                </a-button>
                                 <a-button type="primary" :loading="savingScoring" @click="handleSaveScoring">
-                                    Save Scoring Weights
+                                    Save Settings
                                 </a-button>
                             </div>
                         </div>
@@ -506,12 +535,18 @@ const handleSaveScoring = async () => {
     savingScoring.value = true
     try {
         await service.updateScoringConfig(scoringConfig.value)
-        message.success('ScopeLadder scoring weights saved successfully')
+        message.success('ScopeLadder settings saved successfully')
     } catch (error: any) {
-        message.error(error.message || 'Failed to save scoring weights')
+        message.error(error.message || 'Failed to save settings')
     } finally {
         savingScoring.value = false
     }
+}
+
+const handleResetScoringDefaults = () => {
+    scoringConfig.value.reassign_threshold = 0.1
+    scoringConfig.value.handover_penalty = 0.15
+    message.info('Reset Reassign Threshold to 0.10 and Handover Penalty to 0.15')
 }
 
 // Category handlers
