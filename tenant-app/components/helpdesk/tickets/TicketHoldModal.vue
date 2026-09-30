@@ -55,18 +55,6 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Expected Resolution ETA
-                </label>
-                <a-date-picker
-                    v-model:value="etaDate"
-                    show-time
-                    class="w-full"
-                    placeholder="Optional expected resume date & time"
-                />
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Notes
                 </label>
                 <a-textarea
@@ -84,7 +72,6 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { useHelpdeskService, type RequestHoldPayload, type DependencyReasonType } from '../../../composables/helpdeskService'
 import { useHelpdeskStore } from '../../../stores/helpdesk'
-import dayjs, { type Dayjs } from 'dayjs'
 
 const props = defineProps<{
     open: boolean
@@ -103,7 +90,6 @@ const helpdeskStore = useHelpdeskStore()
 const submitting = ref(false)
 const loadingReasons = ref(false)
 const dynamicReasons = ref<DependencyReasonType[]>([])
-const etaDate = ref<Dayjs | null>(null)
 
 // Linked Ticket Search State
 const searchingTickets = ref(false)
@@ -258,7 +244,6 @@ const handleSubmit = async () => {
         const payload: RequestHoldPayload = {
             reason_type: form.value.reason_type,
             notes: form.value.notes.trim() || undefined,
-            expected_resolution_at: etaDate.value ? etaDate.value.toISOString() : undefined,
             linked_ticket: form.value.linked_ticket?.trim() || undefined
         }
 
@@ -292,7 +277,6 @@ watch(() => props.open, (isOpen) => {
             notes: '',
             linked_ticket: undefined
         }
-        etaDate.value = null
         searchedTickets.value = []
         lastSearchQuery.value = ''
         if (dynamicReasons.value.length === 0) {

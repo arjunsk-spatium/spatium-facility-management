@@ -444,7 +444,7 @@ const showRowHoldModal = ref<boolean>(false);
 
 const canHoldTicketRow = (record: any) => {
     const stateKey = String(record.state?.key || record.state || '').toUpperCase();
-    return isHelpdeskUser.value && ['ACKNOWLEDGED', 'ACKNOWLEDGE', 'ASSIGNED', 'IN_PROGRESS', 'INPROGRESS'].includes(stateKey);
+    return isHelpdeskUser.value && ['ASSIGNED', 'IN_PROGRESS', 'INPROGRESS'].includes(stateKey);
 };
 
 const openDirectHoldModalFromRow = (record: any) => {

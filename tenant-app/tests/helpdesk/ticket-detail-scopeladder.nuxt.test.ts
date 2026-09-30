@@ -155,4 +155,67 @@ describe('Ticket Detail Page - ScopeLadder Candidate Score Breakdown', () => {
         expect(text).toContain('Candidate (98765432)')
         expect(text).not.toContain('98765432-1234-5678-9abc-def012345678')
     })
+
+    it('does not display Hold Ticket or Request Hold buttons when state is ACKNOWLEDGED', async () => {
+        const acknowledgedTicket = {
+            ...mockTicket,
+            state: { key: 'ACKNOWLEDGED', label: 'Acknowledged' }
+        }
+
+        const wrapper = await mountSuspended(TicketDetailPage, {
+            global: {
+                plugins: [
+                    createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: {
+                                user: { id: 'user-admin', role: 'admin' },
+                                permissions: ['helpdesk-tickets:view', 'helpdesk-tickets:action']
+                            },
+                            helpdesk: {
+                                currentTicket: acknowledgedTicket,
+                                loading: false
+                            }
+                        }
+                    })
+                ]
+            }
+        })
+
+        await flushPromises()
+        const text = wrapper.text()
+        expect(text).not.toContain('Hold Ticket')
+        expect(text).not.toContain('Request Hold')
+    })
+
+    it('displays Hold Ticket button when state is ASSIGNED for helpdesk admin', async () => {
+        const assignedTicket = {
+            ...mockTicket,
+            state: { key: 'ASSIGNED', label: 'Assigned' }
+        }
+
+        const wrapper = await mountSuspended(TicketDetailPage, {
+            global: {
+                plugins: [
+                    createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: {
+                                user: { id: 'user-admin', role: 'admin' },
+                                permissions: ['helpdesk-tickets:view', 'helpdesk-tickets:action']
+                            },
+                            helpdesk: {
+                                currentTicket: assignedTicket,
+                                loading: false
+                            }
+                        }
+                    })
+                ]
+            }
+        })
+
+        await flushPromises()
+        const text = wrapper.text()
+        expect(text).toContain('Hold Ticket')
+    })
 })

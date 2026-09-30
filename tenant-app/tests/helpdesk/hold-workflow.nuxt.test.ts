@@ -140,7 +140,6 @@ describe('Hold & Resume Workflow Components', () => {
             expect(mockRequestHold).toHaveBeenCalledWith('tick-123', {
                 reason_type: 'PARTS_AWAITED',
                 notes: 'Waiting for motor component',
-                expected_resolution_at: undefined,
                 linked_ticket: undefined
             });
             expect(wrapper.emitted('success')).toBeTruthy();
@@ -163,7 +162,6 @@ describe('Hold & Resume Workflow Components', () => {
             expect(mockDirectHold).toHaveBeenCalledWith('tick-456', {
                 reason_type: 'VENDOR_VISIT',
                 notes: 'Vendor arriving Monday',
-                expected_resolution_at: undefined,
                 linked_ticket: undefined
             });
             expect(wrapper.emitted('success')).toBeTruthy();
@@ -189,7 +187,6 @@ describe('Hold & Resume Workflow Components', () => {
             expect(mockDirectHold).toHaveBeenCalledWith('0b1b5692-bf07-4937-a8e9-030746997b32', {
                 reason_type: '00000000-0000-0000-0000-000000000405',
                 notes: 'Testing hold workflow',
-                expected_resolution_at: undefined,
                 linked_ticket: 'c327626a-1c1e-45d9-b829-9f4a349188c4'
             });
             expect(wrapper.emitted('success')).toBeTruthy();
@@ -218,19 +215,32 @@ describe('Hold & Resume Workflow Components', () => {
             expect(options[0].value).toBe('c327626a-1c1e-45d9-b829-9f4a349188c4');
             expect(options[0].label).toContain('TKT-1042');
         });
+
+        it('does not render Expected Resolution ETA field in hold form', async () => {
+            const wrapper = await mountSuspended(TicketHoldModal, {
+                props: {
+                    open: true,
+                    ticketId: 'tick-eta-test',
+                    isDirectHold: true
+                }
+            });
+
+            expect(wrapper.html()).not.toContain('Expected Resolution ETA');
+            expect(document.body.textContent).not.toContain('Expected Resolution ETA');
+        });
     });
 
     describe('Direct Hold State Eligibility', () => {
         const isEligibleForDirectHold = (role: string, state: string) => {
             const isHelpdesk = role === 'helpdesk';
             const stateKey = state.toUpperCase();
-            return isHelpdesk && ['ACKNOWLEDGED', 'ACKNOWLEDGE', 'ASSIGNED', 'IN_PROGRESS', 'INPROGRESS'].includes(stateKey);
+            return isHelpdesk && ['ASSIGNED', 'IN_PROGRESS', 'INPROGRESS'].includes(stateKey);
         };
 
-        it('allows direct hold for ACKNOWLEDGED, ASSIGNED, and IN_PROGRESS states', () => {
+        it('disallows direct hold for ACKNOWLEDGED state and allows ASSIGNED and IN_PROGRESS states', () => {
             expect(isEligibleForDirectHold('helpdesk', 'ASSIGNED')).toBe(true);
-            expect(isEligibleForDirectHold('helpdesk', 'ACKNOWLEDGED')).toBe(true);
-            expect(isEligibleForDirectHold('helpdesk', 'ACKNOWLEDGE')).toBe(true);
+            expect(isEligibleForDirectHold('helpdesk', 'ACKNOWLEDGED')).toBe(false);
+            expect(isEligibleForDirectHold('helpdesk', 'ACKNOWLEDGE')).toBe(false);
             expect(isEligibleForDirectHold('helpdesk', 'IN_PROGRESS')).toBe(true);
             expect(isEligibleForDirectHold('helpdesk', 'INPROGRESS')).toBe(true);
             expect(isEligibleForDirectHold('helpdesk', 'OPEN')).toBe(false);
