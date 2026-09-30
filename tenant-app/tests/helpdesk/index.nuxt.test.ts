@@ -269,6 +269,30 @@ describe('Helpdesk Page', () => {
             expect(vm.ticketCounts.closed).toBe(1)
         })
 
+        it('should default to Priority tab on initial load', async () => {
+            mockGetItem.mockResolvedValue(null)
+
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk'], permissions: ['helpdesk-tickets:view'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [] }
+                        }
+                    })]
+                }
+            })
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const vm = wrapper.vm as any
+            expect(vm.activeTab).toBe('priority')
+            const store = useHelpdeskStore()
+            expect(store.fetchPriorityTickets).toHaveBeenCalled()
+        })
+
         it('should fetch tickets with search query after debounce', async () => {
             mockGetItem.mockResolvedValue(null)
 
@@ -289,6 +313,7 @@ describe('Helpdesk Page', () => {
 
             const store = useHelpdeskStore()
             const vm = wrapper.vm as any
+            vm.activeTab = 'all'
             vm.searchText = 'network'
             await wrapper.vm.$nextTick()
             await new Promise(resolve => setTimeout(resolve, 350))
@@ -317,6 +342,7 @@ describe('Helpdesk Page', () => {
 
             const store = useHelpdeskStore()
             const vm = wrapper.vm as any
+            vm.activeTab = 'all'
             vm.facilityFilter = 'fac-1'
             await vm.handleFacilityFilterChange()
 
@@ -348,6 +374,7 @@ describe('Helpdesk Page', () => {
 
             const store = useHelpdeskStore()
             const vm = wrapper.vm as any
+            vm.activeTab = 'all'
             vm.searchText = 'network'
             await wrapper.vm.$nextTick()
             await new Promise(resolve => setTimeout(resolve, 350))

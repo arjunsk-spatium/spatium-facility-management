@@ -218,4 +218,35 @@ describe('Ticket Detail Page - ScopeLadder Candidate Score Breakdown', () => {
         const text = wrapper.text()
         expect(text).toContain('Hold Ticket')
     })
+
+    it('displays Request Resume button when state is ON_HOLD', async () => {
+        const onHoldTicket = {
+            ...mockTicket,
+            state: { key: 'ON_HOLD', label: 'On Hold' }
+        }
+
+        const wrapper = await mountSuspended(TicketDetailPage, {
+            global: {
+                plugins: [
+                    createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: {
+                                user: { id: 'user-admin', role: 'admin' },
+                                permissions: ['helpdesk-tickets:view', 'helpdesk-tickets:action']
+                            },
+                            helpdesk: {
+                                currentTicket: onHoldTicket,
+                                loading: false
+                            }
+                        }
+                    })
+                ]
+            }
+        })
+
+        await flushPromises()
+        const text = wrapper.text()
+        expect(text).toContain('Request Resume')
+    })
 })

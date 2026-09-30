@@ -643,7 +643,7 @@ const handleCreateTicket = async () => {
 };
 
 // State
-const activeTab = ref('all');
+const activeTab = ref('priority');
 const searchText = ref('');
 const facilityFilter = ref<string | undefined>(undefined);
 

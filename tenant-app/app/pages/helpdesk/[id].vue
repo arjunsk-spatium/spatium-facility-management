@@ -64,7 +64,7 @@
                     :loading="resuming"
                     @click="handleResumeTicket"
                 >
-                    Resume Work
+                    Request Resume
                 </a-button>
 
                 <!-- Change Resolution SLA (Helpdesk user on ON_HOLD state) -->

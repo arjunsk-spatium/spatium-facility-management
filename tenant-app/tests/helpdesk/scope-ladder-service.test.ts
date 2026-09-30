@@ -285,7 +285,7 @@ describe('helpdeskService - ScopeLadder & Hold/Resume Extensions', () => {
             const res = await service.resumeTicket('tkt-1')
             expect(res.id).toBe('tkt-1')
             expect(mockFetch).toHaveBeenCalledWith(
-                expect.stringContaining('/api/portal/helpdesk/tickets/tkt-1/resume/'),
+                expect.stringContaining('/api/portal/helpdesk/tickets/tkt-1/resume-direct/'),
                 expect.objectContaining({ method: 'POST' })
             )
         })

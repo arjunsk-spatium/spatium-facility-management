@@ -1846,7 +1846,7 @@ export const useHelpdeskService = () => {
         resumeTicket: async (ticketId: string): Promise<Ticket> => {
             try {
                 const response = await $api<any>(
-                    `/api/portal/helpdesk/tickets/${ticketId}/resume/`,
+                    `/api/portal/helpdesk/tickets/${ticketId}/resume-direct/`,
                     { method: "POST", body: {} },
                 );
                 if (!response.success || (response.data && response.data.success === false)) {
