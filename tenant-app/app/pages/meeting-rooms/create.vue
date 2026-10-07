@@ -219,7 +219,6 @@ const handleSubmit = async () => {
             roomData.organization_id = formState.organization_id
         }
 
-        console.log('Creating room with data:', roomData)
         await createRoom(roomData)
         message.success('Room created successfully!')
 

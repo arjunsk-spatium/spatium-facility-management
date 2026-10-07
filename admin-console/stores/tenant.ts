@@ -29,14 +29,12 @@ export const useTenantStore = defineStore('tenant', {
     }),
     actions: {
         async fetchTenants() {
-            console.log('fetchTenants: starting', { loading: this.loading });
             this.loading = true
             this.error = null
             try {
                 const { getTenants } = useTenantService()
                 // request now returns the data directly (or throws)
                 const response = await getTenants()
-                console.log('fetchTenants: received response', response);
                 
                 // Response is the raw JSON body
                 if (response && response.success) {
@@ -53,16 +51,13 @@ export const useTenantStore = defineStore('tenant', {
                         onboarded_at: t.onboarded_at,
                         modules: t.modules || [] // Fallback if API sends it
                     }));
-                    console.log('fetchTenants: updated tenants', this.tenants);
                 } else {
                      this.tenants = [];
-                     console.log('fetchTenants: no success in response');
                 }
             } catch (err: any) {
                 this.error = 'Failed to fetch tenants'
                 console.error('fetchTenants: error', err)
             } finally {
-                console.log('fetchTenants: finally block execution');
                 this.loading = false
             }
         },

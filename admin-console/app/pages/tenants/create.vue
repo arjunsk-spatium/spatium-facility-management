@@ -524,7 +524,6 @@ const handleStep1 = async () => {
                 domain: `${tenantForm.domain}.nexspace.app`
             };
             const newTenant: any = await createTenant(payload);
-            console.log('Create Tenant Response:', newTenant);
 
             const newId = newTenant?.id || newTenant?.data?.id;
 
@@ -582,7 +581,6 @@ const handleStep2 = async () => {
             status: 'active'
         };
 
-        console.log('Assigning plan (Step 2) with payload:', payload);
         const planResponse: any = await assignPlan(payload as any);
 
         // Relaxed check
@@ -602,7 +600,6 @@ const handleStep2 = async () => {
 };
 
 const handleStep3 = async () => {
-    console.log('handleStep3 called. TenantId:', tenantId.value);
     if (!tenantId.value) {
         console.error('Tenant ID missing in handleStep3');
         return;
@@ -619,13 +616,11 @@ const handleStep3 = async () => {
                     priority: 10 - index
                 }))
             };
-            console.log('Assigning modules (Step 3):', modulePayload);
             await assignModules(modulePayload);
         }
 
         // 3. Assign Features
         if (subscriptionForm.selectedFeatures.length > 0 && tenantId.value) {
-            console.log('Assigning features (Step 3):', subscriptionForm.selectedFeatures);
             await Promise.all(
                 subscriptionForm.selectedFeatures.map(featureId =>
                     createTenantFeature({

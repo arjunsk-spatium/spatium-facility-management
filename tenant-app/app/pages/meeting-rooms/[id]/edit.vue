@@ -189,10 +189,8 @@ const fetchRoomData = async () => {
 }
 
 const handleSubmit = async () => {
-    console.log('handleSubmit called')
     try {
         await formRef.value?.validate()
-        console.log('validation passed')
         loading.value = true
         const payload: any = {
             name: formState.name,
@@ -210,7 +208,6 @@ const handleSubmit = async () => {
         if (formState.organization_id) {
             payload.organization_id = formState.organization_id
         }
-        console.log('Updating room with payload:', payload)
         await updateRoom(roomId, payload)
         message.success('Room updated successfully')
         await roomStore.fetchRooms({}, true)

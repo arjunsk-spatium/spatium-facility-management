@@ -133,14 +133,12 @@ export const useAuthStore = defineStore("auth", {
         async refreshAccessToken(): Promise<boolean> {
             // Prevent multiple simultaneous refresh attempts
             if (this.isRefreshing) {
-                console.log("[Auth] Already refreshing, waiting for existing refresh...");
                 // Wait for the existing refresh to complete
                 let waited = 0;
                 while (this.isRefreshing && waited < 5000) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                     waited += 100;
                 }
-                console.log("[Auth] After waiting, isRefreshing:", this.isRefreshing, "has token:", !!this.token);
                 return !!this.token;
             }
 
@@ -153,7 +151,6 @@ export const useAuthStore = defineStore("auth", {
             const config = useRuntimeConfig();
 
             try {
-                console.log("[Auth] Refreshing token...");
                 const response: any = await $fetch(
                     `${config.public.apiBaseUrl}/api/auth/token/refresh/`,
                     {
@@ -163,7 +160,6 @@ export const useAuthStore = defineStore("auth", {
                         },
                     },
                 );
-                console.log("[Auth] Refresh response:", response);
 
                 if (response.success && response.data) {
                     this.token = response.data.access;
@@ -179,7 +175,6 @@ export const useAuthStore = defineStore("auth", {
                         localStorage.setItem("auth_token", this.token || "");
                     }
 
-                    console.log("Token refreshed successfully");
                     return true;
                 }
 
@@ -270,8 +265,6 @@ export const useAuthStore = defineStore("auth", {
                 } catch (err) {
                     console.error("Failed to map feature keys", err);
                 }
-                
-                console.log("FINAL AUTH PERMISSIONS:", this.permissions);
             } catch (error) {
                 console.error("Failed to fetch modules", error);
                 this.modules = [];

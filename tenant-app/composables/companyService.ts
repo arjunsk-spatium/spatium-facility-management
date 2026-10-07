@@ -139,7 +139,6 @@ export const useCompanyService = () => {
         previous: string | null;
     }> => {
         const url = buildUrl("/api/portal/companies/");
-        console.log("[CompanyService] Fetching companies from:", url);
         const query: any = {};
         if (params.page) query.page = params.page;
         if (params.page_size) query.page_size = params.page_size;
@@ -149,10 +148,6 @@ export const useCompanyService = () => {
             success: boolean;
             data: { count: number; next: string | null; previous: string | null; results: Company[] };
         }>(url, { method: "GET", query: { page: params.page || 1, page_size: params.page_size || 1, ...query } });
-        console.log(
-            "[CompanyService] Companies fetched:",
-            response.data?.results?.length || 0,
-        );
         return {
             companies: response.data?.results || [],
             count: response.data?.count || 0,
@@ -168,7 +163,6 @@ export const useCompanyService = () => {
         previous: string | null;
     }> => {
         const url = buildUrl("/api/portal/all_companies/");
-        console.log("[CompanyService] Fetching all companies from:", url);
         const query: any = {};
         if (params.page) query.page = params.page;
         if (params.page_size) query.page_size = params.page_size;
@@ -284,25 +278,26 @@ export const useCompanyService = () => {
 
     const getCompanyFacilities = async (companyId: string): Promise<CompanyFacilityMapping[]> => {
         const url = buildUrl("/api/portal/companies/mappings/");
-        const response = await $api<{
-            success: boolean;
-            data: { results: CompanyFacilityMapping[] };
-        }>(url, { 
+        const response = await $api<any>(url, { 
             method: "GET",
             query: { company: companyId }
         });
-        return response.data?.results || [];
+        if (Array.isArray(response)) return response;
+        if (Array.isArray(response?.data?.results)) return response.data.results;
+        if (Array.isArray(response?.data)) return response.data;
+        if (Array.isArray(response?.results)) return response.results;
+        return [];
     };
 
     const createCompanyFacilityMapping = async (
         data: CreateCompanyFacilityMappingPayload
     ): Promise<CompanyFacilityMapping> => {
         const url = buildUrl("/api/portal/companies/mappings/");
-        const response = await $api<CompanyFacilityMapping>(url, {
+        const response = await $api<any>(url, {
             method: "POST",
             body: data,
         });
-        return response;
+        return response?.data || response;
     };
 
     const deleteCompanyFacilityMapping = async (mappingId: string): Promise<void> => {

@@ -167,16 +167,21 @@ export const useCompanyStore = defineStore("company", {
             try {
                 const { createCompanyFacilityMapping } = useCompanyService();
                 const newMapping = await createCompanyFacilityMapping(data);
-                this.currentCompanyFacilities.push(newMapping);
+                if (newMapping) {
+                    this.currentCompanyFacilities.push(newMapping);
+                }
                 return newMapping;
-            } catch (err) {
-                this.error = "Failed to add facility mapping";
+            } catch (err: any) {
+                this.error = err?.data?.message || err?.message || "Failed to add facility mapping";
                 throw err;
             } finally {
                 this.loading = false;
             }
         },
         async addCompanyFacilityMappingAction(data: CreateCompanyFacilityMappingPayload) {
+            return this.addCompanyFacilityMapping(data);
+        },
+        async createCompanyFacilityMappingAction(data: CreateCompanyFacilityMappingPayload) {
             return this.addCompanyFacilityMapping(data);
         },
         async removeCompanyFacilityMapping(mappingId: string) {
@@ -188,14 +193,17 @@ export const useCompanyStore = defineStore("company", {
                 this.currentCompanyFacilities = this.currentCompanyFacilities.filter(
                     (m) => m.id !== mappingId
                 );
-            } catch (err) {
-                this.error = "Failed to remove facility mapping";
+            } catch (err: any) {
+                this.error = err?.data?.message || err?.message || "Failed to remove facility mapping";
                 throw err;
             } finally {
                 this.loading = false;
             }
         },
         async removeCompanyFacilityMappingAction(mappingId: string) {
+            return this.removeCompanyFacilityMapping(mappingId);
+        },
+        async deleteCompanyFacilityMappingAction(mappingId: string) {
             return this.removeCompanyFacilityMapping(mappingId);
         },
         async generateCompanyQRCode(

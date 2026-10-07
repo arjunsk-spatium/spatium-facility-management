@@ -221,7 +221,7 @@ export const useUserService = () => {
                         }
                     }
                 })
-                console.log("PARSED PERMISSIONS:", permissions); return { modules: userKeys, permissions }
+                return { modules: userKeys, permissions }
             }
             return { modules: [], permissions: [] }
         } catch (error) {

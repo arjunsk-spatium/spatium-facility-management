@@ -265,7 +265,7 @@ const handleSubmit = async () => {
 
         emit('submit', formData)
     } catch (error) {
-        console.log('Validation failed')
+        // Validation failed
     }
 }
 </script>

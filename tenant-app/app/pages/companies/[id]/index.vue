@@ -1001,8 +1001,8 @@ const handleFacilityOk = async () => {
         await store.fetchCompanyFacilitiesAction(route.params.id as string)
         message.success('Facility added successfully')
         isFacilityModalVisible.value = false
-    } catch (err) {
-        message.error('Failed to add facility')
+    } catch (err: any) {
+        message.error(err?.data?.message || err?.message || 'Failed to add facility')
     } finally {
         facilityLoading.value = false
     }
@@ -1012,8 +1012,8 @@ const deleteFacility = async (mappingId: string) => {
     try {
         await store.deleteCompanyFacilityMappingAction(mappingId)
         message.success('Facility removed successfully')
-    } catch (err) {
-        message.error('Failed to remove facility')
+    } catch (err: any) {
+        message.error(err?.data?.message || err?.message || 'Failed to remove facility')
     }
 }
 
