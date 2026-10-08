@@ -58,7 +58,7 @@ export interface CreateAdminPostPayload {
     category_id: string
     title: string
     description: string
-    scope_type: 'companies' | 'facilities'
+    scope_type: 'companies' | 'facilities' | 'all'
     company_ids?: string[]
     facility_ids?: string[]
     allow_likes?: boolean

@@ -89,7 +89,8 @@
                 <div class="flex items-center justify-between mb-2">
                   <label for="otp" class="label mb-0">One-Time Password</label>
                   <button type="button" @click="goBack"
-                    class="text-xs text-primary-600 hover:text-primary-700 font-medium cursor-pointer hover:underline">
+                    style="cursor: pointer;"
+                    class="text-xs !text-primary-600 hover:!text-primary-700 font-semibold cursor-pointer underline hover:underline transition-colors">
                     Change Email
                   </button>
                 </div>

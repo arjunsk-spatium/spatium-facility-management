@@ -164,7 +164,10 @@
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Tickets Over Time</h3>
                     </template>
                     <div class="h-64 mt-4 overflow-hidden">
-                        <div ref="ticketsOverTimeContainer" class="w-full h-full"></div>
+                        <div v-if="ticketsOverTimeData.length === 0" class="flex items-center justify-center h-full text-gray-400">
+                            No tickets data available for the selected period
+                        </div>
+                        <div v-show="ticketsOverTimeData.length > 0" ref="ticketsOverTimeContainer" class="w-full h-full"></div>
                     </div>
                 </a-card>
 
@@ -173,52 +176,70 @@
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Status Distribution</h3>
                     </template>
                     <div class="h-64 mt-4 overflow-hidden">
-                        <div ref="statusDistributionContainer" class="w-full h-full"></div>
+                        <div v-if="statusDistributionData.length === 0" class="flex items-center justify-center h-full text-gray-400">
+                            No status data available for the selected period
+                        </div>
+                        <div v-show="statusDistributionData.length > 0" ref="statusDistributionContainer" class="w-full h-full"></div>
                     </div>
                 </a-card>
             </div>
 
             <!-- Tables -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <a-card v-if="insights.top_facilities.length > 0">
+                <a-card>
                     <template #title>
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Top Facilities</h3>
                     </template>
                     <a-table
+                        v-if="insights.top_facilities && insights.top_facilities.length > 0"
                         :dataSource="insights.top_facilities"
                         :columns="topFacilitiesColumns"
                         :pagination="false"
                         size="small"
                         class="mt-4"
+                        row-key="facility_name"
                     />
+                    <div v-else class="text-center py-6 text-gray-400">
+                        No facilities data available
+                    </div>
                 </a-card>
 
-                <a-card v-if="insights.top_categories.length > 0">
+                <a-card>
                     <template #title>
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Top Categories</h3>
                     </template>
                     <a-table
+                        v-if="insights.top_categories && insights.top_categories.length > 0"
                         :dataSource="insights.top_categories"
                         :columns="topCategoriesColumns"
                         :pagination="false"
                         size="small"
                         class="mt-4"
+                        row-key="category_name"
                     />
+                    <div v-else class="text-center py-6 text-gray-400">
+                        No categories data available
+                    </div>
                 </a-card>
             </div>
 
             <!-- SLA Performance -->
-            <a-card v-if="insights.facility_sla_performance.length > 0">
+            <a-card>
                 <template #title>
                     <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Facility SLA Performance</h3>
                 </template>
                 <a-table
+                    v-if="insights.facility_sla_performance && insights.facility_sla_performance.length > 0"
                     :dataSource="insights.facility_sla_performance"
                     :columns="slaPerformanceColumns"
                     :pagination="false"
                     size="small"
                     class="mt-4"
+                    row-key="facility_name"
                 />
+                <div v-else class="text-center py-6 text-gray-400">
+                    No SLA performance data available
+                </div>
             </a-card>
         </template>
 
@@ -252,7 +273,12 @@ const dateRange = ref<[Dayjs, Dayjs]>([
 ])
 
 const fetchInsights = () => {
-    if (!dateRange.value || dateRange.value.length !== 2) return
+    if (!dateRange.value || dateRange.value.length !== 2) {
+        const startDate = dayjs().subtract(6, 'month').format('YYYY-MM-DD')
+        const endDate = dayjs().format('YYYY-MM-DD')
+        store.fetchInsightsAction(startDate, endDate)
+        return
+    }
     const startDate = dateRange.value[0].format('YYYY-MM-DD')
     const endDate = dateRange.value[1].format('YYYY-MM-DD')
     store.fetchInsightsAction(startDate, endDate)
@@ -375,11 +401,12 @@ const statusColors: Record<string, string> = {
 
 const createTicketsOverTimeChart = async () => {
     await nextTick()
-    if (!ticketsOverTimeContainer.value || !ticketsOverTimeData.value.length) return
-
     if (ticketsOverTimeInstance) {
         ticketsOverTimeInstance.destroy()
+        ticketsOverTimeInstance = null
     }
+
+    if (!ticketsOverTimeContainer.value || !ticketsOverTimeData.value.length) return
 
     ticketsOverTimeInstance = new Line(ticketsOverTimeContainer.value, {
         data: ticketsOverTimeData.value,
@@ -430,11 +457,12 @@ const createTicketsOverTimeChart = async () => {
 
 const createStatusDistributionChart = async () => {
     await nextTick()
-    if (!statusDistributionContainer.value || !statusDistributionData.value.length) return
-
     if (statusDistributionInstance) {
         statusDistributionInstance.destroy()
+        statusDistributionInstance = null
     }
+
+    if (!statusDistributionContainer.value || !statusDistributionData.value.length) return
 
     const total = statusDistributionData.value.reduce((sum, item) => sum + item.value, 0)
 
@@ -499,8 +527,8 @@ const exportReport = () => {
     try {
         const rows: string[] = []
         const data = insights.value
-        const dateFrom = dateRange.value?.[0]?.format('YYYY-MM-DD') || data.date_range.start_date
-        const dateTo = dateRange.value?.[1]?.format('YYYY-MM-DD') || data.date_range.end_date
+        const dateFrom = dateRange.value?.[0]?.format('YYYY-MM-DD') || data.date_range?.start_date || dayjs().subtract(6, 'month').format('YYYY-MM-DD')
+        const dateTo = dateRange.value?.[1]?.format('YYYY-MM-DD') || data.date_range?.end_date || dayjs().format('YYYY-MM-DD')
         const filename = `helpdesk-insights-${dateFrom}_to_${dateTo}.csv`
 
         // Header

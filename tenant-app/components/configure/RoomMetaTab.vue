@@ -78,7 +78,7 @@ const amenityColumns = [
 ]
 
 const amenityFields = [
-    { name: 'name', label: 'Name', type: 'text' as const }
+    { name: 'name', label: 'Name', type: 'text' as const, required: true }
 ]
 
 // API Functions
@@ -160,8 +160,12 @@ const fetchAmenities = async () => {
 }
 
 const createAmenity = async (data: { name: string; icon?: File }) => {
+    if (!data.name || !data.name.trim()) {
+        message.error('Amenity name is required')
+        return
+    }
     try {
-        const body: any = { name: data.name }
+        const body: any = { name: data.name.trim() }
         
         const result = await $api<any>(AMENITY_API_BASE + '/', {
             method: 'POST',
@@ -173,14 +177,19 @@ const createAmenity = async (data: { name: string; icon?: File }) => {
         } else {
             message.error(result.message || 'Failed to add amenity')
         }
-    } catch (error) {
-        message.error('Failed to add amenity')
+    } catch (error: any) {
+        const errorMsg = error?.data?.error?.message || error?.data?.message || error?.message || 'Failed to add amenity'
+        message.error(errorMsg)
     }
 }
 
 const updateAmenity = async (record: any, data: { name: string; icon?: File }) => {
+    if (!data.name || !data.name.trim()) {
+        message.error('Amenity name is required')
+        return
+    }
     try {
-        const body: any = { name: data.name }
+        const body: any = { name: data.name.trim() }
 
         const result = await $api<any>(AMENITY_API_BASE + '/' + record.id + '/', {
             method: 'PATCH',
@@ -192,8 +201,9 @@ const updateAmenity = async (record: any, data: { name: string; icon?: File }) =
         } else {
             message.error(result.message || 'Failed to update amenity')
         }
-    } catch (error) {
-        message.error('Failed to update amenity')
+    } catch (error: any) {
+        const errorMsg = error?.data?.error?.message || error?.data?.message || error?.message || 'Failed to update amenity'
+        message.error(errorMsg)
     }
 }
 

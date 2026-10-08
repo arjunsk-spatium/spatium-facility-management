@@ -43,9 +43,9 @@
                 </a-form-item>
 
                 <!-- Banner Image -->
-                <a-form-item label="Banner Image (16:9)" name="image"
+                <a-form-item label="Banner Image (16:9)" name="image" required
                     extra="Recommended aspect ratio: 16:9 (e.g. 1920×1080). Max file size: 5MB.">
-                    <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" :max-count="1" list-type="picture-card"
+                    <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" @remove="handleRemove" :max-count="1" list-type="picture-card"
                         accept="image/*">
                         <div v-if="fileList.length < 1">
                             <PlusOutlined />
@@ -135,7 +135,19 @@ const formState = ref<FormState>({
 const rules: FormRules = {
     title: [{ required: true, message: 'Please input banner title!' }],
     category: [{ required: true, message: 'Please select category!' }],
-    link: [{ type: 'url', message: 'Please enter a valid URL!', trigger: 'blur' }]
+    link: [{ type: 'url', message: 'Please enter a valid URL!', trigger: 'blur' }],
+    image: [
+        {
+            validator: async (_rule: any, value: any) => {
+                const hasImage = (fileList.value && fileList.value.length > 0) || !!value || !!previewImageUrl.value
+                if (!hasImage) {
+                    return Promise.reject('Please upload a banner image!')
+                }
+                return Promise.resolve()
+            },
+            trigger: 'change'
+        }
+    ]
 }
 
 const fileList = ref<UploadProps['fileList']>([])
@@ -241,7 +253,16 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
         message.error('Image must be smaller than 5MB!')
         return false
     }
+    formState.value.image = file
+    formRef.value?.clearValidate?.(['image'])
     return false
+}
+
+const handleRemove = () => {
+    formState.value.image = null
+    fileList.value = []
+    previewImageUrl.value = ''
+    return true
 }
 
 const handleSubmit = async () => {

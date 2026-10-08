@@ -63,9 +63,13 @@
                     </div>
                 </template>
                 <template v-if="column.key === 'status'">
-                    <a-tag :color="record.is_active ? 'success' : 'default'">
-                        {{ record.is_active ? 'Active' : 'Inactive' }}
-                    </a-tag>
+                    <a-switch
+                        :checked="record.is_active"
+                        :loading="togglingBannerId === record.id"
+                        checked-children="Active"
+                        un-checked-children="Inactive"
+                        @change="(checked: any) => handleToggleActive(record, Boolean(checked))"
+                    />
                 </template>
                 <template v-if="column.key === 'scope'">
                     <a-tag :color="record.is_global ? 'purple' : 'blue'">
@@ -74,6 +78,7 @@
                 </template>
                 <template v-if="column.key === 'action'">
                     <a-space>
+                        <a-button type="link" @click="openEditModal(record)">Edit</a-button>
                         <a-popconfirm title="Are you sure you want to delete this banner?" ok-text="Yes"
                             cancel-text="No" @confirm="handleDelete(record.id)">
                             <a-button type="link" danger>Delete</a-button>
@@ -105,11 +110,15 @@
                             </div>
                             <div>
                                 <span class="text-neutral-500 dark:text-neutral-400 text-xs uppercase">Status</span>
-                                <p>
-                                    <a-tag :color="banner.is_active ? 'success' : 'default'" class="mt-1">
-                                        {{ banner.is_active ? 'Active' : 'Inactive' }}
-                                    </a-tag>
-                                </p>
+                                <div class="mt-1">
+                                    <a-switch
+                                        :checked="banner.is_active"
+                                        :loading="togglingBannerId === banner.id"
+                                        checked-children="Active"
+                                        un-checked-children="Inactive"
+                                        @change="(checked: any) => handleToggleActive(banner, Boolean(checked))"
+                                    />
+                                </div>
                             </div>
                             <div>
                                 <span class="text-neutral-500 dark:text-neutral-400 text-xs uppercase">Scope</span>
@@ -133,6 +142,7 @@
                         </div>
 
                         <div class="flex justify-end gap-2 mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
+                            <a-button type="default" size="small" @click="openEditModal(banner)">Edit</a-button>
                             <a-popconfirm title="Are you sure you want to delete this banner?" ok-text="Yes"
                                 cancel-text="No" @confirm="handleDelete(banner.id)">
                                 <a-button type="default" danger size="small">Delete</a-button>
@@ -142,6 +152,17 @@
                 </a-card>
             </template>
         </ResponsiveDataView>
+
+        <!-- Edit Banner Modal -->
+        <a-modal v-model:open="isEditModalVisible" title="Edit Banner" :footer="null" width="850px" destroy-on-close>
+            <BannerForm
+                :initial-values="editingBannerInitialValues"
+                submit-text="Update Banner"
+                :loading="editLoading"
+                @submit="handleUpdateBanner"
+                @cancel="isEditModalVisible = false"
+            />
+        </a-modal>
     </div>
 </template>
 
@@ -157,6 +178,7 @@ import {
     GlobalOutlined
 } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../components/ResponsiveDataView.vue'
+import BannerForm from '../../../components/banners/BannerForm.vue'
 import { useDate } from '../../../composables/useDate'
 
 definePageMeta({
@@ -169,6 +191,12 @@ const { formatDisplayDate } = useDate()
 
 const searchText = ref('')
 
+const isEditModalVisible = ref(false)
+const editLoading = ref(false)
+const editingBannerId = ref<string | null>(null)
+const editingBannerInitialValues = ref<any>({})
+const togglingBannerId = ref<string | null>(null)
+
 const stats = computed(() => ({
     total: count.value,
     active: banners.value.filter(b => b.is_active).length,
@@ -177,6 +205,50 @@ const stats = computed(() => ({
 
 const handleSearch = () => {
     store.fetchBanners({ search: searchText.value || undefined, page: 1 })
+}
+
+const openEditModal = (record: any) => {
+    editingBannerId.value = record.id
+    editingBannerInitialValues.value = {
+        title: record.title || '',
+        description: record.description || '',
+        category: record.category || 'general',
+        link: record.link || '',
+        link_title: record.link_title || '',
+        is_active: record.is_active ?? true,
+        image: record.image_url || record.image || null
+    }
+    isEditModalVisible.value = true
+}
+
+const handleUpdateBanner = async (formData: any) => {
+    if (!editingBannerId.value) return
+    editLoading.value = true
+    try {
+        await store.updateBannerAction(editingBannerId.value, formData)
+        message.success('Banner updated successfully')
+        isEditModalVisible.value = false
+        await store.fetchBanners({ search: searchText.value || undefined, page: page.value })
+    } catch (error: any) {
+        const errorMsg = error?.data?.message || error?.data?.error?.message || error?.data?.error || error?.message || 'Failed to update banner'
+        message.error(typeof errorMsg === 'string' ? errorMsg : 'Failed to update banner')
+    } finally {
+        editLoading.value = false
+    }
+}
+
+const handleToggleActive = async (record: any, checked: boolean) => {
+    togglingBannerId.value = record.id
+    try {
+        await store.updateBannerAction(record.id, { is_active: checked } as any)
+        message.success(`Banner ${checked ? 'activated' : 'deactivated'} successfully`)
+        await store.fetchBanners({ search: searchText.value || undefined, page: page.value })
+    } catch (error: any) {
+        const errorMsg = error?.data?.message || error?.data?.error?.message || error?.data?.error || error?.message || 'Failed to update banner status'
+        message.error(typeof errorMsg === 'string' ? errorMsg : 'Failed to update banner status')
+    } finally {
+        togglingBannerId.value = null
+    }
 }
 
 const handleDelete = async (id: string) => {

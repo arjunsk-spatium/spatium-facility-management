@@ -97,13 +97,13 @@
                             <div v-if="post.company_ids && post.company_ids.length > 0" class="col-span-2">
                                 <span class="text-neutral-500">Target Companies:</span>
                                 <div class="flex flex-wrap gap-1 mt-1">
-                                    <a-tag v-for="cid in post.company_ids" :key="cid" size="small">{{ cid }}</a-tag>
+                                    <a-tag v-for="cid in post.company_ids" :key="cid" size="small">{{ getCompanyName(cid) }}</a-tag>
                                 </div>
                             </div>
                             <div v-if="post.facility_ids && post.facility_ids.length > 0" class="col-span-2">
                                 <span class="text-neutral-500">Target Facilities:</span>
                                 <div class="flex flex-wrap gap-1 mt-1">
-                                    <a-tag v-for="fid in post.facility_ids" :key="fid" size="small">{{ fid }}</a-tag>
+                                    <a-tag v-for="fid in post.facility_ids" :key="fid" size="small">{{ getFacilityName(fid) }}</a-tag>
                                 </div>
                             </div>
                         </div>
@@ -128,6 +128,8 @@ import {
     CalendarOutlined,
     LinkOutlined,
 } from '@ant-design/icons-vue'
+import { useAllCompanyStore } from '../../../stores/allCompany'
+import { useAllFacilityStore } from '../../../stores/allFacility'
 
 definePageMeta({ layout: 'default', middleware: ['auth'] })
 
@@ -135,6 +137,8 @@ const route = useRoute()
 const router = useRouter()
 const store = useFeedStore()
 const authStore = useAuthStore()
+const allCompanyStore = useAllCompanyStore()
+const allFacilityStore = useAllFacilityStore()
 
 const post = computed(() => store.currentPost)
 const loading = computed(() => store.loading)
@@ -157,8 +161,18 @@ const getCategoryColor = (slug?: string) => {
 }
 
 const formatScopeType = (scope?: string) => {
-    if (!scope) return 'All'
+    if (!scope || scope === 'all') return 'All'
     return scope.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+}
+
+const getCompanyName = (id: string) => {
+    const comp = allCompanyStore.companies?.find((c: any) => c.id === id)
+    return comp ? comp.name : id
+}
+
+const getFacilityName = (id: string) => {
+    const fac = allFacilityStore.facilities?.find((f: any) => f.id === id)
+    return fac ? fac.name : id
 }
 
 const getInitials = (name?: string) => {
@@ -189,5 +203,7 @@ const handleDelete = async () => {
 
 onMounted(() => {
     store.fetchPost(route.params.id as string)
+    allCompanyStore.fetchAllCompanies({ page_size: 999 })
+    allFacilityStore.fetchAllFacilities({ page_size: 999 })
 })
 </script>

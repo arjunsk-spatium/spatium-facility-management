@@ -81,4 +81,24 @@ describe('Visitors Page', () => {
         // Page has "All Facilities" filter dropdown
         expect(wrapper.text()).toContain('Facilities')
     })
+
+    it('should filter visitors locally when search query matches name', async () => {
+        const wrapper = await mountSuspended(VisitorsPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['visitors-list:view', 'visitors-list:action'] },
+                        visitor: { visitors: mockVisitors, loading: false }
+                    }
+                })]
+            }
+        })
+
+        const vm = wrapper.findComponent({ name: 'VisitorManagement' }).vm as any
+        vm.searchQuery = 'Jane'
+        await wrapper.vm.$nextTick()
+        expect(vm.displayedVisitors).toHaveLength(1)
+        expect(vm.displayedVisitors[0].name).toBe('Jane Guest')
+    })
 })

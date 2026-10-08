@@ -47,7 +47,7 @@
         <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <a-table
                 :columns="columns"
-                :data-source="staffList"
+                :data-source="displayedStaff"
                 :loading="loading"
                 :pagination="paginationConfig"
                 :scroll="{ x: 800 }"
@@ -302,11 +302,24 @@ const handleFacilityFilterChange = () => {
     fetchStaff()
 }
 
-watch(searchQuery, (newVal) => {
-    if (!newVal) {
+let searchDebounceTimer: any = null
+watch(searchQuery, () => {
+    clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = setTimeout(() => {
         currentPage.value = 1
         fetchStaff()
-    }
+    }, 300)
+})
+
+const displayedStaff = computed(() => {
+    const q = searchQuery.value?.trim().toLowerCase()
+    if (!q) return staffList.value
+    return staffList.value.filter(s => {
+        const name = (s.full_name || s.username || '').toLowerCase()
+        const email = (s.email || '').toLowerCase()
+        const phone = (s.phone_number || '').toLowerCase()
+        return name.includes(q) || email.includes(q) || phone.includes(q)
+    })
 })
 
 const resolveFacilityName = (facId: string): string => {
@@ -549,7 +562,18 @@ const handleSubmit = async () => {
         await fetchStaff()
     } catch (e: any) {
         console.error('Failed to save operational staff:', e)
-        message.error(e.message || 'Failed to save operational staff')
+        let errorMsg = e?.data?.message || e?.data?.error?.message || e?.data?.error
+        if (!errorMsg && e?.data?.error?.fields) {
+            const fields = e.data.error.fields
+            const firstKey = Object.keys(fields)[0]
+            if (firstKey && fields[firstKey]?.[0]?.message) {
+                errorMsg = fields[firstKey][0].message
+            }
+        }
+        if (!errorMsg && e?.data?.detail) {
+            errorMsg = e.data.detail
+        }
+        message.error(typeof errorMsg === 'string' ? errorMsg : (e.message || 'Failed to save operational staff'))
     } finally {
         submitting.value = false
     }
@@ -560,8 +584,9 @@ const handleDeleteStaff = async (id: string) => {
         await deleteOperationalStaff(id)
         message.success('Staff member deleted successfully')
         await fetchStaff()
-    } catch (error) {
-        message.error('Failed to delete staff member')
+    } catch (error: any) {
+        const errorMsg = error?.data?.message || error?.data?.error?.message || error?.data?.error || error?.message || 'Failed to delete staff member'
+        message.error(typeof errorMsg === 'string' ? errorMsg : 'Failed to delete staff member')
     }
 }
 

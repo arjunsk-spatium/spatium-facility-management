@@ -285,6 +285,28 @@ describe('CompanyDetails', () => {
             }))
         })
 
+        it('updates an existing SPOC using org_portal endpoint', async () => {
+            wrapper.vm.spocs = [{ id: 'spoc-1', name: 'Original Spoc', email: 'orig@spoc.com', phone: '1111' }]
+            await wrapper.vm.editSpoc(0)
+
+            wrapper.vm.spocForm.full_name = 'Updated Spoc'
+            await wrapper.vm.handleSpocOk()
+
+            expect(mockApi).toHaveBeenCalledWith('/api/portal/users/org_portal/spoc-1/update/', expect.objectContaining({
+                method: 'PATCH',
+                body: expect.objectContaining({ full_name: 'Updated Spoc' })
+            }))
+        })
+
+        it('deletes a SPOC using org_portal delete endpoint', async () => {
+            wrapper.vm.spocs = [{ id: 'spoc-del', name: 'Delete Spoc', email: 'del@spoc.com' }]
+            await wrapper.vm.deleteSpoc(0)
+
+            expect(mockApi).toHaveBeenCalledWith('/api/portal/users/org_portal/spoc-del/delete/', expect.objectContaining({
+                method: 'DELETE'
+            }))
+        })
+
         it('shows existing user confirmation when SPOC user_id error is returned', async () => {
             const error = new Error('Failed to create user') as any
             error.data = {

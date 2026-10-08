@@ -30,8 +30,16 @@ const handleCreate = async (formData: any) => {
         await store.createBannerAction(formData)
         message.success('Banner created successfully')
         navigateTo('/banners')
-    } catch (error) {
-        message.error('Failed to create banner')
+    } catch (error: any) {
+        let errorMsg = error?.data?.message || error?.data?.error?.message || error?.data?.error
+        if (!errorMsg && error?.data?.error?.fields) {
+            const fields = error.data.error.fields
+            const firstKey = Object.keys(fields)[0]
+            if (firstKey && fields[firstKey]?.[0]?.message) {
+                errorMsg = fields[firstKey][0].message
+            }
+        }
+        message.error(typeof errorMsg === 'string' ? errorMsg : (error?.message || 'Failed to create banner'))
     }
 }
 </script>

@@ -264,7 +264,7 @@
                     </a-select>
                 </div>
 
-                <a-button v-if="canAction" class="w-full md:w-auto">
+                <a-button v-if="canAction" class="w-full md:w-auto" :loading="exporting" @click="exportTickets">
                     <template #icon>
                         <ExportOutlined />
                     </template>
@@ -323,7 +323,7 @@
                                         >
                                             <PauseCircleOutlined /> Hold Ticket
                                         </a-menu-item>
-                                        <a-menu-item v-if="canUpdate && record.state?.key !== 'closed'" key="close"
+                                        <a-menu-item v-if="canUpdate && ['pending_confirmation', 'disputed'].includes(record.state?.key?.toLowerCase())" key="close"
                                             @click="handleCloseTicket(record)">
                                             <CheckCircleOutlined /> Close Ticket
                                         </a-menu-item>
@@ -387,9 +387,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import dayjs from 'dayjs';
 import { useHelpdeskStore } from '../../../stores/helpdesk';
 import { useFacilityStore } from '../../../stores/facility';
 import { useFacilityService } from '../../../composables/facilityService';
+import { useHelpdeskService } from '../../../composables/helpdeskService';
 import { useAuthStore } from '../../../stores/auth';
 import { storeToRefs } from 'pinia';
 import { message } from 'ant-design-vue';
@@ -784,15 +786,82 @@ const handlePageChange = async (pageNum: number, newPageSize: number) => {
     await helpdeskStore.fetchTickets(params);
 };
 
+const exporting = ref(false);
+
+const exportTickets = async () => {
+    if (exporting.value) return;
+    exporting.value = true;
+    try {
+        const XLSX = await import('xlsx');
+        const params: TicketListParams = { page_size: 9999 };
+        if (activeTab.value === 'open') {
+            params.states = 'open';
+        } else if (activeTab.value === 'inprogress') {
+            params.states = 'inprogress';
+        } else if (activeTab.value === 'pending') {
+            params.states = 'pending_confirmation';
+        } else if (activeTab.value === 'closed') {
+            params.states = 'closed';
+        } else if (activeTab.value === 'on_hold') {
+            params.states = 'on_hold';
+        }
+        if (facilityFilter.value) {
+            params.facility_id = facilityFilter.value;
+        }
+        if (searchText.value) {
+            params.search = searchText.value;
+        }
+
+        let exportData: any[] = [];
+        try {
+            const { getTickets } = useHelpdeskService();
+            const res = await getTickets(params);
+            exportData = res?.tickets || res?.data?.results || res?.results || tickets.value;
+        } catch {
+            exportData = tickets.value;
+        }
+
+        if (!exportData || exportData.length === 0) {
+            message.warning('No tickets to export');
+            return;
+        }
+
+        const formatted = exportData.map(ticket => ({
+            'Ticket #': ticket.ticket_number || '',
+            'Title': ticket.title || '',
+            'Status': ticket.state?.label || ticket.state?.key || ticket.status || '',
+            'Priority': ticket.priority?.label || ticket.priority?.key || '',
+            'Category': ticket.category_name || '',
+            'Subcategory': ticket.subcategory_name || '',
+            'Facility': ticket.facility_name || '',
+            'Assigned To': ticket.assigned_to_name || '',
+            'Created At': ticket.created_at ? new Date(ticket.created_at).toLocaleString() : ''
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(formatted);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Tickets');
+        const now = dayjs().format('YYYY-MM-DD');
+        XLSX.writeFile(workbook, `helpdesk-tickets-${now}.xlsx`);
+        message.success('Tickets exported successfully');
+    } catch (err: any) {
+        console.error('Failed to export tickets:', err);
+        message.error('Failed to export tickets');
+    } finally {
+        exporting.value = false;
+    }
+};
+
 const handleCloseTicket = async (record: any) => {
     try {
-        await helpdeskStore.confirmCloseTicket(record.id)
-        message.success('Ticket closed successfully')
-        await fetchTicketsByFilter()
-    } catch (error) {
-        message.error('Failed to close ticket')
+        await helpdeskStore.confirmCloseTicket(record.id);
+        message.success('Ticket closed successfully');
+        await fetchTicketsByFilter();
+    } catch (error: any) {
+        const errorMsg = error?.data?.message || error?.data?.error?.message || error?.data?.error || error?.message || 'Failed to close ticket';
+        message.error(typeof errorMsg === 'string' ? errorMsg : 'Failed to close ticket');
     }
-}
+};
 
 // Initialization
 onMounted(async () => {

@@ -269,11 +269,12 @@
                                             class="text-blue-500 h-6 w-6 min-w-[24px]" @click="editSpoc(index)">
                                             <EditOutlined class="text-xs" />
                                         </a-button>
-                                        <a-button type="text" shape="circle" size="small"
-                                            class="text-red-500 h-6 w-6 min-w-[24px]" @click="deleteSpoc(index)"
-                                            v-if="spocs.length > 1">
-                                            <DeleteOutlined class="text-xs" />
-                                        </a-button>
+                                        <a-popconfirm title="Are you sure you want to delete this SPOC?" ok-text="Yes" cancel-text="No" @confirm="deleteSpoc(index)">
+                                            <a-button type="text" shape="circle" size="small"
+                                                class="text-red-500 h-6 w-6 min-w-[24px]">
+                                                <DeleteOutlined class="text-xs" />
+                                            </a-button>
+                                        </a-popconfirm>
                                     </div>
 
                                     <div class="flex flex-col items-center mb-2 mt-1">
@@ -400,14 +401,14 @@
         <!-- Edit/Add SPOC Modal -->
         <a-modal v-model:open="isSpocModalVisible" :title="editingSpocId ? 'Edit SPOC' : 'Add SPOC'" @ok="handleSpocOk"
             :confirm-loading="spocSaving">
-            <a-form layout="vertical">
-                <a-form-item label="Full Name" required>
-                    <a-input v-model:value="spocForm.full_name" />
+            <a-form ref="spocFormRef" :model="spocForm" :rules="spocRules" layout="vertical">
+                <a-form-item label="Full Name" name="full_name" required>
+                    <a-input v-model:value="spocForm.full_name" placeholder="Enter full name" />
                 </a-form-item>
-                <a-form-item label="Email" required>
-                    <a-input v-model:value="spocForm.email" />
+                <a-form-item label="Email" name="email" required>
+                    <a-input v-model:value="spocForm.email" placeholder="Enter email address" type="email" />
                 </a-form-item>
-                <a-form-item label="Phone" required>
+                <a-form-item label="Phone" name="phone_number" required>
                     <PhoneInput v-model="spocForm.phone_number" />
                 </a-form-item>
             </a-form>
@@ -416,14 +417,14 @@
         <!-- Add/Edit Employee Modal -->
         <a-modal v-model:open="isEmployeeModalVisible" :title="editingEmployeeId ? 'Edit Employee' : 'Add Employee'"
             @ok="handleEmployeeOk" :confirm-loading="employeeSaving">
-            <a-form layout="vertical">
-                <a-form-item label="Full Name" required>
-                    <a-input v-model:value="employeeForm.full_name" />
+            <a-form ref="employeeFormRef" :model="employeeForm" :rules="employeeRules" layout="vertical">
+                <a-form-item label="Full Name" name="full_name" required>
+                    <a-input v-model:value="employeeForm.full_name" placeholder="Enter full name" />
                 </a-form-item>
-                <a-form-item label="Email" required>
-                    <a-input v-model:value="employeeForm.email" />
+                <a-form-item label="Email" name="email" required>
+                    <a-input v-model:value="employeeForm.email" placeholder="Enter email address" type="email" />
                 </a-form-item>
-                <a-form-item label="Phone">
+                <a-form-item label="Phone" name="phone_number">
                     <PhoneInput v-model="employeeForm.phone_number" />
                 </a-form-item>
             </a-form>
@@ -432,16 +433,16 @@
         <!-- Add Facility Modal -->
         <a-modal v-model:open="isFacilityModalVisible" title="Add Facility" @ok="handleFacilityOk"
             :confirm-loading="facilityLoading">
-            <a-form layout="vertical">
-                <a-form-item label="Facility" required>
+            <a-form ref="facilityFormRef" :model="facilityForm" :rules="facilityRules" layout="vertical">
+                <a-form-item label="Facility" name="facility_id" required>
                     <a-select v-model:value="facilityForm.facility_id" placeholder="Select Facility"
-                        @change="onFacilityChange" :loading="facilitiesLoading">
+                        @change="onFacilityChange" :loading="facilitiesLoading" show-search option-filter-prop="children">
                         <a-select-option v-for="facility in facilities" :key="facility.id" :value="facility.id">
                             {{ facility.name }}
                         </a-select-option>
                     </a-select>
                 </a-form-item>
-                <a-form-item label="Tower (Optional)">
+                <a-form-item label="Tower (Optional)" name="tower_id">
                     <a-select v-model:value="facilityForm.tower_id" placeholder="Select Tower" @change="onTowerChange"
                         :loading="towersLoading" :disabled="!facilityForm.facility_id" allow-clear>
                         <a-select-option v-for="tower in towers" :key="tower.id" :value="tower.id">
@@ -449,7 +450,7 @@
                         </a-select-option>
                     </a-select>
                 </a-form-item>
-                <a-form-item label="Floor (Optional)">
+                <a-form-item label="Floor (Optional)" name="floor_id">
                     <a-select v-model:value="facilityForm.floor_id" placeholder="Select Floor" :loading="floorsLoading"
                         :disabled="!facilityForm.tower_id" allow-clear>
                         <a-select-option v-for="floor in floors" :key="floor.id" :value="floor.id">
@@ -536,11 +537,19 @@ const spocsLoading = ref(false)
 const spocSaving = ref(false)
 const isSpocModalVisible = ref(false)
 const editingSpocId = ref<string | null>(null)
+const spocFormRef = ref()
 const spocForm = reactive({
     full_name: '',
     email: '',
     phone_number: ''
 })
+const spocRules = {
+    full_name: [{ required: true, message: 'Please enter full name', trigger: 'blur' }],
+    email: [
+        { required: true, message: 'Please enter email', trigger: 'blur' },
+        { type: 'email', message: 'Please enter a valid email', trigger: 'blur' }
+    ]
+}
 
 // Visitors
 const visitors = ref<any[]>([])
@@ -560,11 +569,19 @@ const employeesLoading = ref(false)
 const employeeSaving = ref(false)
 const isEmployeeModalVisible = ref(false)
 const editingEmployeeId = ref<string | null>(null)
+const employeeFormRef = ref()
 const employeeForm = reactive({
     full_name: '',
     email: '',
     phone_number: ''
 })
+const employeeRules = {
+    full_name: [{ required: true, message: 'Please enter full name', trigger: 'blur' }],
+    email: [
+        { required: true, message: 'Please enter email', trigger: 'blur' },
+        { type: 'email', message: 'Please enter a valid email', trigger: 'blur' }
+    ]
+}
 
 const employeeColumns = [
     { title: 'Name', dataIndex: 'full_name', key: 'full_name' },
@@ -609,11 +626,15 @@ const floorsLoading = ref(false)
 const facilities = ref<Facility[]>([])
 const towers = ref<Tower[]>([])
 const floors = ref<Floor[]>([])
+const facilityFormRef = ref()
 const facilityForm = reactive({
     facility_id: undefined as string | undefined,
     tower_id: undefined as string | undefined,
     floor_id: undefined as string | undefined
 })
+const facilityRules = {
+    facility_id: [{ required: true, message: 'Please select a facility', trigger: 'change' }]
+}
 
 // --- Actions: Credits ---
 
@@ -777,6 +798,7 @@ const openAddEmployeeModal = () => {
     employeeForm.full_name = ''
     employeeForm.email = ''
     employeeForm.phone_number = ''
+    employeeFormRef.value?.clearValidate?.()
     isEmployeeModalVisible.value = true
 }
 
@@ -785,10 +807,18 @@ const openEditEmployeeModal = (record: any) => {
     employeeForm.full_name = record.full_name || ''
     employeeForm.email = record.email || ''
     employeeForm.phone_number = record.phone_number || ''
+    employeeFormRef.value?.clearValidate?.()
     isEmployeeModalVisible.value = true
 }
 
 const handleEmployeeOk = async () => {
+    if (employeeFormRef.value?.validate) {
+        try {
+            await employeeFormRef.value.validate()
+        } catch {
+            return
+        }
+    }
     employeeSaving.value = true
     try {
         const { getCurrentTenantId } = useTenantService()
@@ -824,13 +854,14 @@ const handleEmployeeOk = async () => {
             message.success('Employee added successfully')
         }
         await fetchEmployees()
+        isEmployeeModalVisible.value = false
     } catch (err: any) {
         if (!handleUserCreationError(err, 'hub')) {
-            message.error('Failed to save employee')
+            const apiErrorMsg = err?.data?.message || err?.data?.error?.message || err?.data?.error || err?.message || 'Failed to save employee'
+            message.error(typeof apiErrorMsg === 'string' ? apiErrorMsg : 'Failed to save employee')
         }
     } finally {
         employeeSaving.value = false
-        isEmployeeModalVisible.value = false
     }
 }
 
@@ -841,6 +872,7 @@ const openAddSpocModal = () => {
     spocForm.full_name = ''
     spocForm.email = ''
     spocForm.phone_number = ''
+    spocFormRef.value?.clearValidate?.()
     isSpocModalVisible.value = true
 }
 
@@ -850,21 +882,53 @@ const editSpoc = (index: number) => {
     spocForm.full_name = spoc.name || ''
     spocForm.email = spoc.email || ''
     spocForm.phone_number = spoc.phone || ''
+    spocFormRef.value?.clearValidate?.()
     isSpocModalVisible.value = true
 }
 
-const deleteSpoc = (index: number) => {
-    spocs.value.splice(index, 1)
+const deleteSpoc = async (index: number) => {
+    const spoc = spocs.value[index]
+    const spocId = spoc?.id
+    if (!spocId) {
+        spocs.value.splice(index, 1)
+        message.success('SPOC deleted successfully')
+        return
+    }
+    try {
+        await $api<any>(`/api/portal/users/org_portal/${spocId}/delete/`, {
+            method: 'DELETE'
+        })
+        message.success('SPOC deleted successfully')
+        await fetchSpocs()
+    } catch (err: any) {
+        try {
+            await $api<any>(`/api/portal/users/${spocId}/delete/`, {
+                method: 'DELETE'
+            })
+            message.success('SPOC deleted successfully')
+            await fetchSpocs()
+        } catch (innerErr: any) {
+            const errMsg = innerErr?.data?.message || err?.data?.message || 'Failed to delete SPOC'
+            message.error(errMsg)
+        }
+    }
 }
 
 const handleSpocOk = async () => {
+    if (spocFormRef.value?.validate) {
+        try {
+            await spocFormRef.value.validate()
+        } catch {
+            return
+        }
+    }
     spocSaving.value = true
     try {
         const companyId = route.params.id as string
 
         if (editingSpocId.value) {
-            // Edit
-            await $api<any>(`/api/portal/users/opstrack/${editingSpocId.value}/update/`, {
+            // Edit - BUG_08 fix: use org_portal endpoint instead of opstrack
+            await $api<any>(`/api/portal/users/org_portal/${editingSpocId.value}/update/`, {
                 method: 'PATCH',
                 body: {
                     full_name: spocForm.full_name,
@@ -889,13 +953,14 @@ const handleSpocOk = async () => {
             message.success('SPOC added successfully')
         }
         await fetchSpocs()
+        isSpocModalVisible.value = false
     } catch (err: any) {
         if (!handleUserCreationError(err, 'client_portal')) {
-            message.error('Failed to save SPOC')
+            const apiErrorMsg = err?.data?.message || err?.data?.error?.message || err?.data?.error || err?.message || 'Failed to save SPOC'
+            message.error(typeof apiErrorMsg === 'string' ? apiErrorMsg : 'Failed to save SPOC')
         }
     } finally {
         spocSaving.value = false
-        isSpocModalVisible.value = false
     }
 }
 
@@ -932,6 +997,7 @@ const openAddFacilityModal = async () => {
     facilityForm.facility_id = undefined
     facilityForm.tower_id = undefined
     facilityForm.floor_id = undefined
+    facilityFormRef.value?.clearValidate?.()
     towers.value = []
     floors.value = []
     isFacilityModalVisible.value = true
@@ -983,9 +1049,12 @@ const onTowerChange = async (towerId: string) => {
 }
 
 const handleFacilityOk = async () => {
-    if (!facilityForm.facility_id) {
-        message.error('Please select a facility')
-        return
+    if (facilityFormRef.value?.validate) {
+        try {
+            await facilityFormRef.value.validate()
+        } catch {
+            return
+        }
     }
 
     facilityLoading.value = true
@@ -1002,7 +1071,8 @@ const handleFacilityOk = async () => {
         message.success('Facility added successfully')
         isFacilityModalVisible.value = false
     } catch (err: any) {
-        message.error(err?.data?.message || err?.message || 'Failed to add facility')
+        const errMsg = err?.data?.message || err?.data?.error?.message || err?.data?.error || err?.message || 'Failed to add facility'
+        message.error(typeof errMsg === 'string' ? errMsg : 'Failed to add facility')
     } finally {
         facilityLoading.value = false
     }

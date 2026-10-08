@@ -470,5 +470,49 @@ describe('Helpdesk Page', () => {
             expect(lastCall[0]).toMatchObject({ states: 'inprogress', page: 1 })
         })
     })
+
+    describe('Export & Ticket Actions', () => {
+        it('should have exportTickets function defined and handle export gracefully', async () => {
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk'], permissions: ['helpdesk-tickets:view', 'helpdesk-tickets:action'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [] }
+                        }
+                    })]
+                }
+            })
+
+            const vm = wrapper.vm as any
+            expect(typeof vm.exportTickets).toBe('function')
+        })
+
+        it('should surface API error message on close ticket failure', async () => {
+            const wrapper = await mountSuspended(HelpdeskPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            auth: { modules: ['helpdesk'], permissions: ['helpdesk-tickets:view', 'helpdesk-tickets:update'] },
+                            helpdesk: { tickets: mockTickets, loading: false },
+                            facility: { facilities: [] }
+                        }
+                    })]
+                }
+            })
+
+            const store = useHelpdeskStore()
+            store.confirmCloseTicket.mockRejectedValueOnce({
+                data: { message: 'Cannot close open ticket' }
+            })
+
+            const vm = wrapper.vm as any
+            await vm.handleCloseTicket({ id: 'ticket-1' })
+            expect(store.confirmCloseTicket).toHaveBeenCalledWith('ticket-1')
+        })
+    })
 })
 

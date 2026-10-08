@@ -67,18 +67,25 @@
                 </div>
             </div>
 
-            <!-- Audience (Optional) -->
+            <!-- Audience Scope Selection -->
             <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 mb-6">
                 <div class="flex items-center gap-2 mb-3">
                     <TeamOutlined class="text-neutral-500" />
-                    <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Audience</span>
-                    <span class="text-xs text-neutral-400">(Optional — leave empty for everyone)</span>
+                    <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Target Audience</span>
                 </div>
 
-                <div class="space-y-3">
+                <a-form-item class="mb-3">
+                    <a-radio-group v-model:value="formState.scope_type" @change="handleScopeTypeChange">
+                        <a-radio value="all">All (Everyone)</a-radio>
+                        <a-radio value="companies">Specific Companies</a-radio>
+                        <a-radio value="facilities">Specific Facilities</a-radio>
+                    </a-radio-group>
+                </a-form-item>
+
+                <div v-if="formState.scope_type === 'companies'" class="space-y-3">
                     <a-form-item class="mb-0" label="Target Companies">
                         <a-select v-model:value="formState.company_ids" mode="multiple"
-                            placeholder="Select companies (optional)" :loading="companiesLoading"
+                            placeholder="Select companies" :loading="companiesLoading"
                             show-search option-filter-prop="label" size="middle">
                             <a-select-option v-for="company in companies" :key="company.id" :value="company.id"
                                 :label="company.name">
@@ -86,10 +93,12 @@
                             </a-select-option>
                         </a-select>
                     </a-form-item>
+                </div>
 
+                <div v-if="formState.scope_type === 'facilities'" class="space-y-3">
                     <a-form-item class="mb-0" label="Target Facilities">
                         <a-select v-model:value="formState.facility_ids" mode="multiple"
-                            placeholder="Select facilities (optional)" :loading="facilitiesLoading"
+                            placeholder="Select facilities" :loading="facilitiesLoading"
                             show-search option-filter-prop="label" size="middle">
                             <a-select-option v-for="facility in facilities" :key="facility.id" :value="facility.id"
                                 :label="facility.name">
@@ -198,6 +207,7 @@ const formState = reactive({
     title: '',
     description: '',
     link: '',
+    scope_type: 'all' as 'all' | 'companies' | 'facilities',
     company_ids: [] as string[],
     facility_ids: [] as string[],
     allow_likes: true,
@@ -209,6 +219,17 @@ const formState = reactive({
         venue: '',
     },
 })
+
+const handleScopeTypeChange = () => {
+    if (formState.scope_type === 'all') {
+        formState.company_ids = []
+        formState.facility_ids = []
+    } else if (formState.scope_type === 'companies') {
+        formState.facility_ids = []
+    } else if (formState.scope_type === 'facilities') {
+        formState.company_ids = []
+    }
+}
 
 const companies = computed(() => allCompanyStore.companies)
 const companiesLoading = computed(() => allCompanyStore.loading)
@@ -277,12 +298,12 @@ const clearImage = () => {
 }
 
 const handleSubmit = () => {
-    // Determine scope_type based on selections
-    let scope_type: 'companies' | 'facilities' = 'companies'
-    if (formState.company_ids.length > 0) {
-        scope_type = 'companies'
-    } else if (formState.facility_ids.length > 0) {
-        scope_type = 'facilities'
+    // Determine scope_type based on selection
+    let scope_type: 'all' | 'companies' | 'facilities' = formState.scope_type
+    if (scope_type === 'companies' && formState.company_ids.length === 0) {
+        scope_type = 'all'
+    } else if (scope_type === 'facilities' && formState.facility_ids.length === 0) {
+        scope_type = 'all'
     }
 
     const payload: any = {
@@ -297,10 +318,10 @@ const handleSubmit = () => {
         payload.link = formState.link
     }
 
-    if (formState.company_ids.length > 0) {
+    if (scope_type === 'companies' && formState.company_ids.length > 0) {
         payload.company_ids = formState.company_ids
     }
-    if (formState.facility_ids.length > 0) {
+    if (scope_type === 'facilities' && formState.facility_ids.length > 0) {
         payload.facility_ids = formState.facility_ids
     }
 

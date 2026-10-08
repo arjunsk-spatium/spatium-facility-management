@@ -43,7 +43,7 @@
             </div>
 
             <VisitorList
-                :visitors="visitors"
+                :visitors="displayedVisitors"
                 :loading="loading"
                 :showActions="canAction"
                 :pagination="paginationConfig"
@@ -58,13 +58,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { message } from 'ant-design-vue'
 import { ExportOutlined } from '@ant-design/icons-vue'
 import type { Dayjs } from 'dayjs'
 
 import VisitorList from './VisitorList.vue'
 import { useAuthStore } from '../../stores/auth'
+import { useVisitorService } from '../../composables/visitorService'
 
 const store = useVisitorStore()
 const companyStore = useCompanyStore()
@@ -95,6 +97,19 @@ const selectedFacility = ref<string | null>(null)
 const selectedCompany = ref<string | null>(null)
 const searchQuery = ref('')
 const dateRange = ref<[Dayjs, Dayjs] | null>(null)
+
+// Client-side instant filter fallback
+const displayedVisitors = computed(() => {
+    if (!searchQuery.value?.trim()) return visitors.value
+    const q = searchQuery.value.toLowerCase().trim()
+    return visitors.value.filter(v =>
+        v.name?.toLowerCase().includes(q) ||
+        v.phone_number?.toLowerCase().includes(q) ||
+        v.email?.toLowerCase().includes(q) ||
+        v.company_name?.toLowerCase().includes(q) ||
+        v.from_company?.toLowerCase().includes(q)
+    )
+})
 
 // Facility and company lists
 const facilities = computed(() => facilityStore.facilities)
@@ -131,6 +146,15 @@ const handleFilterChange = async () => {
     await store.fetchVisitors({ ...params, page: 1 })
 }
 
+// Debounced live typing search watcher (300ms)
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+watch(searchQuery, () => {
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = setTimeout(() => {
+        handleFilterChange()
+    }, 300)
+})
+
 const handlePageChange = async (pageNum: number, newPageSize?: number) => {
     const params = buildParams()
     const size = newPageSize || pageSize.value
@@ -165,12 +189,27 @@ const formatDateTime = (dateStr: string | null): string => {
     })
 }
 
-const exportLog = () => {
-    if (visitors.value.length === 0 || exporting.value) return
-
+const exportLog = async () => {
+    if (exporting.value) return
     exporting.value = true
 
     try {
+        const { getVisitors } = useVisitorService()
+        const params = buildParams()
+        const result = await getVisitors({
+            ...params,
+            page: 1,
+            page_size: 9999,
+        })
+        const recordsToExport = (result && result.visitors && result.visitors.length > 0)
+            ? result.visitors
+            : (displayedVisitors.value.length > 0 ? displayedVisitors.value : visitors.value)
+
+        if (recordsToExport.length === 0) {
+            message.info('No visitor records to export')
+            return
+        }
+
         const rows: string[] = []
         const now = new Date().toISOString().slice(0, 19).replace('T', '_')
         const filename = `visitor-log-${now}.csv`
@@ -178,7 +217,7 @@ const exportLog = () => {
         // Header
         rows.push('Visitor Log')
         rows.push(`Exported At,${escapeCsv(new Date().toLocaleString('en-US'))}`)
-        rows.push(`Total Records,${escapeCsv(visitors.value.length)}`)
+        rows.push(`Total Records,${escapeCsv(recordsToExport.length)}`)
         rows.push('')
 
         // Column headers
@@ -199,7 +238,7 @@ const exportLog = () => {
         ].join(','))
 
         // Data rows
-        visitors.value.forEach(v => {
+        recordsToExport.forEach(v => {
             rows.push([
                 escapeCsv(v.name),
                 escapeCsv(v.phone_number),
@@ -230,6 +269,7 @@ const exportLog = () => {
         URL.revokeObjectURL(url)
     } catch (err) {
         console.error('Export failed:', err)
+        message.error('Failed to export visitor log')
     } finally {
         exporting.value = false
     }

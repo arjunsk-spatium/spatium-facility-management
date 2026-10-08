@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <ResponsiveDataView v-if="canView" :columns="columns" :data="companies" :loading="loading"
+        <ResponsiveDataView v-if="canView" :columns="columns" :data="displayedCompanies" :loading="loading"
             :row-key="(record: any) => record.id" :pagination="paginationConfig">
             <!-- Desktop Table Cells -->
             <template #bodyCell="{ column, record }">
@@ -178,9 +178,31 @@ const stats = computed(() => ({
     inactive: companies.value.filter(c => c.status === 'inactive').length
 }))
 
+let searchTimeout: any = null
+watch(searchText, (newVal) => {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+        handleSearch()
+    }, 300)
+})
+
 const handleSearch = () => {
-    store.fetchAllCompanies({ search: searchText.value || undefined, page: 1 }, true)
+    store.fetchAllCompanies({ search: searchText.value?.trim() || undefined, page: 1 }, true)
 }
+
+const displayedCompanies = computed(() => {
+    if (!searchText.value?.trim()) return companies.value
+    const q = searchText.value.trim().toLowerCase()
+    const filtered = companies.value.filter(c => 
+        c.name?.toLowerCase().includes(q) ||
+        c.contacts?.some(contact => 
+            contact.contact_name?.toLowerCase().includes(q) ||
+            contact.email?.toLowerCase().includes(q) ||
+            contact.phone?.toLowerCase().includes(q)
+        )
+    )
+    return filtered
+})
 
 // Download as Excel
 const downloadExcel = async () => {

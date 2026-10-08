@@ -179,7 +179,7 @@ const rules = {
     status: [{ required: true, message: 'Please select status' }]
 }
 
-const { createRoom } = useMeetingRoomService()
+const { createRoom, getRooms } = useMeetingRoomService()
 
 const fetchDropdowns = async () => {
     try {
@@ -202,6 +202,28 @@ const handleSubmit = async () => {
     try {
         await formRef.value?.validate()
         loading.value = true
+
+        // BUG_20: Check for duplicate room name in the same facility
+        try {
+            const existingRoomsRes = await getRooms({
+                facility_id: formState.facility,
+                search: formState.name.trim(),
+                page_size: 100
+            })
+            const existingRooms = existingRoomsRes?.rooms || []
+            const isDuplicate = existingRooms.some((r: any) =>
+                r.name?.trim().toLowerCase() === formState.name.trim().toLowerCase() &&
+                (r.facility === formState.facility || r.facility_id === formState.facility)
+            )
+            if (isDuplicate) {
+                message.error('A meeting room with this name already exists in this facility.')
+                loading.value = false
+                return
+            }
+        } catch {
+            // Uniqueness check query failure is non-blocking
+        }
+
         const roomData: any = {
             name: formState.name,
             pax: formState.pax,
@@ -227,7 +249,8 @@ const handleSubmit = async () => {
         navigateTo('/meeting-rooms')
     } catch (e: any) {
         console.error('Failed to create room', e)
-        message.error(e.message || 'Failed to create room')
+        const errorMsg = e?.data?.message || e?.data?.error?.message || e?.data?.error || e?.message || 'Failed to create room'
+        message.error(typeof errorMsg === 'string' ? errorMsg : 'Failed to create room')
     } finally {
         loading.value = false
     }

@@ -48,7 +48,10 @@
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Company Status Distribution</h3>
                     </template>
                     <div class="h-64 mt-4 overflow-hidden">
-                        <div ref="statusChartContainer" class="w-full h-full"></div>
+                        <div v-show="statusChartData.length > 0" ref="statusChartContainer" class="w-full h-full"></div>
+                        <div v-if="statusChartData.length === 0" class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            <span>No company status data for this period</span>
+                        </div>
                     </div>
                 </a-card>
                 <a-card>
@@ -56,7 +59,10 @@
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Revenue Trend</h3>
                     </template>
                     <div class="h-64 mt-4 overflow-hidden">
-                        <div ref="revenueChartContainer" class="w-full h-full"></div>
+                        <div v-show="revenueChartData.length > 0" ref="revenueChartContainer" class="w-full h-full"></div>
+                        <div v-if="revenueChartData.length === 0" class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            <span>No revenue data for this period</span>
+                        </div>
                     </div>
                 </a-card>
             </div>
@@ -104,9 +110,12 @@ const dateRange = ref<[Dayjs, Dayjs]>([
 ])
 
 const fetchInsights = () => {
-    if (!dateRange.value || dateRange.value.length !== 2) return
-    const startDate = dateRange.value[0].format('YYYY-MM-DD')
-    const endDate = dateRange.value[1].format('YYYY-MM-DD')
+    let startDate: string | undefined
+    let endDate: string | undefined
+    if (dateRange.value && dateRange.value.length === 2 && dateRange.value[0] && dateRange.value[1]) {
+        startDate = dateRange.value[0].format('YYYY-MM-DD')
+        endDate = dateRange.value[1].format('YYYY-MM-DD')
+    }
     store.fetchInsightsAction(startDate, endDate)
 }
 
@@ -156,11 +165,11 @@ const statusColors: Record<string, string> = {
 
 const createStatusChart = async () => {
     await nextTick()
-    if (!statusChartContainer.value || !statusChartData.value.length) return
-
     if (statusChartInstance) {
         statusChartInstance.destroy()
+        statusChartInstance = null
     }
+    if (!statusChartContainer.value || !statusChartData.value.length) return
 
     statusChartInstance = new Column(statusChartContainer.value, {
         data: statusChartData.value,
@@ -213,11 +222,11 @@ const createStatusChart = async () => {
 
 const createRevenueChart = async () => {
     await nextTick()
-    if (!revenueChartContainer.value || !revenueChartData.value.length) return
-
     if (revenueChartInstance) {
         revenueChartInstance.destroy()
+        revenueChartInstance = null
     }
+    if (!revenueChartContainer.value || !revenueChartData.value.length) return
 
     revenueChartInstance = new Line(revenueChartContainer.value, {
         data: revenueChartData.value,
@@ -278,7 +287,7 @@ const createRevenueChart = async () => {
 }
 
 watch([insights, loading], async () => {
-    if (!loading.value && insights.value) {
+    if (!loading.value) {
         await createStatusChart()
         await createRevenueChart()
     }
