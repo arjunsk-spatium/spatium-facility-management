@@ -371,6 +371,30 @@ describe('SPOC Store', () => {
             expect(store.employees.find(e => e.id === '2')).toBeUndefined()
             expect(store.employees.find(e => e.id === '3')).toBeUndefined()
         })
+
+        it('should pass company_id in API query when provided', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    success: true,
+                    data: {
+                        count: 1,
+                        results: [
+                            { id: '1', full_name: 'Company User', email: 'user@comp.com', company_id: 'comp-123' }
+                        ]
+                    }
+                })
+            });
+            const store = useSpocStore()
+            await store.fetchEmployees({ companyId: 'comp-123' })
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                expect.stringContaining('company_id=comp-123'),
+                expect.anything()
+            )
+            expect(store.employees.length).toBe(1)
+        })
     })
 
     describe('inviteVisitor', () => {

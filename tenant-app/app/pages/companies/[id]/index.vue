@@ -134,8 +134,14 @@
                                     </a-button>
                                 </div>
                             </template>
-                            <a-table :dataSource="employees" :columns="employeeColumns" :pagination="false" rowKey="id"
-                                size="small">
+                            <a-table :dataSource="employees" :columns="employeeColumns" :pagination="{
+                                current: employeePage,
+                                pageSize: employeePageSize,
+                                total: employeeTotal,
+                                showSizeChanger: true,
+                                pageSizeOptions: ['10', '20', '50', '100'],
+                                showTotal: (total: number) => `Total ${total} employees`
+                            }" @change="handleEmployeeTableChange" rowKey="id" size="small">
                                 <template #bodyCell="{ column, record }">
                                     <template v-if="column.key === 'actions'">
                                         <a-button type="link" size="small" @click="openEditEmployeeModal(record)">
@@ -568,6 +574,9 @@ const employees = ref<any[]>([])
 const employeesLoading = ref(false)
 const employeeSaving = ref(false)
 const isEmployeeModalVisible = ref(false)
+const employeePage = ref(1)
+const employeePageSize = ref(10)
+const employeeTotal = ref(0)
 const editingEmployeeId = ref<string | null>(null)
 const employeeFormRef = ref()
 const employeeForm = reactive({
@@ -743,12 +752,14 @@ const fetchEmployees = async () => {
     const companyId = route.params.id as string
     employeesLoading.value = true
     try {
-        const result = await $api<any>(`/api/portal/users/org_portal/list/?app_name=hub&company_id=${companyId}`)
+        const result = await $api<any>(`/api/portal/users/org_portal/list/?app_name=hub&company_id=${companyId}&page=${employeePage.value}&page_size=${employeePageSize.value}`)
         let users: any[] = []
         if (result.success && Array.isArray(result.data)) {
             users = result.data
+            employeeTotal.value = users.length
         } else if (result.success && result.data?.results) {
             users = result.data.results
+            employeeTotal.value = result.data.count ?? users.length
         }
         employees.value = users.map((u: any) => ({
             id: u.id,
@@ -761,6 +772,12 @@ const fetchEmployees = async () => {
     } finally {
         employeesLoading.value = false
     }
+}
+
+const handleEmployeeTableChange = (pagination: any) => {
+    employeePage.value = pagination.current || 1
+    employeePageSize.value = pagination.pageSize || 10
+    fetchEmployees()
 }
 
 const fetchSpocs = async () => {

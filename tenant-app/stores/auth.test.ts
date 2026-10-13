@@ -143,7 +143,23 @@ describe("Auth Store", () => {
             expect(store.modules).toContain("spoc-visitors-insights");
             expect(store.modules).toContain("spoc-visitors-list");
             expect(store.modules).toContain("spoc-visitors-invite");
-            expect(store.permissions).toEqual([]);
+            expect(store.modules).toContain("spoc_bookings");
+            expect(store.permissions).toContain("meeting-rooms-bookings:view");
+            expect(store.permissions).toContain("spoc_bookings:view");
+        });
+
+        it("companyId getter should correctly return company id from user context", () => {
+            const store = useAuthStore();
+            expect(store.companyId).toBeNull();
+
+            store.user = { id: "1", company_id: "comp-1" };
+            expect(store.companyId).toBe("comp-1");
+
+            store.user = { id: "1", company: { id: "comp-2" } };
+            expect(store.companyId).toBe("comp-2");
+
+            store.user = { id: "1", company: "comp-3" };
+            expect(store.companyId).toBe("comp-3");
         });
 
         it("isSpoc should correctly identify SPOC users", () => {

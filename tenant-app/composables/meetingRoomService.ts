@@ -149,10 +149,11 @@ export interface MeetingRoomInsights {
     }>;
 }
 
-const BOOKING_API_BASE = "/api/portal/bookings/bookings";
+const BOOKING_API_BASE = "/api/portal/bookings";
 const API_BASE = "/api/portal/meeting-rooms/rooms";
 
 export interface BookingListParams {
+    meeting_room?: string;
     meeting_room__facility?: string;
     company?: string;
     booking_date?: string;
@@ -245,6 +246,11 @@ export const useMeetingRoomService = () => {
     ): Promise<PaginatedResponse<Booking>> => {
         const queryParams = new URLSearchParams();
         if (params) {
+            if (params.meeting_room)
+                queryParams.append(
+                    "meeting_room",
+                    params.meeting_room,
+                );
             if (params.meeting_room__facility)
                 queryParams.append(
                     "meeting_room__facility",

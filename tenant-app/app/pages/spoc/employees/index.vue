@@ -427,6 +427,7 @@ definePageMeta({
 })
 
 const tenantStore = useTenantStore()
+const authStore = useAuthStore()
 const { isDark } = useTheme()
 const store = useSpocStore()
 const { employees, loading, employeeCount, employeePage, employeePageSize } = storeToRefs(store)
@@ -566,6 +567,7 @@ const handleSearchChange = () => {
     searchDebounce.value = setTimeout(() => {
         store.employeePage = 1
         store.fetchEmployees({
+            companyId: authStore.companyId || undefined,
             search: searchQuery.value,
             page: 1,
             page_size: employeePageSize.value
@@ -579,6 +581,7 @@ const handlePageChange = (page: number, newPageSize?: number) => {
         store.employeePageSize = newPageSize
     }
     store.fetchEmployees({
+        companyId: authStore.companyId || undefined,
         search: searchQuery.value,
         page,
         page_size: newPageSize || employeePageSize.value
@@ -808,6 +811,7 @@ const resetBulkUpload = () => {
 
 const refreshEmployees = () => {
     store.fetchEmployees({
+        companyId: authStore.companyId || undefined,
         search: searchQuery.value,
         page: employeePage.value,
         page_size: employeePageSize.value
@@ -878,7 +882,11 @@ const formatJobDateTime = (dateStr: string | null) => {
 }
 
 onMounted(() => {
-    store.fetchEmployees({ page: employeePage.value, page_size: employeePageSize.value })
+    store.fetchEmployees({ 
+        companyId: authStore.companyId || undefined,
+        page: employeePage.value, 
+        page_size: employeePageSize.value 
+    })
     loadDepartments()
 })
 </script>

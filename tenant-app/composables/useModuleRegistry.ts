@@ -102,6 +102,7 @@ const registry: Module[] = [
         ]
     },
     { key: 'spoc_employees', label: 'Employees', icon: 'TeamOutlined', route: '/spoc/employees' },
+    { key: 'spoc_bookings', label: 'Bookings', icon: 'CalendarOutlined', route: '/spoc/bookings' },
     { key: 'spoc_config', label: 'Configuration', icon: 'SettingOutlined', route: '/spoc/config' }
 ]
 

@@ -55,6 +55,14 @@ export const useAuthStore = defineStore("auth", {
             if (state.user.username) return state.user.username;
             return state.user.email?.split("@")[0] || "User";
         },
+        companyId: (state): string | null => {
+            const user = state.user;
+            if (!user) return null;
+            if (user.company_id) return String(user.company_id);
+            if (typeof user.company === 'object' && user.company?.id) return String(user.company.id);
+            if (typeof user.company === 'string' || typeof user.company === 'number') return String(user.company);
+            return null;
+        },
     },
     actions: {
         async requestOtp(email: string) {
@@ -219,9 +227,13 @@ export const useAuthStore = defineStore("auth", {
                     'spoc-visitors-list',
                     'spoc-visitors-invite',
                     'spoc_employees',
+                    'spoc_bookings',
                     'spoc_config'
                 ];
-                this.permissions = [];
+                this.permissions = [
+                    'meeting-rooms-bookings:view',
+                    'spoc_bookings:view'
+                ];
                 return;
             }
 

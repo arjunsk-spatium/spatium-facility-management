@@ -19,8 +19,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         '/feed': 'feed-list',
         '/configure': 'configure',
         '/frontdesk': 'frontdesk',
-        '/spoc': 'spoc_dashboard',
-        '/spoc/config': 'spoc_config'
+        '/spoc/bookings': 'spoc_bookings',
+        '/spoc/visitors': 'spoc_visitors',
+        '/spoc/employees': 'spoc_employees',
+        '/spoc/config': 'spoc_config',
+        '/spoc': 'spoc_dashboard'
     };
 
     // Ensure modules are loaded

@@ -343,10 +343,15 @@ export const useSpocStore = defineStore('spoc', {
             this.error = null
             try {
                 const { $api } = useNuxtApp()
+                const authStore = useAuthStore()
+
+                const targetCompanyId = params.companyId 
+                    || authStore.companyId 
+                    || (this.facilities.length > 0 ? this.facilities[0].companyId : undefined)
 
                 const query: Record<string, any> = {}
-                if (params.companyId) {
-                    query.company_id = params.companyId
+                if (targetCompanyId) {
+                    query.company_id = targetCompanyId
                 }
                 if (params.search) {
                     query.search = params.search
@@ -366,9 +371,9 @@ export const useSpocStore = defineStore('spoc', {
                 if (response.success && response.data) {
                     const rawResults = response.data.results || response.data
                     // The backend soft-deletes (archives) users — keep archived
-                    // users out of the active employee list
+                    // users out of the active employee list, and ensure company isolation
                     const results = (Array.isArray(rawResults) ? rawResults : []).filter(
-                        (u: any) => u.status !== 'archived' && !u.is_archived
+                        (u: any) => u.status !== 'archived' && !u.is_archived && (!targetCompanyId || !u.company_id || String(u.company_id) === String(targetCompanyId) || (u.company && String(u.company) === String(targetCompanyId)))
                     )
                     this.employeeCount = response.data.count || results.length
                     // Map all users with role based on apps array

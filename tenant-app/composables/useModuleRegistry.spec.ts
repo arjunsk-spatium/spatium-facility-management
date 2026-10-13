@@ -73,5 +73,16 @@ describe('useModuleRegistry', () => {
     expect(roleChild?.label).toBe('Helpdesk Roles')
     expect(roleChild?.route).toBe('/helpdesk/roles')
   })
+
+  it('should contain spoc_bookings module with route /spoc/bookings', () => {
+    const { getAllModules } = useModuleRegistry()
+    const modules = getAllModules()
+
+    const spocBookings = modules.find(m => m.key === 'spoc_bookings')
+    expect(spocBookings).toBeDefined()
+    expect(spocBookings?.label).toBe('Bookings')
+    expect(spocBookings?.route).toBe('/spoc/bookings')
+    expect(spocBookings?.icon).toBe('CalendarOutlined')
+  })
 })
 

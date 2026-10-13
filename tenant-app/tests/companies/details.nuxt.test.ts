@@ -87,4 +87,27 @@ describe('Company Details Page', () => {
         expect(wrapper.text()).toContain('Tower 1')
         expect(wrapper.text()).toContain('Floor 3')
     })
+
+    it('should configure Employee List table with pagination', async () => {
+        const wrapper = await mountSuspended(CompanyDetailsPage, {
+            route: {
+                params: { id: '1' }
+            },
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        company: {
+                            currentCompany: mockCompany,
+                            loading: false
+                        }
+                    }
+                })]
+            }
+        })
+
+        expect(wrapper.text()).toContain('Employee List')
+        const tables = wrapper.findAllComponents({ name: 'ATable' })
+        expect(tables.length).toBeGreaterThan(0)
+    })
 })
