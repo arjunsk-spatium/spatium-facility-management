@@ -313,5 +313,48 @@ describe('SPOC Dashboard Page', () => {
             expect(wrapper.text()).toContain('Credit Transaction History')
             expect(wrapper.text()).toContain('50') // current balance
         })
+
+        it('should correctly render adjustment transactions from migration', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+
+            ;(wrapper.vm as any).creditSystemEnabled = true
+            ;(wrapper.vm as any).walletSummary = {
+                company_name: 'Spatium Offices (Iconic)',
+                current_balance: 99858,
+                total_transactions: 1
+            }
+            ;(wrapper.vm as any).walletTransactions = [
+                {
+                    id: '7e266ca3-87e4-4f5d-88b8-f3fd3d3f123d',
+                    transaction_type: 'adjustment',
+                    credits: 99858,
+                    balance_after: 99858,
+                    reference_type: 'migration',
+                    reference_id: 'spatiumvms:companycredits:1',
+                    metadata: {
+                        used: 141,
+                        source: 'spatiumvms',
+                        balance: 99858,
+                        allocated: 99999
+                    },
+                    created_at: '2026-09-28T16:09:52.115387Z'
+                }
+            ]
+            await wrapper.vm.$nextTick()
+
+            expect(wrapper.text()).toContain('Adjustment')
+            expect(wrapper.text()).toContain('99,858')
+            expect(wrapper.text()).toContain('Migration')
+            expect(wrapper.text()).toContain('spatiumvms:companycredits:1')
+        })
     })
 })

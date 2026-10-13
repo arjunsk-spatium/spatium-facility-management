@@ -22,68 +22,78 @@
             </div>
         </div>
 
-        <!-- Filters -->
-        <div class="flex flex-col lg:flex-row gap-3 lg:items-center justify-between">
-            <div class="flex flex-col sm:flex-row flex-wrap gap-3 sm:items-center flex-1">
-                <!-- Facility Filter -->
-                <a-select 
-                    v-model:value="selectedFacility" 
-                    placeholder="All Facilities" 
-                    allow-clear 
-                    style="min-width: 170px"
-                    class="w-full sm:w-auto" 
-                    @change="handleFacilityChange"
-                >
-                    <a-select-option v-for="facility in facilities" :key="facility.id" :value="facility.id">
-                        {{ facility.name }}
-                    </a-select-option>
-                </a-select>
-
-                <!-- Meeting Room Filter -->
-                <a-select 
-                    v-model:value="selectedRoom" 
-                    placeholder="All Meeting Rooms" 
-                    allow-clear 
-                    style="min-width: 180px"
-                    class="w-full sm:w-auto" 
-                    @change="handleFilterChange"
-                >
-                    <a-select-option v-for="room in filteredRooms" :key="room.id" :value="room.id">
-                        {{ room.name }}
-                    </a-select-option>
-                </a-select>
-
-                <!-- Booking Status Filter -->
-                <a-select 
-                    v-model:value="selectedStatus" 
-                    placeholder="All Status" 
-                    allow-clear 
-                    style="min-width: 140px"
-                    class="w-full sm:w-auto" 
-                    @change="handleFilterChange"
-                >
-                    <a-select-option value="PENDING">Pending</a-select-option>
-                    <a-select-option value="CONFIRMED">Confirmed</a-select-option>
-                    <a-select-option value="COMPLETED">Completed</a-select-option>
-                    <a-select-option value="CANCELLED">Cancelled</a-select-option>
-                </a-select>
-
-                <!-- Date Range -->
-                <a-range-picker 
-                    v-model:value="dateRange" 
-                    class="w-full sm:w-auto" 
-                    @change="handleFilterChange" 
-                />
-            </div>
-
+        <!-- Filters Toolbar -->
+        <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
             <!-- Search -->
             <a-input-search 
                 v-model:value="searchText" 
                 placeholder="Search booking ID or user..." 
                 allow-clear 
-                class="w-full lg:w-64" 
+                style="min-width: 220px;"
+                class="w-full sm:w-64" 
                 @search="handleFilterChange" 
             />
+
+            <!-- Facility Filter -->
+            <a-select 
+                v-model:value="selectedFacility" 
+                placeholder="All Facilities" 
+                allow-clear 
+                style="min-width: 160px;"
+                class="w-full sm:w-44" 
+                @change="handleFacilityChange"
+            >
+                <a-select-option v-for="facility in facilities" :key="facility.id" :value="facility.id">
+                    {{ facility.name }}
+                </a-select-option>
+            </a-select>
+
+            <!-- Meeting Room Filter -->
+            <a-select 
+                v-model:value="selectedRoom" 
+                placeholder="All Meeting Rooms" 
+                allow-clear 
+                style="min-width: 170px;"
+                class="w-full sm:w-48" 
+                @change="handleFilterChange"
+            >
+                <a-select-option v-for="room in filteredRooms" :key="room.id" :value="room.id">
+                    {{ room.name }}
+                </a-select-option>
+            </a-select>
+
+            <!-- Booking Status Filter -->
+            <a-select 
+                v-model:value="selectedStatus" 
+                placeholder="All Status" 
+                allow-clear 
+                style="min-width: 130px;"
+                class="w-full sm:w-36" 
+                @change="handleFilterChange"
+            >
+                <a-select-option value="PENDING">Pending</a-select-option>
+                <a-select-option value="CONFIRMED">Confirmed</a-select-option>
+                <a-select-option value="COMPLETED">Completed</a-select-option>
+                <a-select-option value="CANCELLED">Cancelled</a-select-option>
+            </a-select>
+
+            <!-- Date Range -->
+            <a-range-picker 
+                v-model:value="dateRange" 
+                style="min-width: 240px;"
+                class="w-full sm:w-auto" 
+                @change="handleFilterChange" 
+            />
+
+            <!-- Clear/Reset Filters -->
+            <a-button 
+                v-if="hasActiveFilters" 
+                type="link" 
+                class="px-2 text-xs text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                @click="resetFilters"
+            >
+                Reset
+            </a-button>
         </div>
 
         <!-- Bookings Data View -->
@@ -291,14 +301,35 @@ const selectedBooking = ref<Booking | null>(null)
 
 // Columns definition
 const columns = [
-    { title: 'Booking ID', dataIndex: 'bookingId', key: 'id', width: 140 },
-    { title: 'Room', key: 'room' },
-    { title: 'Date', dataIndex: 'bookingDate', key: 'date', width: 120 },
+    { title: 'Booking ID', dataIndex: 'bookingId', key: 'id', width: 130 },
+    { title: 'Room', key: 'room', width: 170 },
+    { title: 'Date', dataIndex: 'bookingDate', key: 'date', width: 110 },
     { title: 'Time', key: 'time', width: 140 },
-    { title: 'Booked By', key: 'user' },
+    { title: 'Booked By', key: 'user', ellipsis: true },
     { title: 'Amount / Credits', key: 'cost', align: 'right' as const, width: 150 },
     { title: 'Status', dataIndex: 'bookingStatus', key: 'status', width: 120 }
 ]
+
+// Filter active status
+const hasActiveFilters = computed(() => {
+    return Boolean(
+        selectedFacility.value ||
+        selectedRoom.value ||
+        selectedStatus.value ||
+        (dateRange.value && dateRange.value.length > 0) ||
+        searchText.value
+    )
+})
+
+const resetFilters = () => {
+    selectedFacility.value = undefined
+    selectedRoom.value = undefined
+    selectedStatus.value = undefined
+    dateRange.value = undefined
+    searchText.value = ''
+    bookingsPage.value = 1
+    fetchBookings()
+}
 
 // Rooms filtered by facility if facility is selected
 const filteredRooms = computed(() => {

@@ -350,7 +350,7 @@
 
         <!-- Credit History Drawer -->
         <a-drawer v-model:open="isHistoryDrawerVisible" title="Credit Transaction History" placement="right"
-            width="480">
+            :width="560">
             <div v-if="historyLoading" class="flex justify-center py-12">
                 <a-spin size="large" />
             </div>
@@ -365,7 +365,7 @@
                         </div>
                         <div class="text-right">
                             <div class="text-xs text-gray-500 dark:text-gray-400">Current Balance</div>
-                            <div class="text-xl font-bold text-green-600">{{ historySummary.current_balance }}</div>
+                            <div class="text-xl font-bold text-green-600">{{ (historySummary.current_balance ?? 0).toLocaleString() }}</div>
                         </div>
                     </div>
                     <div class="mt-2 text-xs text-gray-400">{{ historySummary.total_transactions }} transaction(s)</div>
@@ -375,26 +375,35 @@
                     :pagination="{ pageSize: 10 }" rowKey="id">
                     <template #bodyCell="{ column, record }">
                         <template v-if="column.key === 'transaction_type'">
-                            <a-tag :color="record.transaction_type === 'credit' ? 'green' : 'red'">
-                                {{ record.transaction_type === 'credit' ? 'Credit' : 'Debit' }}
+                            <a-tag :color="getTransactionTypeTag(record.transaction_type, record.credits).color">
+                                {{ getTransactionTypeTag(record.transaction_type, record.credits).label }}
                             </a-tag>
                         </template>
                         <template v-if="column.key === 'credits'">
                             <span
-                                :class="record.transaction_type === 'credit' ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'">
-                                {{ record.transaction_type === 'credit' ? '+' : '-' }}{{ Math.abs(record.credits ?? 0) }}
+                                :class="isPositiveTransaction(record) ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-red-500 dark:text-red-400 font-semibold'">
+                                {{ isPositiveTransaction(record) ? '+' : '-' }}{{ Math.abs(record.credits ?? 0).toLocaleString() }}
                             </span>
-                        </template>
-                        <template v-if="column.key === 'reference_type'">
-                            <span class="text-gray-600 dark:text-gray-300 text-xs">
-                                {{ formatReferenceType(record.reference_type) }}
-                            </span>
-                            <div v-if="record.metadata?.reason" class="text-xs text-gray-400 mt-0.5">
-                                {{ record.metadata.reason }}
-                            </div>
                         </template>
                         <template v-if="column.key === 'balance_after'">
-                            <span class="font-medium">{{ record.balance_after }}</span>
+                            <span class="font-medium">{{ (record.balance_after ?? 0).toLocaleString() }}</span>
+                        </template>
+                        <template v-if="column.key === 'reference_type'">
+                            <div>
+                                <span class="text-gray-700 dark:text-gray-200 text-xs font-medium">
+                                    {{ formatReferenceType(record.reference_type) }}
+                                </span>
+                                <div v-if="record.reference_id" class="text-[11px] text-gray-400 dark:text-gray-500 font-mono truncate max-w-xs" :title="record.reference_id">
+                                    Ref: {{ record.reference_id }}
+                                </div>
+                                <div v-if="record.metadata?.reason" class="text-xs text-gray-400 mt-0.5">
+                                    {{ record.metadata.reason }}
+                                </div>
+                                <div v-else-if="record.metadata?.source" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                                    Source: {{ record.metadata.source }}
+                                    <span v-if="record.metadata?.allocated"> · Allocated: {{ record.metadata.allocated.toLocaleString() }}</span>
+                                </div>
+                            </div>
                         </template>
                         <template v-if="column.key === 'created_at'">
                             {{ formatDate(record.created_at) }}
@@ -529,12 +538,30 @@ const historyLoading = ref(false)
 const creditHistory = ref<any[]>([])
 const historySummary = ref<{ company_name: string; current_balance: number; total_transactions: number } | null>(null)
 const historyColumns = [
-    { title: 'Type', dataIndex: 'transaction_type', key: 'transaction_type', width: 80 },
-    { title: 'Credits', dataIndex: 'credits', key: 'credits', align: 'right' as const, width: 80 },
-    { title: 'Balance', dataIndex: 'balance_after', key: 'balance_after', align: 'right' as const, width: 80 },
+    { title: 'Type', dataIndex: 'transaction_type', key: 'transaction_type', width: 90 },
+    { title: 'Credits', dataIndex: 'credits', key: 'credits', align: 'right' as const, width: 90 },
+    { title: 'Balance', dataIndex: 'balance_after', key: 'balance_after', align: 'right' as const, width: 90 },
     { title: 'Reference', dataIndex: 'reference_type', key: 'reference_type' },
-    { title: 'Date', dataIndex: 'created_at', key: 'created_at', width: 130 },
+    { title: 'Date', dataIndex: 'created_at', key: 'created_at', width: 140 },
 ]
+
+const getTransactionTypeTag = (type: string, credits?: number) => {
+    const lower = (type || '').toLowerCase()
+    if (lower === 'credit') return { color: 'green', label: 'Credit' }
+    if (lower === 'debit') return { color: 'red', label: 'Debit' }
+    if (lower === 'adjustment') {
+        return { color: credits !== undefined && credits < 0 ? 'orange' : 'blue', label: 'Adjustment' }
+    }
+    if (lower === 'refund') return { color: 'cyan', label: 'Refund' }
+    return { color: 'default', label: type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Unknown' }
+}
+
+const isPositiveTransaction = (record: any) => {
+    if (typeof record.credits === 'number') {
+        return record.credits >= 0
+    }
+    return record.transaction_type?.toLowerCase() === 'credit'
+}
 
 
 // SPOCs (app_name: client_portal)
