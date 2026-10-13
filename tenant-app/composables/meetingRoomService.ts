@@ -149,7 +149,7 @@ export interface MeetingRoomInsights {
     }>;
 }
 
-const BOOKING_API_BASE = "/api/portal/bookings";
+const BOOKING_API_BASE = "/api/portal/bookings/bookings";
 const API_BASE = "/api/portal/meeting-rooms/rooms";
 
 export interface BookingListParams {
