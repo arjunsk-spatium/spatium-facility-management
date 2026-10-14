@@ -34,6 +34,7 @@ const mockRoles = [
 ]
 
 const mockGetRoles = vi.fn()
+const mockGetSystemRoles = vi.fn()
 const mockGetRoleUsers = vi.fn()
 const mockCreateRole = vi.fn()
 const mockUpdateRole = vi.fn()
@@ -44,6 +45,7 @@ const mockAssignUsersToSystemRole = vi.fn()
 vi.mock('../../composables/helpdeskService', () => ({
     useHelpdeskService: () => ({
         getRoles: mockGetRoles,
+        getSystemRoles: mockGetSystemRoles,
         getRoleUsers: mockGetRoleUsers,
         createRole: mockCreateRole,
         updateRole: mockUpdateRole,
@@ -66,7 +68,8 @@ vi.mock('../../composables/userService', () => ({
 describe('Helpdesk Roles Page', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockGetRoles.mockResolvedValue(mockRoles)
+        mockGetRoles.mockResolvedValue(mockRoles.filter(r => r.key !== 'ROLE_HELPDESK_AUTHORIZED_PERSON'))
+        mockGetSystemRoles.mockResolvedValue(mockRoles.filter(r => r.key === 'ROLE_HELPDESK_AUTHORIZED_PERSON'))
         mockGetRoleUsers.mockResolvedValue([])
         mockGetUsers.mockResolvedValue([
             { id: 'mgt-1', name: 'Alice Manager', email: 'alice@example.com' },
@@ -99,6 +102,7 @@ describe('Helpdesk Roles Page', () => {
         expect(wrapper.text()).toContain('Helpdesk Roles')
         expect(wrapper.text()).toContain('Manage helpdesk roles, authorized persons, and user assignments.')
         expect(mockGetRoles).toHaveBeenCalled()
+        expect(mockGetSystemRoles).toHaveBeenCalled()
         expect(wrapper.text()).toContain('Operational Roles')
         expect(wrapper.text()).toContain('Authorized Person')
         // On initial operational tab:
@@ -108,7 +112,7 @@ describe('Helpdesk Roles Page', () => {
         expect(wrapper.text()).not.toContain('ROLE_HELPDESK_AUTHORIZED_PERSON')
     })
 
-    it('should separate ROLE_HELPDESK_AUTHORIZED_PERSON into Authorized Person tab without edit and delete actions', async () => {
+    it('should separate ROLE_HELPDESK_AUTHORIZED_PERSON into Authorized Person tab without edit and delete actions and fetch via getSystemRoles', async () => {
         const wrapper = await mountSuspended(HelpdeskRolesPage, {
             global: {
                 plugins: [createTestingPinia({
@@ -133,12 +137,33 @@ describe('Helpdesk Roles Page', () => {
             await wrapper.vm.$nextTick()
         }
 
+        expect(mockGetSystemRoles).toHaveBeenCalled()
         // Verify system role is displayed
         expect(wrapper.text()).toContain('Authorized Person')
         expect(wrapper.text()).toContain('System Role')
 
         // System role should not display the Add Role button when in system tab
         expect(wrapper.text()).not.toContain('Add Role')
+    })
+
+    it('should call getSystemRoles when switching to system tab via handleTabChange', async () => {
+        const wrapper = await mountSuspended(HelpdeskRolesPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        auth: {
+                            modules: ['helpdesk', 'helpdesk-roles'],
+                            permissions: ['helpdesk-roles:view']
+                        }
+                    }
+                })]
+            }
+        })
+
+        mockGetSystemRoles.mockClear()
+        await (wrapper.vm as any).handleTabChange('system')
+        expect(mockGetSystemRoles).toHaveBeenCalled()
     })
 
     it('should show "Add Role" button when user has create permission and in operational tab, hide it when lacking permission', async () => {

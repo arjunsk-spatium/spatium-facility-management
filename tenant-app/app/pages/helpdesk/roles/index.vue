@@ -19,7 +19,7 @@
         <!-- Role Tabs & Search -->
         <div v-if="canView" class="space-y-4">
             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                <a-tabs v-model:activeKey="activeTab" class="w-full sm:w-auto">
+                <a-tabs v-model:activeKey="activeTab" class="w-full sm:w-auto" @change="handleTabChange">
                     <a-tab-pane key="operational" tab="Operational Roles" />
                     <a-tab-pane key="system" tab="Authorized Person" />
                 </a-tabs>
@@ -326,9 +326,13 @@ const canDelete = computed(() => authStore.hasPermission('helpdesk-roles:delete'
 
 // Data State
 const loading = ref(false)
-const roles = ref<HelpdeskRole[]>([])
+const operationalRoles = ref<HelpdeskRole[]>([])
+const systemRoles = ref<HelpdeskRole[]>([])
 const searchQuery = ref('')
 const activeTab = ref<'operational' | 'system'>('operational')
+
+// Combined roles reference for backward compatibility
+const roles = computed(() => [...operationalRoles.value, ...systemRoles.value])
 
 // Modal & Form State
 const modalVisible = ref(false)
@@ -400,14 +404,14 @@ const paginationConfig = computed(() => ({
 // Helper to determine if a role is the system-managed Authorized Person role
 const isSystemRole = (role: HelpdeskRole | any): boolean => {
     if (!role) return false
+    if (role.is_system_role === true) return true
     const key = (role.key || '').toUpperCase()
     const name = (role.name || '').toUpperCase()
-    return key === 'ROLE_HELPDESK_AUTHORIZED_PERSON' || name === 'ROLE_HELPDESK_AUTHORIZED_PERSON'
+    if (key === 'ROLE_HELPDESK_AUTHORIZED_PERSON' || name === 'ROLE_HELPDESK_AUTHORIZED_PERSON' || key.includes('AUTHORIZED_PERSON')) {
+        return true
+    }
+    return systemRoles.value.some(r => r.id === role.id)
 }
-
-// Split roles by type
-const operationalRoles = computed(() => roles.value.filter(role => !isSystemRole(role)))
-const systemRoles = computed(() => roles.value.filter(role => isSystemRole(role)))
 
 // Filtered roles based on active tab and search query
 const filteredCurrentRoles = computed(() => {
@@ -430,15 +434,68 @@ const handleNameChange = () => {
 }
 
 // Methods
-const fetchRoles = async () => {
+const fetchOperationalRoles = async () => {
     loading.value = true
     try {
         const data = await helpdeskService.getRoles()
-        roles.value = data || []
+        operationalRoles.value = (data || []).filter(r => !isSystemRole(r))
+    } catch (error: any) {
+        message.error(error.message || 'Failed to fetch operational roles')
+    } finally {
+        loading.value = false
+    }
+}
+
+const fetchSystemRoles = async () => {
+    loading.value = true
+    try {
+        const data = await helpdeskService.getSystemRoles()
+        systemRoles.value = (data || []).map(r => ({ ...r, is_system_role: true }))
+    } catch (error: any) {
+        message.error(error.message || 'Failed to fetch authorized person roles')
+    } finally {
+        loading.value = false
+    }
+}
+
+const fetchRoles = async () => {
+    loading.value = true
+    try {
+        const [operationalData, systemData] = await Promise.allSettled([
+            helpdeskService.getRoles(),
+            helpdeskService.getSystemRoles()
+        ])
+
+        if (operationalData.status === 'fulfilled') {
+            operationalRoles.value = (operationalData.value || []).filter(r => !isSystemRole(r))
+        } else {
+            console.error('Failed to fetch operational roles:', operationalData.reason)
+        }
+
+        if (systemData.status === 'fulfilled') {
+            systemRoles.value = (systemData.value || []).map(r => ({
+                ...r,
+                is_system_role: true
+            }))
+        } else {
+            console.error('Failed to fetch system roles:', systemData.reason)
+        }
+
+        if (operationalData.status === 'rejected' && systemData.status === 'rejected') {
+            message.error('Failed to fetch helpdesk roles')
+        }
     } catch (error: any) {
         message.error(error.message || 'Failed to fetch helpdesk roles')
     } finally {
         loading.value = false
+    }
+}
+
+const handleTabChange = (key: string | number) => {
+    if (key === 'system') {
+        fetchSystemRoles()
+    } else {
+        fetchOperationalRoles()
     }
 }
 
@@ -448,7 +505,7 @@ const openAddModal = () => {
         name: '',
         key: '',
         description: '',
-        display_order: roles.value.length + 1
+        display_order: operationalRoles.value.length + 1
     }
     modalVisible.value = true
 }
@@ -487,9 +544,9 @@ const handleSave = async () => {
                 description: formData.value.description,
                 display_order: formData.value.display_order
             })
-            const index = roles.value.findIndex(r => r.id === editingRole.value?.id)
+            const index = operationalRoles.value.findIndex(r => r.id === editingRole.value?.id)
             if (index > -1) {
-                roles.value[index] = updated
+                operationalRoles.value[index] = updated
             }
             message.success('Role updated successfully')
         } else {
@@ -499,7 +556,7 @@ const handleSave = async () => {
                 description: formData.value.description,
                 display_order: formData.value.display_order
             })
-            roles.value.push(newRole)
+            operationalRoles.value.push(newRole)
             message.success('Role created successfully')
         }
         closeModal()
@@ -513,7 +570,7 @@ const handleSave = async () => {
 const handleDelete = async (record: HelpdeskRole) => {
     try {
         await helpdeskService.deleteRole(record.id)
-        roles.value = roles.value.filter(r => r.id !== record.id)
+        operationalRoles.value = operationalRoles.value.filter(r => r.id !== record.id)
         message.success('Role deleted successfully')
     } catch (error: any) {
         message.error(error.message || 'Failed to delete role')
