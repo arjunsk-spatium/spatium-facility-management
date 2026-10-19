@@ -40,6 +40,7 @@ const mockAssignmentModes = [
 
 const mockGetCategories = vi.fn()
 const mockGetSubCategories = vi.fn()
+const mockGetSubCategoriesPaginated = vi.fn()
 const mockGetRoles = vi.fn()
 const mockGetPriorities = vi.fn()
 const mockGetAssignmentModes = vi.fn()
@@ -51,6 +52,7 @@ vi.mock('../../composables/helpdeskService', () => ({
     useHelpdeskService: () => ({
         getCategories: mockGetCategories,
         getSubCategories: mockGetSubCategories,
+        getSubCategoriesPaginated: mockGetSubCategoriesPaginated,
         getRoles: mockGetRoles,
         getPriorities: mockGetPriorities,
         getAssignmentModes: mockGetAssignmentModes,
@@ -74,6 +76,12 @@ describe('HelpdeskTab Component', () => {
         vi.clearAllMocks()
         mockGetCategories.mockResolvedValue(mockCategories)
         mockGetSubCategories.mockResolvedValue(mockSubcategories)
+        mockGetSubCategoriesPaginated.mockResolvedValue({
+            subcategories: mockSubcategories,
+            count: mockSubcategories.length,
+            next: null,
+            previous: null
+        })
         mockGetRoles.mockResolvedValue(mockRoles)
         mockGetPriorities.mockResolvedValue(mockPriorities)
         mockGetAssignmentModes.mockResolvedValue(mockAssignmentModes)
@@ -89,7 +97,7 @@ describe('HelpdeskTab Component', () => {
         })
 
         expect(mockGetCategories).toHaveBeenCalled()
-        expect(mockGetSubCategories).toHaveBeenCalled()
+        expect(mockGetSubCategoriesPaginated).toHaveBeenCalled()
         expect(mockGetRoles).toHaveBeenCalled()
         expect(mockGetPriorities).toHaveBeenCalled()
         expect(mockGetAssignmentModes).toHaveBeenCalled()
@@ -403,4 +411,175 @@ describe('HelpdeskTab Component', () => {
         await subcatTable.vm.$emit('fieldChange', {})
         expect(subcatTable.props('fields').find((f: any) => f.name === 'required_role')).toBeUndefined()
     })
+
+    it('passes pagination configuration to Subcategories ConfigTable', async () => {
+        mockGetSubCategoriesPaginated.mockResolvedValueOnce({
+            subcategories: mockSubcategories,
+            count: 45,
+            next: null,
+            previous: null
+        })
+
+        const wrapper = await mountSuspended(HelpdeskTab, {
+            props: {
+                canCreate: true,
+                canUpdate: true,
+                canDelete: true
+            }
+        })
+
+        ;(wrapper.vm as any).activeSubTab = 'subcategory'
+        await wrapper.vm.$nextTick()
+
+        const tables = wrapper.findAllComponents(ConfigTable)
+        const subcatTable = tables.find(t => t.props('title') === 'Subcategories')!
+        expect(subcatTable).toBeDefined()
+
+        const pagination = subcatTable.props('pagination')
+        expect(pagination).toBeDefined()
+        expect(pagination.current).toBe(1)
+        expect(pagination.pageSize).toBe(10)
+        expect(pagination.total).toBe(45)
+        expect(pagination.showSizeChanger).toBe(true)
+        expect(typeof pagination.onChange).toBe('function')
+        expect(typeof pagination.onShowSizeChange).toBe('function')
+    })
+
+    it('calls getSubCategoriesPaginated with updated page and pageSize when page changes', async () => {
+        mockGetSubCategoriesPaginated.mockResolvedValue({
+            subcategories: mockSubcategories,
+            count: 35,
+            next: null,
+            previous: null
+        })
+
+        const wrapper = await mountSuspended(HelpdeskTab, {
+            props: {
+                canCreate: true,
+                canUpdate: true,
+                canDelete: true
+            }
+        })
+
+        ;(wrapper.vm as any).activeSubTab = 'subcategory'
+        await wrapper.vm.$nextTick()
+
+        const tables = wrapper.findAllComponents(ConfigTable)
+        const subcatTable = tables.find(t => t.props('title') === 'Subcategories')!
+        const pagination = subcatTable.props('pagination')
+
+        // Trigger page change to page 2, pageSize 20
+        pagination.onChange(2, 20)
+        await wrapper.vm.$nextTick()
+
+        expect(mockGetSubCategoriesPaginated).toHaveBeenCalledWith({
+            page: 2,
+            page_size: 20
+        })
+
+        // Trigger show size change to size 50
+        pagination.onShowSizeChange(1, 50)
+        await wrapper.vm.$nextTick()
+
+        expect(mockGetSubCategoriesPaginated).toHaveBeenCalledWith({
+            page: 1,
+            page_size: 50
+        })
+    })
+
+    it('resets page to 1 and includes category param when category filter changes', async () => {
+        mockGetSubCategoriesPaginated.mockResolvedValue({
+            subcategories: mockSubcategories,
+            count: 5,
+            next: null,
+            previous: null
+        })
+
+        const wrapper = await mountSuspended(HelpdeskTab, {
+            props: {
+                canCreate: true,
+                canUpdate: true,
+                canDelete: true
+            }
+        })
+
+        ;(wrapper.vm as any).activeSubTab = 'subcategory'
+        ;(wrapper.vm as any).subcategoryPage = 3
+        ;(wrapper.vm as any).selectedCategoryId = 'cat-1'
+        ;(wrapper.vm as any).handleCategoryFilterChange()
+        await wrapper.vm.$nextTick()
+
+        expect(mockGetSubCategoriesPaginated).toHaveBeenCalledWith({
+            category: 'cat-1',
+            page: 1,
+            page_size: 10
+        })
+    })
+
+    it('refreshes subcategory list with pagination after adding a new subcategory', async () => {
+        mockCreateSubCategory.mockResolvedValueOnce({
+            id: 'subcat-new',
+            category: 'cat-1',
+            name: 'New Subcategory',
+            key: 'new_subcategory'
+        })
+        mockGetSubCategoriesPaginated.mockResolvedValue({
+            subcategories: mockSubcategories,
+            count: 10,
+            next: null,
+            previous: null
+        })
+
+        const wrapper = await mountSuspended(HelpdeskTab, {
+            props: {
+                canCreate: true,
+                canUpdate: true,
+                canDelete: true
+            }
+        })
+
+        ;(wrapper.vm as any).activeSubTab = 'subcategory'
+        await wrapper.vm.$nextTick()
+
+        const tables = wrapper.findAllComponents(ConfigTable)
+        const subcatTable = tables.find(t => t.props('title') === 'Subcategories')!
+
+        await subcatTable.vm.$emit('add', {
+            parent_id: 'cat-1',
+            name: 'New Subcategory'
+        })
+
+        expect(mockCreateSubCategory).toHaveBeenCalled()
+        expect(mockGetSubCategoriesPaginated).toHaveBeenCalled()
+    })
+
+    it('refreshes subcategory list with pagination after deleting a subcategory', async () => {
+        mockDeleteSubCategory.mockResolvedValueOnce({})
+        mockGetSubCategoriesPaginated.mockResolvedValue({
+            subcategories: [],
+            count: 0,
+            next: null,
+            previous: null
+        })
+
+        const wrapper = await mountSuspended(HelpdeskTab, {
+            props: {
+                canCreate: true,
+                canUpdate: true,
+                canDelete: true
+            }
+        })
+
+        ;(wrapper.vm as any).activeSubTab = 'subcategory'
+        await wrapper.vm.$nextTick()
+
+        const tables = wrapper.findAllComponents(ConfigTable)
+        const subcatTable = tables.find(t => t.props('title') === 'Subcategories')!
+
+        await subcatTable.vm.$emit('delete', mockSubcategories[0])
+
+        expect(mockDeleteSubCategory).toHaveBeenCalledWith('subcat-1')
+        expect(mockGetSubCategoriesPaginated).toHaveBeenCalled()
+    })
 })
+

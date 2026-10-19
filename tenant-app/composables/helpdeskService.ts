@@ -177,6 +177,13 @@ export interface CreateSubCategoryPayload {
     default_estimated_effort_min?: number | null;
 }
 
+export interface SubCategoryListParams {
+    category?: string;
+    page?: number;
+    page_size?: number;
+    search?: string;
+}
+
 export interface WorkerLocationScope {
     id?: string;
     scope_type: 'FACILITY' | 'TOWER' | 'FLOOR' | 'WING';
@@ -519,10 +526,12 @@ export const useHelpdeskService = () => {
         },
 
         getSubCategories: async (
-            categoryId?: string,
+            categoryIdOrParams?: string | SubCategoryListParams,
         ): Promise<HelpdeskSubCategory[]> => {
             try {
-                const query = categoryId ? { category: categoryId } : {};
+                const query = typeof categoryIdOrParams === "string"
+                    ? { category: categoryIdOrParams }
+                    : (categoryIdOrParams || {});
                 const response = await $api<
                     ApiResponse<
                         ApiResponse<PaginatedResponse<HelpdeskSubCategory>>
@@ -531,16 +540,61 @@ export const useHelpdeskService = () => {
                     method: "GET",
                     query,
                 });
-                if (!response.success || !response.data.success) {
+                if (!response.success || (response.data && response.data.success === false)) {
                     throw new Error(
                         response.message ||
-                            response.data.message ||
+                            response.data?.message ||
                             "Failed to fetch subcategories",
                     );
                 }
-                return response.data.data.results;
+                const resData = response.data?.data ?? response.data;
+                const results = Array.isArray(resData) ? resData : (resData?.results || []);
+                return results;
             } catch (error) {
                 console.error("Error fetching subcategories:", error);
+                throw error;
+            }
+        },
+
+        getSubCategoriesPaginated: async (
+            params: SubCategoryListParams = {},
+        ): Promise<{
+            subcategories: HelpdeskSubCategory[];
+            count: number;
+            next: string | null;
+            previous: string | null;
+        }> => {
+            try {
+                const response = await $api<
+                    ApiResponse<
+                        ApiResponse<PaginatedResponse<HelpdeskSubCategory>>
+                    >
+                >("/api/portal/helpdesk/subcategories/", {
+                    method: "GET",
+                    query: params,
+                });
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch subcategories",
+                    );
+                }
+                const resData = response.data?.data ?? response.data;
+                const results = Array.isArray(resData)
+                    ? resData
+                    : (resData?.results || []);
+                const count = Array.isArray(resData)
+                    ? resData.length
+                    : (resData?.count ?? results.length);
+                return {
+                    subcategories: results,
+                    count,
+                    next: resData?.next || null,
+                    previous: resData?.previous || null,
+                };
+            } catch (error) {
+                console.error("Error fetching paginated subcategories:", error);
                 throw error;
             }
         },

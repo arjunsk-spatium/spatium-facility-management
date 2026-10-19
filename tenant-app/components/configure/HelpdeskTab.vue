@@ -36,6 +36,7 @@
                         :columns="subcategoryColumns" 
                         :data="filteredSubcategories"
                         :loading="loadingSubcategories" 
+                        :pagination="subcategoryPaginationConfig"
                         :parent-options="categoryOptions" 
                         parent-label="Category"
                         :fields="subcategoryFields"
@@ -226,7 +227,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
-import { useHelpdeskService, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskRole, type HelpdeskPriority, type HelpdeskAssignmentMode, type HelpdeskConfig, type HelpdeskScoringConfig } from '../../composables/helpdeskService'
+import { useHelpdeskService, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskRole, type HelpdeskPriority, type HelpdeskAssignmentMode, type HelpdeskConfig, type HelpdeskScoringConfig, type SubCategoryListParams } from '../../composables/helpdeskService'
 import ConfigTable from './ConfigTable.vue'
 
 defineProps<{
@@ -250,6 +251,29 @@ const selectedCategoryId = ref<string>()
 
 // Subcategory data
 const subcategories = ref<HelpdeskSubCategory[]>([])
+const subcategoryPage = ref(1)
+const subcategoryPageSize = ref(10)
+const subcategoryTotal = ref(0)
+
+const subcategoryPaginationConfig = computed(() => ({
+    current: subcategoryPage.value,
+    pageSize: subcategoryPageSize.value,
+    total: subcategoryTotal.value,
+    showSizeChanger: true,
+    showTotal: (total: number) => `Total ${total} items`,
+    onChange: (page: number, pageSize?: number) => {
+        subcategoryPage.value = page
+        if (pageSize && pageSize !== subcategoryPageSize.value) {
+            subcategoryPageSize.value = pageSize
+        }
+        fetchSubcategories()
+    },
+    onShowSizeChange: (current: number, size: number) => {
+        subcategoryPage.value = 1
+        subcategoryPageSize.value = size
+        fetchSubcategories()
+    }
+}))
 
 // Role data (kept for subcategory required_role selection)
 const roles = ref<HelpdeskRole[]>([])
@@ -425,10 +449,22 @@ const fetchCategories = async () => {
 const fetchSubcategories = async () => {
     loadingSubcategories.value = true
     try {
+        const params: SubCategoryListParams = {
+            page: subcategoryPage.value,
+            page_size: subcategoryPageSize.value,
+        }
         if (selectedCategoryId.value) {
-            subcategories.value = await service.getSubCategoriesByCategory(selectedCategoryId.value)
+            params.category = selectedCategoryId.value
+        }
+
+        if (typeof service.getSubCategoriesPaginated === 'function') {
+            const res = await service.getSubCategoriesPaginated(params)
+            subcategories.value = res?.subcategories || []
+            subcategoryTotal.value = res?.count ?? subcategories.value.length
         } else {
-            subcategories.value = await service.getSubCategories()
+            const data = await service.getSubCategories(params)
+            subcategories.value = Array.isArray(data) ? data : []
+            subcategoryTotal.value = subcategories.value.length
         }
     } catch (error) {
         message.error('Failed to load subcategories')
@@ -438,6 +474,7 @@ const fetchSubcategories = async () => {
 }
 
 const handleCategoryFilterChange = () => {
+    subcategoryPage.value = 1
     fetchSubcategories()
 }
 
@@ -605,8 +642,10 @@ const handleAddSubcategory = async (data: any) => {
         const category = categories.value.find(c => c.id === data.parent_id)
         newSubcategory.category_name = category?.name || ''
         subcategories.value.push(newSubcategory)
+        subcategoryTotal.value += 1
         selectedAssignmentMode.value = undefined
         message.success('Subcategory added successfully')
+        await fetchSubcategories()
     } catch (error) {
         message.error('Failed to add subcategory')
     }
@@ -640,7 +679,14 @@ const handleDeleteSubcategory = async (record: HelpdeskSubCategory) => {
     try {
         await service.deleteSubCategory(record.id)
         subcategories.value = subcategories.value.filter(s => s.id !== record.id)
+        if (subcategoryTotal.value > 0) {
+            subcategoryTotal.value -= 1
+        }
+        if (subcategories.value.length === 0 && subcategoryPage.value > 1) {
+            subcategoryPage.value -= 1
+        }
         message.success('Subcategory deleted successfully')
+        await fetchSubcategories()
     } catch (error) {
         message.error('Failed to delete subcategory')
     }

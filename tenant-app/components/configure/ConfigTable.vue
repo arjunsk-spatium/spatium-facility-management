@@ -14,7 +14,7 @@
         <!-- Responsive Data Table -->
         <div class="overflow-x-auto">
             <ResponsiveDataView :columns="tableColumns" :data="data" :loading="loading"
-                :row-key="(record: any) => record.id" :pagination="{ pageSize: 10 }" :mobile-page-size="5">
+                :row-key="(record: any) => record.id" :pagination="paginationConfig" :mobile-page-size="5">
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'action'">
                         <a-space>
@@ -167,6 +167,7 @@ const props = defineProps<{
     canCreate?: boolean
     canUpdate?: boolean
     canDelete?: boolean
+    pagination?: any
 }>()
 
 const emit = defineEmits<{
@@ -197,6 +198,18 @@ const displayColumns = computed(() =>
 const hasDescriptionColumn = computed(() =>
     props.columns.some(col => col.dataIndex === 'description')
 )
+
+const paginationConfig = computed(() => {
+    if (props.pagination !== undefined) {
+        return props.pagination
+    }
+    return {
+        pageSize: 10,
+        showSizeChanger: true,
+        pageSizeOptions: ['10', '20', '50'],
+        showTotal: (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} items`
+    }
+})
 
 // State
 const modalVisible = ref(false)
