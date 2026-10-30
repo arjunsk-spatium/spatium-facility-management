@@ -45,7 +45,20 @@
                                 :options="categoryOptions"
                                 :loading="loadingCategories"
                                 @change="handleCategoryChange"
-                            />
+                            >
+                                <template #notFoundContent>
+                                    <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                        <span class="text-gray-500 dark:text-gray-400">No categories available</span>
+                                        <a-button v-if="canConfigure" type="primary" size="small"
+                                            @click="navigateTo('/configure?tab=helpdesk')">
+                                            <template #icon>
+                                                <PlusOutlined />
+                                            </template>
+                                            Add Category
+                                        </a-button>
+                                    </div>
+                                </template>
+                            </a-select>
                         </a-form-item>
                     </a-col>
                     <a-col :span="12">
@@ -56,7 +69,21 @@
                                 :options="subCategoryOptions"
                                 :loading="loadingSubCategories"
                                 :disabled="!createForm.category"
-                            />
+                                @change="handleSubCategoryChange"
+                            >
+                                <template #notFoundContent>
+                                    <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                        <span class="text-gray-500 dark:text-gray-400">No subcategories available</span>
+                                        <a-button v-if="canConfigure" type="primary" size="small"
+                                            @click="navigateTo('/configure?tab=helpdesk')">
+                                            <template #icon>
+                                                <PlusOutlined />
+                                            </template>
+                                            Add Subcategory
+                                        </a-button>
+                                    </div>
+                                </template>
+                            </a-select>
                         </a-form-item>
                     </a-col>
                 </a-row>
@@ -95,7 +122,20 @@
                                 :options="facilityOptions"
                                 :loading="loadingFacilities"
                                 @change="handleFacilityChange"
-                            />
+                            >
+                                <template #notFoundContent>
+                                    <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                        <span class="text-gray-500 dark:text-gray-400">No facilities available</span>
+                                        <a-button v-if="canConfigure" type="primary" size="small"
+                                            @click="navigateTo('/facilities/create')">
+                                            <template #icon>
+                                                <PlusOutlined />
+                                            </template>
+                                            Add Facility
+                                        </a-button>
+                                    </div>
+                                </template>
+                            </a-select>
                         </a-form-item>
                     </a-col>
                 </a-row>
@@ -127,12 +167,27 @@
                     </a-col>
                 </a-row>
 
-                <a-form-item label="Location" name="location_text">
-                    <a-input
-                        v-model:value="createForm.location_text"
-                        placeholder="e.g., Building A, Room 101"
-                    />
-                </a-form-item>
+                <a-row :gutter="16">
+                    <a-col :span="14">
+                        <a-form-item label="Location" name="location_text">
+                            <a-input
+                                v-model:value="createForm.location_text"
+                                placeholder="e.g., Building A, Room 101"
+                            />
+                        </a-form-item>
+                    </a-col>
+                    <a-col :span="10">
+                        <a-form-item label="Estimated Effort (mins)" name="estimated_effort_min" :extra="effortHint">
+                            <a-input-number
+                                v-model:value="createForm.estimated_effort_min"
+                                :min="1"
+                                :max="1440"
+                                class="w-full"
+                                placeholder="e.g. 30"
+                            />
+                        </a-form-item>
+                    </a-col>
+                </a-row>
             </a-form>
         </a-modal>
 
@@ -141,6 +196,12 @@
             <a-tab-pane key="priority">
                 <template #tab>
                     Priority <a-badge :count="ticketCounts.priority" :number-style="{ backgroundColor: '#ef4444' }"
+                        :offset="[6, 0]" />
+                </template>
+            </a-tab-pane>
+            <a-tab-pane key="hold_requests">
+                <template #tab>
+                    Hold Requests <a-badge :count="ticketCounts.holdRequests" :number-style="{ backgroundColor: '#f97316' }"
                         :offset="[6, 0]" />
                 </template>
             </a-tab-pane>
@@ -153,6 +214,12 @@
             <a-tab-pane key="inprogress">
                 <template #tab>
                     In Progress <a-badge :count="ticketCounts.inprogress" :number-style="{ backgroundColor: '#f59e0b' }"
+                        :offset="[6, 0]" />
+                </template>
+            </a-tab-pane>
+            <a-tab-pane key="on_hold">
+                <template #tab>
+                    On Hold <a-badge :count="ticketCounts.onhold" :number-style="{ backgroundColor: '#d97706' }"
                         :offset="[6, 0]" />
                 </template>
             </a-tab-pane>
@@ -176,6 +243,15 @@
             </a-tab-pane>
         </a-tabs>
 
+        <TicketHoldModal
+            v-if="selectedRowTicketId"
+            v-model:open="showRowHoldModal"
+            :ticket-id="selectedRowTicketId"
+            :facility-id="selectedRowFacilityId"
+            :is-direct-hold="true"
+            @success="handleRowHoldSuccess"
+        />
+
         <div v-if="canView">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
@@ -188,7 +264,7 @@
                     </a-select>
                 </div>
 
-                <a-button v-if="canAction" class="w-full md:w-auto">
+                <a-button v-if="canAction" class="w-full md:w-auto" :loading="exporting" @click="exportTickets">
                     <template #icon>
                         <ExportOutlined />
                     </template>
@@ -196,7 +272,7 @@
                 </a-button>
             </div>
 
-            <ResponsiveDataView :columns="columns" :data="filteredTickets" :loading="loading" row-key="id">
+            <ResponsiveDataView :columns="columns" :data="tickets" :loading="loading" row-key="id" :pagination="paginationConfig">
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'ticket_number'">
                         <a @click="navigateTo(`/helpdesk/${record.id}`)" class="font-medium hover:underline">{{
@@ -218,31 +294,50 @@
                     </template>
 
                     <template v-else-if="column.key === 'actions'">
-                        <a-dropdown v-if="canAction">
-                            <a-button type="text" size="small">
-                                <template #icon>
-                                    <MoreOutlined />
-                                </template>
+                        <div class="flex items-center justify-end gap-1">
+                            <a-button
+                                v-if="activeTab === 'hold_requests'"
+                                type="primary"
+                                size="small"
+                                ghost
+                                @click="navigateTo(`/helpdesk/${record.id}`)"
+                            >
+                                Review Hold
                             </a-button>
-                            <template #overlay>
-                                <a-menu>
-                                    <a-menu-item key="view" @click="navigateTo(`/helpdesk/${record.id}`)">
-                                        <EyeOutlined /> View Details
-                                    </a-menu-item>
-                                    <a-menu-item v-if="canUpdate && record.state?.key !== 'closed'" key="close"
-                                        @click="handleCloseTicket(record)">
-                                        <CheckCircleOutlined /> Close Ticket
-                                    </a-menu-item>
-                                </a-menu>
-                            </template>
-                        </a-dropdown>
-                        <a-tooltip v-else title="View Details">
-                            <a-button type="text" shape="circle" @click="navigateTo(`/helpdesk/${record.id}`)">
-                                <template #icon>
-                                    <EyeOutlined />
+
+                            <a-dropdown v-if="canAction">
+                                <a-button type="text" size="small">
+                                    <template #icon>
+                                        <MoreOutlined />
+                                    </template>
+                                </a-button>
+                                <template #overlay>
+                                    <a-menu>
+                                        <a-menu-item key="view" @click="navigateTo(`/helpdesk/${record.id}`)">
+                                            <EyeOutlined /> View Details
+                                        </a-menu-item>
+                                        <a-menu-item
+                                            v-if="canHoldTicketRow(record)"
+                                            key="hold"
+                                            @click="openDirectHoldModalFromRow(record)"
+                                        >
+                                            <PauseCircleOutlined /> Hold Ticket
+                                        </a-menu-item>
+                                        <a-menu-item v-if="canUpdate && ['pending_confirmation', 'disputed'].includes(record.state?.key?.toLowerCase())" key="close"
+                                            @click="handleCloseTicket(record)">
+                                            <CheckCircleOutlined /> Close Ticket
+                                        </a-menu-item>
+                                    </a-menu>
                                 </template>
-                            </a-button>
-                        </a-tooltip>
+                            </a-dropdown>
+                            <a-tooltip v-else title="View Details">
+                                <a-button type="text" shape="circle" @click="navigateTo(`/helpdesk/${record.id}`)">
+                                    <template #icon>
+                                        <EyeOutlined />
+                                    </template>
+                                </a-button>
+                            </a-tooltip>
+                        </div>
                     </template>
                 </template>
 
@@ -287,28 +382,33 @@
         <div v-else class="text-center py-12 text-gray-500">
             You don't have permission to view helpdesk tickets.
         </div>
-
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import dayjs from 'dayjs';
 import { useHelpdeskStore } from '../../../stores/helpdesk';
 import { useFacilityStore } from '../../../stores/facility';
 import { useFacilityService } from '../../../composables/facilityService';
+import { useHelpdeskService } from '../../../composables/helpdeskService';
 import { useAuthStore } from '../../../stores/auth';
 import { storeToRefs } from 'pinia';
 import { message } from 'ant-design-vue';
+import type { TicketListParams } from '../../../composables/helpdeskService';
 import {
     PlusOutlined,
     BarChartOutlined,
     ExportOutlined,
     EyeOutlined,
     MoreOutlined,
-    CheckCircleOutlined
+    CheckCircleOutlined,
+    PauseCircleOutlined
 } from '@ant-design/icons-vue';
 import StatusBadge from '../../../components/helpdesk/StatusBadge.vue';
 import ResponsiveDataView from '../../../components/ResponsiveDataView.vue';
+import TicketHoldModal from '../../../components/helpdesk/tickets/TicketHoldModal.vue';
+import { useIndexedDB, HELPDESK_FACILITY_KEY } from '../../../composables/useIndexedDB';
 
 definePageMeta({
     middleware: 'auth'
@@ -318,7 +418,8 @@ definePageMeta({
 const helpdeskStore = useHelpdeskStore();
 const facilityStore = useFacilityStore();
 const authStore = useAuthStore();
-const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, pendingCount, closedCount, allCount } = storeToRefs(helpdeskStore);
+const { setItem, getItem, removeItem } = useIndexedDB();
+const { tickets, loading, categories, subCategories, priorities, creating, priorityCount, openCount, inprogressCount, onHoldCount, holdRequestsCount, pendingCount, closedCount, allCount, count, page, pageSize } = storeToRefs(helpdeskStore);
 const { facilities } = storeToRefs(facilityStore);
 
 // Permission checks
@@ -326,6 +427,38 @@ const canView = computed(() => authStore.hasPermission('helpdesk-tickets:view'))
 const canCreate = computed(() => authStore.hasPermission('helpdesk-tickets:create'))
 const canUpdate = computed(() => authStore.hasPermission('helpdesk-tickets:update'))
 const canAction = computed(() => authStore.hasPermission('helpdesk-tickets:action'))
+const canConfigure = computed(() => authStore.hasPermission('configure:create'))
+const isHelpdeskUser = computed(() => {
+    const roleKey = typeof authStore.user?.role === 'object' ? authStore.user?.role?.key : authStore.user?.role;
+    const roleName = typeof authStore.user?.role === 'object' ? authStore.user?.role?.name : authStore.user?.role_name;
+    const isHelpdeskRole = String(roleKey || '').toLowerCase() === 'helpdesk' ||
+        String(roleName || '').toLowerCase().includes('helpdesk');
+    return canAction.value ||
+        authStore.hasPermission('helpdesk-tickets:action') ||
+        isHelpdeskRole ||
+        Boolean(authStore.user?.is_superuser || authStore.user?.is_admin);
+});
+
+// Row hold state
+const selectedRowTicketId = ref<string>('');
+const selectedRowFacilityId = ref<string>('');
+const showRowHoldModal = ref<boolean>(false);
+
+const canHoldTicketRow = (record: any) => {
+    const stateKey = String(record.state?.key || record.state || '').toUpperCase();
+    return isHelpdeskUser.value && ['ASSIGNED', 'IN_PROGRESS', 'INPROGRESS'].includes(stateKey);
+};
+
+const openDirectHoldModalFromRow = (record: any) => {
+    selectedRowTicketId.value = record.id;
+    selectedRowFacilityId.value = record.facility || (typeof record.facility_id === 'string' ? record.facility_id : '') || facilityFilter.value || '';
+    showRowHoldModal.value = true;
+};
+
+const handleRowHoldSuccess = async () => {
+    await fetchTicketsByFilter();
+    await helpdeskStore.fetchTicketCounts();
+};
 
 // Form state
 const showCreateModal = ref(false);
@@ -339,7 +472,8 @@ const createForm = ref({
     facility: undefined as string | undefined,
     tower: undefined as string | undefined,
     floor: undefined as string | undefined,
-    location_text: ''
+    location_text: '',
+    estimated_effort_min: undefined as number | undefined
 });
 
 const formRules = {
@@ -384,7 +518,7 @@ const openCreateModal = async () => {
     await Promise.all([
         loadCategories(),
         loadPriorities(),
-        facilityStore.fetchFacilities()
+        facilityStore.fetchFacilities({ page_size: 999 }, true)
     ]);
 };
 
@@ -399,11 +533,30 @@ const closeCreateModal = () => {
         facility: undefined,
         tower: undefined,
         floor: undefined,
-        location_text: ''
+        location_text: '',
+        estimated_effort_min: undefined
     };
     towerOptions.value = [];
     floorOptions.value = [];
     formRef.value?.resetFields();
+};
+
+const selectedSubCategory = computed(() =>
+    subCategories.value.find(s => s.id === createForm.value.subcategory)
+);
+
+const effortHint = computed(() => {
+    if (selectedSubCategory.value?.default_estimated_effort_min) {
+        return `Default for ${selectedSubCategory.value.name}: ${selectedSubCategory.value.default_estimated_effort_min} mins`;
+    }
+    return 'Expected duration to resolve (mins)';
+});
+
+const handleSubCategoryChange = (val: any) => {
+    const sub = subCategories.value.find(s => s.id === val);
+    if (sub?.default_estimated_effort_min && !createForm.value.estimated_effort_min) {
+        createForm.value.estimated_effort_min = sub.default_estimated_effort_min;
+    }
 };
 
 const loadCategories = async () => {
@@ -426,6 +579,7 @@ const loadPriorities = async () => {
 
 const handleCategoryChange = async () => {
     createForm.value.subcategory = undefined;
+    createForm.value.estimated_effort_min = undefined;
     if (createForm.value.category) {
         loadingSubCategories.value = true;
         try {
@@ -477,6 +631,7 @@ const handleCreateTicket = async () => {
             tower: createForm.value.tower,
             floor: createForm.value.floor,
             location_text: createForm.value.location_text,
+            estimated_effort_min: createForm.value.estimated_effort_min ? Number(createForm.value.estimated_effort_min) : null,
             company: null
         });
         message.success('Ticket created successfully');
@@ -490,9 +645,18 @@ const handleCreateTicket = async () => {
 };
 
 // State
-const activeTab = ref('all');
+const activeTab = ref('priority');
 const searchText = ref('');
 const facilityFilter = ref<string | undefined>(undefined);
+
+// Debounce search input to avoid excessive API calls
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+watch(searchText, () => {
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+        fetchTicketsByFilter();
+    }, 300);
+});
 
 const columns = [
     { title: 'Ticket ID', dataIndex: 'ticket_number', key: 'ticket_number', width: 140 },
@@ -509,8 +673,10 @@ const columns = [
 const ticketCounts = computed(() => {
     return { 
         priority: priorityCount.value, 
+        holdRequests: holdRequestsCount.value,
         open: openCount.value, 
         inprogress: inprogressCount.value, 
+        onhold: onHoldCount.value,
         pending: pendingCount.value, 
         closed: closedCount.value,
         all: allCount.value
@@ -523,14 +689,25 @@ const handleTabChange = async () => {
 };
 
 const handleFacilityFilterChange = async () => {
+    if (facilityFilter.value) {
+        await setItem(HELPDESK_FACILITY_KEY, facilityFilter.value);
+    } else {
+        await removeItem(HELPDESK_FACILITY_KEY);
+    }
     await fetchTicketsByFilter();
 };
 
 const fetchTicketsByFilter = async () => {
-    const params: { states?: string; facility_id?: string } = {};
+    const params: TicketListParams = { page: 1 };
     
     if (activeTab.value === 'priority') {
-        await helpdeskStore.fetchPriorityTickets(1, 20, facilityFilter.value);
+        await helpdeskStore.fetchPriorityTickets(1, pageSize.value, facilityFilter.value, searchText.value || undefined);
+        return;
+    } else if (activeTab.value === 'hold_requests') {
+        await helpdeskStore.fetchRequestPendingTickets(1, pageSize.value, facilityFilter.value, searchText.value || undefined);
+        return;
+    } else if (activeTab.value === 'on_hold') {
+        await helpdeskStore.fetchOnHoldTickets(1, pageSize.value, facilityFilter.value, searchText.value || undefined);
         return;
     } else if (activeTab.value === 'open') {
         params.states = 'open';
@@ -548,41 +725,156 @@ const fetchTicketsByFilter = async () => {
         params.facility_id = facilityFilter.value;
     }
     
+    if (searchText.value) {
+        params.search = searchText.value;
+    }
+    
     await helpdeskStore.fetchTickets(params);
 };
 
 const getPriorityColor = (priority: any) => {
-    const key = priority?.key || priority;
-    switch (key?.toUpperCase()) {
-        case 'P1': return 'red';
-        case 'P2': return 'orange';
-        case 'P3': return 'blue';
-        case 'P4': return 'green';
+    const key = typeof priority === 'object' && priority !== null ? (priority.key ?? priority.name ?? priority.label ?? priority.id) : priority;
+    const normalized = String(key || '').toUpperCase();
+    switch (normalized) {
+        case 'P1': case 'HIGH': case 'CRITICAL': case '1': return 'red';
+        case 'P2': case 'MEDIUM': case '2': return 'orange';
+        case 'P3': case 'LOW': case '3': return 'blue';
+        case 'P4': case '4': return 'green';
         default: return 'default';
     }
 };
 
-// Computed Filtered Data
-const filteredTickets = computed(() => {
-    return tickets.value;
-});
+// Pagination config
+const paginationConfig = computed(() => ({
+    total: count.value,
+    current: page.value,
+    pageSize: pageSize.value,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
+    onChange: handlePageChange,
+}));
+
+const handlePageChange = async (pageNum: number, newPageSize: number) => {
+    const params: TicketListParams = { page: pageNum };
+    if (activeTab.value === 'open') {
+        params.states = 'open';
+    } else if (activeTab.value === 'inprogress') {
+        params.states = 'inprogress';
+    } else if (activeTab.value === 'hold_requests') {
+        await helpdeskStore.fetchRequestPendingTickets(pageNum, newPageSize, facilityFilter.value, searchText.value || undefined);
+        return;
+    } else if (activeTab.value === 'on_hold') {
+        await helpdeskStore.fetchOnHoldTickets(pageNum, newPageSize, facilityFilter.value, searchText.value || undefined);
+        return;
+    } else if (activeTab.value === 'pending') {
+        params.states = 'pending_confirmation';
+    } else if (activeTab.value === 'closed') {
+        params.states = 'closed';
+    } else if (activeTab.value === 'priority') {
+        await helpdeskStore.fetchPriorityTickets(pageNum, newPageSize, facilityFilter.value, searchText.value || undefined);
+        return;
+    }
+    if (facilityFilter.value) {
+        params.facility_id = facilityFilter.value;
+    }
+    if (searchText.value) {
+        params.search = searchText.value;
+    }
+    if (newPageSize !== pageSize.value) {
+        params.page_size = newPageSize;
+    }
+    await helpdeskStore.fetchTickets(params);
+};
+
+const exporting = ref(false);
+
+const exportTickets = async () => {
+    if (exporting.value) return;
+    exporting.value = true;
+    try {
+        const XLSX = await import('xlsx');
+        const params: TicketListParams = { page_size: 9999 };
+        if (activeTab.value === 'open') {
+            params.states = 'open';
+        } else if (activeTab.value === 'inprogress') {
+            params.states = 'inprogress';
+        } else if (activeTab.value === 'pending') {
+            params.states = 'pending_confirmation';
+        } else if (activeTab.value === 'closed') {
+            params.states = 'closed';
+        } else if (activeTab.value === 'on_hold') {
+            params.states = 'on_hold';
+        }
+        if (facilityFilter.value) {
+            params.facility_id = facilityFilter.value;
+        }
+        if (searchText.value) {
+            params.search = searchText.value;
+        }
+
+        let exportData: any[] = [];
+        try {
+            const { getTickets } = useHelpdeskService();
+            const res = await getTickets(params);
+            exportData = res?.tickets || res?.data?.results || res?.results || tickets.value;
+        } catch {
+            exportData = tickets.value;
+        }
+
+        if (!exportData || exportData.length === 0) {
+            message.warning('No tickets to export');
+            return;
+        }
+
+        const formatted = exportData.map(ticket => ({
+            'Ticket #': ticket.ticket_number || '',
+            'Title': ticket.title || '',
+            'Status': ticket.state?.label || ticket.state?.key || ticket.status || '',
+            'Priority': ticket.priority?.label || ticket.priority?.key || '',
+            'Category': ticket.category_name || '',
+            'Subcategory': ticket.subcategory_name || '',
+            'Facility': ticket.facility_name || '',
+            'Assigned To': ticket.assigned_to_name || '',
+            'Created At': ticket.created_at ? new Date(ticket.created_at).toLocaleString() : ''
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(formatted);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Tickets');
+        const now = dayjs().format('YYYY-MM-DD');
+        XLSX.writeFile(workbook, `helpdesk-tickets-${now}.xlsx`);
+        message.success('Tickets exported successfully');
+    } catch (err: any) {
+        console.error('Failed to export tickets:', err);
+        message.error('Failed to export tickets');
+    } finally {
+        exporting.value = false;
+    }
+};
 
 const handleCloseTicket = async (record: any) => {
     try {
-        await helpdeskStore.confirmCloseTicket(record.id)
-        message.success('Ticket closed successfully')
-        await fetchTicketsByFilter()
-    } catch (error) {
-        message.error('Failed to close ticket')
+        await helpdeskStore.confirmCloseTicket(record.id);
+        message.success('Ticket closed successfully');
+        await fetchTicketsByFilter();
+    } catch (error: any) {
+        const errorMsg = error?.data?.message || error?.data?.error?.message || error?.data?.error || error?.message || 'Failed to close ticket';
+        message.error(typeof errorMsg === 'string' ? errorMsg : 'Failed to close ticket');
     }
-}
+};
 
 // Initialization
 onMounted(async () => {
+    await facilityStore.fetchFacilities({ page_size: 999 }, true);
+
+    const savedFacility = await getItem<string>(HELPDESK_FACILITY_KEY);
+    if (savedFacility && facilities.value.some(f => f.id === savedFacility)) {
+        facilityFilter.value = savedFacility;
+    }
+
     await Promise.all([
         fetchTicketsByFilter(),
-        helpdeskStore.fetchTicketCounts(),
-        facilityStore.fetchFacilities()
+        helpdeskStore.fetchTicketCounts()
     ]);
 });
 </script>

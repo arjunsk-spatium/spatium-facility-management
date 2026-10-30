@@ -27,18 +27,25 @@
                     </a-form-item>
 
                     <a-form-item label="Phone Number" name="phone"
-                        :rules="[{ required: true, message: 'Please enter phone number' }]">
-                        <a-input-group compact>
-                            <a-select v-model:value="formState.countryCode" style="width: 90px" size="large" disabled>
-                                <a-select-option value="+91">+91</a-select-option>
-                            </a-select>
-                            <a-input v-model:value="formState.phone" placeholder="98765 43210" size="large"
-                                style="width: calc(100% - 90px)" />
-                        </a-input-group>
+                        :rules="[
+                            { required: true, message: 'Please enter phone number' },
+                            { pattern: /^\+91\d{10}$/, message: 'Please enter a valid 10-digit phone number' }
+                        ]">
+                        <PhoneInput v-model="formState.phone" size="large" selectWidth="90px" />
                     </a-form-item>
 
-                    <a-form-item label="Email" name="email" class="sm:col-span-2">
+                    <a-form-item v-if="visitorEmailRequired" label="Email" name="email" class="sm:col-span-2"
+                        :rules="[
+                            { required: true, message: 'Please enter email' },
+                            { type: 'email', message: 'Please enter a valid email address' }
+                        ]">
                         <a-input v-model:value="formState.email" placeholder="visitor@email.com" size="large" />
+                    </a-form-item>
+
+                    <a-form-item v-if="visitorCompanyRequired" label="From Company" name="fromCompany"
+                        class="sm:col-span-2" :rules="[{ required: true, message: 'Please enter company name' }]">
+                        <a-input v-model:value="formState.fromCompany" placeholder="Visitor's company / organization"
+                            size="large" />
                     </a-form-item>
 
                     <a-form-item label="Visit Date" name="visitDate"
@@ -128,6 +135,10 @@ definePageMeta({
 })
 
 const { toApiDate, toApiTime } = useDate()
+const { getTenantConfig, getCurrentTenantId } = useTenantService()
+
+const visitorEmailRequired = ref(false)
+const visitorCompanyRequired = ref(false)
 
 interface SpocVisitor {
     id: string
@@ -149,9 +160,9 @@ const lastInvited = ref<SpocVisitor | null>(null)
 
 const formState = reactive({
     name: '',
-    countryCode: '+91',
     phone: '',
     email: '',
+    fromCompany: '',
     visitDate: null as Dayjs | null,
     visitTime: null as Dayjs | null,
     purpose: null as string | null,
@@ -197,23 +208,48 @@ const filterOption = (input: string, option: any) => {
 
 const resetForm = () => {
     formState.name = ''
-    formState.countryCode = '+91'
     formState.phone = ''
     formState.email = ''
+    formState.fromCompany = ''
     formState.visitDate = null
     formState.visitTime = null
     formState.purpose = null
     formState.facilityId = null
 }
 
+const buildAppointment = (): Dayjs => {
+    const now = dayjs()
+    let appointment = formState.visitDate ? dayjs(formState.visitDate) : now
+
+    if (formState.visitTime) {
+        appointment = appointment
+            .hour(formState.visitTime.hour())
+            .minute(formState.visitTime.minute())
+            .second(0)
+    } else if (appointment.isSame(now, 'day')) {
+        // Visit Time is optional — when left blank for today, default to the current time
+        appointment = now
+    }
+
+    // The chosen slot may have just slipped into the past while the user was
+    // filling the form (e.g. picked 10:35, submits at 10:36) — fall back to now
+    if (appointment.isBefore(now)) {
+        appointment = now
+    }
+
+    return appointment
+}
+
 const handleSubmit = async () => {
     try {
+        const appointment = buildAppointment()
         const data = {
             name: formState.name,
-            phone: formState.countryCode + formState.phone,
+            phone: formState.phone,
             email: formState.email || undefined,
+            from_company: formState.fromCompany || undefined,
             visitDate: toApiDate(formState.visitDate),
-            visitTime: toApiTime(formState.visitTime) || undefined,
+            visitTime: toApiTime(appointment),
             purpose: formState.purpose || 'General Visit',
             facility_id: formState.facilityId || undefined,
             purpose_of_visit_id: formState.purpose || undefined
@@ -228,10 +264,24 @@ const handleSubmit = async () => {
     }
 }
 
+const loadTenantConfig = async () => {
+    try {
+        const tenantId = getCurrentTenantId()
+        const config = await getTenantConfig(tenantId)
+        if (config) {
+            visitorEmailRequired.value = config.visitor_email_required
+            visitorCompanyRequired.value = config.visitor_company_required
+        }
+    } catch (e) {
+        console.error('Failed to load tenant config', e)
+    }
+}
+
 onMounted(async () => {
     await Promise.all([
         store.fetchPurposesOfVisit(),
-        store.fetchFacilities()
+        store.fetchFacilities(),
+        loadTenantConfig()
     ])
 })
 </script>

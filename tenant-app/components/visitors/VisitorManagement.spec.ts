@@ -6,11 +6,11 @@ import { nextTick, ref } from 'vue'
 // Mock pinia
 vi.mock('pinia', () => ({
     storeToRefs: (val: any) => val,
-    createTestingPinia: () => {}
+    createTestingPinia: () => {},
+    defineStore: (name: string, setup: any) => setup
 }))
 
 // Mock store modules to prevent loading real files
-// We use a factory allowing us to override implementation later
 vi.mock('../../stores/visitor', () => ({
     useVisitorStore: vi.fn()
 }))
@@ -20,11 +20,18 @@ vi.mock('../../stores/facility', () => ({
 vi.mock('../../stores/company', () => ({
     useCompanyStore: vi.fn()
 }))
+vi.mock('../../stores/auth', () => ({
+    useAuthStore: vi.fn(() => ({
+        hasPermission: vi.fn(() => true),
+        hasModule: vi.fn(() => false)
+    }))
+}))
 
 // Import the mocked functions to set implementations
 import { useVisitorStore } from '../../stores/visitor'
 import { useFacilityStore } from '../../stores/facility'
 import { useCompanyStore } from '../../stores/company'
+import { useAuthStore } from '../../stores/auth'
 
 describe('VisitorManagement', () => {
     let wrapper: any;
@@ -32,6 +39,9 @@ describe('VisitorManagement', () => {
     // Reactive state
     const visitors = ref<any[]>([]);
     const loading = ref(false);
+    const count = ref(0);
+    const page = ref(1);
+    const pageSize = ref(10);
     const facilities = ref<any[]>([]);
     const companies = ref<any[]>([]);
 
@@ -62,6 +72,9 @@ describe('VisitorManagement', () => {
         facilities.value = [...mockFacilitiesData];
         companies.value = [...mockCompaniesData];
         loading.value = false;
+        count.value = 27;
+        page.value = 1;
+        pageSize.value = 10;
 
         fetchVisitors.mockClear();
         fetchFacilities.mockClear();
@@ -72,6 +85,9 @@ describe('VisitorManagement', () => {
         (useVisitorStore as any).mockReturnValue({
             visitors,
             loading,
+            count,
+            page,
+            pageSize,
             fetchVisitors,
             updateStatus
         });
@@ -91,13 +107,21 @@ describe('VisitorManagement', () => {
                 stubs: {
                     'a-button': { template: '<button><slot/></button>' },
                     'a-select': { 
-                        template: '<select :value="value" @change="$emit(\'update:value\', parseInt($event.target.value)); $emit(\'change\')"><slot/></select>',
+                        template: '<select :value="value" @change="$emit(\'update:value\', $event.target.value); $emit(\'change\')"><slot/></select>',
                         props: ['value'] 
                     },
                     'a-select-option': { template: '<option :value="value"><slot/></option>', props: ['value'] },
                     'a-input-search': { 
                         template: '<input :value="value" @input="$emit(\'update:value\', $event.target.value); $emit(\'search\')" />',
                         props: ['value']
+                    },
+                    'a-range-picker': {
+                        template: '<div class="range-picker"><slot/></div>',
+                        props: ['value']
+                    },
+                    'a-pagination': {
+                        template: '<div class="pagination"><slot/></div>',
+                        props: ['current', 'total', 'pageSize']
                     },
                     'VisitorList': true,
                     'ExportOutlined': true
@@ -117,44 +141,156 @@ describe('VisitorManagement', () => {
         expect(fetchCompanies).toHaveBeenCalled();
     });
 
-    it('filters visitors by Facility', async () => {
-        wrapper.vm.selectedFacility = 1;
-        await nextTick();
+    it('calls fetchVisitors with facility filter', async () => {
+        wrapper.vm.selectedFacility = '1';
+        await wrapper.vm.handleFilterChange();
         
-        expect(wrapper.vm.filteredVisitors).toHaveLength(2);
-        expect(wrapper.vm.filteredVisitors[0].id).toBe('1');
-        
-        wrapper.vm.selectedFacility = 2;
-        await nextTick();
-        expect(wrapper.vm.filteredVisitors).toHaveLength(1);
-        expect(wrapper.vm.filteredVisitors[0].id).toBe('2');
+        expect(fetchVisitors).toHaveBeenCalledWith(
+            expect.objectContaining({ facility_id: '1', page: 1 })
+        );
     });
 
-    it('filters visitors by Company', async () => {
-        wrapper.vm.selectedCompany = 20; // Beta
-        await nextTick();
+    it('calls fetchVisitors with company filter', async () => {
+        wrapper.vm.selectedCompany = '20';
+        await wrapper.vm.handleFilterChange();
         
-        expect(wrapper.vm.filteredVisitors).toHaveLength(2);
+        expect(fetchVisitors).toHaveBeenCalledWith(
+            expect.objectContaining({ company_id: '20', page: 1 })
+        );
     });
 
-    it('filters visitors by Search Query', async () => {
+    it('calls fetchVisitors with search query', async () => {
         wrapper.vm.searchQuery = 'John';
-        await nextTick();
-        expect(wrapper.vm.filteredVisitors).toHaveLength(1);
-        expect(wrapper.vm.filteredVisitors[0].name).toBe('John Doe');
+        await wrapper.vm.handleFilterChange();
         
-        wrapper.vm.searchQuery = 'Delivery'; // Purpose
-        await nextTick();
-        expect(wrapper.vm.filteredVisitors).toHaveLength(1);
-        expect(wrapper.vm.filteredVisitors[0].visitPurpose).toBe('Delivery');
+        expect(fetchVisitors).toHaveBeenCalledWith(
+            expect.objectContaining({ search: 'John', page: 1 })
+        );
     });
 
     it('combines filters correctly', async () => {
-        wrapper.vm.selectedFacility = 1;
-        wrapper.vm.selectedCompany = 20;
-        await nextTick();
+        wrapper.vm.selectedFacility = '1';
+        wrapper.vm.selectedCompany = '20';
+        wrapper.vm.searchQuery = 'test';
+        await wrapper.vm.handleFilterChange();
         
-        expect(wrapper.vm.filteredVisitors).toHaveLength(1);
-        expect(wrapper.vm.filteredVisitors[0].id).toBe('3');
+        expect(fetchVisitors).toHaveBeenCalledWith(
+            expect.objectContaining({
+                facility_id: '1',
+                company_id: '20',
+                search: 'test',
+                page: 1
+            })
+        );
     });
-});
+
+    it('resets to page 1 when filters change', async () => {
+        page.value = 3;
+        wrapper.vm.selectedFacility = '1';
+        await wrapper.vm.handleFilterChange();
+        
+        expect(fetchVisitors).toHaveBeenCalledWith(
+            expect.objectContaining({ page: 1 })
+        );
+    });
+
+    it('handles page change with current filters', async () => {
+        wrapper.vm.selectedFacility = '1';
+        wrapper.vm.searchQuery = 'query';
+        await wrapper.vm.handlePageChange(2);
+        
+        expect(fetchVisitors).toHaveBeenCalledWith(
+            expect.objectContaining({
+                facility_id: '1',
+                search: 'query',
+                page: 2
+            })
+        );
+    });
+
+})
+
+describe('VisitorManagement frontdesk permissions', () => {
+    const visitors = ref<any[]>([])
+    const loading = ref(false)
+    const count = ref(27)
+    const page = ref(1)
+    const pageSize = ref(10)
+
+    const mountPage = (options: { permissions?: string[]; modules?: string[]; frontdesk?: boolean }) => {
+        const permissions = options.permissions ?? []
+        const modules = options.modules ?? []
+
+        ;(useAuthStore as any).mockReturnValue({
+            hasPermission: vi.fn((p: string) => permissions.includes(p)),
+            hasModule: vi.fn((m: string) => modules.includes(m))
+        })
+        ;(useVisitorStore as any).mockReturnValue({
+            visitors,
+            loading,
+            count,
+            page,
+            pageSize,
+            fetchVisitors: vi.fn().mockResolvedValue(true),
+            updateStatus: vi.fn()
+        })
+        ;(useFacilityStore as any).mockReturnValue({
+            facilities: ref([]),
+            fetchFacilities: vi.fn().mockResolvedValue(true)
+        })
+        ;(useCompanyStore as any).mockReturnValue({
+            companies: ref([]),
+            fetchCompanies: vi.fn().mockResolvedValue(true)
+        })
+
+        return mount(VisitorManagement, {
+            props: { frontdesk: options.frontdesk ?? false },
+            global: {
+                stubs: {
+                    'a-button': { template: '<button><slot/></button>' },
+                    'a-select': { template: '<select><slot/></select>' },
+                    'a-select-option': { template: '<option><slot/></option>' },
+                    'a-input-search': { template: '<input />' },
+                    'a-range-picker': { template: '<div />' },
+                    'a-pagination': { template: '<div />' },
+                    'VisitorList': true,
+                    'ExportOutlined': true
+                }
+            }
+        })
+    }
+
+    it('grants view and action to frontdesk users via the frontdesk module', () => {
+        const wrapper = mountPage({
+            modules: ['frontdesk'],
+            permissions: [],
+            frontdesk: true
+        })
+
+        expect(wrapper.vm.canView).toBe(true)
+        expect(wrapper.vm.canAction).toBe(true)
+        expect(wrapper.text()).not.toContain("You don't have permission to view visitors.")
+    })
+
+    it('still shows the permission message for frontdesk users on the regular visitors page', () => {
+        const wrapper = mountPage({
+            modules: ['frontdesk'],
+            permissions: [],
+            frontdesk: false
+        })
+
+        expect(wrapper.vm.canView).toBe(false)
+        expect(wrapper.text()).toContain("You don't have permission to view visitors.")
+    })
+
+    it('grants access via the visitors-list feature permissions', () => {
+        const wrapper = mountPage({
+            modules: ['visitors'],
+            permissions: ['visitors-list:view', 'visitors-list:action'],
+            frontdesk: false
+        })
+
+        expect(wrapper.vm.canView).toBe(true)
+        expect(wrapper.vm.canAction).toBe(true)
+    })
+})

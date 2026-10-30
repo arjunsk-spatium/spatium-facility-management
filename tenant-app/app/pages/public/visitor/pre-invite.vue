@@ -36,6 +36,10 @@
                         <span class="text-gray-500">Email</span>
                         <span class="font-medium text-gray-900">{{ formData.email }}</span>
                     </div>
+                    <div v-if="formData.from_company" class="flex justify-between">
+                        <span class="text-gray-500">From Company</span>
+                        <span class="font-medium text-gray-900">{{ formData.from_company }}</span>
+                    </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Date</span>
                         <span class="font-medium text-gray-900">{{ formData.appointment_date }}</span>
@@ -90,6 +94,7 @@ const formData = reactive({
     name: '',
     phone: '',
     email: '',
+    from_company: '',
     appointment_date: '',
     appointment_time: ''
 })
@@ -100,6 +105,7 @@ onMounted(() => {
     formData.name = route.query.name as string || ''
     formData.phone = route.query.phone as string || ''
     formData.email = route.query.email as string || ''
+    formData.from_company = route.query.from_company as string || ''
     formData.appointment_date = route.query.appointment_date as string || ''
     formData.appointment_time = route.query.appointment_time as string || ''
 
@@ -121,6 +127,7 @@ const submitPreInvite = async () => {
             name: formData.name,
             phone: formData.phone,
             email: formData.email || undefined,
+            from_company: formData.from_company || undefined,
             appointment_date: formData.appointment_date,
             appointment_time: formData.appointment_time
         })

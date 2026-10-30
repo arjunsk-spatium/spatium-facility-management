@@ -39,7 +39,8 @@ const registry: Module[] = [
         icon: 'CustomerServiceOutlined',
         children: [
             { key: 'helpdesk-insights', label: 'Insights', route: '/helpdesk/insights' },
-            { key: 'helpdesk-tickets', label: 'Tickets', route: '/helpdesk' }
+            { key: 'helpdesk-tickets', label: 'Tickets', route: '/helpdesk' },
+            { key: 'helpdesk-roles', label: 'Helpdesk Roles', route: '/helpdesk/roles' }
         ]
     },
     {
@@ -61,7 +62,24 @@ const registry: Module[] = [
             { key: 'meeting-rooms-bookings', label: 'Bookings', route: '/meeting-rooms/bookings' }
         ]
     },
-    { key: 'users', label: 'User Management', icon: 'TeamOutlined', route: '/users' },
+    {
+        key: 'users',
+        label: 'User Management',
+        icon: 'TeamOutlined',
+        children: [
+            { key: 'users-management', label: 'Management Staff', route: '/users/management' },
+            { key: 'users-operational', label: 'Operational Staff', route: '/users/operational' }
+        ]
+    },
+    { key: 'banners', label: 'Banners', icon: 'PictureOutlined', route: '/banners' },
+    {
+        key: 'feed',
+        label: 'Feed',
+        icon: 'NotificationOutlined',
+        children: [
+            { key: 'feed-list', label: 'Feed', route: '/feed' }
+        ]
+    },
     { key: 'configure', label: 'Configure', icon: 'SettingOutlined', route: '/configure' },
     {
         key: 'frontdesk',
@@ -83,7 +101,9 @@ const registry: Module[] = [
             { key: 'spoc-visitors-invite', label: 'Invite Visitor', route: '/spoc/visitors/invite' }
         ]
     },
-    { key: 'spoc_employees', label: 'Employees', icon: 'TeamOutlined', route: '/spoc/employees' }
+    { key: 'spoc_employees', label: 'Employees', icon: 'TeamOutlined', route: '/spoc/employees' },
+    { key: 'spoc_bookings', label: 'Bookings', icon: 'CalendarOutlined', route: '/spoc/bookings' },
+    { key: 'spoc_config', label: 'Configuration', icon: 'SettingOutlined', route: '/spoc/config' }
 ]
 
 export const useModuleRegistry = () => {

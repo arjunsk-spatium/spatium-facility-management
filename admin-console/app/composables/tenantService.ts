@@ -30,12 +30,34 @@ export interface SubscriptionPayload {
     modules?: string[];
 }
 
+export interface TenantFeature {
+    id: string;
+    tenant: string;
+    feature: string;
+    feature_name?: string;
+    feature_key?: string;
+    submodule_name?: string;
+    is_active: boolean;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface CreateTenantFeaturePayload {
+    tenant: string;
+    feature: string;
+    is_active?: boolean;
+}
+
+export interface UpdateTenantFeaturePayload {
+    is_active: boolean;
+}
+
 // Mock data for display purposes until real APIs are ready
 const mockTenants: Tenant[] = [
     {
         id: '1',
         name: 'Acme Corporation',
-        domain: 'acme.spatium.app',
+        domain: 'acme.nexspace.app',
         adminEmail: 'admin@acme.com',
         planId: 'pro',
         planName: 'Pro Plan',
@@ -62,10 +84,13 @@ export const useTenantService = () => {
         });
     };
 
-    const updateTenant = async (id: string, data: { name: string; domain: string }) => {
+    const updateTenant = async (id: string, data: { name: string; domain: string; status?: string }) => {
         const formData = new FormData();
         formData.append('name', data.name);
         formData.append('domain', data.domain);
+        if (data.status) {
+            formData.append('status', data.status);
+        }
 
         return request<Tenant>(`/api/platform/tenants/tenants/${id}/`, {
             method: 'PATCH',
@@ -93,6 +118,76 @@ export const useTenantService = () => {
             method: 'GET',
         });
     }
+
+    const getFeatures = async () => {
+        return request<any>('/api/platform/modules/features/', {
+            method: 'GET',
+        });
+    };
+
+    const getTenantFeatures = async (tenantId?: string) => {
+        const query = tenantId ? `?tenant_id=${tenantId}` : '';
+        return request<any>(`/api/platform/modules/tenant-features/${query}`, {
+            method: 'GET',
+        });
+    };
+
+    const createTenantFeature = async (payload: CreateTenantFeaturePayload) => {
+        return request<TenantFeature>('/api/platform/modules/tenant-features/', {
+            method: 'POST',
+            body: {
+                tenant: payload.tenant,
+                feature: payload.feature,
+                is_active: payload.is_active ?? true,
+            },
+        });
+    };
+
+    const updateTenantFeature = async (id: string, payload: UpdateTenantFeaturePayload) => {
+        return request<TenantFeature>(`/api/platform/modules/tenant-features/${id}/`, {
+            method: 'PATCH',
+            body: payload,
+        });
+    };
+
+    const deleteTenantFeature = async (id: string) => {
+        return request(`/api/platform/modules/tenant-features/${id}/`, {
+            method: 'DELETE',
+        });
+    };
+
+    const toggleTenantFeature = async (
+        tenantId: string,
+        featureId: string,
+        isActive: boolean,
+        existingAssignmentId?: string
+    ): Promise<TenantFeature> => {
+        if (existingAssignmentId) {
+            return await updateTenantFeature(existingAssignmentId, { is_active: isActive });
+        }
+        // Check if an assignment exists
+        const res = await getTenantFeatures(tenantId);
+        const results = res?.data?.results || res?.data || (Array.isArray(res) ? res : []);
+        const existing = results.find(
+            (item: any) => (item.feature === featureId || item.feature_id === featureId) && (item.tenant === tenantId || !item.tenant)
+        );
+        if (existing?.id) {
+            return await updateTenantFeature(existing.id, { is_active: isActive });
+        }
+        return await createTenantFeature({
+            tenant: tenantId,
+            feature: featureId,
+            is_active: isActive,
+        });
+    };
+
+    const assignFeatures = async (payload: { tenant: string; features: string[]; is_active: boolean }) => {
+        return Promise.all(
+            payload.features.map(featureId =>
+                toggleTenantFeature(payload.tenant, featureId, payload.is_active)
+            )
+        );
+    };
 
     const updateBranding = async (formData: FormData) => {
         return request('/api/platform/tenants/branding/', {
@@ -164,15 +259,16 @@ export const useTenantService = () => {
         }
     }
 
-    const getStats = async () => {
-        // TODO: Replace with real API
-        await new Promise(resolve => setTimeout(resolve, 200))
-        return {
-            total: mockTenants.length,
-            active: mockTenants.filter(t => t.status === 'active').length,
-            trial: mockTenants.filter(t => t.status === 'trial').length,
-            suspended: mockTenants.filter(t => t.status === 'suspended').length
-        }
+    const getDashboardData = async () => {
+        return request<any>('/api/platform/tenants/admin/dashboard/', {
+            method: 'GET',
+        });
+    }
+
+    const getTenantInsights = async () => {
+        return request<any>('/api/platform/tenants/admin/insights/', {
+            method: 'GET',
+        });
     }
 
     return {
@@ -181,6 +277,13 @@ export const useTenantService = () => {
         assignPlan,
         assignModules,
         getTenantModules,
+        getFeatures,
+        getTenantFeatures,
+        createTenantFeature,
+        updateTenantFeature,
+        deleteTenantFeature,
+        toggleTenantFeature,
+        assignFeatures,
         getTenantSubscription,
         getTenantBranding,
         getTenantPii,
@@ -189,6 +292,7 @@ export const useTenantService = () => {
         getTenants,
         getTenantById,
         deleteTenant,
-        getStats
+        getDashboardData,
+        getTenantInsights
     }
 }

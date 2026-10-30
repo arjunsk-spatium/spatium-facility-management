@@ -244,6 +244,12 @@ export interface IFacilityService {
         next: string | null;
         previous: string | null;
     }>;
+    getAllFacilities(params?: FacilityListParams): Promise<{
+        facilities: Facility[];
+        count: number;
+        next: string | null;
+        previous: string | null;
+    }>;
     getFacilityById(id: string): Promise<Facility>;
     createFacility(payload: CreateFacilityPayload): Promise<Facility>;
     updateFacility(
@@ -282,12 +288,48 @@ export const useFacilityService = (): IFacilityService => {
             const query: any = {};
             if (params.page) query.page = params.page;
             if (params.search) query.search = params.search;
+            if (params.page_size) query.page_size = params.page_size;
 
             const response = await $api<
                 ApiResponse<PaginatedResponse<Facility>>
             >("/api/portal/facilities/", {
                 method: "GET",
-                query,
+                query: {
+                    ...params,
+                    page: params.page || 1,
+                    page_size: params.page_size || 100,
+                },
+            });
+
+            if (!response.success) {
+                throw new Error(
+                    response.message || "Failed to fetch facilities",
+                );
+            }
+
+            return {
+                facilities: response.data.results,
+                count: response.data.count,
+                next: response.data.next,
+                previous: response.data.previous,
+            };
+        },
+
+        getAllFacilities: async (params: FacilityListParams = {}) => {
+            const query: any = {};
+            if (params.page) query.page = params.page;
+            if (params.search) query.search = params.search;
+            if (params.page_size) query.page_size = params.page_size;
+
+            const response = await $api<
+                ApiResponse<PaginatedResponse<Facility>>
+            >("/api/portal/all_facilities/", {
+                method: "GET",
+                query: {
+                    ...params,
+                    page: params.page || 1,
+                    page_size: params.page_size || 10,
+                },
             });
 
             if (!response.success) {
@@ -306,7 +348,7 @@ export const useFacilityService = (): IFacilityService => {
 
         getFacilityById: async (id: string) => {
             const response = await $api<ApiResponse<Facility>>(
-                `/api/portal/facilities/${id}/`,
+                `/api/portal/all_facilities/${id}/`,
                 {
                     method: "GET",
                 },
@@ -586,10 +628,13 @@ export const useFacilityService = (): IFacilityService => {
             }
         },
 
-        getInsights: async (startDate?: string, endDate?: string): Promise<FacilityInsights> => {
-            const query: Record<string, string> = {}
-            if (startDate) query.start_date = startDate
-            if (endDate) query.end_date = endDate
+        getInsights: async (
+            startDate?: string,
+            endDate?: string,
+        ): Promise<FacilityInsights> => {
+            const query: Record<string, string> = {};
+            if (startDate) query.start_date = startDate;
+            if (endDate) query.end_date = endDate;
 
             const response = await $api<ApiResponse<FacilityInsights>>(
                 "/api/portal/dashboard/facility-insights/",

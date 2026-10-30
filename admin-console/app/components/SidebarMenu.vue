@@ -45,12 +45,36 @@
             <NuxtLink to="/users">Users</NuxtLink>
         </a-menu-item>
 
+        <!-- Privacy Requests -->
+        <a-menu-item key="privacy-requests">
+            <template #icon>
+                <SafetyOutlined />
+            </template>
+            <NuxtLink to="/privacy-requests">Privacy Requests</NuxtLink>
+        </a-menu-item>
+
         <!-- Modules -->
         <a-menu-item key="modules">
             <template #icon>
                 <AppstoreOutlined />
             </template>
             <NuxtLink to="/modules">Modules</NuxtLink>
+        </a-menu-item>
+
+        <!-- Feed -->
+        <a-menu-item key="feed">
+            <template #icon>
+                <NotificationOutlined />
+            </template>
+            <NuxtLink to="/feed">Feed</NuxtLink>
+        </a-menu-item>
+
+        <!-- Banners -->
+        <a-menu-item key="banners">
+            <template #icon>
+                <PictureOutlined />
+            </template>
+            <NuxtLink to="/banners">Banners</NuxtLink>
         </a-menu-item>
 
         <!-- Settings -->
@@ -72,7 +96,10 @@ import {
     CreditCardOutlined,
     AppstoreOutlined,
     SettingOutlined,
-    UserOutlined
+    UserOutlined,
+    NotificationOutlined,
+    PictureOutlined,
+    SafetyOutlined
 } from '@ant-design/icons-vue'
 import { useSidebar } from '../composables/useSidebar'
 
@@ -97,8 +124,11 @@ const getMenuKey = (path: string) => {
     if (path === '/plans/create') return 'plans-create'
     if (path.startsWith('/plans/')) return 'plans-list'
     if (path === '/users' || path.startsWith('/users/')) return 'users'
+    if (path === '/privacy-requests' || path.startsWith('/privacy-requests/')) return 'privacy-requests'
     if (path === '/modules') return 'modules'
     if (path === '/settings') return 'settings'
+    if (path === '/feed' || path.startsWith('/feed/')) return 'feed'
+    if (path === '/banners' || path.startsWith('/banners/')) return 'banners'
     return 'dashboard'
 }
 

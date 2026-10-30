@@ -4,25 +4,27 @@ import { defineStore } from 'pinia'
 export interface SpocVisitor {
     id: string
     name: string
-    phone_number: string
+    phone_number?: string
+    phone?: string
     email?: string | null
     from_company?: string | null
-    visitDate: string
+    visitDate?: string
     visitTime?: string | null
-    purpose: string
-    purpose_of_visit: string
-    status: 'Pending' | 'Approved' | 'Rejected'
-    facility_name: string
-    facility_id: string
-    company_name: string | null
+    purpose?: string
+    purpose_of_visit?: string
+    status: 'Pending' | 'Approved' | 'Rejected' | string
+    facility_name?: string
+    facility_id?: string
+    company_name?: string | null
+    host?: string
     hostName?: string
     passcode?: string
-    created_at: string
+    created_at?: string
     image_url?: string | null
     appointment_time?: string | null
     check_in_time?: string | null
     check_out_time?: string | null
-    is_on_premises: boolean
+    is_on_premises?: boolean
     visitor_type?: 'walk_in' | 'pre_invite'
 }
 
@@ -32,9 +34,16 @@ export interface SpocEmployee {
     email: string
     phone?: string
     department?: string
+    department_id?: string
     designation?: string
+    role?: 'SPOC' | 'Employee'
+    status?: string
     avatar?: string
     createdAt?: string
+    buildingPassEnabled?: boolean
+    gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | string | null
+    date_of_joining?: string | null
+    date_of_birth?: string | null
 }
 
 export interface SpocStats {
@@ -42,6 +51,60 @@ export interface SpocStats {
     pendingApprovals: number
     checkedInToday: number
     totalEmployees: number
+}
+
+export interface SpocVisitorInsightsSummary {
+    total_visitors: number
+    checked_in: number
+    checked_out: number
+    pending: number
+    expected: number
+}
+
+export interface SpocVisitorInsightsStats {
+    total_visitors: number
+    completed_visits: number
+    walk_in: number
+    pre_invite: number
+    this_month: number
+    checked_in?: number
+    checked_out?: number
+    pending?: number
+    expected?: number
+}
+
+export interface SpocVisitorInsightsTrafficItem {
+    date: string
+    count: number
+}
+
+export interface SpocVisitorInsightsHourlyItem {
+    hour: string
+    count: number
+}
+
+export interface SpocVisitorInsightsPurpose {
+    purpose: string
+    count: number
+    percentage: number
+}
+
+export interface SpocVisitorInsightsTopCompany {
+    company_id: string
+    name: string
+    count: number
+}
+
+export interface SpocVisitorInsightsData {
+    filters?: { start_date: string; end_date: string }
+    date_range?: { start_date: string; end_date: string }
+    stats: SpocVisitorInsightsStats
+    summary: SpocVisitorInsightsSummary
+    visit_purpose_breakdown: SpocVisitorInsightsPurpose[]
+    visit_purposes: SpocVisitorInsightsPurpose[]
+    traffic?: SpocVisitorInsightsTrafficItem[]
+    today_hourly_traffic?: SpocVisitorInsightsHourlyItem[]
+    top_visiting_companies?: SpocVisitorInsightsTopCompany[]
 }
 
 export interface PurposeOfVisit {
@@ -53,52 +116,191 @@ export interface PurposeOfVisit {
 export const useSpocStore = defineStore('spoc', {
     state: () => ({
         visitors: [] as SpocVisitor[],
+        recentVisitors: [] as SpocVisitor[],
+        visitorCount: 0,
+        visitorPage: 1,
+        visitorPageSize: 10,
         employees: [] as SpocEmployee[],
+        employeeCount: 0,
+        employeePage: 1,
+        employeePageSize: 10,
         stats: null as SpocStats | null,
+        dashboardData: null as any,
+        insights: null as SpocVisitorInsightsData | null,
+        insightsLoading: false,
+        insightsError: null as string | null,
         purposes: [] as PurposeOfVisit[],
         facilities: [] as { id: string; name: string; companyId?: string }[],
         loading: false,
         error: null as string | null
     }),
     actions: {
-        async fetchStats() {
+        async fetchStats(facilityId?: string) {
             this.loading = true
+            this.error = null
             try {
-                // Mock stats - replace with API call
-                await new Promise(resolve => setTimeout(resolve, 300))
-                this.stats = {
-                    totalVisitors: 156,
-                    pendingApprovals: 5,
-                    checkedInToday: 12,
-                    totalEmployees: 24
+                const { $api } = useNuxtApp()
+                const query: Record<string, any> = {}
+                if (facilityId) {
+                    query.facility_id = facilityId
                 }
-            } catch (err) {
-                this.error = 'Failed to fetch stats'
+                const response = await $api<any>('/api/portal/visitors/client/dashboard/', {
+                    method: 'GET',
+                    query
+                })
+                const data = response?.data ?? response
+                this.dashboardData = data
+                const statsData = data?.stats ?? data
+
+                this.stats = {
+                    totalVisitors: Number(statsData?.total_visitors ?? statsData?.totalVisitors ?? statsData?.visitors ?? statsData?.total ?? 0),
+                    pendingApprovals: Number(statsData?.pending ?? statsData?.pending_approvals ?? statsData?.pendingApprovals ?? 0),
+                    checkedInToday: Number(statsData?.checked_in ?? statsData?.checked_in_today ?? statsData?.checkedInToday ?? 0),
+                    totalEmployees: Number(statsData?.employees ?? statsData?.total_employees ?? statsData?.totalEmployees ?? 0)
+                }
+
+                if (Array.isArray(data?.recent_visitors)) {
+                    this.recentVisitors = data.recent_visitors.map((v: any) => ({
+                        id: v.id || String(Date.now()),
+                        name: v.name || 'Unknown',
+                        phone: v.phone || v.phone_number || '',
+                        phone_number: v.phone_number || v.phone || '',
+                        email: v.email || null,
+                        purpose: v.purpose || v.purpose_of_visit || 'Meeting',
+                        purpose_of_visit: v.purpose_of_visit || v.purpose || 'Meeting',
+                        host: v.host || v.hostName || '',
+                        hostName: v.hostName || v.host || '',
+                        status: v.status || 'Pending',
+                        created_at: v.created_at || '',
+                        visitDate: v.created_at ? v.created_at.split('T')[0] : '',
+                        is_on_premises: String(v.status || '').toLowerCase() === 'checked_in'
+                    }))
+                }
+
+                return this.stats
+            } catch (err: any) {
+                console.error('Failed to fetch stats:', err)
+                this.error = err?.message || 'Failed to fetch stats'
+                return null
             } finally {
                 this.loading = false
             }
         },
 
-        async fetchVisitors(facilityId?: string) {
+        async fetchDashboard(facilityId?: string) {
+            return await this.fetchStats(facilityId)
+        },
+
+        async fetchInsights(startDate?: string, endDate?: string) {
+            this.insightsLoading = true
+            this.insightsError = null
+            try {
+                const { $api } = useNuxtApp()
+                const query: Record<string, any> = {}
+                if (startDate) query.start_date = startDate
+                if (endDate) query.end_date = endDate
+
+                const response = await $api<any>('/api/portal/visitors/client/insights/', {
+                    method: 'GET',
+                    query
+                })
+
+                const data = response?.data ?? response
+                const statsRaw = data?.stats ?? data?.summary ?? data
+
+                const totalVisitors = Number(statsRaw?.total_visitors ?? statsRaw?.totalVisitors ?? statsRaw?.total ?? 0)
+                const completedVisits = Number(statsRaw?.completed_visits ?? statsRaw?.completedVisits ?? statsRaw?.checked_out ?? statsRaw?.checkedOut ?? 0)
+                const walkIn = Number(statsRaw?.walk_in ?? statsRaw?.walkIn ?? 0)
+                const preInvite = Number(statsRaw?.pre_invite ?? statsRaw?.preInvite ?? 0)
+                const thisMonth = Number(statsRaw?.this_month ?? statsRaw?.thisMonth ?? 0)
+                const checkedIn = Number(statsRaw?.checked_in ?? statsRaw?.checkedIn ?? walkIn)
+                const pending = Number(statsRaw?.pending ?? preInvite)
+                const expected = Number(statsRaw?.expected ?? preInvite)
+
+                const rawPurposes = Array.isArray(data?.visit_purpose_breakdown)
+                    ? data.visit_purpose_breakdown
+                    : (Array.isArray(data?.visit_purposes) ? data.visit_purposes : (Array.isArray(data?.purposes) ? data.purposes : []))
+
+                const totalPurposeCount = rawPurposes.reduce((acc: number, p: any) => acc + (Number(p.count) || 0), 0) || totalVisitors || 1
+
+                const mappedPurposes: SpocVisitorInsightsPurpose[] = rawPurposes.map((p: any) => {
+                    const count = Number(p.count) || 0
+                    const percentage = p.percentage !== undefined
+                        ? Number(p.percentage)
+                        : Math.round((count / totalPurposeCount) * 100)
+                    return {
+                        purpose: p.purpose || p.name || 'Other',
+                        count,
+                        percentage
+                    }
+                })
+
+                const filterRange = data?.filters ?? data?.date_range ?? { start_date: startDate || '', end_date: endDate || '' }
+
+                this.insights = {
+                    filters: filterRange,
+                    date_range: filterRange,
+                    stats: {
+                        total_visitors: totalVisitors,
+                        completed_visits: completedVisits,
+                        walk_in: walkIn,
+                        pre_invite: preInvite,
+                        this_month: thisMonth,
+                        checked_in: checkedIn,
+                        checked_out: completedVisits,
+                        pending,
+                        expected
+                    },
+                    summary: {
+                        total_visitors: totalVisitors,
+                        checked_in: checkedIn,
+                        checked_out: completedVisits,
+                        pending,
+                        expected
+                    },
+                    visit_purpose_breakdown: mappedPurposes,
+                    visit_purposes: mappedPurposes,
+                    traffic: Array.isArray(data?.traffic) ? data.traffic : (Array.isArray(data?.trends) ? data.trends : []),
+                    today_hourly_traffic: Array.isArray(data?.today_hourly_traffic) ? data.today_hourly_traffic : (Array.isArray(data?.hourly_traffic) ? data.hourly_traffic : []),
+                    top_visiting_companies: Array.isArray(data?.top_visiting_companies) ? data.top_visiting_companies : []
+                }
+                return this.insights
+            } catch (err: any) {
+                console.error('Failed to fetch insights:', err)
+                this.insightsError = err?.message || 'Failed to fetch visitor insights'
+                throw err
+            } finally {
+                this.insightsLoading = false
+            }
+        },
+
+        async fetchVisitors(params: { facilityId?: string; page?: number; page_size?: number } = {}) {
             this.loading = true
             this.error = null
             try {
                 const { $api } = useNuxtApp()
-                
+
                 const query: Record<string, any> = {}
-                if (facilityId) {
-                    query.facility_id = facilityId
+                if (params.facilityId) {
+                    query.facility_id = params.facilityId
                 }
-                
+                if (params.page) {
+                    query.page = params.page
+                }
+                if (params.page_size) {
+                    query.page_size = params.page_size
+                }
+
                 const response = await $api<any>('/api/portal/visitors/client/visitors/by-company/', {
                     method: 'GET',
                     query
                 })
-                
+
                 if (response.success && response.data) {
-                    const results = response.data.results || response.data
+                    const rawResults = Array.isArray(response.data) ? response.data : (response.data.results || [])
+                    this.visitorCount = response.data.count ?? rawResults.length
                     // Map API response to SpocVisitor format
-                    this.visitors = results.map((v: any) => ({
+                    this.visitors = rawResults.map((v: any) => ({
                         id: v.id,
                         name: v.name,
                         phone_number: v.phone_number || v.phone || '',
@@ -124,51 +326,83 @@ export const useSpocStore = defineStore('spoc', {
                     }))
                 } else {
                     this.visitors = []
+                    this.visitorCount = 0
                 }
             } catch (err) {
                 console.error('Failed to fetch visitors:', err)
                 this.error = 'Failed to fetch visitors'
                 this.visitors = []
+                this.visitorCount = 0
             } finally {
                 this.loading = false
             }
         },
 
-        async fetchEmployees(companyId?: string) {
+        async fetchEmployees(params: { companyId?: string; search?: string; page?: number; page_size?: number } = {}) {
             this.loading = true
             this.error = null
             try {
                 const { $api } = useNuxtApp()
-                
+                const authStore = useAuthStore()
+
+                const targetCompanyId = params.companyId 
+                    || authStore.companyId 
+                    || (this.facilities.length > 0 ? this.facilities[0].companyId : undefined)
+
                 const query: Record<string, any> = {}
-                if (companyId) {
-                    query.company_id = companyId
+                if (targetCompanyId) {
+                    query.company_id = targetCompanyId
                 }
-                
+                if (params.search) {
+                    query.search = params.search
+                }
+                if (params.page) {
+                    query.page = params.page
+                }
+                if (params.page_size) {
+                    query.page_size = params.page_size
+                }
+
                 const response = await $api<any>('/api/portal/users/client_portal/list/', {
                     method: 'GET',
                     query
                 })
-                
+
                 if (response.success && response.data) {
-                    const results = response.data.results || response.data
+                    const rawResults = response.data.results || response.data
+                    // The backend soft-deletes (archives) users — keep archived
+                    // users out of the active employee list, and ensure company isolation
+                    const results = (Array.isArray(rawResults) ? rawResults : []).filter(
+                        (u: any) => u.status !== 'archived' && !u.is_archived && (!targetCompanyId || !u.company_id || String(u.company_id) === String(targetCompanyId) || (u.company && String(u.company) === String(targetCompanyId)))
+                    )
+                    this.employeeCount = response.data.count || results.length
                     // Map all users with role based on apps array
                     this.employees = results.map((u: any) => ({
                         id: u.id,
                         name: u.full_name || u.email?.split('@')[0] || 'Unknown',
                         email: u.email,
                         phone: u.phone_number,
-                        department: '',
-                        designation: '',
-                        role: u.apps && u.apps.includes('client_portal') ? 'SPOC' : 'Employee'
+                        department: u.department_name || u.department || '',
+                        department_id: u.department_id || '',
+                        designation: u.designation || '',
+                        status: u.status || 'active',
+                        buildingPassEnabled: u.building_pass_enabled || false,
+                        role: u.apps && u.apps.some((app: string) => app.toLowerCase().replace(/\s/g, '_') === 'client_portal')
+                            ? 'SPOC'
+                            : 'Employee',
+                        gender: u.gender || null,
+                        date_of_joining: u.date_of_joining || null,
+                        date_of_birth: u.date_of_birth || null
                     }))
                 } else {
                     this.employees = []
+                    this.employeeCount = 0
                 }
             } catch (err) {
                 console.error('Failed to fetch employees:', err)
                 this.error = 'Failed to fetch employees'
                 this.employees = []
+                this.employeeCount = 0
             } finally {
                 this.loading = false
             }
@@ -189,6 +423,7 @@ export const useSpocStore = defineStore('spoc', {
                             name: data.name,
                             phone: data.phone,
                             email: data.email,
+                            from_company: data.from_company,
                             appointment_date: data.visitDate,
                             appointment_time: data.visitTime
                         }
@@ -233,9 +468,18 @@ export const useSpocStore = defineStore('spoc', {
                     return newVisitor
                 }
             } catch (err: any) {
-                this.error = err?.response?.data?.error?.details?.appointment_date?.[0] 
-                    || err?.response?.data?.message 
-                    || err?.message 
+                // The $api plugin attaches the parsed response body to err.data
+                // (not err.response.data) — dig out the detailed field errors
+                // the backend sends so the UI can show a meaningful message.
+                const data = err?.data || {}
+                const details = data?.error?.details || {}
+                const detailMessage = Object.keys(details)
+                    .map(key => details[key]?.[0])
+                    .find((msg: any) => typeof msg === 'string' && msg)
+                this.error = detailMessage
+                    || data?.error?.message
+                    || data?.message
+                    || err?.message
                     || 'Failed to invite visitor'
                 throw err
             } finally {
@@ -296,22 +540,39 @@ export const useSpocStore = defineStore('spoc', {
             }
         },
 
-        async addEmployee(data: Partial<SpocEmployee> & { companyId?: string }) {
+        async addEmployee(data: Partial<SpocEmployee> & { companyId?: string; role?: 'Employee' | 'SPOC' }) {
             this.loading = true
             try {
                 const { $api } = useNuxtApp()
-                
+                const authStore = useAuthStore()
+
+                const appName = data.role === 'SPOC' ? 'client_portal' : 'hub'
+
+                const body: Record<string, any> = {
+                    app_name: appName,
+                    full_name: data.name,
+                    email: data.email,
+                    phone_number: data.phone,
+                    company_id: data.companyId || authStore.user?.company_id,
+                    designation: data.designation,
+                    department_id: data.department_id
+                }
+
+                if (data.gender) {
+                    body.gender = data.gender
+                }
+                if (data.date_of_joining) {
+                    body.date_of_joining = data.date_of_joining
+                }
+                if (data.date_of_birth) {
+                    body.date_of_birth = data.date_of_birth
+                }
+
                 const response = await $api<any>('/api/portal/users/client_portal/create/', {
                     method: 'POST',
-                    body: {
-                        app_name: 'client_portal',
-                        full_name: data.name,
-                        email: data.email,
-                        phone_number: data.phone,
-                        company_id: data.companyId
-                    }
+                    body
                 })
-                
+
                 if (response.success && response.data) {
                     const newEmployee: SpocEmployee = {
                         id: response.data.id || Date.now().toString(),
@@ -319,16 +580,25 @@ export const useSpocStore = defineStore('spoc', {
                         email: data.email || '',
                         phone: data.phone,
                         department: data.department,
+                        department_id: data.department_id,
                         designation: data.designation,
-                        createdAt: new Date().toISOString()
+                        role: data.role || 'Employee',
+                        status: 'active',
+                        createdAt: new Date().toISOString(),
+                        gender: response.data.gender ?? data.gender ?? null,
+                        date_of_joining: response.data.date_of_joining ?? data.date_of_joining ?? null,
+                        date_of_birth: response.data.date_of_birth ?? data.date_of_birth ?? null
                     }
                     this.employees.push(newEmployee)
                     return newEmployee
                 } else {
-                    throw new Error(response.message || 'Failed to add employee')
+                    const error: any = new Error(response.message || 'Failed to add employee')
+                    error.data = response
+                    throw error
                 }
             } catch (err: any) {
-                this.error = err?.data?.message || err?.message || 'Failed to add employee'
+                const { sanitizeError } = useValidation()
+                this.error = sanitizeError(err) || 'Failed to add employee'
                 throw err
             } finally {
                 this.loading = false
@@ -338,33 +608,133 @@ export const useSpocStore = defineStore('spoc', {
         async deleteEmployee(id: string) {
             this.loading = true
             try {
-                await new Promise(resolve => setTimeout(resolve, 200))
+                const { $api } = useNuxtApp()
+
+                const response = await $api<any>(`/api/portal/users/client_portal/${id}/delete/`, {
+                    method: 'DELETE'
+                })
+
+                // A 200 with success:false (e.g. "User already archived") is a
+                // failure — surface it instead of silently "succeeding"
+                if (response && typeof response === 'object' && response.success === false) {
+                    const error: any = new Error(response.message || 'Failed to delete employee')
+                    error.data = response
+                    throw error
+                }
+
                 const index = this.employees.findIndex(e => e.id === id)
                 if (index > -1) {
                     this.employees.splice(index, 1)
-                    return true
                 }
-                return false
-            } catch (err) {
-                this.error = 'Failed to delete employee'
+                if (this.employeeCount > 0) {
+                    this.employeeCount -= 1
+                }
+
+                return true
+            } catch (err: any) {
+                this.error = err?.data?.message || err?.data?.error?.message || err?.message || 'Failed to delete employee'
                 throw err
             } finally {
                 this.loading = false
             }
         },
 
-        async updateEmployee(id: string, data: Partial<SpocEmployee>) {
+        async bulkUploadEmployees(file: File) {
             this.loading = true
             try {
-                await new Promise(resolve => setTimeout(resolve, 300))
-                const index = this.employees.findIndex(e => e.id === id)
-                if (index > -1) {
-                    this.employees[index] = { ...this.employees[index], ...data }
-                    return this.employees[index]
+                const { $api } = useNuxtApp()
+
+                const formData = new FormData()
+                formData.append('file', file)
+
+                const response = await $api<any>('/api/portal/users/client_portal/bulk-upload/', {
+                    method: 'POST',
+                    body: formData
+                })
+
+                return response
+            } catch (err: any) {
+                this.error = err?.data?.message || err?.message || 'Failed to bulk upload employees'
+                throw err
+            } finally {
+                this.loading = false
+            }
+        },
+
+        async fetchBulkUploadJobs(params: { page?: number; page_size?: number } = {}) {
+            try {
+                const { $api } = useNuxtApp()
+
+                const query: Record<string, any> = {
+                    page: params.page || 1,
+                    page_size: params.page_size || 10
                 }
-                throw new Error('Employee not found')
-            } catch (err) {
-                this.error = 'Failed to update employee'
+
+                const response = await $api<any>('/api/portal/users/client_portal/bulk-upload/jobs/', {
+                    method: 'GET',
+                    query
+                })
+
+                if (response.success && response.data) {
+                    return {
+                        results: response.data.results || [],
+                        count: response.data.count || 0
+                    }
+                }
+                return { results: [], count: 0 }
+            } catch (err: any) {
+                console.error('Failed to fetch bulk upload jobs:', err)
+                return { results: [], count: 0 }
+            }
+        },
+
+        async updateEmployee(id: string, data: Partial<SpocEmployee> & { role?: 'Employee' | 'SPOC' }) {
+            this.loading = true
+            try {
+                const { $api } = useNuxtApp()
+
+                const body: Record<string, any> = {
+                    full_name: data.name,
+                    email: data.email,
+                    phone_number: data.phone,
+                    designation: data.designation,
+                    department_id: data.department_id
+                }
+
+                if (data.gender !== undefined) {
+                    body.gender = data.gender
+                }
+                if (data.date_of_joining !== undefined) {
+                    body.date_of_joining = data.date_of_joining
+                }
+                if (data.date_of_birth !== undefined) {
+                    body.date_of_birth = data.date_of_birth
+                }
+
+                if (typeof data.buildingPassEnabled === 'boolean') {
+                    body.building_pass_enabled = data.buildingPassEnabled
+                } else if (data.role) {
+                    body.app_name = data.role === 'SPOC' ? 'client_portal' : 'hub'
+                }
+
+                const response = await $api<any>(`/api/portal/users/client_portal/${id}/update/`, {
+                    method: 'PATCH',
+                    body
+                })
+
+                if (response.success && response.data) {
+                    const index = this.employees.findIndex(e => e.id === id)
+                    if (index > -1) {
+                        this.employees[index] = { ...this.employees[index], ...data }
+                        return this.employees[index]
+                    }
+                }
+                const error: any = new Error(response.message || 'Failed to update employee')
+                error.data = response
+                throw error
+            } catch (err: any) {
+                const { sanitizeError } = useValidation()
+                this.error = sanitizeError(err) || 'Failed to update employee'
                 throw err
             } finally {
                 this.loading = false

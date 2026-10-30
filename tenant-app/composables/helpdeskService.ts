@@ -48,8 +48,36 @@ export interface Ticket {
     location_text?: string | null;
     force_close_notes?: string;
     reopen_notes?: string;
+    has_pending_hold_request?: boolean;
+    has_pending_resume_request?: boolean;
     created_at: string;
     updated_at?: string;
+
+    effective_priority?:
+        | {
+              key: string;
+              label: string;
+          }
+        | string;
+    estimated_effort_min?: number | null;
+    escalation_count?: number;
+    warnings?: string[];
+    timeline?: Array<{
+        id: string;
+        ticket: string;
+        from_state: string;
+        to_state: string;
+        actor?: string;
+        actor_name?: string;
+        reason?: string;
+        metadata?: {
+            scope_type?: string;
+            score_breakdown?: Record<string, number>;
+            [key: string]: any;
+        };
+        proofs?: any[];
+        created_at: string;
+    }>;
 
     // Legacy fields for compatibility
     facilityId?: string;
@@ -96,6 +124,7 @@ export interface CreateTicketPayload {
     floor?: string;
     wing?: string;
     location_text?: string;
+    estimated_effort_min?: number | null;
 }
 
 export interface HelpdeskCategory {
@@ -130,6 +159,8 @@ export interface HelpdeskSubCategory {
     required_role_name: string;
     assignment_mode: string;
     assignment_mode_key: string;
+    default_estimated_effort_min?: number | null;
+    learned_effort_estimate_min?: number | null;
     created_at: string;
     updated_at: string;
 }
@@ -143,6 +174,114 @@ export interface CreateSubCategoryPayload {
     resolution_sla?: number;
     required_role?: string;
     assignment_mode?: string;
+    default_estimated_effort_min?: number | null;
+}
+
+export interface SubCategoryListParams {
+    category?: string;
+    page?: number;
+    page_size?: number;
+    search?: string;
+}
+
+export interface WorkerLocationScope {
+    id?: string;
+    scope_type: 'FACILITY' | 'TOWER' | 'FLOOR' | 'WING';
+    facility_id: string;
+    facility_name?: string;
+    tower_id?: string | null;
+    tower_name?: string | null;
+    floor_id?: string | null;
+    floor_name?: string | null;
+    wing_id?: string | null;
+    wing_name?: string | null;
+    created_at?: string;
+}
+
+export interface WorkerCapacity {
+    id?: string;
+    throttle: number;
+    effort_capacity_min?: number | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface SetWorkerCapacityPayload {
+    throttle: number;
+    effort_capacity_min?: number | null;
+}
+
+export interface HelpdeskConfig {
+    priority_aging_enabled: boolean;
+    aging_interval_minutes: number;
+    auto_close_hours: number;
+    auto_mode_capacity_gate_enabled: boolean;
+    updated_at?: string;
+}
+
+export interface HelpdeskScoringConfig {
+    alpha: number;
+    beta: number;
+    gamma: number;
+    delta: number;
+    epsilon: number;
+    reassign_threshold: number;
+    handover_penalty: number;
+    night_mode_enabled: boolean;
+    updated_at?: string;
+}
+
+export interface DependencyReasonType {
+    id: string;
+    key?: string;
+    name: string;
+    description?: string;
+    is_active?: boolean;
+}
+
+export interface TicketDependency {
+    id: string;
+    ticket?: string;
+    ticket_id?: string;
+    reason_type: string;
+    reason_type_name?: string;
+    notes?: string;
+    expected_resolution_at?: string | null;
+    linked_ticket?: string | null;
+    linked_ticket_number?: string | null;
+    status: 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'RESUMED';
+    requested_by?: string;
+    requested_by_name?: string;
+    requested_at?: string;
+    decided_by?: string | null;
+    decided_by_name?: string | null;
+    decided_at?: string | null;
+    decision_notes?: string;
+    state_before_hold?: string;
+    hold_started_at?: string | null;
+    resumed_at?: string | null;
+    cumulative_hold_minutes?: number;
+    extend_minutes?: number | null;
+    created_at?: string;
+}
+
+export interface RequestHoldPayload {
+    reason_type: string;
+    notes?: string;
+    expected_resolution_at?: string | null;
+    linked_ticket?: string | null;
+}
+
+export interface DirectHoldPayload extends RequestHoldPayload {}
+
+export interface HoldDecisionPayload {
+    decision_notes?: string;
+    extend_minutes?: number;
+}
+
+export interface ChangeResolutionSlaPayload {
+    extend_minutes: number;
+    decision_notes?: string;
 }
 
 export interface HelpdeskPriority {
@@ -176,6 +315,28 @@ export interface CreateRolePayload {
     name: string;
     description?: string;
     display_order: number;
+}
+
+export interface AssignRoleUsersPayload {
+    role_id: string;
+    user_ids: string[];
+}
+
+export interface RoleUserItem {
+    user_id: string;
+    name: string;
+}
+
+export interface RoleUsersData {
+    role: {
+        id: string;
+        key: string;
+        name: string;
+        is_system_role?: boolean;
+    };
+    user_ids: string[];
+    users: RoleUserItem[];
+    count: number;
 }
 
 export interface DirectedEscalationRoleMapping {
@@ -266,19 +427,48 @@ export interface HelpdeskInsights {
         sla_met: number;
         breach_rate_percentage: number;
     }>;
+    kpis?: {
+        reassignments_24h?: number | null;
+        reassignment_rate_24h?: number | null;
+        load_variance_cv?: number | null;
+        first_time_fix_rate?: number | null;
+        unassigned_queue_age_minutes_avg?: number | null;
+        worker_acceptance_rate?: number | null;
+        hold_reason_breakdown?: Record<string, number> | null;
+        worker_hold_rates?: Array<{
+            worker_id: string;
+            worker_name: string;
+            requested_count: number;
+            rejected_count: number;
+            rejection_rate: number | null;
+        }> | null;
+    };
+}
+
+export interface TicketListParams {
+    page?: number;
+    page_size?: number;
+    states?: string;
+    facility_id?: string;
+    search?: string;
 }
 
 export const useHelpdeskService = () => {
     const { $api } = useNuxtApp();
 
     return {
-        getTickets: async (filters?: any): Promise<Ticket[]> => {
+        getTickets: async (params: TicketListParams = {}): Promise<{
+            tickets: Ticket[];
+            count: number;
+            next: string | null;
+            previous: string | null;
+        }> => {
             try {
                 const response = await $api<
                     ApiResponse<ApiResponse<PaginatedResponse<Ticket>>>
                 >("/api/portal/helpdesk/tickets/", {
                     method: "GET",
-                    query: filters,
+                    query: params,
                 });
                 if (!response.success || !response.data.success) {
                     throw new Error(
@@ -287,7 +477,12 @@ export const useHelpdeskService = () => {
                             "Failed to fetch tickets",
                     );
                 }
-                return response.data.data.results;
+                return {
+                    tickets: response.data.data.results,
+                    count: response.data.data.count,
+                    next: response.data.data.next,
+                    previous: response.data.data.previous,
+                };
             } catch (error) {
                 console.error("Error fetching tickets:", error);
                 throw error;
@@ -331,10 +526,12 @@ export const useHelpdeskService = () => {
         },
 
         getSubCategories: async (
-            categoryId?: string,
+            categoryIdOrParams?: string | SubCategoryListParams,
         ): Promise<HelpdeskSubCategory[]> => {
             try {
-                const query = categoryId ? { category: categoryId } : {};
+                const query = typeof categoryIdOrParams === "string"
+                    ? { category: categoryIdOrParams }
+                    : (categoryIdOrParams || {});
                 const response = await $api<
                     ApiResponse<
                         ApiResponse<PaginatedResponse<HelpdeskSubCategory>>
@@ -343,16 +540,61 @@ export const useHelpdeskService = () => {
                     method: "GET",
                     query,
                 });
-                if (!response.success || !response.data.success) {
+                if (!response.success || (response.data && response.data.success === false)) {
                     throw new Error(
                         response.message ||
-                            response.data.message ||
+                            response.data?.message ||
                             "Failed to fetch subcategories",
                     );
                 }
-                return response.data.data.results;
+                const resData = response.data?.data ?? response.data;
+                const results = Array.isArray(resData) ? resData : (resData?.results || []);
+                return results;
             } catch (error) {
                 console.error("Error fetching subcategories:", error);
+                throw error;
+            }
+        },
+
+        getSubCategoriesPaginated: async (
+            params: SubCategoryListParams = {},
+        ): Promise<{
+            subcategories: HelpdeskSubCategory[];
+            count: number;
+            next: string | null;
+            previous: string | null;
+        }> => {
+            try {
+                const response = await $api<
+                    ApiResponse<
+                        ApiResponse<PaginatedResponse<HelpdeskSubCategory>>
+                    >
+                >("/api/portal/helpdesk/subcategories/", {
+                    method: "GET",
+                    query: params,
+                });
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch subcategories",
+                    );
+                }
+                const resData = response.data?.data ?? response.data;
+                const results = Array.isArray(resData)
+                    ? resData
+                    : (resData?.results || []);
+                const count = Array.isArray(resData)
+                    ? resData.length
+                    : (resData?.count ?? results.length);
+                return {
+                    subcategories: results,
+                    count,
+                    next: resData?.next || null,
+                    previous: resData?.previous || null,
+                };
+            } catch (error) {
+                console.error("Error fetching paginated subcategories:", error);
                 throw error;
             }
         },
@@ -564,9 +806,9 @@ export const useHelpdeskService = () => {
         },
 
         getStats: async (): Promise<HelpdeskStats> => {
-            const tickets = await this.getTickets();
+            const { tickets, count } = await this.getTickets({ page_size: 1 });
             return {
-                total: tickets.length,
+                total: count,
                 open: tickets.filter((t) => t.status === "Open").length,
                 inProgress: tickets.filter((t) => t.status === "In Progress")
                     .length,
@@ -575,13 +817,22 @@ export const useHelpdeskService = () => {
             };
         },
 
-        getPriorityTickets: async (page = 1, pageSize = 20, facilityId?: string): Promise<Ticket[]> => {
+        getPriorityTickets: async (page = 1, pageSize = 20, facilityId?: string, search?: string): Promise<{
+            tickets: Ticket[];
+            count: number;
+            next: string | null;
+            previous: string | null;
+        }> => {
             try {
+                const query: Record<string, any> = { page, page_size: pageSize };
+                if (facilityId) query.facility_id = facilityId;
+                if (search) query.search = search;
+
                 const response = await $api<
                     ApiResponse<ApiResponse<PaginatedResponse<Ticket>>>
                 >("/api/portal/helpdesk/tickets/priority-tickets/", {
                     method: "GET",
-                    query: { page, page_size: pageSize, facility_id: facilityId },
+                    query,
                 });
                 if (!response.success || !response.data.success) {
                     throw new Error(
@@ -590,7 +841,12 @@ export const useHelpdeskService = () => {
                             "Failed to fetch priority tickets",
                     );
                 }
-                return response.data.data.results;
+                return {
+                    tickets: response.data.data.results,
+                    count: response.data.data.count,
+                    next: response.data.data.next,
+                    previous: response.data.data.previous,
+                };
             } catch (error) {
                 console.error("Error fetching priority tickets:", error);
                 throw error;
@@ -680,18 +936,23 @@ export const useHelpdeskService = () => {
             notes?: string,
         ): Promise<Ticket> => {
             try {
-                const response = await $api<ApiResponse<ApiResponse<Ticket>>>(
+                const response = await $api<any>(
                     `/api/portal/helpdesk/tickets/${ticketId}/assign/`,
                     { method: "POST", body: { assignee, notes } },
                 );
-                if (!response.success || !response.data.success) {
+                if (!response.success || (response.data && response.data.success === false)) {
                     throw new Error(
                         response.message ||
-                            response.data.message ||
+                            response.data?.message ||
                             "Failed to assign ticket",
                     );
                 }
-                return response.data.data;
+                const ticketData = response.data?.data || response.data;
+                const warnings = response.data?.warnings || response.warnings || ticketData?.warnings;
+                if (warnings && Array.isArray(warnings)) {
+                    ticketData.warnings = warnings;
+                }
+                return ticketData;
             } catch (error) {
                 console.error("Error assigning ticket:", error);
                 throw error;
@@ -704,18 +965,23 @@ export const useHelpdeskService = () => {
             notes?: string,
         ): Promise<Ticket> => {
             try {
-                const response = await $api<ApiResponse<ApiResponse<Ticket>>>(
+                const response = await $api<any>(
                     `/api/portal/helpdesk/tickets/${ticketId}/reassign/`,
                     { method: "POST", body: { assignee, notes } },
                 );
-                if (!response.success || !response.data.success) {
+                if (!response.success || (response.data && response.data.success === false)) {
                     throw new Error(
                         response.message ||
-                            response.data.message ||
+                            response.data?.message ||
                             "Failed to reassign ticket",
                     );
                 }
-                return response.data.data;
+                const ticketData = response.data?.data || response.data;
+                const warnings = response.data?.warnings || response.warnings || ticketData?.warnings;
+                if (warnings && Array.isArray(warnings)) {
+                    ticketData.warnings = warnings;
+                }
+                return ticketData;
             } catch (error) {
                 console.error("Error reassigning ticket:", error);
                 throw error;
@@ -808,11 +1074,14 @@ export const useHelpdeskService = () => {
             }
         },
 
-        getAssignableUsers: async (): Promise<any[]> => {
+        getAssignableUsers: async (facilityId: string): Promise<any[]> => {
             try {
                 const response = await $api<
                     ApiResponse<PaginatedResponse<any>>
-                >("/api/portal/users/opstrack/list/", { method: "GET" });
+                >("/api/portal/users/opstrack/online/list/", {
+                    method: "GET",
+                    query: { facility_id: facilityId },
+                });
                 if (!response.success) {
                     throw new Error(
                         response.message || "Failed to fetch users",
@@ -902,6 +1171,45 @@ export const useHelpdeskService = () => {
                 return response.data.data.results;
             } catch (error) {
                 console.error("Error fetching roles:", error);
+                throw error;
+            }
+        },
+
+        getSystemRoles: async (): Promise<HelpdeskRole[]> => {
+            try {
+                const response = await $api<any>(
+                    "/api/portal/helpdesk/roles/system/",
+                    { method: "GET" },
+                );
+                if (response?.success === false || (response?.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch system roles",
+                    );
+                }
+                let target = response;
+                if (target?.data?.data !== undefined) {
+                    target = target.data.data;
+                } else if (target?.data !== undefined) {
+                    target = target.data;
+                }
+
+                if (Array.isArray(target)) {
+                    return target;
+                }
+                if (Array.isArray(target?.results)) {
+                    return target.results;
+                }
+                if (Array.isArray(response?.results)) {
+                    return response.results;
+                }
+                if (Array.isArray(response)) {
+                    return response;
+                }
+                return [];
+            } catch (error) {
+                console.error("Error fetching system roles:", error);
                 throw error;
             }
         },
@@ -1012,6 +1320,60 @@ export const useHelpdeskService = () => {
             }
         },
 
+        getRoleUsers: async (roleId: string): Promise<RoleUsersData> => {
+            try {
+                const response = await $api<
+                    ApiResponse<ApiResponse<RoleUsersData>>
+                >("/api/portal/helpdesk/tenant-roles/role-users/", {
+                    method: "GET",
+                    query: { role_id: roleId },
+                });
+                if (!response.success || !response.data?.success) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch role users",
+                    );
+                }
+                return response.data.data;
+            } catch (error) {
+                console.error("Error fetching role users:", error);
+                throw error;
+            }
+        },
+
+        bulkAssignRoleUsers: async (payload: AssignRoleUsersPayload): Promise<any> => {
+            try {
+                const response = await $api<ApiResponse<any>>(
+                    "/api/portal/helpdesk/tenant-roles/bulk-assign-users/",
+                    {
+                        method: "POST",
+                        body: payload,
+                    },
+                );
+                return response?.data || response;
+            } catch (error) {
+                console.error("Error bulk assigning users to role:", error);
+                throw error;
+            }
+        },
+
+        assignUsersToSystemRole: async (payload: AssignRoleUsersPayload): Promise<any> => {
+            try {
+                const response = await $api<ApiResponse<any>>(
+                    "/api/portal/helpdesk/tenant-roles/assign-users-to-system-role/",
+                    {
+                        method: "POST",
+                        body: payload,
+                    },
+                );
+                return response?.data || response;
+            } catch (error) {
+                console.error("Error assigning users to system role:", error);
+                throw error;
+            }
+        },
+
         getDirectedEscalationRoleMappings: async (): Promise<DirectedEscalationRoleMapping[]> => {
             try {
                 const response = await $api<
@@ -1098,5 +1460,563 @@ export const useHelpdeskService = () => {
                 throw error;
             }
         },
+
+        // Worker Location Scopes
+        getStaffLocationScopes: async (userId: string): Promise<WorkerLocationScope[]> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/staff/${userId}/location-scopes/`,
+                    { method: "GET" },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch worker location scopes",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                return data?.scopes || [];
+            } catch (error) {
+                console.error("Error fetching worker location scopes:", error);
+                throw error;
+            }
+        },
+
+        setStaffLocationScopes: async (
+            userId: string,
+            scopes: WorkerLocationScope[],
+        ): Promise<WorkerLocationScope[]> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/staff/${userId}/location-scopes/`,
+                    { method: "PUT", body: { scopes } },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to update worker location scopes",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                return data?.scopes || [];
+            } catch (error) {
+                console.error("Error updating worker location scopes:", error);
+                throw error;
+            }
+        },
+
+        // Worker Capacity
+        getStaffCapacity: async (userId: string): Promise<WorkerCapacity | null> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/staff/${userId}/capacity/`,
+                    { method: "GET" },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch worker capacity",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                return data?.capacity ?? null;
+            } catch (error) {
+                console.error("Error fetching worker capacity:", error);
+                throw error;
+            }
+        },
+
+        setStaffCapacity: async (
+            userId: string,
+            payload: SetWorkerCapacityPayload,
+        ): Promise<WorkerCapacity> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/staff/${userId}/capacity/`,
+                    { method: "PUT", body: payload },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to update worker capacity",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                return data?.capacity;
+            } catch (error) {
+                console.error("Error updating worker capacity:", error);
+                throw error;
+            }
+        },
+
+        deleteStaffCapacity: async (userId: string): Promise<void> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/staff/${userId}/capacity/`,
+                    { method: "DELETE" },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to delete worker capacity",
+                    );
+                }
+            } catch (error) {
+                console.error("Error deleting worker capacity:", error);
+                throw error;
+            }
+        },
+
+        // Tenant Helpdesk Config
+        getHelpdeskConfig: async (): Promise<HelpdeskConfig> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/config/`,
+                    { method: "GET" },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch helpdesk config",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error fetching helpdesk config:", error);
+                throw error;
+            }
+        },
+
+        updateHelpdeskConfig: async (
+            payload: Partial<HelpdeskConfig>,
+        ): Promise<HelpdeskConfig> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/config/`,
+                    { method: "PUT", body: payload },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to update helpdesk config",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error updating helpdesk config:", error);
+                throw error;
+            }
+        },
+
+        // ScopeLadder Scoring Config
+        getScoringConfig: async (): Promise<HelpdeskScoringConfig> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/scoring-config/`,
+                    { method: "GET" },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch scoring config",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error fetching scoring config:", error);
+                throw error;
+            }
+        },
+
+        updateScoringConfig: async (
+            payload: Partial<HelpdeskScoringConfig>,
+        ): Promise<HelpdeskScoringConfig> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/scoring-config/`,
+                    { method: "PUT", body: payload },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to update scoring config",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error updating scoring config:", error);
+                throw error;
+            }
+        },
+
+        // Reject Assignment (Decline)
+        rejectAssignment: async (
+            ticketId: string,
+            reason?: string,
+        ): Promise<Ticket> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/reject-assignment/`,
+                    { method: "POST", body: { reason } },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to reject assignment",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error rejecting assignment:", error);
+                throw error;
+            }
+        },
+
+        // Hold / Resume
+        requestHold: async (
+            ticketId: string,
+            payload: RequestHoldPayload,
+        ): Promise<TicketDependency> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/request-hold/`,
+                    { method: "POST", body: payload },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to request hold",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error requesting hold:", error);
+                throw error;
+            }
+        },
+
+        // Hold & Dependency Endpoints
+        getRequestPendingTickets: async (
+            page = 1,
+            pageSize = 20,
+            facilityId?: string,
+            search?: string,
+        ): Promise<{
+            tickets: Ticket[];
+            count: number;
+            next: string | null;
+            previous: string | null;
+        }> => {
+            try {
+                const query: Record<string, any> = { page, page_size: pageSize };
+                if (facilityId) query.facility_id = facilityId;
+                if (search) query.search = search;
+
+                const response = await $api<any>(
+                    "/api/portal/helpdesk/tickets/request-pending-tickets/",
+                    {
+                        method: "GET",
+                        query,
+                    },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch request pending tickets",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                const results = Array.isArray(data) ? data : data?.results || [];
+                const count = typeof data?.count === 'number' ? data.count : results.length;
+                return {
+                    tickets: results,
+                    count,
+                    next: data?.next || null,
+                    previous: data?.previous || null,
+                };
+            } catch (error) {
+                console.error("Error fetching request pending tickets:", error);
+                throw error;
+            }
+        },
+
+        getOnHoldTickets: async (
+            page = 1,
+            pageSize = 20,
+            facilityId?: string,
+            search?: string,
+        ): Promise<{
+            tickets: Ticket[];
+            count: number;
+            next: string | null;
+            previous: string | null;
+        }> => {
+            try {
+                const query: Record<string, any> = { page, page_size: pageSize };
+                if (facilityId) query.facility_id = facilityId;
+                if (search) query.search = search;
+
+                const response = await $api<any>(
+                    "/api/portal/helpdesk/tickets/on-hold-tickets/",
+                    {
+                        method: "GET",
+                        query,
+                    },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch on-hold tickets",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                const results = Array.isArray(data) ? data : data?.results || [];
+                const count = typeof data?.count === 'number' ? data.count : results.length;
+                return {
+                    tickets: results,
+                    count,
+                    next: data?.next || null,
+                    previous: data?.previous || null,
+                };
+            } catch (error) {
+                console.error("Error fetching on-hold tickets:", error);
+                throw error;
+            }
+        },
+
+        getDependencyReasonTypes: async (): Promise<DependencyReasonType[]> => {
+            try {
+                const response = await $api<any>(
+                    "/api/portal/helpdesk/dependency-reason-types/",
+                    { method: "GET" },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch dependency reason types",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                return Array.isArray(data) ? data : data?.results || [];
+            } catch (error) {
+                console.error("Error fetching dependency reason types:", error);
+                throw error;
+            }
+        },
+
+        approveHold: async (
+            ticketId: string,
+            dependencyId: string,
+            payload?: { decision_notes?: string; extend_minutes?: number } | string,
+        ): Promise<Ticket> => {
+            try {
+                const body = typeof payload === "string"
+                    ? { decision_notes: payload }
+                    : (payload || {});
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/approve-hold/${dependencyId}/`,
+                    { method: "POST", body },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to approve hold",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error approving hold:", error);
+                throw error;
+            }
+        },
+
+        rejectHold: async (
+            ticketId: string,
+            dependencyId: string,
+            decisionNotes?: string,
+        ): Promise<TicketDependency> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/reject-hold/${dependencyId}/`,
+                    { method: "POST", body: { decision_notes: decisionNotes } },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to reject hold",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error rejecting hold:", error);
+                throw error;
+            }
+        },
+
+        directHold: async (
+            ticketId: string,
+            payload: DirectHoldPayload,
+        ): Promise<Ticket> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/hold/`,
+                    { method: "POST", body: payload },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to put ticket on hold",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error putting ticket on hold:", error);
+                throw error;
+            }
+        },
+
+        changeResolutionSla: async (
+            ticketId: string,
+            payload: { extend_minutes: number; decision_notes?: string } | number,
+        ): Promise<Ticket> => {
+            try {
+                const body = typeof payload === "number"
+                    ? { extend_minutes: payload }
+                    : payload;
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/change-resolution-sla/`,
+                    { method: "POST", body },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to change resolution SLA",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error changing resolution SLA:", error);
+                throw error;
+            }
+        },
+
+        resumeDirect: async (ticketId: string): Promise<Ticket> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/resume-direct/`,
+                    { method: "POST", body: {} },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to resume ticket",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error resuming ticket directly:", error);
+                throw error;
+            }
+        },
+
+        resumeTicket: async (ticketId: string): Promise<Ticket> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/resume-direct/`,
+                    { method: "POST", body: {} },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to resume ticket",
+                    );
+                }
+                return response.data?.data || response.data;
+            } catch (error) {
+                console.error("Error resuming ticket:", error);
+                throw error;
+            }
+        },
+
+        getTicketDependencies: async (
+            ticketId: string,
+        ): Promise<TicketDependency[]> => {
+            try {
+                const response = await $api<any>(
+                    `/api/portal/helpdesk/tickets/${ticketId}/dependencies/`,
+                    { method: "GET" },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch ticket dependencies",
+                    );
+                }
+                const data = response.data?.data || response.data;
+                return Array.isArray(data) ? data : data?.results || [];
+            } catch (error) {
+                console.error("Error fetching ticket dependencies:", error);
+                throw error;
+            }
+        },
+
+        getExcludeClosedTickets: async (params?: {
+            facility_id?: string;
+            search?: string;
+        }): Promise<any[]> => {
+            try {
+                const query: Record<string, string> = {};
+                if (params?.facility_id) query.facility_id = params.facility_id;
+                if (params?.search) query.search = params.search;
+
+                const response = await $api<any>(
+                    "/api/portal/helpdesk/tickets/exclude-closed-tickets/",
+                    {
+                        method: "GET",
+                        query,
+                    },
+                );
+                if (!response.success || (response.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch tickets",
+                    );
+                }
+                const resData = response.data?.data ?? response.data;
+                if (Array.isArray(resData)) {
+                    return resData;
+                }
+                if (Array.isArray(resData?.results)) {
+                    return resData.results;
+                }
+                return [];
+            } catch (error) {
+                console.error("Error fetching exclude closed tickets:", error);
+                throw error;
+            }
+        },
     };
 };
+

@@ -89,7 +89,8 @@
                 <div class="flex items-center justify-between mb-2">
                   <label for="otp" class="label mb-0">One-Time Password</label>
                   <button type="button" @click="goBack"
-                    class="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                    style="cursor: pointer;"
+                    class="text-xs !text-primary-600 hover:!text-primary-700 font-semibold cursor-pointer underline hover:underline transition-colors">
                     Change Email
                   </button>
                 </div>
@@ -194,7 +195,10 @@ const getRandomItem = <T>(arr: T[]): T => {
 }
 
 const handleEmailSubmit = async () => {
-  if (!form.email) return
+  if (!form.email || !form.email.trim()) {
+    errorMsg.value = 'Please enter your email address.'
+    return
+  }
 
   if (!isValidEmail(form.email)) {
     errorMsg.value = 'Please enter a valid email address.'
@@ -221,7 +225,11 @@ const handleLogin = async () => {
 
   try {
     await authStore.login(form.email, form.otp, config.public.tenantClientAppId)
-    navigateTo('/dashboard')
+    if (authStore.isSpoc || authStore.hasModule('spoc_dashboard')) {
+      navigateTo('/spoc')
+    } else {
+      navigateTo('/dashboard')
+    }
   } catch (error: any) {
     console.error('Login failed', sanitizeError(error))
     errorMsg.value = sanitizeError(error)
@@ -237,14 +245,21 @@ const goBack = () => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   currentImage.value = getRandomItem(images)
   currentQuote.value = getRandomItem(quotes)
 
-  // If already logged in, redirect to dashboard
+  // If already logged in, redirect to appropriate home
   const authStore = useAuthStore();
   if (authStore.isAuthenticated) {
-    navigateTo('/dashboard');
+    if (authStore.modules.length === 0) {
+      await authStore.fetchModules();
+    }
+    if (authStore.isSpoc || authStore.hasModule('spoc_dashboard')) {
+      navigateTo('/spoc');
+    } else {
+      navigateTo('/dashboard');
+    }
   }
 })
 </script>

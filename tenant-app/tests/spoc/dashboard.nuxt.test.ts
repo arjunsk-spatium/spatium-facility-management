@@ -99,6 +99,49 @@ describe('SPOC Dashboard Page', () => {
         expect(wrapper.text()).toContain('Business Meeting')
     })
 
+    it('should show recent visitors from store.recentVisitors (dashboard API)', async () => {
+        const dashboardVisitors = [
+            {
+                id: '2d5b9111-a696-4181-bdf7-625da2622d06',
+                name: 'Hariharan',
+                purpose: 'Meeting',
+                host: 'Hari',
+                status: 'Approved',
+                created_at: '2026-09-03T05:44:03.497722+00:00'
+            },
+            {
+                id: '7e58d760-3b05-4e5e-b217-2a1ea8538340',
+                name: 'Gowtham',
+                purpose: 'Interview',
+                host: 'Ashwini',
+                status: 'Pending',
+                created_at: '2026-09-02T09:36:23.201567+00:00'
+            }
+        ]
+
+        const wrapper = await mountSuspended(SpocDashboardPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        spoc: {
+                            stats: { totalVisitors: 99, pendingApprovals: 27, checkedInToday: 23, totalEmployees: 8 },
+                            recentVisitors: dashboardVisitors,
+                            visitors: [],
+                            loading: false
+                        }
+                    }
+                })]
+            }
+        })
+
+        expect(wrapper.text()).toContain('Hariharan')
+        expect(wrapper.text()).toContain('Hari')
+        expect(wrapper.text()).toContain('Gowtham')
+        expect(wrapper.text()).toContain('Ashwini')
+        expect(wrapper.text()).toContain('Interview')
+    })
+
     it('should have "Invite Visitor" button linking to invite page', async () => {
         const wrapper = await mountSuspended(SpocDashboardPage, {
             global: {
@@ -192,6 +235,126 @@ describe('SPOC Dashboard Page', () => {
             
             expect(wrapper.text()).toContain('Pending Approvals')
             expect(wrapper.text()).toContain('5 waiting') // mockStats.pendingApprovals
+        })
+
+        it('should render quick actions grid with items-stretch and h-full cards', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+            
+            const quickActionsCard = wrapper.findAll('div').find(w => w.text().startsWith('Quick Actions') && w.classes().includes('rounded-xl'))
+            const grid = quickActionsCard?.find('.grid')
+            expect(grid).toBeDefined()
+            expect(grid?.classes()).toContain('items-stretch')
+            
+            const actionLinks = grid?.findAll('a') || []
+            expect(actionLinks.length).toBe(4)
+            actionLinks.forEach(link => {
+                expect(link.classes()).toContain('h-full')
+            })
+        })
+    })
+
+    describe('Credit Transaction History', () => {
+        it('should not show credit section when credit system is disabled', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+
+            expect(wrapper.text()).not.toContain('Credit Transaction History')
+        })
+
+        it('should show credit section when credit system is enabled', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+
+            // Simulate credit system being enabled
+            ;(wrapper.vm as any).creditSystemEnabled = true
+            ;(wrapper.vm as any).walletSummary = {
+                company_name: 'Test Corp',
+                current_balance: 50,
+                total_transactions: 2
+            }
+            ;(wrapper.vm as any).walletTransactions = [
+                {
+                    id: 'txn-1',
+                    transaction_type: 'credit',
+                    credits: 20,
+                    balance_after: 70,
+                    reference_type: 'balance_reset',
+                    metadata: { reason: 'New balance credited' },
+                    created_at: '2026-01-21T12:00:00Z'
+                }
+            ]
+            await wrapper.vm.$nextTick()
+
+            expect(wrapper.text()).toContain('Credit Transaction History')
+            expect(wrapper.text()).toContain('50') // current balance
+        })
+
+        it('should correctly render adjustment transactions from migration', async () => {
+            const wrapper = await mountSuspended(SpocDashboardPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { stats: mockStats, visitors: mockVisitors, loading: false }
+                        }
+                    })]
+                }
+            })
+
+            ;(wrapper.vm as any).creditSystemEnabled = true
+            ;(wrapper.vm as any).walletSummary = {
+                company_name: 'Spatium Offices (Iconic)',
+                current_balance: 99858,
+                total_transactions: 1
+            }
+            ;(wrapper.vm as any).walletTransactions = [
+                {
+                    id: '7e266ca3-87e4-4f5d-88b8-f3fd3d3f123d',
+                    transaction_type: 'adjustment',
+                    credits: 99858,
+                    balance_after: 99858,
+                    reference_type: 'migration',
+                    reference_id: 'spatiumvms:companycredits:1',
+                    metadata: {
+                        used: 141,
+                        source: 'spatiumvms',
+                        balance: 99858,
+                        allocated: 99999
+                    },
+                    created_at: '2026-09-28T16:09:52.115387Z'
+                }
+            ]
+            await wrapper.vm.$nextTick()
+
+            expect(wrapper.text()).toContain('Adjustment')
+            expect(wrapper.text()).toContain('99,858')
+            expect(wrapper.text()).toContain('Migration')
+            expect(wrapper.text()).toContain('spatiumvms:companycredits:1')
         })
     })
 })

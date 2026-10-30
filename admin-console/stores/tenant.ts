@@ -11,19 +11,30 @@ export const useTenantStore = defineStore('tenant', {
             trial: 0,
             suspended: 0
         },
+        dashboardData: {
+            stats: {
+                total_tenants: { count: 0, active: 0, trial: 0 },
+                active_plans: { count: 0, subscriptions: 0 },
+                available_modules: { count: 0, enabled: 0 },
+                total_users: 0
+            },
+            recent_tenants: [] as any[]
+        },
+        insightsData: {
+            stats: { total: 0, active: 0, suspended: 0, cancelled: 0 },
+            tenants: { count: 0, page: 1, page_size: 20, total_pages: 1, results: [] as any[] }
+        },
         loading: false,
         error: null as string | null
     }),
     actions: {
         async fetchTenants() {
-            console.log('fetchTenants: starting', { loading: this.loading });
             this.loading = true
             this.error = null
             try {
                 const { getTenants } = useTenantService()
                 // request now returns the data directly (or throws)
                 const response = await getTenants()
-                console.log('fetchTenants: received response', response);
                 
                 // Response is the raw JSON body
                 if (response && response.success) {
@@ -40,16 +51,13 @@ export const useTenantStore = defineStore('tenant', {
                         onboarded_at: t.onboarded_at,
                         modules: t.modules || [] // Fallback if API sends it
                     }));
-                    console.log('fetchTenants: updated tenants', this.tenants);
                 } else {
                      this.tenants = [];
-                     console.log('fetchTenants: no success in response');
                 }
             } catch (err: any) {
                 this.error = 'Failed to fetch tenants'
                 console.error('fetchTenants: error', err)
             } finally {
-                console.log('fetchTenants: finally block execution');
                 this.loading = false
             }
         },
@@ -132,12 +140,43 @@ export const useTenantStore = defineStore('tenant', {
                 this.loading = false
             }
         },
-        async fetchStats() {
+        async fetchDashboardData() {
             try {
-                const { getStats } = useTenantService()
-                this.stats = await getStats()
+                const { getDashboardData } = useTenantService()
+                const response = await getDashboardData()
+                if (response && response.success && response.data) {
+                    this.dashboardData = response.data
+                }
             } catch (err) {
-                console.error('Failed to fetch stats', err)
+                console.error('Failed to fetch dashboard data', err)
+            }
+        },
+        async fetchTenantInsights() {
+            try {
+                const { getTenantInsights } = useTenantService()
+                const response = await getTenantInsights()
+                if (response && response.success && response.data) {
+                    this.insightsData = response.data
+                    
+                    // We can also populate the tenants list from insights if we want
+                    if (response.data.tenants && response.data.tenants.results) {
+                        const results = response.data.tenants.results;
+                        this.tenants = results.map((t: any) => ({
+                            id: t.id,
+                            name: t.name,
+                            domain: t.domain,
+                            status: t.status,
+                            planName: t.active_plan?.name,
+                            moduleCount: t.module_count,
+                            userCount: t.user_count,
+                            createdAt: t.created_at,
+                            onboarded_at: t.onboarded_at,
+                            modules: t.modules || []
+                        }));
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch tenant insights', err)
             }
         }
     }

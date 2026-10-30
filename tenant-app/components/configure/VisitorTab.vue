@@ -14,6 +14,45 @@
                         @delete="handleDeletePurpose" />
                 </div>
             </a-tab-pane>
+
+            <a-tab-pane key="form" tab="Form">
+                <div class="py-4">
+                    <a-card :loading="configLoading">
+                        <template #title>
+                            <div class="flex items-center justify-between w-full">
+                                <span>Visitor Form Fields</span>
+                            </div>
+                        </template>
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-base font-medium">Company Required</h3>
+                                    <p class="text-gray-500 text-sm">Make company field mandatory for visitors</p>
+                                </div>
+                                <a-switch v-if="canUpdate" :checked="visitorCompanyRequired"
+                                    @change="handleCompanyToggle" :loading="savingConfig" />
+                                <span v-else class="text-sm font-medium"
+                                    :class="visitorCompanyRequired ? 'text-green-600' : 'text-gray-500'">
+                                    {{ visitorCompanyRequired ? 'Required' : 'Optional' }}
+                                </span>
+                            </div>
+                            <a-divider />
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-base font-medium">Email Required</h3>
+                                    <p class="text-gray-500 text-sm">Make email field mandatory for visitors</p>
+                                </div>
+                                <a-switch v-if="canUpdate" :checked="visitorEmailRequired"
+                                    @change="handleEmailToggle" :loading="savingConfig" />
+                                <span v-else class="text-sm font-medium"
+                                    :class="visitorEmailRequired ? 'text-green-600' : 'text-gray-500'">
+                                    {{ visitorEmailRequired ? 'Required' : 'Optional' }}
+                                </span>
+                            </div>
+                        </div>
+                    </a-card>
+                </div>
+            </a-tab-pane>
         </a-tabs>
     </div>
 </template>
@@ -23,6 +62,7 @@ import { ref, onMounted } from 'vue'
 import { useNuxtApp } from '#app'
 import { message } from 'ant-design-vue'
 import ConfigTable from './ConfigTable.vue'
+import { useTenantService } from '../../composables/tenantService'
 
 defineProps<{
     canCreate?: boolean
@@ -31,11 +71,16 @@ defineProps<{
 }>()
 
 const { $api } = useNuxtApp()
+const { getCurrentTenantId, getTenantConfig, updateTenantConfig } = useTenantService()
 
 const API_BASE = '/api/portal/masters/purposes-of-visit'
 
 const activeSubTab = ref('purposesOfVisit')
 const loading = ref(false)
+const configLoading = ref(false)
+const savingConfig = ref(false)
+const visitorCompanyRequired = ref(false)
+const visitorEmailRequired = ref(false)
 
 // Purposes of visit data
 const purposesOfVisit = ref<any[]>([])
@@ -115,8 +160,58 @@ const deletePurpose = async (record: any) => {
     }
 }
 
+const fetchVisitorConfig = async () => {
+    configLoading.value = true
+    try {
+        const tenantId = getCurrentTenantId()
+        const config = await getTenantConfig(tenantId)
+        if (config) {
+            visitorCompanyRequired.value = config.visitor_company_required
+            visitorEmailRequired.value = config.visitor_email_required
+        }
+    } catch (error) {
+        console.error('Failed to fetch visitor config:', error)
+        message.error('Failed to load visitor form configuration')
+    } finally {
+        configLoading.value = false
+    }
+}
+
+const handleCompanyToggle = async (checked: boolean) => {
+    savingConfig.value = true
+    try {
+        const tenantId = getCurrentTenantId()
+        const result = await updateTenantConfig(tenantId, { visitor_company_required: checked })
+        if (result) {
+            visitorCompanyRequired.value = result.visitor_company_required
+            message.success(`Company field set to ${checked ? 'required' : 'optional'}`)
+        }
+    } catch (error) {
+        message.error('Failed to update company requirement')
+    } finally {
+        savingConfig.value = false
+    }
+}
+
+const handleEmailToggle = async (checked: boolean) => {
+    savingConfig.value = true
+    try {
+        const tenantId = getCurrentTenantId()
+        const result = await updateTenantConfig(tenantId, { visitor_email_required: checked })
+        if (result) {
+            visitorEmailRequired.value = result.visitor_email_required
+            message.success(`Email field set to ${checked ? 'required' : 'optional'}`)
+        }
+    } catch (error) {
+        message.error('Failed to update email requirement')
+    } finally {
+        savingConfig.value = false
+    }
+}
+
 onMounted(async () => {
     await fetchPurposesOfVisit()
+    await fetchVisitorConfig()
 })
 
 // Handlers

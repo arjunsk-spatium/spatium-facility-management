@@ -56,7 +56,6 @@ const avatarStyle = computed(() => ({
 }));
 
 const displayUser = computed(() => {
-    console.log('DEBUG: User Profile Data:', authStore.user);
     const user = authStore.user;
     if (!user) return 'User';
     

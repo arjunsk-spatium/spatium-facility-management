@@ -26,6 +26,7 @@ export interface SubModule {
     id: string
     name: string
     permissions: Permission[]
+    features?: any[]
 }
 
 export interface SystemModule {
@@ -34,8 +35,63 @@ export interface SystemModule {
     submodules: SubModule[]
 }
 
+export interface UserFacilityAssignment {
+    user_id?: string
+    facility_ids: string[]
+    is_all_facilities: boolean
+}
+
 export interface UserModule extends SystemModule {
     isAssigned?: boolean
+}
+
+export interface OperationalStaffFacility {
+    facility_id: string
+    facility_name: string
+    id?: string
+    name?: string
+}
+
+export interface OperationalStaff {
+    id: string
+    full_name: string
+    email: string
+    phone_number?: string
+    username?: string
+    tenant_id?: string
+    company_id?: string | null
+    role_id?: string | null
+    role_name?: string | null
+    role_details?: {
+        id: string
+        name: string
+    }
+    facility_id?: string | null
+    facility_name?: string
+    facility_details?: {
+        id: string
+        name: string
+    }
+    facility_ids?: string[]
+    is_all_facilities?: boolean
+    facilities?: OperationalStaffFacility[]
+    building_pass_enabled?: boolean
+    status?: string
+    created_at?: string
+}
+
+export interface OperationalStaffListParams {
+    facility_id?: string
+    page?: number
+    page_size?: number
+    search?: string
+}
+
+export interface OperationalStaffListResponse {
+    results: OperationalStaff[]
+    count: number
+    next?: string | null
+    previous?: string | null
 }
 
 export const useUserService = () => {
@@ -95,7 +151,8 @@ export const useUserService = () => {
                     'Meeting Rooms': 'meeting_rooms',
                     'User Management': 'users',
                     'Configure': 'configure',
-                    'Front Desk': 'frontdesk'
+                    'Front Desk': 'frontdesk',
+                    'Banners': 'banners'
                 }
 
                 const userKeys: string[] = []
@@ -122,6 +179,19 @@ export const useUserService = () => {
                                         }
                                     })
                                 }
+                                
+                                if (sm.features && Array.isArray(sm.features)) {
+                                    sm.features.forEach((f: any) => {
+                                        const featureKey = f.key || f.name.toLowerCase().replace(/\s+/g, '_')
+                                        if (f.permissions && Array.isArray(f.permissions)) {
+                                            f.permissions.forEach((p: any) => {
+                                                if (p.key) {
+                                                    permissions.push(`${featureKey}:${p.key}`)
+                                                }
+                                            })
+                                        }
+                                    })
+                                }
                             })
                         } else {
                             m.submodules.forEach((sm: any) => {
@@ -131,6 +201,19 @@ export const useUserService = () => {
                                     sm.permissions.forEach((p: any) => {
                                         if (p.key) {
                                             permissions.push(`${childKey}:${p.key}`)
+                                        }
+                                    })
+                                }
+                                
+                                if (sm.features && Array.isArray(sm.features)) {
+                                    sm.features.forEach((f: any) => {
+                                        const featureKey = f.key || f.name.toLowerCase().replace(/\s+/g, '_')
+                                        if (f.permissions && Array.isArray(f.permissions)) {
+                                            f.permissions.forEach((p: any) => {
+                                                if (p.key) {
+                                                    permissions.push(`${featureKey}:${p.key}`)
+                                                }
+                                            })
                                         }
                                     })
                                 }
@@ -216,6 +299,20 @@ export const useUserService = () => {
         }
     }
 
+    const extractApiErrorMessage = (error: any): string => {
+        const errorData = error?.data || error
+        if (errorData?.error?.type === 'VALIDATION_ERROR' && errorData?.error?.fields) {
+            const fields = errorData.error.fields
+            for (const key of Object.keys(fields)) {
+                const fieldErrors = fields[key]
+                if (Array.isArray(fieldErrors) && fieldErrors.length > 0) {
+                    return fieldErrors[0].message || `Invalid ${key}`
+                }
+            }
+        }
+        return errorData?.message || error?.message || 'Failed to create user'
+    }
+
     const createUser = async (data: Partial<User>): Promise<User> => {
         try {
             const { $api } = useNuxtApp()
@@ -245,9 +342,13 @@ export const useUserService = () => {
                 }
             }
             throw new Error('Failed to create user')
-        } catch (error) {
+        } catch (error: any) {
+            const message = extractApiErrorMessage(error)
+            const err = new Error(message) as any
+            err.data = error?.data
+            err.statusCode = error?.statusCode
             console.error('Failed to create user:', error)
-            throw error
+            throw err
         }
     }
 
@@ -260,6 +361,7 @@ export const useUserService = () => {
                     full_name: data.name,
                     email: data.email,
                     phone_number: data.phone,
+                    app_name: 'org_portal',
                     apps: data.modules
                 }
             })
@@ -326,52 +428,61 @@ export const useUserService = () => {
         }
     }
 
-    const getUserAssignedModules = async (userId: string): Promise<string[]> => {
+    const getUserAssignedModules = async (userId: string): Promise<{ submodules: string[], features: string[] }> => {
         try {
             const { $api } = useNuxtApp()
             const response = await $api<any>(`/api/portal/modules/user/?user_id=${userId}&page_size=9999`)
             
-            // The API response might be in response.data.data.results or response.data.results or response.data.data
-            let results = response?.data?.data?.results || response?.data?.results || response?.data?.data
-            if (Array.isArray(results)) {
-                if (results.length > 0) {
-                    if (results[0].submodule_permission) {
-                        // Old flat mapping format
-                        return results.map((p: any) => p.submodule_permission)
-                    } else if (results[0].submodules || results[0].module) {
-                        // New nested format: modules > submodules > permissions
-                        const permIds: string[] = []
-                        results.forEach((m: any) => {
-                            if (m.submodules && Array.isArray(m.submodules)) {
-                                m.submodules.forEach((sm: any) => {
-                                    if (sm.permissions && Array.isArray(sm.permissions)) {
-                                        sm.permissions.forEach((p: any) => {
-                                            if (p.id) permIds.push(p.id)
-                                        })
-                                    }
-                                })
-                            }
-                        })
-                        return permIds
+            const result = { submodules: [] as string[], features: [] as string[] }
+            const data = response?.data
+            
+            if (data) {
+                // New format: data.submodule_permissions and data.feature_permissions
+                if (data.submodule_permissions && Array.isArray(data.submodule_permissions)) {
+                    result.submodules = data.submodule_permissions.map((p: any) => p.submodule_permission)
+                }
+                if (data.feature_permissions && Array.isArray(data.feature_permissions)) {
+                    result.features = data.feature_permissions.map((p: any) => p.feature_permission || p.feature || p.id)
+                }
+                
+                // Old format fallback
+                if (!data.submodule_permissions) {
+                    let results = data.data?.results || data.results || data
+                    if (Array.isArray(results) && results.length > 0) {
+                        if (results[0].submodule_permission) {
+                            result.submodules = results.map((p: any) => p.submodule_permission)
+                        } else if (results[0].submodules || results[0].module) {
+                            results.forEach((m: any) => {
+                                if (m.submodules && Array.isArray(m.submodules)) {
+                                    m.submodules.forEach((sm: any) => {
+                                        if (sm.permissions && Array.isArray(sm.permissions)) {
+                                            sm.permissions.forEach((p: any) => {
+                                                if (p.id) result.submodules.push(p.id)
+                                            })
+                                        }
+                                    })
+                                }
+                            })
+                        }
                     }
                 }
-                return []
             }
-            return []
+            return result
         } catch (error) {
             console.error('Failed to fetch user modules:', error)
-            return []
+            return { submodules: [], features: [] }
         }
     }
 
-    const assignModulesToUser = async (userId: string, submodulePermissionIds: string[]): Promise<boolean> => {
+    const assignModulesToUser = async (userId: string, submodulePermissionIds: string[], featurePermissionIds: string[] = []): Promise<boolean> => {
         try {
             const { $api } = useNuxtApp()
             await $api<any>('/api/portal/modules/user/bulk-assign/', {
                 method: 'POST',
                 body: {
                     user: userId,
-                    submodule_permissions: submodulePermissionIds
+                    submodule_permissions: submodulePermissionIds,
+                    feature_permissions: featurePermissionIds
                 }
             })
             return true
@@ -399,6 +510,129 @@ export const useUserService = () => {
         }
     }
 
+    const getUserFacilities = async (userId: string): Promise<UserFacilityAssignment> => {
+        try {
+            const { $api } = useNuxtApp()
+            const response = await $api<any>(`/api/portal/users/org_portal/${userId}/facilities/`)
+            const data = response?.data || {}
+            return {
+                user_id: data.user_id,
+                facility_ids: Array.isArray(data.facility_ids) ? data.facility_ids : [],
+                is_all_facilities: !!data.is_all_facilities
+            }
+        } catch (error) {
+            console.error('Failed to fetch user facilities:', error)
+            return { facility_ids: [], is_all_facilities: false }
+        }
+    }
+
+    const assignUserFacilities = async (userId: string, payload: { facility_ids: string[]; is_all_facilities: boolean }): Promise<boolean> => {
+        try {
+            const { $api } = useNuxtApp()
+            await $api<any>(`/api/portal/users/org_portal/${userId}/facilities/`, {
+                method: 'PUT',
+                body: {
+                    facility_ids: payload.facility_ids,
+                    is_all_facilities: payload.is_all_facilities
+                }
+            })
+            return true
+        } catch (error) {
+            console.error('Failed to assign user facilities:', error)
+            throw error
+        }
+    }
+
+    const getOperationalStaff = async (
+        params?: OperationalStaffListParams | string
+    ): Promise<OperationalStaffListResponse> => {
+        try {
+            const { $api } = useNuxtApp()
+            const query: any = {}
+
+            if (typeof params === 'string') {
+                query.facility_id = params
+                query.page_size = 9999
+            } else if (params) {
+                if (params.page !== undefined) query.page = params.page
+                if (params.page_size !== undefined) query.page_size = params.page_size
+                if (params.facility_id) query.facility_id = params.facility_id
+                if (params.search) query.search = params.search
+            }
+
+            const response = await $api<any>('/api/portal/users/opstrack/list/', { method: 'GET', query })
+            const data = response?.data?.results || response?.data?.data?.results || response?.results || response?.data || []
+            const results = Array.isArray(data) ? data : []
+            const count = response?.data?.count ?? response?.data?.data?.count ?? response?.count ?? results.length
+
+            return {
+                results,
+                count,
+                next: response?.data?.next || response?.next || null,
+                previous: response?.data?.previous || response?.previous || null
+            }
+        } catch (error) {
+            console.error('Failed to fetch operational staff:', error)
+            return { results: [], count: 0 }
+        }
+    }
+
+    const createOperationalStaff = async (payload: {
+        full_name: string
+        email: string
+        phone_number: string
+        username: string
+        password: string
+        facility_id?: string
+        role_id?: string
+    }): Promise<OperationalStaff> => {
+        try {
+            const { $api } = useNuxtApp()
+            const response = await $api<any>('/api/portal/users/opstrack/create/', {
+                method: 'POST',
+                body: payload
+            })
+            if (response?.data) {
+                return response.data
+            }
+            throw new Error('Failed to create operational staff')
+        } catch (error: any) {
+            const message = extractApiErrorMessage(error)
+            const err = new Error(message) as any
+            err.data = error?.data
+            err.statusCode = error?.statusCode
+            console.error('Failed to create operational staff:', error)
+            throw err
+        }
+    }
+
+    const updateOperationalStaff = async (id: string, payload: Partial<OperationalStaff> & { role_id?: string }): Promise<OperationalStaff> => {
+        try {
+            const { $api } = useNuxtApp()
+            const response = await $api<any>(`/api/portal/users/opstrack/${id}/update/`, {
+                method: 'PATCH',
+                body: payload
+            })
+            return response?.data
+        } catch (error) {
+            console.error('Failed to update operational staff:', error)
+            throw error
+        }
+    }
+
+    const deleteOperationalStaff = async (id: string): Promise<boolean> => {
+        try {
+            const { $api } = useNuxtApp()
+            await $api<any>(`/api/portal/users/opstrack/${id}/delete/`, {
+                method: 'DELETE'
+            })
+            return true
+        } catch (error) {
+            console.error('Failed to delete operational staff:', error)
+            throw error
+        }
+    }
+
     return {
         getUserModules,
         getTenantModules,
@@ -412,6 +646,13 @@ export const useUserService = () => {
         getAllSystemModules,
         getUserAssignedModules,
         assignModulesToUser,
-        getAllSubmodulePermissions
+        getAllSubmodulePermissions,
+        getUserFacilities,
+        assignUserFacilities,
+        getOperationalStaff,
+        createOperationalStaff,
+        updateOperationalStaff,
+        deleteOperationalStaff
     }
 }
+

@@ -5,8 +5,8 @@ import { createTestingPinia } from '@pinia/testing'
 
 describe('Meeting Room Bookings Page', () => {
     const mockBookings = [
-        { id: 'B1', roomId: '1', roomName: 'Conference Room A', date: '2026-01-07', startTime: '09:00', endTime: '10:00', status: 'Confirmed', bookedBy: 'John Doe' },
-        { id: 'B2', roomId: '2', roomName: 'Board Room', date: '2026-01-07', startTime: '14:00', endTime: '16:00', status: 'Pending', bookedBy: 'Jane Smith' }
+        { bookingId: 'B1', meetingRoom: '1', meetingRoomName: 'Conference Room A', bookingDate: '2026-01-07', startTime: '09:00', endTime: '10:00', bookingStatus: 'CONFIRMED', userName: 'John Doe' },
+        { bookingId: 'B2', meetingRoom: '2', meetingRoomName: 'Board Room', bookingDate: '2026-01-07', startTime: '14:00', endTime: '16:00', bookingStatus: 'PENDING', userName: 'Jane Smith' }
     ]
 
     const mockRooms = [
@@ -20,6 +20,7 @@ describe('Meeting Room Bookings Page', () => {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
                     initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
                         meetingRoom: { bookings: mockBookings, rooms: mockRooms, loading: false }
                     }
                 })]
@@ -35,6 +36,7 @@ describe('Meeting Room Bookings Page', () => {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
                     initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
                         meetingRoom: { bookings: mockBookings, rooms: mockRooms, loading: false }
                     }
                 })]
@@ -44,19 +46,36 @@ describe('Meeting Room Bookings Page', () => {
         expect(wrapper.text()).toContain('Conference Room A')
     })
 
-    it('should have filter controls', async () => {
+    it('should configure pagination with bookingsCount', async () => {
         const wrapper = await mountSuspended(BookingsPage, {
             global: {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
                     initialState: {
-                        meetingRoom: { bookings: [], rooms: [], loading: false }
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
+                        meetingRoom: { bookings: mockBookings, rooms: mockRooms, bookingsCount: 31, bookingsPage: 1, bookingsPageSize: 10, loading: false }
                     }
                 })]
             }
         })
         
-        // Page has "Filter Status" dropdown
-        expect(wrapper.text()).toContain('Filter')
+        expect(wrapper.findComponent({ name: 'ResponsiveDataView' }).props('pagination')).toBeDefined()
+    })
+
+    it('should have export button', async () => {
+        const wrapper = await mountSuspended(BookingsPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
+                        meetingRoom: { bookings: mockBookings, rooms: mockRooms, loading: false }
+                    }
+                })]
+            }
+        })
+
+        const exportBtn = wrapper.findAll('button').find(b => b.text().includes('Export'))
+        expect(exportBtn).toBeDefined()
     })
 })

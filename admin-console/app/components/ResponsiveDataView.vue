@@ -2,7 +2,7 @@
     <div>
         <!-- Desktop Table View -->
         <a-table v-if="!isMobile" :columns="columns" :data-source="data" :loading="loading" :row-key="rowKey"
-            :pagination="pagination" :scroll="{ x: 900 }">
+            :pagination="pagination" :scroll="{ x: 900 }" @change="handleTableChange">
             <template #bodyCell="{ column, record }">
                 <slot name="bodyCell" :column="column" :record="record"></slot>
             </template>
@@ -64,6 +64,12 @@ const props = defineProps({
 })
 
 const { isMobile } = useSidebar()
+
+const emit = defineEmits(['change'])
+
+const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+    emit('change', pagination, filters, sorter)
+}
 
 // Mobile Pagination State
 const currentMobilePage = ref(1)

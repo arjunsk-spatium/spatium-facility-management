@@ -1,6 +1,6 @@
-# Spatium Facility Management
+# Nexspace Facility Management
 
-This is a monorepo containing the Frontend applications for the Spatium Facility Management system.
+This is a monorepo containing the Frontend applications for the Nexspace Facility Management system.
 
 ## Project Structure
 

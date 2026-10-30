@@ -49,7 +49,7 @@
             <span class="text-lg font-semibold">Company List</span>
             <div class="flex items-center gap-3">
                 <a-input-search v-model:value="searchText" placeholder="Search companies..." style="width: 250px"
-                    allow-clear />
+                    allow-clear @search="handleSearch" />
                 <a-button v-if="canView" @click="downloadExcel" :loading="downloading">
                     <template #icon>
                         <DownloadOutlined />
@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <ResponsiveDataView v-if="canView" :columns="columns" :data="filteredCompanies" :loading="loading"
+        <ResponsiveDataView v-if="canView" :columns="columns" :data="displayedCompanies" :loading="loading"
             :row-key="(record: any) => record.id" :pagination="paginationConfig">
             <!-- Desktop Table Cells -->
             <template #bodyCell="{ column, record }">
@@ -102,7 +102,7 @@
                             <div class="flex flex-col">
                                 <span
                                     class="text-neutral-500 dark:text-neutral-400 text-xs uppercase tracking-wider">Address</span>
-                                <span class="text-neutral-900 dark:text-neutral-200">{{ company.contacts[0]?.address }}</span>
+                                <span class="text-neutral-900 dark:text-neutral-200">{{ company.contacts?.[0]?.address }}</span>
                             </div>
                             <!-- Contact Details Section -->
                             <div class="mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-700">
@@ -111,10 +111,10 @@
                                     Person</span>
                                 <div
                                     class="flex flex-col gap-1 pl-2 border-l-2 border-primary-200 dark:border-primary-800">
-                                    <span class="font-medium">{{ company.contacts[0]?.contact_name }}</span>
-                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.contacts[0]?.email
+                                    <span class="font-medium">{{ company.contacts?.[0]?.contact_name }}</span>
+                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.contacts?.[0]?.email
                                         }}</span>
-                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.contacts[0]?.phone
+                                    <span class="text-neutral-600 dark:text-neutral-400">{{ company.contacts?.[0]?.phone
                                         }}</span>
                                 </div>
                             </div>
@@ -139,8 +139,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import { useCompanyStore } from '../../../stores/company'
+import { ref, computed, onMounted, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAllCompanyStore } from '../../../stores/allCompany'
 import { useAuthStore } from '../../../stores/auth'
 import { message } from 'ant-design-vue'
 import {
@@ -156,11 +157,10 @@ definePageMeta({
     middleware: 'auth'
 })
 
-const store = useCompanyStore()
+const store = useAllCompanyStore()
 const authStore = useAuthStore()
 
-const companies = computed(() => store.companies)
-const loading = computed(() => store.loading)
+const { companies, loading, count, page, pageSize } = storeToRefs(store)
 
 const canView = computed(() => authStore.hasPermission('companies-list:view'))
 const canCreate = computed(() => authStore.hasPermission('companies-list:create'))
@@ -171,24 +171,38 @@ const canDelete = computed(() => authStore.hasPermission('companies-list:delete'
 const searchText = ref('')
 const downloading = ref(false)
 
-// Filtered companies based on search
-const filteredCompanies = computed(() => {
-    if (!searchText.value) return companies.value
-    const search = searchText.value.toLowerCase()
-    return companies.value.filter(company =>
-        company.name.toLowerCase().includes(search) ||
-        company.contacts[0]?.contact_name?.toLowerCase().includes(search) ||
-        company.contacts[0]?.email?.toLowerCase().includes(search) ||
-        company.contacts[0]?.phone?.toLowerCase().includes(search)
-    )
-})
-
 // Stats for companies
 const stats = computed(() => ({
-    total: companies.value.length,
+    total: count.value,
     active: companies.value.filter(c => c.status === 'active').length,
     inactive: companies.value.filter(c => c.status === 'inactive').length
 }))
+
+let searchTimeout: any = null
+watch(searchText, (newVal) => {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+        handleSearch()
+    }, 300)
+})
+
+const handleSearch = () => {
+    store.fetchAllCompanies({ search: searchText.value?.trim() || undefined, page: 1 }, true)
+}
+
+const displayedCompanies = computed(() => {
+    if (!searchText.value?.trim()) return companies.value
+    const q = searchText.value.trim().toLowerCase()
+    const filtered = companies.value.filter(c => 
+        c.name?.toLowerCase().includes(q) ||
+        c.contacts?.some(contact => 
+            contact.contact_name?.toLowerCase().includes(q) ||
+            contact.email?.toLowerCase().includes(q) ||
+            contact.phone?.toLowerCase().includes(q)
+        )
+    )
+    return filtered
+})
 
 // Download as Excel
 const downloadExcel = async () => {
@@ -197,14 +211,14 @@ const downloadExcel = async () => {
         // Dynamic imports for client-side only
         const XLSX = await import('xlsx')
 
-        const data = filteredCompanies.value.map(company => ({
+        const data = companies.value.map(company => ({
             'Company Name': company.name,
             'Status': company.status,
-            'Contact Name': company.contacts[0]?.contact_name || '',
-            'Email': company.contacts[0]?.email || '',
-            'Address': company.contacts[0]?.address || '',
-            'Phone': company.contacts[0]?.phone || '',
-            'GSTIN': company.contacts[0]?.gstin || ''
+            'Contact Name': company.contacts?.[0]?.contact_name || '',
+            'Email': company.contacts?.[0]?.email || '',
+            'Address': company.contacts?.[0]?.address || '',
+            'Phone': company.contacts?.[0]?.phone || '',
+            'GSTIN': company.contacts?.[0]?.gstin || ''
         }))
 
         const worksheet = XLSX.utils.json_to_sheet(data)
@@ -242,17 +256,17 @@ const columns = [
     {
         title: 'Contact Name',
         key: 'contact_name',
-        customRender: ({ record }: { record: any }) => record.contacts[0]?.contact_name || '-'
+        customRender: ({ record }: { record: any }) => record.contacts?.[0]?.contact_name || '-'
     },
     {
         title: 'Email',
         key: 'email',
-        customRender: ({ record }: { record: any }) => record.contacts[0]?.email || '-'
+        customRender: ({ record }: { record: any }) => record.contacts?.[0]?.email || '-'
     },
     {
         title: 'Phone',
         key: 'phone',
-        customRender: ({ record }: { record: any }) => record.contacts[0]?.phone || '-'
+        customRender: ({ record }: { record: any }) => record.contacts?.[0]?.phone || '-'
     },
     {
         title: 'Action',
@@ -262,21 +276,30 @@ const columns = [
 
 // Pagination configuration
 const paginationConfig = computed(() => ({
-    pageSize: 10,
+    total: count.value,
+    current: page.value,
+    pageSize: pageSize.value,
     showSizeChanger: true,
     pageSizeOptions: ['10', '20', '50', '100'],
     showTotal: (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} companies`,
+    onChange: (pageNum: number, newPageSize: number) => {
+        if (newPageSize !== pageSize.value) {
+            store.fetchAllCompanies({ search: searchText.value || undefined, page: 1, page_size: newPageSize }, true)
+        } else {
+            store.fetchAllCompanies({ search: searchText.value || undefined, page: pageNum }, true)
+        }
+    },
 }))
 
 onMounted(() => {
     if (canView.value) {
-        store.fetchCompanies()
+        store.fetchAllCompanies({ page: 1, page_size: 10 }, true)
     }
 })
 
 watch(canView, (newVal) => {
     if (newVal) {
-        store.fetchCompanies()
+        store.fetchAllCompanies({ page: 1, page_size: 10 }, true)
     }
 })
 </script>

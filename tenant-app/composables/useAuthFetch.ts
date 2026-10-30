@@ -52,14 +52,11 @@ export const useAuthFetch = () => {
         } catch (error: any) {
             // Check if it's a 401 Unauthorized error
             if (error?.statusCode === 401 || error?.status === 401) {
-                console.log("Received 401, attempting token refresh...");
-
                 // Try to refresh the token
                 const refreshSuccess = await authStore.refreshAccessToken();
 
                 if (refreshSuccess) {
                     // Retry the original request with new token
-                    console.log("Token refreshed, retrying request...");
                     const retryResponse = await $fetch<T>(
                         endpoint.startsWith("http")
                             ? endpoint

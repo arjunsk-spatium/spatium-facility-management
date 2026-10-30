@@ -8,27 +8,47 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const moduleMap: Record<string, string> = {
         '/companies': 'companies',
         '/visitors': 'visitors',
+        '/helpdesk/roles': 'helpdesk-roles',
         '/helpdesk': 'helpdesk',
         '/facilities': 'facilities',
+        '/users/management': 'users-management',
+        '/users/operational': 'users-operational',
         '/users': 'users',
         '/meeting-rooms': 'meeting_rooms',
+        '/banners': 'banners',
+        '/feed': 'feed-list',
         '/configure': 'configure',
+        '/frontdesk': 'frontdesk',
+        '/spoc/bookings': 'spoc_bookings',
+        '/spoc/visitors': 'spoc_visitors',
+        '/spoc/employees': 'spoc_employees',
+        '/spoc/config': 'spoc_config',
         '/spoc': 'spoc_dashboard'
     };
+
+    // Ensure modules are loaded
+    if (authStore.modules.length === 0 && authStore.isAuthenticated) {
+        await authStore.fetchModules();
+    }
+
+    // If SPOC accesses /dashboard, redirect to /spoc
+    if (to.path === '/dashboard' || to.path === '/dashboard/') {
+        if (authStore.isSpoc || (authStore.hasModule('spoc_dashboard') && !authStore.hasModule('dashboard'))) {
+            return navigateTo('/spoc');
+        }
+    }
 
     // Find matching restricted module
     const restrictedModuleKey = Object.keys(moduleMap).find(path => to.path.startsWith(path));
 
     if (restrictedModuleKey) {
         const requiredModule = moduleMap[restrictedModuleKey];
-        
-        // Ensure modules are loaded
-        if (authStore.modules.length === 0) {
-           await authStore.fetchModules();
-        }
 
         if (requiredModule && !authStore.hasModule(requiredModule)) {
-            // Redirect to dashboard or home if access denied
+            // Redirect to spoc for SPOC users, or dashboard for regular users
+            if (authStore.isSpoc || authStore.hasModule('spoc_dashboard')) {
+                return navigateTo('/spoc');
+            }
             return navigateTo('/dashboard');
         }
     }

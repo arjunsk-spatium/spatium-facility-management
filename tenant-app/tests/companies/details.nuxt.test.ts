@@ -8,11 +8,14 @@ describe('Company Details Page', () => {
     const mockCompany = {
         id: '1',
         name: 'Tech Corp',
-        address: '123 Tech Street, Bangalore',
-        spoc_name: 'John Smith',
-        spoc_email: 'john.smith@techcorp.com',
-        spoc_phone: '+91 98765 43210',
-        gstin: '29ABCDE1234F1ZH',
+        status: 'active',
+        contacts: [{
+            contact_name: 'John Smith',
+            email: 'john.smith@techcorp.com',
+            phone: '+91 98765 43210',
+            address: '123 Tech Street, Bangalore',
+            gstin: '29ABCDE1234F1ZH'
+        }],
         facility: 'Facility 1'
     }
 
@@ -40,7 +43,7 @@ describe('Company Details Page', () => {
         expect(wrapper.find('a[href="/companies/1/edit"]').exists()).toBe(true)
     })
 
-    it('should fetch company on mount', async () => {
+    it('should fetch company and facilities on mount', async () => {
         const wrapper = await mountSuspended(CompanyDetailsPage, {
              route: {
                 params: { id: '1' }
@@ -51,5 +54,60 @@ describe('Company Details Page', () => {
         })
         const store = useCompanyStore()
         expect(store.fetchCompany).toHaveBeenCalledWith('1')
+        expect(store.fetchCompanyFacilitiesAction).toHaveBeenCalledWith('1')
+    })
+
+    it('should render assigned facilities', async () => {
+        const mockFacility = {
+            id: 'map-1',
+            company: '1',
+            facility_id: 'fac-1',
+            facility_name: 'HQ Campus',
+            tower_name: 'Tower 1',
+            floor_name: 'Floor 3'
+        }
+        const wrapper = await mountSuspended(CompanyDetailsPage, {
+            route: {
+                params: { id: '1' }
+            },
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        company: {
+                            currentCompany: mockCompany,
+                            currentCompanyFacilities: [mockFacility],
+                            loading: false
+                        }
+                    }
+                })]
+            }
+        })
+        expect(wrapper.text()).toContain('HQ Campus')
+        expect(wrapper.text()).toContain('Tower 1')
+        expect(wrapper.text()).toContain('Floor 3')
+    })
+
+    it('should configure Employee List table with pagination', async () => {
+        const wrapper = await mountSuspended(CompanyDetailsPage, {
+            route: {
+                params: { id: '1' }
+            },
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        company: {
+                            currentCompany: mockCompany,
+                            loading: false
+                        }
+                    }
+                })]
+            }
+        })
+
+        expect(wrapper.text()).toContain('Employee List')
+        const tables = wrapper.findAllComponents({ name: 'ATable' })
+        expect(tables.length).toBeGreaterThan(0)
     })
 })

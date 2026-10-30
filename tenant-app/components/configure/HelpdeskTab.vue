@@ -36,6 +36,7 @@
                         :columns="subcategoryColumns" 
                         :data="filteredSubcategories"
                         :loading="loadingSubcategories" 
+                        :pagination="subcategoryPaginationConfig"
                         :parent-options="categoryOptions" 
                         parent-label="Category"
                         :fields="subcategoryFields"
@@ -50,39 +51,173 @@
                 </div>
             </a-tab-pane>
 
-            <a-tab-pane key="role" tab="Role">
-                <div class="py-4">
-                    <ConfigTable 
-                        title="Roles" 
-                        :columns="roleColumns" 
-                        :data="roles" 
-                        :loading="loadingRoles"
-                        :fields="roleFields"
-                        :canCreate="canCreate"
-                        :canUpdate="canUpdate"
-                        :canDelete="canDelete"
-                        @add="handleAddRole" 
-                        @edit="handleEditRole" 
-                        @delete="handleDeleteRole" 
-                    />
+            <a-tab-pane key="config" tab="General Config">
+                <div class="py-4 max-w-2xl">
+                    <a-card title="Helpdesk Operational Configuration" :bordered="true">
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white">Priority Aging</div>
+                                    <div class="text-xs text-gray-500">Automatically bump ticket priority after aging intervals</div>
+                                </div>
+                                <a-switch v-model:checked="helpdeskConfig.priority_aging_enabled" />
+                            </div>
+
+                            <div v-if="helpdeskConfig.priority_aging_enabled" class="space-y-1">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Aging Interval (minutes)</label>
+                                <a-input-number
+                                    v-model:value="helpdeskConfig.aging_interval_minutes"
+                                    :min="1"
+                                    class="w-full"
+                                />
+                                <div class="text-xs text-gray-500">Tickets will age up priority if waiting unserviced for this duration</div>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Auto-Close Hours</label>
+                                <a-input-number
+                                    v-model:value="helpdeskConfig.auto_close_hours"
+                                    :min="1"
+                                    class="w-full"
+                                />
+                                <div class="text-xs text-gray-500">Resolved tickets auto-close after this many hours</div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white">Auto-Mode Capacity Gate</div>
+                                    <div class="text-xs text-gray-500">Prevent auto-assigning tickets to workers who reached their throttle limit</div>
+                                </div>
+                                <a-switch v-model:checked="helpdeskConfig.auto_mode_capacity_gate_enabled" />
+                            </div>
+
+                            <div class="pt-4 flex justify-end">
+                                <a-button type="primary" :loading="savingConfig" @click="handleSaveConfig">
+                                    Save Helpdesk Settings
+                                </a-button>
+                            </div>
+                        </div>
+                    </a-card>
                 </div>
             </a-tab-pane>
 
-            <a-tab-pane key="directEscalation" tab="Direct Escalation">
-                <div class="py-4">
-                    <ConfigTable 
-                        title="Direct Escalation Role Mappings" 
-                        :columns="directEscalationColumns" 
-                        :data="directEscalationMappings" 
-                        :loading="loadingDirectEscalation"
-                        :fields="directEscalationFields"
-                        :canCreate="canCreate && directEscalationMappings.length === 0"
-                        :canUpdate="canUpdate"
-                        :canDelete="canDelete"
-                        @add="handleAddDirectEscalation" 
-                        @edit="handleEditDirectEscalation" 
-                        @delete="handleDeleteDirectEscalation" 
-                    />
+            <a-tab-pane v-if="isScopeLadderEntitled" key="scoring" tab="ScopeLadder Scoring">
+                <div class="py-4 max-w-2xl">
+                    <a-card title="ScopeLadder Settings" :bordered="true">
+                        <div class="space-y-6">
+                            <!-- Multi-factor weights sliders (hidden for now) -->
+                            <div v-if="false" class="space-y-6">
+                                <a-alert
+                                    type="info"
+                                    show-icon
+                                    message="Weights customize candidate selection during location-scope cascades. Higher weights increase importance of that dimension."
+                                    class="mb-2"
+                                />
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium dark:text-white">α — Skill Match Weight</span>
+                                        <span class="font-mono text-sm">{{ scoringConfig.alpha }}</span>
+                                    </div>
+                                    <a-slider v-model:value="scoringConfig.alpha" :min="0" :max="5" :step="0.1" />
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium dark:text-white">β — Load Headroom Weight</span>
+                                        <span class="font-mono text-sm">{{ scoringConfig.beta }}</span>
+                                    </div>
+                                    <a-slider v-model:value="scoringConfig.beta" :min="0" :max="5" :step="0.1" />
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium dark:text-white">γ — Availability Weight</span>
+                                        <span class="font-mono text-sm">{{ scoringConfig.gamma }}</span>
+                                    </div>
+                                    <a-slider v-model:value="scoringConfig.gamma" :min="0" :max="5" :step="0.1" />
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium dark:text-white">δ — Fairness (Even Distribution) Weight</span>
+                                        <span class="font-mono text-sm">{{ scoringConfig.delta }}</span>
+                                    </div>
+                                    <a-slider v-model:value="scoringConfig.delta" :min="0" :max="5" :step="0.1" />
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium dark:text-white">ε — Proximity Weight</span>
+                                        <span class="font-mono text-sm">{{ scoringConfig.epsilon }}</span>
+                                    </div>
+                                    <a-slider v-model:value="scoringConfig.epsilon" :min="0" :max="5" :step="0.1" />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-xs font-medium text-gray-500">Reassign Threshold</label>
+                                        <a-button
+                                            type="link"
+                                            size="small"
+                                            class="!p-0 !h-auto text-xs"
+                                            @click="scoringConfig.reassign_threshold = 0.1"
+                                        >
+                                            Reset (0.10)
+                                        </a-button>
+                                    </div>
+                                    <a-input-number
+                                        v-model:value="scoringConfig.reassign_threshold"
+                                        :min="0"
+                                        :step="0.05"
+                                        :precision="2"
+                                        class="w-full"
+                                    />
+                                    <div class="text-xs text-gray-400 mt-0.5">Default: 0.10</div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="block text-xs font-medium text-gray-500">Handover Penalty</label>
+                                        <a-button
+                                            type="link"
+                                            size="small"
+                                            class="!p-0 !h-auto text-xs"
+                                            @click="scoringConfig.handover_penalty = 0.15"
+                                        >
+                                            Reset (0.15)
+                                        </a-button>
+                                    </div>
+                                    <a-input-number
+                                        v-model:value="scoringConfig.handover_penalty"
+                                        :min="0"
+                                        :step="0.05"
+                                        :precision="2"
+                                        class="w-full"
+                                    />
+                                    <div class="text-xs text-gray-400 mt-0.5">Default: 0.15</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white">Night Mode Dispatch</div>
+                                    <div class="text-xs text-gray-500">When on, ScopeLadder skips wing/floor/tower and directly considers facility-level candidates.</div>
+                                </div>
+                                <a-switch v-model:checked="scoringConfig.night_mode_enabled" />
+                            </div>
+
+                            <div class="pt-4 flex justify-between items-center">
+                                <a-button @click="handleResetScoringDefaults">
+                                    Reset to Defaults
+                                </a-button>
+                                <a-button type="primary" :loading="savingScoring" @click="handleSaveScoring">
+                                    Save Settings
+                                </a-button>
+                            </div>
+                        </div>
+                    </a-card>
                 </div>
             </a-tab-pane>
         </a-tabs>
@@ -92,7 +227,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
-import { useHelpdeskService, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskRole, type DirectedEscalationRoleMapping, type HelpdeskPriority, type HelpdeskAssignmentMode } from '../../composables/helpdeskService'
+import { useHelpdeskService, type HelpdeskCategory, type HelpdeskSubCategory, type HelpdeskRole, type HelpdeskPriority, type HelpdeskAssignmentMode, type HelpdeskConfig, type HelpdeskScoringConfig, type SubCategoryListParams } from '../../composables/helpdeskService'
 import ConfigTable from './ConfigTable.vue'
 
 defineProps<{
@@ -105,7 +240,6 @@ const activeSubTab = ref('category')
 const loading = ref(false)
 const loadingSubcategories = ref(false)
 const loadingRoles = ref(false)
-const loadingDirectEscalation = ref(false)
 const loadingPriorities = ref(false)
 const loadingAssignmentModes = ref(false)
 
@@ -117,8 +251,31 @@ const selectedCategoryId = ref<string>()
 
 // Subcategory data
 const subcategories = ref<HelpdeskSubCategory[]>([])
+const subcategoryPage = ref(1)
+const subcategoryPageSize = ref(10)
+const subcategoryTotal = ref(0)
 
-// Role data
+const subcategoryPaginationConfig = computed(() => ({
+    current: subcategoryPage.value,
+    pageSize: subcategoryPageSize.value,
+    total: subcategoryTotal.value,
+    showSizeChanger: true,
+    showTotal: (total: number) => `Total ${total} items`,
+    onChange: (page: number, pageSize?: number) => {
+        subcategoryPage.value = page
+        if (pageSize && pageSize !== subcategoryPageSize.value) {
+            subcategoryPageSize.value = pageSize
+        }
+        fetchSubcategories()
+    },
+    onShowSizeChange: (current: number, size: number) => {
+        subcategoryPage.value = 1
+        subcategoryPageSize.value = size
+        fetchSubcategories()
+    }
+}))
+
+// Role data (kept for subcategory required_role selection)
 const roles = ref<HelpdeskRole[]>([])
 
 // Priority data
@@ -127,10 +284,32 @@ const priorities = ref<HelpdeskPriority[]>([])
 // Assignment Mode data
 const assignmentModes = ref<HelpdeskAssignmentMode[]>([])
 
-// Direct Escalation data
-const directEscalationMappings = ref<DirectedEscalationRoleMapping[]>([])
+// General Config & Scoring Config State
+const loadingConfig = ref(false)
+const savingConfig = ref(false)
+const helpdeskConfig = ref<HelpdeskConfig>({
+    priority_aging_enabled: false,
+    aging_interval_minutes: 60,
+    auto_close_hours: 48,
+    auto_mode_capacity_gate_enabled: false
+})
 
-const ASSIGNMENT_MODE = '00000000-0000-0000-0000-000000000303'
+const loadingScoring = ref(false)
+const savingScoring = ref(false)
+const scoringConfig = ref<HelpdeskScoringConfig>({
+    alpha: 1.0,
+    beta: 1.0,
+    gamma: 1.0,
+    delta: 1.0,
+    epsilon: 1.0,
+    reassign_threshold: 0.1,
+    handover_penalty: 0.15,
+    night_mode_enabled: false
+})
+
+const isScopeLadderEntitled = computed(() => {
+    return assignmentModes.value.some(m => isScopeLadderAssignmentMode(m.id || m.key || m.name))
+})
 
 // Columns
 const categoryColumns = [
@@ -146,6 +325,7 @@ const subcategoryColumns = [
     { title: 'Category', dataIndex: 'category_name', key: 'category_name' },
     { title: 'Response SLA (min)', dataIndex: 'response_sla', key: 'response_sla' },
     { title: 'Resolution SLA (min)', dataIndex: 'resolution_sla', key: 'resolution_sla' },
+    { title: 'Default Effort (min)', dataIndex: 'default_estimated_effort_min', key: 'default_estimated_effort_min' },
     { title: 'Assignment Mode', dataIndex: 'assignment_mode_key', key: 'assignment_mode_key' },
     { title: 'Action', key: 'action', width: 150 }
 ]
@@ -160,6 +340,54 @@ const assignmentModeOptions = computed(() =>
     assignmentModes.value.map(a => ({ label: a.name, value: a.id }))
 )
 
+const isAutoAssignmentMode = (modeIdOrKey?: string) => {
+    if (!modeIdOrKey) return false
+    if (modeIdOrKey === '00000000-0000-0000-0000-000000000301') return true
+    const mode = assignmentModes.value.find(m => m.id === modeIdOrKey || m.key === modeIdOrKey)
+    if (mode) {
+        const key = mode.key?.toLowerCase() || ''
+        const name = mode.name?.toLowerCase() || ''
+        return key.includes('auto') || name.includes('auto')
+    }
+    const str = String(modeIdOrKey).toLowerCase()
+    return str.includes('auto')
+}
+
+const isScopeLadderAssignmentMode = (modeIdOrKey?: string) => {
+    if (!modeIdOrKey) return false
+    // Known default UUIDs for scope ladder dispatch in seed/fixtures
+    if (
+        modeIdOrKey === '00000000-0000-0000-0000-000000000302' ||
+        modeIdOrKey === '00000000-0000-0000-0000-000000000303' ||
+        modeIdOrKey === '00000000-0000-0000-0000-000000000304'
+    ) {
+        return true
+    }
+    const mode = assignmentModes.value.find(m => m.id === modeIdOrKey || m.key === modeIdOrKey)
+    if (mode) {
+        const key = mode.key?.toLowerCase() || ''
+        const name = mode.name?.toLowerCase() || ''
+        return (
+            key.includes('scope') ||
+            key.includes('ladder') ||
+            key.includes('scop') ||
+            name.includes('scope') ||
+            name.includes('ladder') ||
+            name.includes('scop')
+        )
+    }
+    const str = String(modeIdOrKey).toLowerCase()
+    return (
+        str.includes('scope') ||
+        str.includes('ladder') ||
+        str.includes('scop')
+    )
+}
+
+const isRequiresRoleAssignmentMode = (modeIdOrKey?: string) => {
+    return isAutoAssignmentMode(modeIdOrKey) || isScopeLadderAssignmentMode(modeIdOrKey)
+}
+
 const subcategoryFields = computed(() => {
     const priorityOpts = priorityOptions.value?.length ? priorityOptions.value : []
     const assignmentOpts = assignmentModeOptions.value?.length ? assignmentModeOptions.value : []
@@ -167,16 +395,16 @@ const subcategoryFields = computed(() => {
     
     const fields = [
         { name: 'name', label: 'Name', type: 'text' as const },
-        { name: 'key', label: 'Key', type: 'text' as const },
         { name: 'default_priority', label: 'Default Priority', type: 'select' as const, options: priorityOpts },
         { name: 'assignment_mode', label: 'Assignment Mode', type: 'select' as const, options: assignmentOpts },
+        { name: 'default_estimated_effort_min', label: 'Default Estimated Effort (minutes)', type: 'number' as const },
         { name: 'response_sla', label: 'Response SLA (minutes)', type: 'number' as const },
         { name: 'resolution_sla', label: 'Resolution SLA (minutes)', type: 'number' as const }
     ]
     
-    // Auto assignment mode requires a role
-    if (selectedAssignmentMode.value === '00000000-0000-0000-0000-000000000301') {
-        fields.splice(4, 0, { name: 'required_role', label: 'Required Role', type: 'select' as const, options: roleOpts })
+    // Auto and ScopeLadder assignment modes require a role
+    if (isRequiresRoleAssignmentMode(selectedAssignmentMode.value)) {
+        fields.splice(3, 0, { name: 'required_role', label: 'Required Role', type: 'select' as const, options: roleOpts })
     }
     
     return fields
@@ -184,26 +412,13 @@ const subcategoryFields = computed(() => {
 
 const selectedAssignmentMode = ref<string | undefined>()
 
-const roleColumns = [
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Key', dataIndex: 'key', key: 'key' },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
-    { title: 'Display Order', dataIndex: 'display_order', key: 'display_order' },
-    { title: 'Action', key: 'action', width: 150 }
-]
-
-const roleFields = [
-    { name: 'name', label: 'Name', type: 'text' as const },
-    { name: 'key', label: 'Key', type: 'text' as const },
-    { name: 'description', label: 'Description', type: 'text' as const },
-    { name: 'display_order', label: 'Display Order', type: 'number' as const }
-]
-
-const directEscalationColumns = [
-    { title: 'Role', dataIndex: 'role_name', key: 'role_name' },
-    { title: 'Status', dataIndex: 'is_active', key: 'is_active', customRender: (text: boolean) => text ? 'Active' : 'Inactive' },
-    { title: 'Action', key: 'action', width: 150 }
-]
+watch(selectedAssignmentMode, (newVal) => {
+    if (isRequiresRoleAssignmentMode(newVal)) {
+        if (roles.value.length === 0 && !loadingRoles.value) {
+            fetchRoles()
+        }
+    }
+})
 
 // Computed options
 const categoryOptions = computed(() =>
@@ -213,11 +428,6 @@ const categoryOptions = computed(() =>
 const roleOptions = computed(() =>
     roles.value.map(r => ({ label: r.name, value: r.id }))
 )
-
-const directEscalationFields = [
-    { name: 'role', label: 'Role', type: 'select' as const, options: roleOptions },
-    { name: 'is_active', label: 'Active', type: 'switch' as const }
-]
 
 const filteredSubcategories = computed(() => {
     if (!selectedCategoryId.value) return subcategories.value
@@ -239,10 +449,22 @@ const fetchCategories = async () => {
 const fetchSubcategories = async () => {
     loadingSubcategories.value = true
     try {
+        const params: SubCategoryListParams = {
+            page: subcategoryPage.value,
+            page_size: subcategoryPageSize.value,
+        }
         if (selectedCategoryId.value) {
-            subcategories.value = await service.getSubCategoriesByCategory(selectedCategoryId.value)
+            params.category = selectedCategoryId.value
+        }
+
+        if (typeof service.getSubCategoriesPaginated === 'function') {
+            const res = await service.getSubCategoriesPaginated(params)
+            subcategories.value = res?.subcategories || []
+            subcategoryTotal.value = res?.count ?? subcategories.value.length
         } else {
-            subcategories.value = await service.getSubCategories()
+            const data = await service.getSubCategories(params)
+            subcategories.value = Array.isArray(data) ? data : []
+            subcategoryTotal.value = subcategories.value.length
         }
     } catch (error) {
         message.error('Failed to load subcategories')
@@ -252,13 +474,14 @@ const fetchSubcategories = async () => {
 }
 
 const handleCategoryFilterChange = () => {
+    subcategoryPage.value = 1
     fetchSubcategories()
 }
 
 const fetchRoles = async () => {
     loadingRoles.value = true
     try {
-        roles.value = await service.getRoles()
+        roles.value = await service.getSystemRoles()
     } catch (error) {
         message.error('Failed to load roles')
     } finally {
@@ -288,17 +511,6 @@ const fetchAssignmentModes = async () => {
     }
 }
 
-const fetchDirectEscalationMappings = async () => {
-    loadingDirectEscalation.value = true
-    try {
-        directEscalationMappings.value = await service.getDirectedEscalationRoleMappings()
-    } catch (error) {
-        message.error('Failed to load direct escalation mappings')
-    } finally {
-        loadingDirectEscalation.value = false
-    }
-}
-
 // Initial load
 onMounted(async () => {
     await Promise.all([
@@ -307,9 +519,72 @@ onMounted(async () => {
         fetchRoles(),
         fetchPriorities(),
         fetchAssignmentModes(),
-        fetchDirectEscalationMappings()
+        fetchHelpdeskConfig(),
+        fetchScoringConfig()
     ])
 })
+
+const fetchHelpdeskConfig = async () => {
+    if (!service.getHelpdeskConfig) return
+    loadingConfig.value = true
+    try {
+        const res = await service.getHelpdeskConfig()
+        if (res) {
+            helpdeskConfig.value = { ...helpdeskConfig.value, ...res }
+        }
+    } catch (error) {
+        console.error('Failed to load helpdesk config:', error)
+    } finally {
+        loadingConfig.value = false
+    }
+}
+
+const handleSaveConfig = async () => {
+    if (!service.updateHelpdeskConfig) return
+    savingConfig.value = true
+    try {
+        await service.updateHelpdeskConfig(helpdeskConfig.value)
+        message.success('Helpdesk settings saved successfully')
+    } catch (error: any) {
+        message.error(error.message || 'Failed to save helpdesk settings')
+    } finally {
+        savingConfig.value = false
+    }
+}
+
+const fetchScoringConfig = async () => {
+    if (!service.getScoringConfig) return
+    loadingScoring.value = true
+    try {
+        const res = await service.getScoringConfig()
+        if (res) {
+            scoringConfig.value = { ...scoringConfig.value, ...res }
+        }
+    } catch (error) {
+        console.error('Failed to load scoring config:', error)
+    } finally {
+        loadingScoring.value = false
+    }
+}
+
+const handleSaveScoring = async () => {
+    if (!service.updateScoringConfig) return
+    savingScoring.value = true
+    try {
+        await service.updateScoringConfig(scoringConfig.value)
+        message.success('ScopeLadder settings saved successfully')
+    } catch (error: any) {
+        message.error(error.message || 'Failed to save settings')
+    } finally {
+        savingScoring.value = false
+    }
+}
+
+const handleResetScoringDefaults = () => {
+    scoringConfig.value.reassign_threshold = 0.1
+    scoringConfig.value.handover_penalty = 0.15
+    message.info('Reset Reassign Threshold to 0.10 and Handover Penalty to 0.15')
+}
 
 // Category handlers
 const handleAddCategory = async (data: any) => {
@@ -360,13 +635,17 @@ const handleAddSubcategory = async (data: any) => {
             default_priority: data.default_priority,
             required_role: data.required_role,
             assignment_mode: data.assignment_mode,
+            default_estimated_effort_min: data.default_estimated_effort_min ? Number(data.default_estimated_effort_min) : null,
             response_sla: data.response_sla || 120,
             resolution_sla: data.resolution_sla || 1440
         })
         const category = categories.value.find(c => c.id === data.parent_id)
         newSubcategory.category_name = category?.name || ''
         subcategories.value.push(newSubcategory)
+        subcategoryTotal.value += 1
+        selectedAssignmentMode.value = undefined
         message.success('Subcategory added successfully')
+        await fetchSubcategories()
     } catch (error) {
         message.error('Failed to add subcategory')
     }
@@ -375,11 +654,13 @@ const handleAddSubcategory = async (data: any) => {
 const handleEditSubcategory = async (record: HelpdeskSubCategory, data: any) => {
     try {
         const updated = await service.updateSubCategory(record.id, {
+            category: data.parent_id,
             name: data.name,
-            key: data.key,
+            key: record.key,
             default_priority: data.default_priority,
             required_role: data.required_role,
             assignment_mode: data.assignment_mode,
+            default_estimated_effort_min: data.default_estimated_effort_min ? Number(data.default_estimated_effort_min) : null,
             response_sla: data.response_sla,
             resolution_sla: data.resolution_sla
         })
@@ -387,6 +668,7 @@ const handleEditSubcategory = async (record: HelpdeskSubCategory, data: any) => 
         if (index > -1) {
             subcategories.value[index] = { ...subcategories.value[index], ...updated }
         }
+        selectedAssignmentMode.value = undefined
         message.success('Subcategory updated successfully')
     } catch (error) {
         message.error('Failed to update subcategory')
@@ -397,101 +679,43 @@ const handleDeleteSubcategory = async (record: HelpdeskSubCategory) => {
     try {
         await service.deleteSubCategory(record.id)
         subcategories.value = subcategories.value.filter(s => s.id !== record.id)
+        if (subcategoryTotal.value > 0) {
+            subcategoryTotal.value -= 1
+        }
+        if (subcategories.value.length === 0 && subcategoryPage.value > 1) {
+            subcategoryPage.value -= 1
+        }
         message.success('Subcategory deleted successfully')
+        await fetchSubcategories()
     } catch (error) {
         message.error('Failed to delete subcategory')
     }
 }
 
-const handleSubcategoryFieldChange = (field: string, value: any) => {
-    if (field === 'assignment_mode') {
-        selectedAssignmentMode.value = value
-    }
-}
-
-const handleAddRole = async (data: any) => {
-    try {
-        const newRole = await service.createRole({
-            key: data.key,
-            name: data.name,
-            description: data.description || '',
-            display_order: data.display_order || 1
-        })
-        roles.value.push(newRole)
-        message.success('Role added successfully')
-    } catch (error) {
-        message.error('Failed to add role')
-    }
-}
-
-const handleEditRole = async (record: HelpdeskRole, data: any) => {
-    try {
-        const updated = await service.updateRole(record.id, {
-            name: data.name,
-            key: data.key,
-            description: data.description,
-            display_order: data.display_order
-        })
-        const index = roles.value.findIndex(r => r.id === record.id)
-        if (index > -1) roles.value[index] = updated
-        message.success('Role updated successfully')
-    } catch (error) {
-        message.error('Failed to update role')
-    }
-}
-
-const handleDeleteRole = async (record: HelpdeskRole) => {
-    try {
-        await service.deleteRole(record.id)
-        roles.value = roles.value.filter(r => r.id !== record.id)
-        message.success('Role deleted successfully')
-    } catch (error) {
-        message.error('Failed to delete role')
-    }
-}
-
-const handleAddDirectEscalation = async (data: any) => {
-    try {
-        const newMapping = await service.createDirectedEscalationRoleMapping({
-            assignment_mode: ASSIGNMENT_MODE,
-            role: data.role,
-            deadline_hours: data.deadline_hours || 2,
-            is_active: data.is_active !== false
-        })
-        const role = roles.value.find(r => r.id === data.role)
-        newMapping.role_name = role?.name || ''
-        directEscalationMappings.value.push(newMapping)
-        message.success('Direct escalation mapping added successfully')
-    } catch (error) {
-        message.error('Failed to add direct escalation mapping')
-    }
-}
-
-const handleEditDirectEscalation = async (record: DirectedEscalationRoleMapping, data: any) => {
-    try {
-        const updated = await service.updateDirectedEscalationRoleMapping(record.id, {
-            role: data.role,
-            deadline_hours: data.deadline_hours,
-            is_active: data.is_active
-        })
-        const index = directEscalationMappings.value.findIndex(m => m.id === record.id)
-        if (index > -1) {
-            const role = roles.value.find(r => r.id === data.role)
-            directEscalationMappings.value[index] = { ...directEscalationMappings.value[index], ...updated, role_name: role?.name || '' }
+const handleSubcategoryFieldChange = (fieldOrData: any, value?: any) => {
+    let mode: string | undefined
+    if (typeof fieldOrData === 'string') {
+        if (fieldOrData === 'assignment_mode') {
+            mode = typeof value === 'object' && value !== null ? (value.id || value.key) : value
         }
-        message.success('Direct escalation mapping updated successfully')
-    } catch (error) {
-        message.error('Failed to update direct escalation mapping')
+    } else if (fieldOrData && typeof fieldOrData === 'object') {
+        // If formData was reset (empty object on add modal open or close), clear selectedAssignmentMode
+        if (Object.keys(fieldOrData).length === 0 || (!fieldOrData.assignment_mode && !fieldOrData.assignment_mode_key)) {
+            selectedAssignmentMode.value = undefined
+            return
+        }
+        const rawMode = fieldOrData.assignment_mode || fieldOrData.assignment_mode_key
+        mode = typeof rawMode === 'object' && rawMode !== null ? (rawMode.id || rawMode.key) : rawMode
+        if (!mode && fieldOrData.assignment_mode_key) {
+            mode = fieldOrData.assignment_mode_key
+        }
     }
-}
 
-const handleDeleteDirectEscalation = async (record: DirectedEscalationRoleMapping) => {
-    try {
-        await service.deleteDirectedEscalationRoleMapping(record.id)
-        directEscalationMappings.value = directEscalationMappings.value.filter(m => m.id !== record.id)
-        message.success('Direct escalation mapping deleted successfully')
-    } catch (error) {
-        message.error('Failed to delete direct escalation mapping')
+    if (mode !== undefined) {
+        selectedAssignmentMode.value = mode
+        if (isRequiresRoleAssignmentMode(mode) && roles.value.length === 0 && !loadingRoles.value) {
+            fetchRoles()
+        }
     }
 }
 </script>

@@ -152,7 +152,8 @@ const fetchDropdowns = async () => {
     try {
         const [rtResult, amResult] = await Promise.all([
             $api<any>('/api/portal/meeting-rooms/room-types/'),
-            $api<any>('/api/portal/meeting-rooms/amenities/')
+            $api<any>('/api/portal/meeting-rooms/amenities/'),
+            facilityStore.fetchFacilities({ page_size: 999 }, true)
         ])
         if (rtResult.success) {
             roomTypes.value = rtResult.data.results || []
@@ -188,10 +189,8 @@ const fetchRoomData = async () => {
 }
 
 const handleSubmit = async () => {
-    console.log('handleSubmit called')
     try {
         await formRef.value?.validate()
-        console.log('validation passed')
         loading.value = true
         const payload: any = {
             name: formState.name,
@@ -209,9 +208,9 @@ const handleSubmit = async () => {
         if (formState.organization_id) {
             payload.organization_id = formState.organization_id
         }
-        console.log('Updating room with payload:', payload)
         await updateRoom(roomId, payload)
         message.success('Room updated successfully')
+        await roomStore.fetchRooms({}, true)
         navigateTo(`/meeting-rooms/${roomId}`)
     } catch (e: any) {
         console.error('Failed to update room', e)

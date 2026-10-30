@@ -4,59 +4,67 @@ import FacilitiesPage from "../../app/pages/facilities/index.vue";
 import { createTestingPinia } from "@pinia/testing";
 
 describe("Facilities List Page", () => {
-    // Mock with API response structure
-    const mockFacilities = [
-        {
-            id: "da845d5e-5373-464b-b93c-d3108aa44cd4",
-            name: "HQ Building",
-            address: "123 Main St",
-            tenant: "bf524f63-22dd-4b35-827b-fe56b7629e99",
-            country: "29d69a36-88c8-4253-b81a-216770d7877f",
-            state: "b460ccaf-5c5e-4c68-91e4-eddf9de42aba",
-            city: "14cae8f1-7ca6-4952-ad68-3e01f7e342d1",
-            zone: "23ae50b8-e165-4238-a9eb-49629059324a",
-            country_details: { id: "1", name: "USA" },
-            state_details: { id: "1", name: "NY" },
-            city_details: { id: "1", name: "New York" },
-            zone_details: { id: "1", name: "Zone A" },
-            tower_count: 2,
-            has_towers: true,
-            is_archive: false,
-            location: {
-                city: "New York",
-                state: "NY",
-                country: "USA",
+    const { mockFacilities } = vi.hoisted(() => ({
+        mockFacilities: [
+            {
+                id: "da845d5e-5373-464b-b93c-d3108aa44cd4",
+                name: "HQ Building",
                 address: "123 Main St",
+                tenant: "bf524f63-22dd-4b35-827b-fe56b7629e99",
+                country: "29d69a36-88c8-4253-b81a-216770d7877f",
+                state: "b460ccaf-5c5e-4c68-91e4-eddf9de42aba",
+                city: "14cae8f1-7ca6-4952-ad68-3e01f7e342d1",
+                zone: "23ae50b8-e165-4238-a9eb-49629059324a",
+                country_details: { id: "1", name: "USA" },
+                state_details: { id: "1", name: "NY" },
+                city_details: { id: "1", name: "New York" },
+                zone_details: { id: "1", name: "Zone A" },
+                tower_count: 2,
+                has_towers: true,
+                is_archive: false,
+                location: {
+                    city: "New York",
+                    state: "NY",
+                    country: "USA",
+                    address: "123 Main St",
+                },
+                towers: [],
+                staff: [],
             },
-            towers: [],
-            staff: [],
-        },
-        {
-            id: "3ab28644-95e3-4ff9-bff6-67b3da84e00e",
-            name: "Tech Park",
-            address: "456 Tech Ave",
-            tenant: "bf524f63-22dd-4b35-827b-fe56b7629e99",
-            country: "29d69a36-88c8-4253-b81a-216770d7877f",
-            state: "c560ccaf-5c5e-4c68-91e4-eddf9de42aba",
-            city: "24cae8f1-7ca6-4952-ad68-3e01f7e342d1",
-            zone: "33ae50b8-e165-4238-a9eb-49629059324a",
-            country_details: { id: "1", name: "USA" },
-            state_details: { id: "2", name: "CA" },
-            city_details: { id: "2", name: "San Francisco" },
-            zone_details: { id: "2", name: "Zone B" },
-            tower_count: 1,
-            has_towers: false,
-            is_archive: false,
-            location: {
-                city: "San Francisco",
-                state: "CA",
-                country: "USA",
+            {
+                id: "3ab28644-95e3-4ff9-bff6-67b3da84e00e",
+                name: "Tech Park",
                 address: "456 Tech Ave",
+                tenant: "bf524f63-22dd-4b35-827b-fe56b7629e99",
+                country: "29d69a36-88c8-4253-b81a-216770d7877f",
+                state: "c560ccaf-5c5e-4c68-91e4-eddf9de42aba",
+                city: "24cae8f1-7ca6-4952-ad68-3e01f7e342d1",
+                zone: "33ae50b8-e165-4238-a9eb-49629059324a",
+                country_details: { id: "1", name: "USA" },
+                state_details: { id: "2", name: "CA" },
+                city_details: { id: "2", name: "San Francisco" },
+                zone_details: { id: "2", name: "Zone B" },
+                tower_count: 1,
+                has_towers: false,
+                is_archive: false,
+                location: {
+                    city: "San Francisco",
+                    state: "CA",
+                    country: "USA",
+                    address: "456 Tech Ave",
+                },
+                towers: [],
+                staff: [],
             },
-            towers: [],
-            staff: [],
-        },
-    ];
+        ]
+    }))
+
+    vi.mock('../../composables/facilityService', () => ({
+        useFacilityService: () => ({
+            getAllFacilities: vi.fn().mockResolvedValue({ facilities: mockFacilities, count: 2, next: null, previous: null }),
+            getFacilities: vi.fn().mockResolvedValue({ facilities: mockFacilities, count: 2, next: null, previous: null })
+        })
+    }))
 
     it("should render facilities page with header", async () => {
         const wrapper = await mountSuspended(FacilitiesPage, {
@@ -65,6 +73,14 @@ describe("Facilities List Page", () => {
                     createTestingPinia({
                         createSpy: vi.fn,
                         initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
+                            allFacility: {
+                                facilities: mockFacilities,
+                                loading: false,
+                                count: 2,
+                                page: 1,
+                                pageSize: 10,
+                            },
                             facility: {
                                 facilities: mockFacilities,
                                 loading: false,
@@ -88,6 +104,14 @@ describe("Facilities List Page", () => {
                     createTestingPinia({
                         createSpy: vi.fn,
                         initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
+                            allFacility: {
+                                facilities: mockFacilities,
+                                loading: false,
+                                count: 2,
+                                page: 1,
+                                pageSize: 10,
+                            },
                             facility: {
                                 facilities: mockFacilities,
                                 loading: false,
@@ -112,6 +136,7 @@ describe("Facilities List Page", () => {
                     createTestingPinia({
                         createSpy: vi.fn,
                         initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
                             facility: {
                                 facilities: [],
                                 loading: false,
@@ -135,6 +160,14 @@ describe("Facilities List Page", () => {
                     createTestingPinia({
                         createSpy: vi.fn,
                         initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
+                            allFacility: {
+                                facilities: mockFacilities,
+                                loading: false,
+                                count: 2,
+                                page: 1,
+                                pageSize: 10,
+                            },
                             facility: {
                                 facilities: mockFacilities,
                                 loading: false,

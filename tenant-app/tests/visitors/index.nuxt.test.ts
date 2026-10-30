@@ -3,6 +3,14 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import VisitorsPage from '../../app/pages/visitors/index.vue'
 import { createTestingPinia } from '@pinia/testing'
 
+vi.mock('../../stores/auth', () => ({
+    useAuthStore: vi.fn(() => ({
+        hasPermission: vi.fn(() => true),
+        hasModule: vi.fn(() => true),
+        permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print']
+    }))
+}))
+
 describe('Visitors Page', () => {
     const mockVisitors = [
         { id: '1', name: 'John Visitor', status: 'checked_in', company: 'ABC Corp', purpose: 'Meeting', checkInTime: '09:00', passcode: '123456' },
@@ -15,6 +23,7 @@ describe('Visitors Page', () => {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
                     initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
                         visitor: { visitors: mockVisitors, loading: false }
                     }
                 })]
@@ -30,6 +39,7 @@ describe('Visitors Page', () => {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
                     initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
                         visitor: { visitors: mockVisitors, loading: false }
                     }
                 })]
@@ -45,6 +55,7 @@ describe('Visitors Page', () => {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
                     initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
                         visitor: { visitors: [], loading: false }
                     }
                 })]
@@ -60,6 +71,7 @@ describe('Visitors Page', () => {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
                     initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['meeting-rooms-bookings:view', 'meeting-rooms-bookings:create', 'meeting-rooms-bookings:action', 'facilities-list:view', 'facilities-list:create', 'facilities-list:update', 'facilities-list:delete', 'meeting-rooms-list:view', 'meeting-rooms-list:create', 'meeting-rooms-insights:view', 'meeting-rooms:create', 'helpdesk-tickets:view', 'helpdesk-tickets:create', 'helpdesk-tickets:update', 'helpdesk-tickets:action', 'visitors:view', 'visitor_sticker_print'] },
                         visitor: { visitors: [], loading: false }
                     }
                 })]
@@ -68,5 +80,25 @@ describe('Visitors Page', () => {
         
         // Page has "All Facilities" filter dropdown
         expect(wrapper.text()).toContain('Facilities')
+    })
+
+    it('should filter visitors locally when search query matches name', async () => {
+        const wrapper = await mountSuspended(VisitorsPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        auth: { modules: ['helpdesk', 'facilities', 'meeting_rooms', 'visitors'], permissions: ['visitors-list:view', 'visitors-list:action'] },
+                        visitor: { visitors: mockVisitors, loading: false }
+                    }
+                })]
+            }
+        })
+
+        const vm = wrapper.findComponent({ name: 'VisitorManagement' }).vm as any
+        vm.searchQuery = 'Jane'
+        await wrapper.vm.$nextTick()
+        expect(vm.displayedVisitors).toHaveLength(1)
+        expect(vm.displayedVisitors[0].name).toBe('Jane Guest')
     })
 })

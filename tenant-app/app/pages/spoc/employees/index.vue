@@ -6,22 +6,42 @@
                 <h1 class="text-2xl font-bold mb-1 dark:text-white">Employees</h1>
                 <p class="text-gray-600 dark:text-gray-400">Manage your company's employees.</p>
             </div>
-            <a-button type="primary" @click="showAddModal = true">
-                <template #icon>
-                    <PlusOutlined />
-                </template>
-                Add <hide class="hidden md:inline">Employee</hide>
-            </a-button>
+            <div class="flex items-center gap-2">
+                <a-button @click="refreshEmployees" :loading="loading">
+                    <template #icon>
+                        <ReloadOutlined />
+                    </template>
+                </a-button>
+                <a-button @click="openJobsDrawer">
+                    <template #icon>
+                        <HistoryOutlined />
+                    </template>
+                    <span class="hidden md:inline">Upload History</span>
+                </a-button>
+                <a-button type="primary" @click="showBulkUploadModal = true">
+                    <template #icon>
+                        <UploadOutlined />
+                    </template>
+                    Bulk <span class="hidden md:inline">Upload</span>
+                </a-button>
+                <a-button type="primary" @click="openAddModal">
+                    <template #icon>
+                        <PlusOutlined />
+                    </template>
+                    Add <span class="hidden md:inline">Employee</span>
+                </a-button>
+            </div>
         </div>
 
         <!-- Search -->
         <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
             <a-input-search v-model:value="searchQuery" placeholder="Search employees..." allow-clear
-                class="flex-1 sm:max-w-xs" />
+                class="flex-1 sm:max-w-xs" @search="handleSearchChange" @change="handleSearchChange" />
         </div>
 
         <!-- Employee Table/Cards using ResponsiveDataView -->
-        <ResponsiveDataView :columns="columns" :data="filteredEmployees" :loading="loading" row-key="id">
+        <ResponsiveDataView :columns="columns" :data="employees" :loading="loading" row-key="id"
+            :pagination="paginationConfig">
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'employee'">
                     <div class="flex items-center gap-3">
@@ -37,10 +57,31 @@
                     </div>
                 </template>
 
+                <template v-if="column.key === 'designation'">
+                    <span class="text-gray-600 dark:text-gray-300">{{ record.designation || '-' }}</span>
+                </template>
+
                 <template v-if="column.key === 'role'">
                     <a-tag :color="record.role === 'SPOC' ? 'purple' : 'blue'">
                         {{ record.role }}
                     </a-tag>
+                </template>
+
+                <template v-if="column.key === 'status'">
+                    <a-tag :color="record.status === 'active' ? 'green' : 'default'">
+                        {{ record.status || 'active' }}
+                    </a-tag>
+                </template>
+
+                <template v-if="column.key === 'building_pass'">
+                    <a-switch
+                        :checked="record.buildingPassEnabled"
+                        :loading="buildingPassLoading[record.id]"
+                        size="small"
+                        checked-children="On"
+                        un-checked-children="Off"
+                        @change="(checked: boolean) => handleBuildingPassToggle(record, checked)"
+                    />
                 </template>
 
                 <template v-if="column.key === 'actions'">
@@ -83,6 +124,31 @@
                             <p class="text-gray-400 dark:text-gray-500 text-xs">Phone</p>
                             <p class="text-gray-600 dark:text-gray-300">{{ record.phone || '-' }}</p>
                         </div>
+                        <div>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs">Department</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ record.department || '-' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs">Designation</p>
+                            <p class="text-gray-600 dark:text-gray-300">{{ record.designation || '-' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs">Status</p>
+                            <a-tag :color="record.status === 'active' ? 'green' : 'default'" class="m-0">
+                                {{ record.status || 'active' }}
+                            </a-tag>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs">Building Pass</p>
+                            <a-switch
+                                :checked="record.buildingPassEnabled"
+                                :loading="buildingPassLoading[record.id]"
+                                size="small"
+                                checked-children="On"
+                                un-checked-children="Off"
+                                @change="(checked: boolean) => handleBuildingPassToggle(record, checked)"
+                            />
+                        </div>
                     </div>
                 </a-card>
             </template>
@@ -90,32 +156,259 @@
 
         <!-- Add/Edit Employee Modal -->
         <a-modal v-model:open="showAddModal" :title="editingEmployee ? 'Edit Employee' : 'Add Employee'" centered
-            @ok="handleSaveEmployee" :confirm-loading="loading">
+            @ok="handleSaveEmployee" :confirm-loading="loading" @cancel="clearAllFormErrors">
             <a-form :model="newEmployee" layout="vertical">
-                <a-form-item label="Name" required>
-                    <a-input v-model:value="newEmployee.name" placeholder="Employee name" />
+                <a-form-item
+                    label="Name"
+                    required
+                    :validate-status="formErrors.name ? 'error' : ''"
+                    :help="formErrors.name"
+                >
+                    <a-input v-model:value="newEmployee.name" placeholder="Employee name" @input="clearFieldError('name')" />
                 </a-form-item>
-                <a-form-item label="Email" required>
-                    <a-input v-model:value="newEmployee.email" placeholder="employee@company.com" />
+                <a-form-item
+                    label="Email"
+                    required
+                    :validate-status="formErrors.email ? 'error' : ''"
+                    :help="formErrors.email"
+                >
+                    <a-input v-model:value="newEmployee.email" placeholder="employee@company.com" @input="clearFieldError('email')" />
                 </a-form-item>
-                <a-form-item label="Phone">
-                    <a-input v-model:value="newEmployee.phone" placeholder="+91 98765 43210" />
+                <a-form-item
+                    label="Phone"
+                    :validate-status="formErrors.phone ? 'error' : ''"
+                    :help="formErrors.phone"
+                >
+                    <PhoneInput v-model="newEmployee.phone" @input="clearFieldError('phone')" />
                 </a-form-item>
-                <a-form-item label="Department">
-                    <a-select v-model:value="newEmployee.department" placeholder="Select department">
-                        <a-select-option value="Engineering">Engineering</a-select-option>
-                        <a-select-option value="HR">HR</a-select-option>
-                        <a-select-option value="Sales">Sales</a-select-option>
-                        <a-select-option value="Marketing">Marketing</a-select-option>
-                        <a-select-option value="Finance">Finance</a-select-option>
-                        <a-select-option value="Operations">Operations</a-select-option>
+                <a-form-item
+                    label="Department"
+                    :validate-status="formErrors.departmentId ? 'error' : ''"
+                    :help="formErrors.departmentId"
+                >
+                    <a-select v-model:value="newEmployee.departmentId" placeholder="Select department" @change="clearFieldError('departmentId')">
+                        <a-select-option v-for="dept in departments" :key="dept.id" :value="dept.id">
+                            {{ dept.name }}
+                        </a-select-option>
                     </a-select>
                 </a-form-item>
                 <a-form-item label="Designation">
                     <a-input v-model:value="newEmployee.designation" placeholder="Job title" />
                 </a-form-item>
+                <a-form-item label="Type">
+                    <a-select v-model:value="newEmployee.role" placeholder="Select type">
+                        <a-select-option value="Employee">Employee</a-select-option>
+                        <a-select-option value="SPOC">SPOC</a-select-option>
+                    </a-select>
+                </a-form-item>
+                <a-form-item
+                    label="Gender"
+                    :validate-status="formErrors.gender ? 'error' : ''"
+                    :help="formErrors.gender"
+                >
+                    <a-select v-model:value="newEmployee.gender" placeholder="Select gender" allow-clear @change="clearFieldError('gender')">
+                        <a-select-option value="male">Male</a-select-option>
+                        <a-select-option value="female">Female</a-select-option>
+                        <a-select-option value="other">Other</a-select-option>
+                        <a-select-option value="prefer_not_to_say">Prefer not to say</a-select-option>
+                    </a-select>
+                </a-form-item>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <a-form-item
+                        label="Date of Joining"
+                        :validate-status="formErrors.date_of_joining ? 'error' : ''"
+                        :help="formErrors.date_of_joining"
+                    >
+                        <a-date-picker
+                            v-model:value="newEmployee.date_of_joining"
+                            placeholder="Select joining date"
+                            class="w-full"
+                            format="YYYY-MM-DD"
+                            value-format="YYYY-MM-DD"
+                            :disabled-date="disabledJoiningDate"
+                            @change="clearFieldError('date_of_joining')"
+                        />
+                    </a-form-item>
+                    <a-form-item
+                        label="Date of Birth"
+                        :validate-status="formErrors.date_of_birth ? 'error' : ''"
+                        :help="formErrors.date_of_birth"
+                    >
+                        <a-date-picker
+                            v-model:value="newEmployee.date_of_birth"
+                            placeholder="Select date of birth"
+                            class="w-full"
+                            format="YYYY-MM-DD"
+                            value-format="YYYY-MM-DD"
+                            :disabled-date="disabledBirthDate"
+                            :default-picker-value="defaultBirthDatePickerValue"
+                            @change="clearFieldError('date_of_birth')"
+                        />
+                    </a-form-item>
+                </div>
+                <a-form-item v-if="editingEmployee" label="Building Pass">
+                    <a-switch v-model:checked="newEmployee.buildingPassEnabled" checked-children="Enabled" un-checked-children="Disabled" />
+                </a-form-item>
             </a-form>
         </a-modal>
+
+        <!-- Bulk Upload Modal -->
+        <a-modal v-model:open="showBulkUploadModal" title="Bulk Upload Employees" centered
+            :footer="null" @cancel="resetBulkUpload">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">
+                        Upload a CSV file with employee data.
+                    </p>
+                    <a-button type="link" size="small" @click="downloadSampleCsv">
+                        <template #icon>
+                            <DownloadOutlined />
+                        </template>
+                        Sample CSV
+                    </a-button>
+                </div>
+
+                <a-upload-dragger
+                    v-model:fileList="bulkUploadFileList"
+                    name="file"
+                    :multiple="false"
+                    :before-upload="handleBeforeUpload"
+                    accept=".csv"
+                    :max-count="1"
+                >
+                    <p class="ant-upload-drag-icon">
+                        <InboxOutlined />
+                    </p>
+                    <p class="ant-upload-text">Click or drag a CSV file to this area</p>
+                    <p class="ant-upload-hint">Only .csv files are accepted. Maximum one file at a time.</p>
+                </a-upload-dragger>
+
+                <div v-if="bulkUploadError" class="text-red-500 text-sm">
+                    {{ bulkUploadError }}
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <a-button @click="resetBulkUpload">Cancel</a-button>
+                    <a-button type="primary" :loading="bulkUploading"
+                        :disabled="!bulkUploadFileList.length" @click="handleBulkUpload">
+                        Upload
+                    </a-button>
+                </div>
+            </div>
+        </a-modal>
+
+        <!-- Upload History Drawer -->
+        <a-drawer v-model:open="showJobsDrawer" title="Upload History" placement="right"
+            :width="640" @close="showJobsDrawer = false">
+            <div class="space-y-3">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">View the status of your bulk upload jobs.</p>
+                    <a-button size="small" @click="loadJobs">
+                        <template #icon><ReloadOutlined /></template>
+                        Refresh
+                    </a-button>
+                </div>
+
+                <a-spin :spinning="jobsLoading">
+                    <div v-if="jobs.length === 0 && !jobsLoading" class="text-center py-12">
+                        <InboxOutlined class="text-4xl text-gray-300 dark:text-gray-600 mb-2" />
+                        <p class="text-gray-400 dark:text-gray-500">No upload jobs found.</p>
+                    </div>
+
+                    <a-collapse v-else accordion :bordered="false" class="jobs-collapse">
+                        <a-collapse-panel v-for="job in jobs" :key="job.id">
+                            <template #header>
+                                <div class="flex items-center justify-between w-full pr-2">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <a-tag :color="getJobStatusColor(job.status)" class="m-0">
+                                            {{ job.status }}
+                                        </a-tag>
+                                        <span class="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                            {{ job.original_filename }}
+                                        </span>
+                                    </div>
+                                    <span class="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap ml-2">
+                                        {{ formatJobDate(job.started_at || job.completed_at) }}
+                                    </span>
+                                </div>
+                            </template>
+
+                            <div class="space-y-3">
+                                <!-- Summary stats -->
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <div class="rounded-lg bg-gray-50 dark:bg-neutral-800 p-2 text-center">
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
+                                        <p class="text-lg font-bold dark:text-white">{{ job.total_rows }}</p>
+                                    </div>
+                                    <div class="rounded-lg bg-gray-50 dark:bg-neutral-800 p-2 text-center">
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Processed</p>
+                                        <p class="text-lg font-bold dark:text-white">{{ job.processed_rows }}</p>
+                                    </div>
+                                    <div class="rounded-lg bg-green-50 dark:bg-green-900/20 p-2 text-center">
+                                        <p class="text-xs text-green-600 dark:text-green-400">Succeeded</p>
+                                        <p class="text-lg font-bold text-green-600 dark:text-green-400">{{ job.succeeded_rows }}</p>
+                                    </div>
+                                    <div class="rounded-lg bg-red-50 dark:bg-red-900/20 p-2 text-center">
+                                        <p class="text-xs text-red-600 dark:text-red-400">Failed</p>
+                                        <p class="text-lg font-bold text-red-600 dark:text-red-400">{{ job.failed_rows }}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Timestamps -->
+                                <div v-if="job.started_at || job.completed_at" class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                                    <span v-if="job.started_at">Started: {{ formatJobDateTime(job.started_at) }}</span>
+                                    <span v-if="job.completed_at">Completed: {{ formatJobDateTime(job.completed_at) }}</span>
+                                </div>
+
+                                <!-- Error report -->
+                                <div v-if="job.error_report && job.error_report.length > 0">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <WarningOutlined class="text-orange-500" />
+                                        <span class="font-medium text-xs dark:text-white">Errors ({{ job.error_report.length }})</span>
+                                    </div>
+                                    <a-table
+                                        :dataSource="job.error_report"
+                                        :columns="errorColumns"
+                                        :pagination="false"
+                                        size="small"
+                                        :scroll="{ y: 200 }"
+                                        :row-key="(record: any) => `${record.row_number}-${record.field}`"
+                                    >
+                                        <template #bodyCell="{ column, record }">
+                                            <template v-if="column.key === 'row_number'">
+                                                <span class="font-mono text-xs">{{ record.row_number }}</span>
+                                            </template>
+                                            <template v-if="column.key === 'field'">
+                                                <a-tag size="small">{{ record.field }}</a-tag>
+                                            </template>
+                                            <template v-if="column.key === 'error'">
+                                                <span class="text-red-600 dark:text-red-400 text-xs">{{ record.error }}</span>
+                                            </template>
+                                        </template>
+                                    </a-table>
+                                </div>
+
+                                <div v-else-if="job.status === 'completed' && job.failed_rows === 0" class="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
+                                    <CheckCircleOutlined />
+                                    <span>All rows processed successfully!</span>
+                                </div>
+                            </div>
+                        </a-collapse-panel>
+                    </a-collapse>
+                </a-spin>
+
+                <!-- Jobs pagination -->
+                <div v-if="jobsCount > jobsPageSize" class="flex justify-end pt-2">
+                    <a-pagination
+                        :current="jobsPage"
+                        :total="jobsCount"
+                        :pageSize="jobsPageSize"
+                        size="small"
+                        @change="handleJobsPageChange"
+                    />
+                </div>
+            </div>
+        </a-drawer>
     </div>
 </template>
 
@@ -123,17 +416,32 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { message } from 'ant-design-vue'
-import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons-vue'
+import type { UploadFile } from 'ant-design-vue'
+import dayjs from 'dayjs'
+import { PlusOutlined, DeleteOutlined, EditOutlined, UploadOutlined, DownloadOutlined, InboxOutlined, CheckCircleOutlined, WarningOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
+import { useDepartmentService, type Department } from '../../../../composables/departmentService'
 
 definePageMeta({
     middleware: 'auth'
 })
 
 const tenantStore = useTenantStore()
+const authStore = useAuthStore()
 const { isDark } = useTheme()
 const store = useSpocStore()
-const { employees, loading } = storeToRefs(store)
+const { employees, loading, employeeCount, employeePage, employeePageSize } = storeToRefs(store)
+const { fetchDepartments } = useDepartmentService()
+
+// Pagination config for table
+const paginationConfig = computed(() => ({
+    total: employeeCount.value,
+    current: employeePage.value,
+    pageSize: employeePageSize.value,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
+    onChange: handlePageChange,
+}))
 
 // Whitelabeled avatar style using tenant's primary color
 const avatarStyle = computed(() => {
@@ -150,46 +458,197 @@ const avatarStyle = computed(() => {
 
 const searchQuery = ref('')
 const showAddModal = ref(false)
+const showBulkUploadModal = ref(false)
+const bulkUploadFileList = ref<UploadFile[]>([])
+const bulkUploadFile = ref<File | null>(null)
+const bulkUploading = ref(false)
+const bulkUploadError = ref('')
+const buildingPassLoading = ref<Record<string, boolean>>({})
+
+// Jobs drawer state
+const showJobsDrawer = ref(false)
+const jobs = ref<any[]>([])
+const jobsCount = ref(0)
+const jobsPage = ref(1)
+const jobsPageSize = 10
+const jobsLoading = ref(false)
+
+// Error table columns for job error reports
+const errorColumns = [
+    { title: 'Row', key: 'row_number', dataIndex: 'row_number', width: 60 },
+    { title: 'Field', key: 'field', dataIndex: 'field', width: 140 },
+    { title: 'Error', key: 'error', dataIndex: 'error' }
+]
 const editingEmployee = ref<any>(null)
+const departments = ref<Department[]>([])
 
 const newEmployee = reactive({
     name: '',
     email: '',
     phone: '',
-    department: null as string | null,
-    designation: ''
+    departmentId: null as string | null,
+    designation: '',
+    role: 'Employee' as 'Employee' | 'SPOC',
+    gender: null as string | null,
+    date_of_joining: null as string | null,
+    date_of_birth: null as string | null,
+    buildingPassEnabled: false
 })
+
+const formErrors = reactive<Record<string, string>>({
+    name: '',
+    email: '',
+    phone: '',
+    departmentId: '',
+    gender: '',
+    date_of_joining: '',
+    date_of_birth: ''
+})
+
+const clearFieldError = (field: string) => {
+    if (formErrors[field]) {
+        formErrors[field] = ''
+    }
+}
+
+const clearAllFormErrors = () => {
+    formErrors.name = ''
+    formErrors.email = ''
+    formErrors.phone = ''
+    formErrors.departmentId = ''
+    formErrors.gender = ''
+    formErrors.date_of_joining = ''
+    formErrors.date_of_birth = ''
+}
+
+const disabledBirthDate = (current: dayjs.Dayjs) => {
+    return current && current.isAfter(dayjs().subtract(18, 'year'), 'day')
+}
+
+const disabledJoiningDate = (current: dayjs.Dayjs) => {
+    return current && current.isAfter(dayjs(), 'day')
+}
+
+const defaultBirthDatePickerValue = computed(() => dayjs().subtract(18, 'year'))
+
+const openAddModal = () => {
+    editingEmployee.value = null
+    newEmployee.name = ''
+    newEmployee.email = ''
+    newEmployee.phone = ''
+    newEmployee.departmentId = null
+    newEmployee.designation = ''
+    newEmployee.role = 'Employee'
+    newEmployee.gender = null
+    newEmployee.date_of_joining = null
+    newEmployee.date_of_birth = null
+    newEmployee.buildingPassEnabled = false
+    clearAllFormErrors()
+    showAddModal.value = true
+}
 
 // Table columns
 const columns = [
     { title: 'Employee', key: 'employee', dataIndex: 'name' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
-    { title: 'Role', dataIndex: 'role', key: 'role' },
+    { title: 'Department', dataIndex: 'department', key: 'department' },
+    { title: 'Designation', key: 'designation' },
+    { title: 'Role', key: 'role' },
+    { title: 'Status', key: 'status' },
+    { title: 'Building Pass', key: 'building_pass', width: 120 },
     { title: '', key: 'actions', width: 50 }
 ]
 
-const filteredEmployees = computed(() => {
-    if (!searchQuery.value) return employees.value
+const searchDebounce = ref<ReturnType<typeof setTimeout> | null>(null)
 
-    const query = searchQuery.value.toLowerCase()
-    return employees.value.filter(e =>
-        e.name.toLowerCase().includes(query) ||
-        e.email.toLowerCase().includes(query) ||
-        e.department?.toLowerCase().includes(query) ||
-        e.designation?.toLowerCase().includes(query)
-    )
-})
+const handleSearchChange = () => {
+    if (searchDebounce.value) clearTimeout(searchDebounce.value)
+    searchDebounce.value = setTimeout(() => {
+        store.employeePage = 1
+        store.fetchEmployees({
+            companyId: authStore.companyId || undefined,
+            search: searchQuery.value,
+            page: 1,
+            page_size: employeePageSize.value
+        })
+    }, 400)
+}
+
+const handlePageChange = (page: number, newPageSize?: number) => {
+    store.employeePage = page
+    if (newPageSize) {
+        store.employeePageSize = newPageSize
+    }
+    store.fetchEmployees({
+        companyId: authStore.companyId || undefined,
+        search: searchQuery.value,
+        page,
+        page_size: newPageSize || employeePageSize.value
+    })
+}
+
+const loadDepartments = async () => {
+    try {
+        departments.value = await fetchDepartments()
+    } catch (e) {
+        console.error('Failed to load departments', e)
+    }
+}
 
 const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
 const handleSaveEmployee = async () => {
-    if (!newEmployee.name || !newEmployee.email) {
-        message.error('Name and email are required')
+    clearAllFormErrors()
+
+    if (!newEmployee.name || !newEmployee.name.trim()) {
+        formErrors.name = 'Name is required'
+        message.error('Name is required')
         return
     }
+
+    if (!newEmployee.email || !newEmployee.email.trim()) {
+        formErrors.email = 'Email is required'
+        message.error('Email is required')
+        return
+    }
+
+    const { isValidEmail } = useValidation()
+    if (!isValidEmail(newEmployee.email.trim())) {
+        formErrors.email = 'Please enter a valid email address'
+        message.error('Please enter a valid email address')
+        return
+    }
+
+    if (newEmployee.phone && !/^\+91\d{10}$/.test(newEmployee.phone)) {
+        formErrors.phone = 'Please enter a valid 10-digit phone number'
+        message.error('Please enter a valid 10-digit phone number')
+        return
+    }
+
+    if (newEmployee.date_of_joining && dayjs(newEmployee.date_of_joining).isAfter(dayjs(), 'day')) {
+        formErrors.date_of_joining = 'Date of joining cannot be in the future'
+        message.error('Date of joining cannot be in the future')
+        return
+    }
+
+    if (newEmployee.date_of_birth) {
+        const dob = dayjs(newEmployee.date_of_birth)
+        if (!dob.isValid()) {
+            formErrors.date_of_birth = 'Invalid date of birth'
+            message.error('Invalid date of birth')
+            return
+        }
+        if (dob.isAfter(dayjs().subtract(18, 'year'), 'day')) {
+            formErrors.date_of_birth = 'Employee must be at least 18 years old'
+            message.error('Employee must be at least 18 years old')
+            return
+        }
+    }
+
+    const selectedDept = departments.value.find(d => d.id === newEmployee.departmentId)
 
     try {
         if (editingEmployee.value) {
@@ -197,8 +656,14 @@ const handleSaveEmployee = async () => {
                 name: newEmployee.name,
                 email: newEmployee.email,
                 phone: newEmployee.phone || undefined,
-                department: newEmployee.department || undefined,
-                designation: newEmployee.designation || undefined
+                department: selectedDept?.name,
+                department_id: newEmployee.departmentId || undefined,
+                designation: newEmployee.designation || undefined,
+                role: newEmployee.role,
+                gender: newEmployee.gender || undefined,
+                date_of_joining: newEmployee.date_of_joining || undefined,
+                date_of_birth: newEmployee.date_of_birth || undefined,
+                buildingPassEnabled: newEmployee.buildingPassEnabled
             })
             message.success('Employee updated successfully')
         } else {
@@ -206,8 +671,13 @@ const handleSaveEmployee = async () => {
                 name: newEmployee.name,
                 email: newEmployee.email,
                 phone: newEmployee.phone || undefined,
-                department: newEmployee.department || undefined,
-                designation: newEmployee.designation || undefined
+                department: selectedDept?.name,
+                department_id: newEmployee.departmentId || undefined,
+                designation: newEmployee.designation || undefined,
+                role: newEmployee.role,
+                gender: newEmployee.gender || undefined,
+                date_of_joining: newEmployee.date_of_joining || undefined,
+                date_of_birth: newEmployee.date_of_birth || undefined
             })
             message.success('Employee added successfully')
         }
@@ -217,20 +687,62 @@ const handleSaveEmployee = async () => {
         newEmployee.name = ''
         newEmployee.email = ''
         newEmployee.phone = ''
-        newEmployee.department = null
+        newEmployee.departmentId = null
         newEmployee.designation = ''
-    } catch (err) {
-        message.error(editingEmployee.value ? 'Failed to update employee' : 'Failed to add employee')
+        newEmployee.role = 'Employee'
+        newEmployee.gender = null
+        newEmployee.date_of_joining = null
+        newEmployee.date_of_birth = null
+        newEmployee.buildingPassEnabled = false
+        clearAllFormErrors()
+    } catch (err: any) {
+        const errData = err?.data || err
+        // Backend may send field errors under either `fields` or `details`
+        const fields = errData?.error?.fields || errData?.error?.details || {}
+
+        const firstMessage = (value: any): string | undefined => {
+            if (Array.isArray(value)) {
+                const first = value.find(v => (typeof v === 'string' && v) || v?.message)
+                return typeof first === 'string' ? first : first?.message
+            }
+            return typeof value === 'string' ? value : undefined
+        }
+
+        const emailErr = firstMessage(fields.email)
+        const nameErr = firstMessage(fields.full_name) || firstMessage(fields.name)
+        const phoneErr = firstMessage(fields.phone_number) || firstMessage(fields.phone)
+        const deptErr = firstMessage(fields.department_id)
+        const genderErr = firstMessage(fields.gender)
+        const dojErr = firstMessage(fields.date_of_joining)
+        const dobErr = firstMessage(fields.date_of_birth)
+
+        if (emailErr) formErrors.email = emailErr
+        if (nameErr) formErrors.name = nameErr
+        if (phoneErr) formErrors.phone = phoneErr
+        if (deptErr) formErrors.departmentId = deptErr
+        if (genderErr) formErrors.gender = genderErr
+        if (dojErr) formErrors.date_of_joining = dojErr
+        if (dobErr) formErrors.date_of_birth = dobErr
+
+        const { sanitizeError } = useValidation()
+        const errorMsg = sanitizeError(err) || (editingEmployee.value ? 'Failed to update employee' : 'Failed to add employee')
+        message.error(errorMsg)
     }
 }
 
 const handleEdit = (employee: any) => {
+    clearAllFormErrors()
     editingEmployee.value = employee
     newEmployee.name = employee.name
     newEmployee.email = employee.email
     newEmployee.phone = employee.phone || ''
-    newEmployee.department = employee.department || null
+    newEmployee.departmentId = employee.department_id || null
     newEmployee.designation = employee.designation || ''
+    newEmployee.role = employee.role || 'Employee'
+    newEmployee.gender = employee.gender || null
+    newEmployee.date_of_joining = employee.date_of_joining || null
+    newEmployee.date_of_birth = employee.date_of_birth || null
+    newEmployee.buildingPassEnabled = employee.buildingPassEnabled || false
     showAddModal.value = true
 }
 
@@ -238,12 +750,143 @@ const handleDelete = async (id: string) => {
     try {
         await store.deleteEmployee(id)
         message.success('Employee deleted')
-    } catch (err) {
-        message.error('Failed to delete employee')
+        refreshEmployees()
+    } catch (err: any) {
+        message.error(err?.data?.message || err?.message || store.error || 'Failed to delete employee')
     }
 }
 
+const handleBuildingPassToggle = async (employee: any, checked: boolean) => {
+    buildingPassLoading.value[employee.id] = true
+    try {
+        await store.updateEmployee(employee.id, {
+            buildingPassEnabled: checked
+        })
+        employee.buildingPassEnabled = checked
+        message.success(`Building pass ${checked ? 'enabled' : 'disabled'} for ${employee.name}`)
+    } catch (err) {
+        message.error('Failed to update building pass')
+    } finally {
+        buildingPassLoading.value[employee.id] = false
+    }
+}
+
+// Bulk upload handlers
+const handleBeforeUpload = (file: File) => {
+    const isCsv = file.type === 'text/csv' || file.name.endsWith('.csv')
+    if (!isCsv) {
+        message.error('Only CSV files are allowed')
+        return false
+    }
+    bulkUploadFile.value = file
+    bulkUploadError.value = ''
+    return false // prevent auto upload
+}
+
+const handleBulkUpload = async () => {
+    if (!bulkUploadFile.value) {
+        message.error('Please select a CSV file')
+        return
+    }
+    bulkUploading.value = true
+    bulkUploadError.value = ''
+    try {
+        await store.bulkUploadEmployees(bulkUploadFile.value)
+        resetBulkUpload()
+        message.success('Background task created for employee upload. Check Upload History for status.')
+    } catch (err: any) {
+        bulkUploadError.value = err?.data?.message || err?.message || 'Failed to upload employees'
+        message.error(bulkUploadError.value)
+    } finally {
+        bulkUploading.value = false
+    }
+}
+
+const resetBulkUpload = () => {
+    showBulkUploadModal.value = false
+    bulkUploadFileList.value = []
+    bulkUploadFile.value = null
+    bulkUploadError.value = ''
+}
+
+const refreshEmployees = () => {
+    store.fetchEmployees({
+        companyId: authStore.companyId || undefined,
+        search: searchQuery.value,
+        page: employeePage.value,
+        page_size: employeePageSize.value
+    })
+}
+
+const downloadSampleCsv = () => {
+    // Build the CSV client-side — linking to a static file can fall through to
+    // the SPA fallback and download HTML instead of CSV in some deployments
+    const header = 'full_name,phone_number,email,department_slug,designation,app_name'
+    const rows = [
+        'John Doe,+91 9876543210,john.doe@company.com,engineering,SPOC,client_portal',
+        'Jane Smith,+91 8765432109,jane.smith@company.com,engineering,Sales Manager,hub'
+    ]
+    const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'employees_sample.csv'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+}
+
+// Jobs drawer handlers
+const openJobsDrawer = () => {
+    showJobsDrawer.value = true
+    loadJobs()
+}
+
+const loadJobs = async () => {
+    jobsLoading.value = true
+    try {
+        const data = await store.fetchBulkUploadJobs({ page: jobsPage.value, page_size: jobsPageSize })
+        jobs.value = data.results
+        jobsCount.value = data.count
+    } catch (err) {
+        console.error('Failed to load jobs', err)
+    } finally {
+        jobsLoading.value = false
+    }
+}
+
+const handleJobsPageChange = (page: number) => {
+    jobsPage.value = page
+    loadJobs()
+}
+
+const getJobStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+        pending: 'processing',
+        processing: 'processing',
+        completed: 'success',
+        failed: 'error'
+    }
+    return colors[status] || 'default'
+}
+
+const formatJobDate = (dateStr: string | null) => {
+    if (!dateStr) return '-'
+    return dayjs(dateStr).format('MMM D, HH:mm')
+}
+
+const formatJobDateTime = (dateStr: string | null) => {
+    if (!dateStr) return '-'
+    return dayjs(dateStr).format('MMM D, YYYY HH:mm:ss')
+}
+
 onMounted(() => {
-    store.fetchEmployees()
+    store.fetchEmployees({ 
+        companyId: authStore.companyId || undefined,
+        page: employeePage.value, 
+        page_size: employeePageSize.value 
+    })
+    loadDepartments()
 })
 </script>

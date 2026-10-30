@@ -27,22 +27,21 @@
 
 
         <!-- Filters -->
-        <!-- Filters -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                 <a-input-search v-model:value="searchText" placeholder="Search booking ID or user..."
-                    class="w-full md:w-64" />
+                    class="w-full md:w-64" allow-clear @search="handleSearch" />
 
-                <a-range-picker v-model:value="dateRange" class="w-full md:w-auto" />
+                <a-range-picker v-model:value="dateRange" class="w-full md:w-auto" @change="handleDateRangeChange" />
 
-                <a-select v-model:value="statusFilter" placeholder="Filter Status" class="w-full md:w-40" allow-clear>
+                <a-select v-model:value="statusFilter" placeholder="Filter Status" class="w-full md:w-40" allow-clear @change="handleStatusFilterChange">
                     <a-select-option value="PENDING">Pending</a-select-option>
                     <a-select-option value="CONFIRMED">Confirmed</a-select-option>
                     <a-select-option value="COMPLETED">Completed</a-select-option>
                     <a-select-option value="CANCELLED">Cancelled</a-select-option>
                 </a-select>
             </div>
-            <a-button class="w-full md:w-auto">
+            <a-button class="w-full md:w-auto" :loading="exporting" @click="handleExport">
                 <template #icon>
                     <ExportOutlined />
                 </template>
@@ -50,7 +49,7 @@
             </a-button>
         </div>
 
-        <ResponsiveDataView :columns="columns" :data="filteredBookings" :loading="loading" row-key="bookingId">
+        <ResponsiveDataView :columns="columns" :data="bookings" :loading="loading" row-key="id" :pagination="paginationConfig">
             <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'id'">
                     <a @click="openBookingDetails(record)"
@@ -157,6 +156,18 @@
                         <a-select-option v-for="company in companies" :key="company.id" :value="company.id">
                             {{ company.name }}
                         </a-select-option>
+                        <template #notFoundContent>
+                            <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                <span class="text-gray-500 dark:text-gray-400">No companies available</span>
+                                <a-button v-if="canCreateCompany" type="primary" size="small"
+                                    @click="navigateTo('/companies/create')">
+                                    <template #icon>
+                                        <PlusOutlined />
+                                    </template>
+                                    Add Company
+                                </a-button>
+                            </div>
+                        </template>
                     </a-select>
                 </a-form-item>
 
@@ -166,6 +177,18 @@
                         <a-select-option v-for="room in rooms" :key="room.id" :value="room.id">
                             {{ room.name }}
                         </a-select-option>
+                        <template #notFoundContent>
+                            <div class="flex flex-col items-center justify-center py-4 gap-3">
+                                <span class="text-gray-500 dark:text-gray-400">No meeting rooms available</span>
+                                <a-button v-if="canCreateRoom" type="primary" size="small"
+                                    @click="navigateTo('/meeting-rooms/create')">
+                                    <template #icon>
+                                        <PlusOutlined />
+                                    </template>
+                                    Add New Room
+                                </a-button>
+                            </div>
+                        </template>
                     </a-select>
                 </a-form-item>
 
@@ -193,31 +216,41 @@
 
                 <a-form-item label="Available Time Slots">
                     <div v-if="!bookingForm.company || !bookingForm.meetingRoom || !bookingForm.bookingDate"
-                        class="text-gray-500 text-sm py-4 text-center bg-gray-50 rounded-lg">
+                        class="text-gray-500 dark:text-gray-400 text-sm py-4 text-center bg-gray-50 dark:bg-neutral-800 rounded-lg">
                         Select company, room and date to view available slots
                     </div>
                     <div v-else-if="loading" class="text-center py-4">
                         <a-spin />
                     </div>
                     <div v-else-if="timeSlots.length === 0"
-                        class="text-gray-500 text-sm py-4 text-center bg-gray-50 rounded-lg">
+                        class="text-gray-500 dark:text-gray-400 text-sm py-4 text-center bg-gray-50 dark:bg-neutral-800 rounded-lg">
                         No slots available for selected options
                     </div>
                     <div v-else class="space-y-3">
-                        <div class="flex flex-wrap gap-2">
+                        <p class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                            <InfoCircleOutlined class="text-xs" />
+                            Click and drag or use two clicks to select a range of time slots
+                        </p>
+                        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 select-none"
+                            @mouseup="endDrag">
                             <div v-for="slot in timeSlots" :key="slot.id" :class="[
-                                'flex flex-col items-center justify-center px-4 py-3 rounded-lg cursor-pointer transition-all min-w-[90px] border-2',
-                                slot.isAvailable
-                                    ? selectedSlots.includes(slot.id)
-                                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-md'
-                                        : 'bg-white border-gray-200 text-gray-700 hover:border-emerald-400 hover:shadow-sm'
-                                    : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-                            ]" @click="slot.isAvailable && toggleSlot(slot.id)">
-                                <span class="text-xs opacity-75">{{ slot.startTime }}</span>
-                                <span class="text-xs font-medium">{{ slot.endTime }}</span>
+                                'flex flex-col items-center justify-center px-2 py-3 rounded-lg transition-all w-full border-2 select-none',
+                                isSlotInPast(slot)
+                                    ? 'bg-gray-100 dark:bg-neutral-800 border-gray-200 dark:border-neutral-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
+                                    : slot.isAvailable
+                                        ? selectedSlots.includes(slot.id)
+                                            ? 'bg-emerald-500 border-emerald-500 text-white shadow-md cursor-pointer'
+                                            : 'bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-gray-200 hover:border-emerald-400 hover:shadow-sm cursor-pointer'
+                                        : 'bg-gray-100 dark:bg-neutral-800 border-gray-200 dark:border-neutral-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
+                            ]"
+                                @mousedown.prevent="handleSlotMouseDown(slot, $event)"
+                                @mouseenter="handleSlotMouseEnter(slot)"
+                                @click="handleSlotClick(slot)">
+                                <span class="text-xs opacity-75 select-none">{{ slot.startTime }}</span>
+                                <span class="text-xs font-medium select-none">{{ slot.endTime }}</span>
                             </div>
                         </div>
-                        <div v-if="selectedSlots.length > 0" class="text-sm text-gray-600 mt-2">
+                        <div v-if="selectedSlots.length > 0" class="text-sm text-gray-600 dark:text-gray-300 mt-2">
                             Selected: <span class="font-medium">{{ selectedSlots.length }} slot(s)</span>
                             ({{ selectedSlots.length * 30 }} minutes)
                         </div>
@@ -308,6 +341,7 @@ import { useMeetingRoomStore } from '../../../stores/meetingRoom';
 import { useAuthStore } from '../../../stores/auth';
 import { useCompanyService } from '../../../composables/companyService';
 import { useFacilityService } from '../../../composables/facilityService';
+import type { BookingListParams } from '../../../composables/meetingRoomService';
 import { storeToRefs } from 'pinia';
 import { message } from 'ant-design-vue';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -315,7 +349,8 @@ import {
     PlusOutlined,
     AppstoreOutlined,
     ExportOutlined,
-    MoreOutlined
+    MoreOutlined,
+    InfoCircleOutlined
 } from '@ant-design/icons-vue';
 import BookingStatusBadge from '../../../components/meeting-rooms/BookingStatusBadge.vue';
 import ResponsiveDataView from '../../../components/ResponsiveDataView.vue';
@@ -327,11 +362,13 @@ definePageMeta({
 // Stores
 const roomStore = useMeetingRoomStore();
 const authStore = useAuthStore();
-const { bookings, loading, rooms, timeSlots } = storeToRefs(roomStore);
+const { bookings, loading, rooms, timeSlots, bookingsCount, bookingsPage, bookingsPageSize } = storeToRefs(roomStore);
 
 const canView = computed(() => authStore.hasPermission('meeting-rooms-bookings:view'))
 const canCreate = computed(() => authStore.hasPermission('meeting-rooms-bookings:create'))
 const canAction = computed(() => authStore.hasPermission('meeting-rooms-bookings:action'))
+const canCreateRoom = computed(() => authStore.hasPermission('meeting-rooms-list:create'))
+const canCreateCompany = computed(() => authStore.hasPermission('companies-list:create'))
 
 if (!canView.value) {
     navigateTo('/meeting-rooms');
@@ -345,6 +382,124 @@ const facilityService = useFacilityService();
 const searchText = ref('');
 const statusFilter = ref<string | undefined>(undefined);
 const dateRange = ref<[Dayjs, Dayjs]>();
+const exporting = ref(false);
+
+const handleExport = async () => {
+    exporting.value = true;
+    try {
+        const XLSX = await import('xlsx');
+        
+        const params: BookingListParams = {
+            page: 1,
+            page_size: bookingsCount.value || 1000
+        };
+        if (statusFilter.value) {
+            params.booking_status = statusFilter.value;
+        }
+        if (searchText.value) {
+            params.search = searchText.value;
+        }
+        if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+            params.start_date = dateRange.value[0].format('YYYY-MM-DD');
+            params.end_date = dateRange.value[1].format('YYYY-MM-DD');
+        }
+
+        const meetingRoomService = useMeetingRoomService();
+        const response = await meetingRoomService.getBookings(params);
+        const exportList = (response?.results && response.results.length > 0) ? response.results : bookings.value;
+
+        if (!exportList || exportList.length === 0) {
+            message.warning('No bookings to export');
+            return;
+        }
+
+        const data = exportList.map(b => ({
+            'Booking ID': b.bookingId || b.id,
+            'Room': b.meetingRoomName || b.roomName || '',
+            'Date': b.bookingDate || '',
+            'Time': `${b.startTime?.substring(0, 5) || ''} - ${b.endTime?.substring(0, 5) || ''}`,
+            'User': b.userName || '',
+            'Company': b.companyName || '',
+            'Status': b.bookingStatus || '',
+            'Amount (₹)': b.amountCharged || '0.00',
+            'Credits Used': b.creditsUsed ?? 0,
+            'Payment Mode': b.paymentMode || '',
+            'Type': b.bookingType || '',
+            'Duration (Hours)': b.bookingHours || '',
+            'Attendees': b.attendees?.map((a: any) => a.user_name || a.name || a.email).filter(Boolean).join(', ') || ''
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Bookings');
+        const now = dayjs().format('YYYY-MM-DD');
+        XLSX.writeFile(workbook, `room-bookings-${now}.xlsx`);
+        message.success('Bookings exported successfully');
+    } catch (error) {
+        console.error('Error exporting bookings to Excel:', error);
+        message.error('Failed to export bookings');
+    } finally {
+        exporting.value = false;
+    }
+};
+
+// Pagination config
+const paginationConfig = computed(() => ({
+    total: bookingsCount.value,
+    current: bookingsPage.value,
+    pageSize: bookingsPageSize.value,
+    showSizeChanger: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
+    onChange: handlePageChange,
+}));
+
+const handlePageChange = async (pageNum: number, newPageSize: number) => {
+    const params: BookingListParams = { 
+        page: pageNum,
+        page_size: newPageSize
+    };
+    if (statusFilter.value) {
+        params.booking_status = statusFilter.value;
+    }
+    if (searchText.value) {
+        params.search = searchText.value;
+    }
+    if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+        params.start_date = dateRange.value[0].format('YYYY-MM-DD');
+        params.end_date = dateRange.value[1].format('YYYY-MM-DD');
+    }
+    await roomStore.fetchBookings(params);
+};
+
+const handleSearch = () => {
+    fetchBookingsByFilter();
+};
+
+const handleDateRangeChange = () => {
+    fetchBookingsByFilter();
+};
+
+const handleStatusFilterChange = () => {
+    fetchBookingsByFilter();
+};
+
+const fetchBookingsByFilter = async () => {
+    const params: BookingListParams = { 
+        page: 1,
+        page_size: bookingsPageSize.value
+    };
+    if (statusFilter.value) {
+        params.booking_status = statusFilter.value;
+    }
+    if (searchText.value) {
+        params.search = searchText.value;
+    }
+    if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+        params.start_date = dateRange.value[0].format('YYYY-MM-DD');
+        params.end_date = dateRange.value[1].format('YYYY-MM-DD');
+    }
+    await roomStore.fetchBookings(params);
+};
 
 // Booking modal state
 const showBookingModal = ref(false);
@@ -359,6 +514,10 @@ const bookingForm = ref({
     externalAttendees: [] as string[]
 });
 const selectedSlots = ref<string[]>([]);
+const isDragging = ref(false);
+const dragStartSlotId = ref<string | null>(null);
+const hasDragged = ref(false);
+const rangeAnchor = ref<string | null>(null);
 const companyEmployees = ref<Array<{ id: string; name: string }>>([]);
 const employeesLoading = ref(false);
 
@@ -382,23 +541,6 @@ const columns = [
 // Computed
 const availableSlots = computed(() => timeSlots.value.filter(s => s.isAvailable));
 
-const filteredBookings = computed(() => {
-    if (!bookings.value || !Array.isArray(bookings.value)) return [];
-    let result = [...bookings.value];
-    if (statusFilter.value) {
-        result = result.filter(b => b.bookingStatus === statusFilter.value);
-    }
-    if (searchText.value) {
-        const query = searchText.value.toLowerCase();
-        result = result.filter(b =>
-            (b.id || '').toLowerCase().includes(query) ||
-            (b.userName || '').toLowerCase().includes(query) ||
-            (b.companyName || '').toLowerCase().includes(query)
-        );
-    }
-    return result;
-});
-
 // Methods
 const filterCompany = (input: string, option: any) => {
     return option.children.toLowerCase().includes(input.toLowerCase());
@@ -410,6 +552,16 @@ const filterRoom = (input: string, option: any) => {
 
 const disabledDate = (current: Dayjs) => {
     return current && current < dayjs().startOf('day');
+};
+
+const isSlotInPast = (slot: { startTime: string }) => {
+    if (!bookingForm.value.bookingDate) return false;
+    const today = dayjs().startOf('day');
+    const selectedDate = bookingForm.value.bookingDate.startOf('day');
+    if (!selectedDate.isSame(today, 'day')) return false;
+    const now = dayjs();
+    const slotTime = dayjs(`${selectedDate.format('YYYY-MM-DD')} ${slot.startTime}`);
+    return slotTime.isBefore(now);
 };
 
 const fetchTimeSlots = () => {
@@ -431,6 +583,56 @@ const toggleSlot = (slotId: string) => {
     }
 };
 
+const selectSlotRange = (fromId: string, toId: string) => {
+    const fromIndex = timeSlots.value.findIndex(s => s.id === fromId);
+    const toIndex = timeSlots.value.findIndex(s => s.id === toId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const start = Math.min(fromIndex, toIndex);
+    const end = Math.max(fromIndex, toIndex);
+    for (let i = start; i <= end; i++) {
+        const slot = timeSlots.value[i];
+        if (slot.isAvailable && !isSlotInPast(slot) && !selectedSlots.value.includes(slot.id)) {
+            selectedSlots.value.push(slot.id);
+        }
+    }
+};
+
+const handleSlotMouseDown = (slot: any, event: MouseEvent) => {
+    if (!slot.isAvailable || isSlotInPast(slot)) return;
+    event.preventDefault();
+    isDragging.value = true;
+    dragStartSlotId.value = slot.id;
+    hasDragged.value = false;
+};
+
+const handleSlotMouseEnter = (slot: any) => {
+    if (!isDragging.value || !dragStartSlotId.value) return;
+    if (!slot.isAvailable || isSlotInPast(slot)) return;
+    hasDragged.value = true;
+    selectedSlots.value = [];
+    selectSlotRange(dragStartSlotId.value, slot.id);
+};
+
+const endDrag = () => {
+    isDragging.value = false;
+    dragStartSlotId.value = null;
+};
+
+const handleSlotClick = (slot: any) => {
+    if (!slot.isAvailable || isSlotInPast(slot)) return;
+    if (hasDragged.value) {
+        hasDragged.value = false;
+        return;
+    }
+    if (rangeAnchor.value && rangeAnchor.value !== slot.id) {
+        selectSlotRange(rangeAnchor.value, slot.id);
+        rangeAnchor.value = null;
+    } else {
+        toggleSlot(slot.id);
+        rangeAnchor.value = selectedSlots.value.includes(slot.id) ? slot.id : null;
+    }
+};
+
 const fetchCompanyEmployees = async () => {
     if (!bookingForm.value.company) {
         companyEmployees.value = [];
@@ -438,7 +640,7 @@ const fetchCompanyEmployees = async () => {
     }
     employeesLoading.value = true;
     try {
-        const result = await $api<any>(`/api/portal/users/list/?company_id=${bookingForm.value.company}&app_name=hub`);
+        const result = await $api<any>(`/api/portal/users/org_portal/list/?company_id=${bookingForm.value.company}&app_name=hub&page_size=99999`);
         let users: any[] = [];
         if (result.success && Array.isArray(result.data)) {
             users = result.data;
@@ -551,7 +753,7 @@ onMounted(async () => {
             roomStore.fetchBookings(),
             roomStore.fetchRooms()
         ]);
-        const companiesData = await companyService.getCompanies();
+        const { companies: companiesData } = await companyService.getAllCompanies({ page_size: 999 });
         companies.value = companiesData.map(c => ({ id: c.id, name: c.name }));
     } catch (error) {
         console.error('Failed to load initial data:', error);

@@ -80,7 +80,7 @@
                                 <label class="form-label">
                                     <span class="required">*</span>Email
                                 </label>
-                                <input v-model="form.email" type="email" placeholder="admin@spatiumoffices.com"
+                                <input v-model="form.email" type="email" placeholder="admin@nexspaceoffices.com"
                                     class="form-input" required autofocus />
                             </div>
 
@@ -126,7 +126,7 @@
 
                     <!-- Help Text -->
                     <p class="help-text mt-12">
-                        Having trouble signing in? Contact your Spatium administrator.
+                        Having trouble signing in? Contact your Nexspace administrator.
                     </p>
                 </div>
             </div>

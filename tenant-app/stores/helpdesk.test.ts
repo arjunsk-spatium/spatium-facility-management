@@ -5,11 +5,24 @@ import { useHelpdeskStore } from './helpdesk'
 // Mock the helpdeskService
 vi.mock('../composables/helpdeskService', () => ({
     useHelpdeskService: () => ({
-        getTickets: vi.fn().mockResolvedValue([
-            { id: 'TKT-001', category: 'IT', status: 'Open', priority: 'High' },
-            { id: 'TKT-002', category: 'Maintenance', status: 'In Progress', priority: 'Medium' },
-            { id: 'TKT-003', category: 'IT', status: 'Resolved', priority: 'Low' }
-        ]),
+        getTickets: vi.fn().mockResolvedValue({
+            tickets: [
+                { id: 'TKT-001', category: 'IT', status: 'Open', priority: 'High' },
+                { id: 'TKT-002', category: 'Maintenance', status: 'In Progress', priority: 'Medium' },
+                { id: 'TKT-003', category: 'IT', status: 'Resolved', priority: 'Low' }
+            ],
+            count: 3,
+            next: null,
+            previous: null
+        }),
+        getPriorityTickets: vi.fn().mockResolvedValue({
+            tickets: [
+                { id: 'TKT-001', category: 'IT', status: 'Open', priority: 'High' }
+            ],
+            count: 1,
+            next: null,
+            previous: null
+        }),
         getTicketById: vi.fn().mockImplementation((id) => Promise.resolve(
             id === 'TKT-001' ? { id: 'TKT-001', category: 'IT', status: 'Open' } : null
         )),
@@ -73,6 +86,13 @@ describe('Helpdesk Store', () => {
             const store = useHelpdeskStore()
             expect(store.stats).toBeNull()
         })
+
+        it('should have default pagination values', () => {
+            const store = useHelpdeskStore()
+            expect(store.page).toBe(1)
+            expect(store.pageSize).toBe(10)
+            expect(store.count).toBe(0)
+        })
     })
 
     describe('Getters', () => {
@@ -88,9 +108,9 @@ describe('Helpdesk Store', () => {
         it('openTickets should filter open tickets', () => {
             const store = useHelpdeskStore()
             store.tickets = [
-                { id: '1', status: 'Open' },
-                { id: '2', status: 'In Progress' },
-                { id: '3', status: 'Open' }
+                { id: '1', state: { key: 'OPEN' } },
+                { id: '2', state: { key: 'INPROGRESS' } },
+                { id: '3', state: { key: 'OPEN' } }
             ] as any[]
             expect(store.openTickets.length).toBe(2)
         })
@@ -98,8 +118,8 @@ describe('Helpdesk Store', () => {
         it('inProgressTickets should filter in-progress tickets', () => {
             const store = useHelpdeskStore()
             store.tickets = [
-                { id: '1', status: 'Open' },
-                { id: '2', status: 'In Progress' }
+                { id: '1', state: { key: 'OPEN' } },
+                { id: '2', state: { key: 'INPROGRESS' } }
             ] as any[]
             expect(store.inProgressTickets.length).toBe(1)
         })
@@ -107,21 +127,28 @@ describe('Helpdesk Store', () => {
         it('activeTicketsCount should count open and in-progress tickets', () => {
             const store = useHelpdeskStore()
             store.tickets = [
-                { id: '1', status: 'Open' },
-                { id: '2', status: 'In Progress' },
-                { id: '3', status: 'Resolved' }
+                { id: '1', state: { key: 'OPEN' } },
+                { id: '2', state: { key: 'INPROGRESS' } },
+                { id: '3', state: { key: 'CLOSED' } }
             ] as any[]
             expect(store.activeTicketsCount).toBe(2)
         })
     })
 
     describe('Actions', () => {
-        it('fetchTickets should populate tickets', async () => {
+        it('fetchTickets should populate tickets and pagination', async () => {
             const store = useHelpdeskStore()
             await store.fetchTickets()
             
             expect(store.tickets.length).toBe(3)
+            expect(store.count).toBe(3)
             expect(store.init).toBe(true)
+        })
+
+        it('goToPage should update page', async () => {
+            const store = useHelpdeskStore()
+            await store.goToPage(2)
+            expect(store.page).toBe(2)
         })
 
         it('fetchTickets should not refetch if initialized', async () => {

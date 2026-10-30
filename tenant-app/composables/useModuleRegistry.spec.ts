@@ -14,6 +14,7 @@ describe('useModuleRegistry', () => {
     expect(keys).toContain('dashboard')
     expect(keys).toContain('visitors')
     expect(keys).toContain('frontdesk')
+    expect(keys).toContain('banners')
   })
 
   it('should have correct structure for module with children', () => {
@@ -36,4 +37,52 @@ describe('useModuleRegistry', () => {
     expect(dashboardModule?.children).toBeUndefined()
     expect(dashboardModule?.route).toBe('/dashboard')
   })
+
+  it('should contain User Management submodules (Management Staff and Operational Staff)', () => {
+    const { getAllModules } = useModuleRegistry()
+    const modules = getAllModules()
+
+    const usersModule = modules.find(m => m.key === 'users')
+    expect(usersModule).toBeDefined()
+    expect(usersModule?.children).toBeDefined()
+    expect(usersModule?.children?.length).toBe(2)
+    const childKeys = usersModule?.children?.map(c => c.key)
+    expect(childKeys).toContain('users-management')
+    expect(childKeys).toContain('users-operational')
+  })
+
+  it('should contain Feed submodule matching backend Feed label', () => {
+    const { getAllModules } = useModuleRegistry()
+    const modules = getAllModules()
+
+    const feedModule = modules.find(m => m.key === 'feed')
+    expect(feedModule).toBeDefined()
+    expect(feedModule?.children).toBeDefined()
+    expect(feedModule?.children?.[0].label).toBe('Feed')
+  })
+
+  it('should contain Helpdesk Roles submodule under Helpdesk', () => {
+    const { getAllModules } = useModuleRegistry()
+    const modules = getAllModules()
+
+    const helpdeskModule = modules.find(m => m.key === 'helpdesk')
+    expect(helpdeskModule).toBeDefined()
+    expect(helpdeskModule?.children).toBeDefined()
+    const roleChild = helpdeskModule?.children?.find(c => c.key === 'helpdesk-roles')
+    expect(roleChild).toBeDefined()
+    expect(roleChild?.label).toBe('Helpdesk Roles')
+    expect(roleChild?.route).toBe('/helpdesk/roles')
+  })
+
+  it('should contain spoc_bookings module with route /spoc/bookings', () => {
+    const { getAllModules } = useModuleRegistry()
+    const modules = getAllModules()
+
+    const spocBookings = modules.find(m => m.key === 'spoc_bookings')
+    expect(spocBookings).toBeDefined()
+    expect(spocBookings?.label).toBe('Bookings')
+    expect(spocBookings?.route).toBe('/spoc/bookings')
+    expect(spocBookings?.icon).toBe('CalendarOutlined')
+  })
 })
+

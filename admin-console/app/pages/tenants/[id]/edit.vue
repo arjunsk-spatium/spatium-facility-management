@@ -131,11 +131,12 @@
             <!-- Section 3: Modules -->
             <section>
                 <div class="mb-6">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Assigned Modules</h2>
-                    <p class="text-gray-500 text-sm">Enable or disable features.</p>
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Assigned Modules & Features</h2>
+                    <p class="text-gray-500 text-sm">Enable or disable modules and their associated features.</p>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-white">Modules</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                         <div v-for="mod in modules" :key="mod.id"
                             class="p-4 border rounded-xl hover:bg-white dark:hover:bg-gray-800 transition-all cursor-pointer flex items-start space-x-3 bg-white dark:bg-gray-800"
                             :class="selectedModules.includes(mod.id) ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10' : 'border-gray-200 dark:border-gray-700'"
@@ -147,9 +148,27 @@
                             </div>
                         </div>
                     </div>
+
+                    <h3 class="text-lg font-medium mb-4 text-gray-900 dark:text-white" v-if="Object.keys(groupedFeatures).length > 0">Features</h3>
+                    <div v-for="(feats, groupName) in groupedFeatures" :key="groupName" class="mb-6">
+                        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ groupName }}</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div v-for="feat in feats" :key="feat.id"
+                                class="p-3 border rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-all cursor-pointer flex items-start space-x-3 bg-white dark:bg-gray-800"
+                                :class="selectedFeatures.includes(feat.id) ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10' : 'border-gray-200 dark:border-gray-700'"
+                                @click="toggleFeature(feat.id)">
+                                <a-checkbox :checked="selectedFeatures.includes(feat.id)" class="mt-1 pointer-events-none" />
+                                <div>
+                                    <span class="font-medium block text-gray-900 dark:text-gray-100">{{ feat.name }}</span>
+                                    <span class="text-xs text-gray-500 mt-0.5 block">{{ feat.description }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="flex justify-end mt-4">
                         <a-button type="primary" @click="updateModules" :loading="loadingModules">Update
-                            Modules</a-button>
+                            Modules & Features</a-button>
                     </div>
                 </div>
             </section>
@@ -301,17 +320,17 @@
                             <a-textarea v-model:value="piiForm.address" :rows="3" />
                         </a-form-item>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <a-form-item label="Contact Name" name="contact_name"
+                            <a-form-item label="Contact Name" name="full_name"
                                 :rules="[{ required: true, message: 'Please enter contact name' }]">
-                                <a-input v-model:value="piiForm.contact_name" size="large" />
+                                <a-input v-model:value="piiForm.full_name" size="large" />
                             </a-form-item>
                             <a-form-item label="Contact Email" name="email"
                                 :rules="[{ required: true, type: 'email', message: 'Please enter valid email' }]">
                                 <a-input v-model:value="piiForm.email" size="large" />
                             </a-form-item>
-                            <a-form-item label="Contact Phone" name="phone"
+                            <a-form-item label="Contact Phone" name="phone_number"
                                 :rules="[{ required: true, message: 'Please enter contact phone' }]">
-                                <a-input v-model:value="piiForm.phone" size="large" />
+                                <PhoneInput v-model="piiForm.phone_number" size="large" />
                             </a-form-item>
                         </div>
                         <div class="flex justify-end mt-4">
@@ -353,7 +372,11 @@ const {
     getTenantById,
     getTenantSubscription,
     getTenantBranding,
-    getTenantPii
+    getTenantPii,
+    getFeatures,
+    getTenantFeatures,
+    assignFeatures,
+    toggleTenantFeature
 } = useTenantService();
 const { getRegistry, getActiveRegistry } = useModuleRegistry();
 const { getPlans } = usePlanService();
@@ -365,6 +388,9 @@ const tenant = ref<any>(null);
 const basicForm = reactive({ name: '', domain: '', status: '' });
 const subscriptionForm = reactive({ plan: '', start_date: '', end_date: '', billing_cycle: 'monthly', max_users: 100, max_client_users: 100, price: 0 });
 const selectedModules = ref<string[]>([]);
+const featuresList = ref<any[]>([]);
+const selectedFeatures = ref<string[]>([]);
+const tenantFeatureAssignments = ref<any[]>([]);
 const brandingForm = reactive({
     primary_color: '#ffffff',
     logo: null as File | null,
@@ -377,7 +403,7 @@ const brandingForm = reactive({
     darkLogoPreview: '',
     faviconPreview: ''
 });
-const piiForm = reactive({ gstin: '', address: '', contact_name: '', email: '', phone: '' });
+const piiForm = reactive({ gstin: '', address: '', full_name: '', email: '', phone_number: '' });
 
 // Lists
 const plans = ref<Plan[]>([]);
@@ -397,6 +423,16 @@ const isCustomPlan = computed(() => {
     return p?.is_custom || false;
 });
 
+const groupedFeatures = computed(() => {
+    const groups: Record<string, any[]> = {};
+    featuresList.value.forEach(f => {
+        const smName = f.submodule_name || 'Other Features';
+        if (!groups[smName]) groups[smName] = [];
+        groups[smName].push(f);
+    });
+    return groups;
+});
+
 const fetchData = async () => {
     loading.value = true;
     try {
@@ -410,40 +446,59 @@ const fetchData = async () => {
             basicForm.status = fetchedTenant.status || 'active';
         }
 
-        // 2. Fetch Plans & Registry
-        const [plansRes, modulesRes] = await Promise.all([getPlans(), getActiveRegistry()]);
+        // 2. Fetch Plans, Registry & Features
+        const [plansRes, modulesRes, featuresRes] = await Promise.all([getPlans(), getActiveRegistry(), getFeatures()]);
         if (plansRes) plans.value = plansRes.data?.results || plansRes.data || [];
         if (modulesRes) {
              modules.value = Array.isArray(modulesRes.data) 
                 ? modulesRes.data 
                 : (modulesRes.data.results || []);
         }
-
-        // 3. Fetch Sub-Resources (Prefill)
-        // Subscription
-        try {
-            const subRes = await getTenantSubscription(tenantId);
-            if (subRes && subRes.data) {
-                const results = subRes.data.results || subRes.data;
-                const sub = Array.isArray(results) ? results[0] : results;
-                if (sub) {
-                    subscriptionForm.plan = sub.plan; // might need plan ID mapping
-                    subscriptionForm.start_date = sub.start_date;
-                    subscriptionForm.end_date = sub.end_date;
-                    subscriptionForm.billing_cycle = sub.billing_cycle;
-                    subscriptionForm.max_users = sub.max_users;
-                    subscriptionForm.max_client_users = sub.max_client_users || 0;
-                    subscriptionForm.price = sub.price ? Number(sub.price) : 0;
-                }
-            }
-        } catch (e) {
-            console.warn('No subscription found or error fetching', e);
+        if (featuresRes) {
+            featuresList.value = Array.isArray(featuresRes.data) ? featuresRes.data : (featuresRes.data.results || []);
         }
 
-        // Modules
+        // 3. Fetch Sub-Resources (Prefill)
+        // Extract data directly from the retrieved tenant object first
+        if (fetchedTenant) {
+            // Subscription
+            if (fetchedTenant.subscription) {
+                const sub = fetchedTenant.subscription;
+                subscriptionForm.plan = sub.plan?.id || sub.plan;
+                subscriptionForm.start_date = sub.start_date;
+                subscriptionForm.end_date = sub.end_date;
+                subscriptionForm.billing_cycle = sub.billing_cycle;
+                subscriptionForm.max_users = sub.max_users;
+                subscriptionForm.max_client_users = sub.max_client_users || 0;
+                subscriptionForm.price = sub.price ? Number(sub.price) : 0;
+            }
+
+            // Branding
+            if (fetchedTenant.branding) {
+                const b = fetchedTenant.branding;
+                brandingForm.primary_color = b.primary_color || '#ffffff';
+                brandingForm.logoUrl = b.logo;
+                brandingForm.darkLogoUrl = b.dark_logo;
+                brandingForm.faviconUrl = b.favicon;
+            }
+
+            // PII
+            if (fetchedTenant.pii) {
+                const p = fetchedTenant.pii;
+                piiForm.gstin = p.gstin;
+                piiForm.address = p.address;
+                piiForm.full_name = p.full_name || p.contact_name;
+                piiForm.email = p.email;
+                piiForm.phone_number = p.phone_number || p.phone;
+            }
+        }
+
+        // Modules and Features (still need to be fetched separately if not nested)
         try {
-            // getTenantModules returns assignment list
-            const modRes = await getTenantModules(tenantId);
+            const [modRes, featRes] = await Promise.all([
+                getTenantModules(tenantId),
+                getTenantFeatures(tenantId)
+            ]);
             if (modRes && modRes.data) {
                 const assignments = modRes.data.results || modRes.data || [];
                 // Only map if assignments is an array
@@ -451,40 +506,16 @@ const fetchData = async () => {
                     selectedModules.value = assignments.map((a: any) => a.module || a.module_id);
                 }
             }
-        } catch (e) { console.warn('No modules found', e); }
-
-        // Branding
-        try {
-            const brandRes = await getTenantBranding(tenantId);
-            if (brandRes && brandRes.data) {
-                const results = brandRes.data.results || brandRes.data;
-                const b = Array.isArray(results) ? results[0] : results;
-
-                if (b) {
-                    brandingForm.primary_color = b.primary_color || '#ffffff';
-                    brandingForm.logoUrl = b.logo;
-                    brandingForm.darkLogoUrl = b.dark_logo;
-                    brandingForm.faviconUrl = b.favicon;
+            if (featRes && featRes.data) {
+                const assignments = featRes.data.results || featRes.data || [];
+                if (Array.isArray(assignments)) {
+                    tenantFeatureAssignments.value = assignments;
+                    selectedFeatures.value = assignments
+                        .filter((a: any) => a.is_active !== false)
+                        .map((a: any) => a.feature || a.feature_id);
                 }
             }
-        } catch (e) { console.warn('No branding found', e); }
-
-        // PII
-        try {
-            const piiRes = await getTenantPii(tenantId);
-            if (piiRes && piiRes.data) {
-                const results = piiRes.data.results || piiRes.data;
-                const p = Array.isArray(results) ? results[0] : results;
-
-                if (p) {
-                    piiForm.gstin = p.gstin;
-                    piiForm.address = p.address;
-                    piiForm.contact_name = p.contact_name;
-                    piiForm.email = p.email;
-                    piiForm.phone = p.phone;
-                }
-            }
-        } catch (e) { console.warn('No PII found', e); }
+        } catch (e) { console.warn('No modules/features found', e); }
 
     } catch (e) {
         console.error('Failed to load tenant data', e);
@@ -542,6 +573,14 @@ const toggleModule = (moduleId: string) => {
     }
 };
 
+const toggleFeature = (featureId: string) => {
+    if (selectedFeatures.value.includes(featureId)) {
+        selectedFeatures.value = selectedFeatures.value.filter(id => id !== featureId);
+    } else {
+        selectedFeatures.value.push(featureId);
+    }
+};
+
 const updateModules = async () => {
     loadingModules.value = true;
     try {
@@ -550,9 +589,40 @@ const updateModules = async () => {
             modules: selectedModules.value.map((mid, idx) => ({ module: mid, priority: 10 - idx }))
         };
         await assignModules(modulePayload);
-        message.success('Modules updated');
-    } catch (e) { message.error('Failed to update modules'); }
-    finally { loadingModules.value = false; }
+        
+        // Update features per backend API spec
+        await Promise.all(
+            featuresList.value.map(async (feat) => {
+                const isSelected = selectedFeatures.value.includes(feat.id);
+                const existing = tenantFeatureAssignments.value.find(
+                    (a: any) => (a.feature === feat.id || a.feature_id === feat.id)
+                );
+                if (isSelected) {
+                    if (!existing || !existing.is_active) {
+                        return toggleTenantFeature(tenantId, feat.id, true, existing?.id);
+                    }
+                } else if (existing && existing.is_active) {
+                    return toggleTenantFeature(tenantId, feat.id, false, existing.id);
+                }
+            })
+        );
+        
+        // Refresh feature assignments
+        const refreshed = await getTenantFeatures(tenantId);
+        if (refreshed && refreshed.data) {
+            const results = refreshed.data.results || refreshed.data || [];
+            if (Array.isArray(results)) {
+                tenantFeatureAssignments.value = results;
+            }
+        }
+        
+        message.success('Modules & Features updated');
+    } catch (e) { 
+        console.error('Failed to update modules/features', e);
+        message.error('Failed to update modules/features'); 
+    } finally { 
+        loadingModules.value = false; 
+    }
 };
 
 const handleFileSelect = (event: any, field: 'logo' | 'dark_logo' | 'favicon') => {

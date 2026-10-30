@@ -3,12 +3,17 @@
     <div
       class="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300">
       <AppLoader v-if="isLoading" />
-      <div v-else-if="tenantStore.error" class="flex flex-col items-center justify-center min-h-screen p-4">
-        <div class="text-center">
-          <h1 class="text-2xl font-bold text-red-600 mb-2">Tenant Not Registered</h1>
-          <p class="text-gray-600">{{ tenantStore.error }}</p>
-        </div>
-      </div>
+      <TenantSubdomainFinder
+        v-else-if="showFinder || tenantStore.errorType === 'no_tenant_subdomain'"
+        :initial-domain-info="tenantStore.domainInfo"
+      />
+      <TenantNotFound
+        v-else-if="tenantStore.errorType === 'tenant_not_registered' || tenantStore.error"
+        :initial-domain-info="tenantStore.domainInfo"
+        :error-message="tenantStore.error"
+        @switch-to-finder="showFinder = true"
+        @retry="tenantStore.fetchTenantByDomain()"
+      />
       <NuxtLayout v-else>
         <NuxtPage />
       </NuxtLayout>
@@ -26,6 +31,7 @@ const tenantStore = useTenantStore();
 
 // Local reactive ref for dark mode - ensures immediate reactivity
 const isDarkMode = ref(false);
+const showFinder = ref(false);
 
 const isLoading = computed(() => tenantStore.loading);
 
@@ -71,7 +77,6 @@ watch(isDark, (newVal) => {
   isDarkMode.value = newVal;
   updateCssVariables();
 });
-console.log("v2");
 
 // Watch for tenant color changes
 watch(() => tenantStore.primaryColor, updateCssVariables);

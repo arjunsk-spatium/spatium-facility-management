@@ -14,7 +14,7 @@
         <!-- Responsive Data Table -->
         <div class="overflow-x-auto">
             <ResponsiveDataView :columns="tableColumns" :data="data" :loading="loading"
-                :row-key="(record: any) => record.id" :pagination="{ pageSize: 10 }" :mobile-page-size="5">
+                :row-key="(record: any) => record.id" :pagination="paginationConfig" :mobile-page-size="5">
                 <template #bodyCell="{ column, record }">
                     <template v-if="column.key === 'action'">
                         <a-space>
@@ -32,6 +32,11 @@
                     <template v-else-if="column.customRender">
                         {{ getColumnValue(column, record) }}
                     </template>
+                    <template v-else-if="column.copyable">
+                        <a-typography-text :copyable="{ text: getColumnValue(column, record) }">
+                            {{ getColumnValue(column, record) }}
+                        </a-typography-text>
+                    </template>
                 </template>
 
             <!-- Mobile Card View -->
@@ -48,7 +53,14 @@
                                 <template v-for="col in displayColumns" :key="col.key">
                                     <div v-if="record[col.dataIndex]" class="flex gap-2">
                                         <span class="font-medium">{{ col.title }}:</span>
-                                        <span>{{ record[col.dataIndex] }}</span>
+                                        <template v-if="col.copyable">
+                                            <a-typography-text :copyable="{ text: record[col.dataIndex] }">
+                                                {{ record[col.dataIndex] }}
+                                            </a-typography-text>
+                                        </template>
+                                        <template v-else>
+                                            <span>{{ record[col.dataIndex] }}</span>
+                                        </template>
                                     </div>
                                 </template>
                             </div>
@@ -74,7 +86,7 @@
         <!-- Add/Edit Modal -->
         <a-modal v-model:open="modalVisible" :title="isEditing ? `Edit ${singularTitle}` : `Add ${singularTitle}`"
             :confirm-loading="modalLoading" @ok="handleSubmit" @cancel="closeModal">
-            <a-form :model="formData" layout="vertical" class="mt-4">
+            <a-form ref="formRef" :model="formData" layout="vertical" class="mt-4">
                 <!-- Parent Select (for dependent entities) -->
                 <a-form-item v-if="parentOptions && parentOptions.length > 0" :label="parentLabel">
                     <a-select v-model:value="formData.parent_id" :placeholder="`Select ${parentLabel}`"
@@ -83,7 +95,8 @@
 
                 <!-- Dynamic Fields -->
                 <template v-if="fields && fields.length > 0">
-                    <a-form-item v-for="field in fields" :key="field.name" :label="field.label">
+                    <a-form-item v-for="field in fields" :key="field.name" :label="field.label" :name="field.name"
+                        :rules="field.required ? [{ required: true, message: `Please enter ${field.label.toLowerCase()}` }] : []">
                         <a-switch v-if="field.type === 'switch'" v-model:checked="formData[field.name]" @change="handleFieldChange(field.name, $event)" />
                         <a-select v-else-if="field.type === 'select'" v-model:value="formData[field.name]"
                             :placeholder="`Select ${field.label.toLowerCase()}`" :options="field.options" @change="handleFieldChange(field.name, $event)" />
@@ -102,7 +115,8 @@
                 </template>
 
                 <!-- Default Name Field -->
-                <a-form-item v-else label="Name">
+                <a-form-item v-else label="Name" name="name"
+                    :rules="[{ required: true, message: 'Please enter name' }]">
                     <a-input v-model:value="formData.name" placeholder="Enter name" />
                 </a-form-item>
 
@@ -116,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import ResponsiveDataView from '../ResponsiveDataView.vue'
 
@@ -125,6 +139,7 @@ interface Column {
     dataIndex?: string
     key: string
     width?: number
+    copyable?: boolean
 }
 
 interface Field {
@@ -132,6 +147,7 @@ interface Field {
     label: string
     type: 'text' | 'number' | 'file' | 'select' | 'switch'
     options?: { label: string; value: string | number }[]
+    required?: boolean
 }
 
 interface ParentOption {
@@ -141,6 +157,7 @@ interface ParentOption {
 
 const props = defineProps<{
     title: string
+    singularTitle?: string
     columns: Column[]
     data: any[]
     loading?: boolean
@@ -150,6 +167,7 @@ const props = defineProps<{
     canCreate?: boolean
     canUpdate?: boolean
     canDelete?: boolean
+    pagination?: any
 }>()
 
 const emit = defineEmits<{
@@ -161,8 +179,10 @@ const emit = defineEmits<{
 
 // Computed
 const singularTitle = computed(() => {
+    if (props.singularTitle) return props.singularTitle
     const t = props.title
     if (t.endsWith('ies')) return t.slice(0, -3) + 'y'
+    if (t.endsWith('Types')) return t.slice(0, -1)
     if (t.endsWith('es')) return t.slice(0, -2)
     if (t.endsWith('s')) return t.slice(0, -1)
     return t
@@ -179,12 +199,25 @@ const hasDescriptionColumn = computed(() =>
     props.columns.some(col => col.dataIndex === 'description')
 )
 
+const paginationConfig = computed(() => {
+    if (props.pagination !== undefined) {
+        return props.pagination
+    }
+    return {
+        pageSize: 10,
+        showSizeChanger: true,
+        pageSizeOptions: ['10', '20', '50'],
+        showTotal: (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} items`
+    }
+})
+
 // State
 const modalVisible = ref(false)
 const modalLoading = ref(false)
 const isEditing = ref(false)
 const editingRecord = ref<any>(null)
 const formData = ref<any>({})
+const formRef = ref()
 
 // Watch for form data changes to emit updates
 watch(() => formData.value, (newVal) => {
@@ -196,41 +229,110 @@ const openAddModal = () => {
     isEditing.value = false
     editingRecord.value = null
     formData.value = {}
+    emit('fieldChange', {})
     modalVisible.value = true
+    nextTick(() => formRef.value?.clearValidate())
 }
 
 const openEditModal = (record: any) => {
     isEditing.value = true
     editingRecord.value = record
+    emit('fieldChange', record)
     formData.value = { ...record }
     if (props.parentOptions) {
-        // Set parent_id from the record's parent field
-        const parentIdKey = Object.keys(record).find(k =>
-            k.endsWith('_id') && k !== 'id'
-        )
+        // Try to find the parent key from parentLabel first
+        const labelKey = props.parentLabel ? props.parentLabel.toLowerCase().replace(/\s+/g, '_') : null;
+        let parentIdKey = Object.keys(record).find(k => k === labelKey);
+        
+        // Fallback to checking for keys ending with _id
+        if (!parentIdKey) {
+            parentIdKey = Object.keys(record).find(k =>
+                k.endsWith('_id') && k !== 'id'
+            );
+        }
+        
         if (parentIdKey) {
             formData.value.parent_id = record[parentIdKey]
         }
     }
+
+    // Normalize select fields: if current value is object or doesn't match option values, resolve to option value
+    if (props.fields) {
+        props.fields.forEach(field => {
+            if (field.type === 'select') {
+                const current = formData.value[field.name]
+                if (current && typeof current === 'object') {
+                    const match = field.options?.find(opt =>
+                        opt.value === current.id ||
+                        opt.value === current.key ||
+                        opt.label === current.label
+                    )
+                    formData.value[field.name] = match ? match.value : undefined
+                } else if (current && typeof current === 'string' && field.options) {
+                    const directMatch = field.options.find(opt => opt.value === current)
+                    if (!directMatch) {
+                        const match = field.options.find(opt =>
+                            String(opt.value).toLowerCase() === current.toLowerCase() ||
+                            opt.label?.toLowerCase() === current.toLowerCase()
+                        )
+                        if (match) {
+                            formData.value[field.name] = match.value
+                        }
+                    }
+                }
+                // Fallback for assignment_mode if missing on formData but assignment_mode_key exists on record
+                if (field.name === 'assignment_mode' && !formData.value.assignment_mode && record.assignment_mode_key && field.options) {
+                    const match = field.options.find(opt =>
+                        String(opt.value).toLowerCase() === record.assignment_mode_key.toLowerCase() ||
+                        opt.label?.toLowerCase() === record.assignment_mode_key.toLowerCase()
+                    )
+                    if (match) {
+                        formData.value.assignment_mode = match.value
+                    }
+                }
+                // Fallback for required_role if missing on formData but required_role_name / required_role_key exists on record
+                if (field.name === 'required_role' && !formData.value.required_role && field.options) {
+                    const roleRef = record.required_role_name || record.required_role_key
+                    if (roleRef) {
+                        const match = field.options.find(opt =>
+                            String(opt.value).toLowerCase() === roleRef.toLowerCase() ||
+                            opt.label?.toLowerCase() === roleRef.toLowerCase()
+                        )
+                        if (match) {
+                            formData.value.required_role = match.value
+                        }
+                    }
+                }
+            }
+        })
+    }
     modalVisible.value = true
+    nextTick(() => formRef.value?.clearValidate())
 }
 
 const closeModal = () => {
     modalVisible.value = false
     formData.value = {}
+    emit('fieldChange', {})
 }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
+    // Client-side validation first — keep the modal open so the user can
+    // fix the fields instead of losing what they typed
+    try {
+        await formRef.value?.validate()
+    } catch {
+        return
+    }
+
     modalLoading.value = true
-    setTimeout(() => {
-        if (isEditing.value) {
-            emit('edit', editingRecord.value, formData.value)
-        } else {
-            emit('add', formData.value)
-        }
-        modalLoading.value = false
-        closeModal()
-    }, 300)
+    if (isEditing.value) {
+        emit('edit', editingRecord.value, formData.value)
+    } else {
+        emit('add', formData.value)
+    }
+    modalLoading.value = false
+    closeModal()
 }
 
 const handleDelete = (record: any) => {

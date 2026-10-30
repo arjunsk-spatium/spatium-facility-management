@@ -31,7 +31,7 @@ const handleCreate = async (formData: any) => {
     try {
         await store.createCompanyAction(formData)
         message.success('Company created successfully')
-        router.push('/companies')
+        await router.push('/companies')
     } catch (error) {
         message.error('Failed to create company')
     }

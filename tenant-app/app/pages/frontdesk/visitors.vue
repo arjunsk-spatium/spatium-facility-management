@@ -1,5 +1,5 @@
 <template>
-    <VisitorManagement />
+    <VisitorManagement frontdesk />
 </template>
 
 <script setup lang="ts">

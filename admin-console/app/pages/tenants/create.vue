@@ -130,6 +130,7 @@
                         </div>
 
                         <template v-else>
+                            <h4 class="text-md font-medium mb-3 text-gray-900 dark:text-white">Modules</h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                                 <div v-for="mod in modules" :key="mod.id"
                                     class="p-4 border rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer flex items-start space-x-3 bg-white dark:bg-gray-800"
@@ -142,6 +143,25 @@
                                         <span class="font-medium block text-gray-900 dark:text-gray-100">{{ mod.name
                                             }}</span>
                                         <span class="text-sm text-gray-500 mt-1 block">{{ mod.description }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h4 class="text-md font-medium mb-3 text-gray-900 dark:text-white" v-if="Object.keys(groupedFeatures).length > 0">Features</h4>
+                            <div v-for="(feats, groupName) in groupedFeatures" :key="groupName" class="mb-6">
+                                <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ groupName }}</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div v-for="feat in feats" :key="feat.id"
+                                        class="p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer flex items-start space-x-3 bg-white dark:bg-gray-800"
+                                        :class="subscriptionForm.selectedFeatures.includes(feat.id) ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10' : 'border-gray-200 dark:border-gray-700'">
+                                        <a-checkbox :checked="subscriptionForm.selectedFeatures.includes(feat.id)" @change="(e: any) => {
+                                            if (e.target.checked) subscriptionForm.selectedFeatures.push(feat.id);
+                                            else subscriptionForm.selectedFeatures = subscriptionForm.selectedFeatures.filter(id => id !== feat.id);
+                                        }" class="mt-1" />
+                                        <div>
+                                            <span class="font-medium block text-gray-900 dark:text-gray-100">{{ feat.name }}</span>
+                                            <span class="text-xs text-gray-500 mt-0.5 block">{{ feat.description }}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -299,14 +319,14 @@
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <a-form-item label="Contact Person Name" required>
-                                    <a-input v-model:value="piiForm.contact_name" />
+                                    <a-input v-model:value="piiForm.full_name" />
                                 </a-form-item>
                                 <a-form-item label="Contact Email" required>
                                     <a-input v-model:value="piiForm.email" type="email"
                                         @change="(e: any) => piiForm.email = e.target.value.toLowerCase()" />
                                 </a-form-item>
                                 <a-form-item label="Contact Phone" required>
-                                    <a-input v-model:value="piiForm.phone" />
+                                    <PhoneInput v-model="piiForm.phone_number" />
                                 </a-form-item>
                             </div>
                         </a-form>
@@ -355,7 +375,7 @@ const loading = ref(false);
 const showBrandingPreview = ref(false);
 const tenantId = ref<string | null>(null);
 
-const { createTenant, updateTenant, assignPlan, assignModules, getTenantModules, updateBranding, updatePii } = useTenantService();
+const { createTenant, updateTenant, assignPlan, assignModules, getTenantModules, updateBranding, updatePii, getFeatures, assignFeatures, createTenantFeature } = useTenantService();
 const { getRegistry, getActiveRegistry } = useModuleRegistry();
 const { getPlans } = usePlanService();
 
@@ -368,8 +388,19 @@ const tenantForm = reactive({
 // Registry & Plans Data
 const plans = ref<Plan[]>([]);
 const modules = ref<RegistryModule[]>([]);
+const featuresList = ref<any[]>([]);
 const registryPending = ref(false);
 const plansPending = ref(false);
+
+const groupedFeatures = computed(() => {
+    const groups: Record<string, any[]> = {};
+    featuresList.value.forEach(f => {
+        const smName = f.submodule_name || 'Other Features';
+        if (!groups[smName]) groups[smName] = [];
+        groups[smName].push(f);
+    });
+    return groups;
+});
 
 const fetchData = async () => {
     registryPending.value = true;
@@ -404,6 +435,18 @@ const fetchData = async () => {
     } finally {
         registryPending.value = false;
     }
+
+    // Fetch Features
+    try {
+        const featuresResponse = await getFeatures();
+        if (featuresResponse && featuresResponse.success && featuresResponse.data) {
+            featuresList.value = Array.isArray(featuresResponse.data) ? featuresResponse.data : (featuresResponse.data.results || []);
+            // Default select all features
+            subscriptionForm.selectedFeatures = featuresList.value.map(f => f.id);
+        }
+    } catch (e) {
+        console.error('Failed to fetch features', e);
+    }
 };
 
 fetchData();
@@ -417,7 +460,8 @@ const subscriptionForm = reactive({
     max_users: 100,
     max_client_users: 100,
     price: 0,
-    selectedModules: [] as string[]
+    selectedModules: [] as string[],
+    selectedFeatures: [] as string[]
 });
 
 // Branding Data
@@ -436,9 +480,9 @@ const brandingForm = reactive({
 const piiForm = reactive({
     gstin: '',
     address: '',
-    contact_name: '',
+    full_name: '',
     email: '',
-    phone: ''
+    phone_number: ''
 });
 
 const isCustomPlan = computed(() => {
@@ -480,7 +524,6 @@ const handleStep1 = async () => {
                 domain: `${tenantForm.domain}.nexspace.app`
             };
             const newTenant: any = await createTenant(payload);
-            console.log('Create Tenant Response:', newTenant);
 
             const newId = newTenant?.id || newTenant?.data?.id;
 
@@ -538,7 +581,6 @@ const handleStep2 = async () => {
             status: 'active'
         };
 
-        console.log('Assigning plan (Step 2) with payload:', payload);
         const planResponse: any = await assignPlan(payload as any);
 
         // Relaxed check
@@ -558,7 +600,6 @@ const handleStep2 = async () => {
 };
 
 const handleStep3 = async () => {
-    console.log('handleStep3 called. TenantId:', tenantId.value);
     if (!tenantId.value) {
         console.error('Tenant ID missing in handleStep3');
         return;
@@ -575,15 +616,27 @@ const handleStep3 = async () => {
                     priority: 10 - index
                 }))
             };
-            console.log('Assigning modules (Step 3):', modulePayload);
             await assignModules(modulePayload);
         }
 
-        message.success('Modules assigned successfully');
+        // 3. Assign Features
+        if (subscriptionForm.selectedFeatures.length > 0 && tenantId.value) {
+            await Promise.all(
+                subscriptionForm.selectedFeatures.map(featureId =>
+                    createTenantFeature({
+                        tenant: tenantId.value!,
+                        feature: featureId,
+                        is_active: true
+                    })
+                )
+            );
+        }
+
+        message.success('Modules & Features assigned successfully');
         currentStep.value++;
 
     } catch (error: any) {
-        message.error('Failed to assign modules');
+        message.error('Failed to assign modules & features');
         console.error('Step 3 Error:', error);
     } finally {
         loading.value = false;

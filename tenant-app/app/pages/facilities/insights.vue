@@ -62,43 +62,58 @@
 
             <!-- Top Facilities -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <a-card v-if="insights.top_facilities_by_visitors.length > 0">
+                <a-card>
                     <template #title>
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Top by Visitors</h3>
                     </template>
                     <a-table
+                        v-if="insights.top_facilities_by_visitors && insights.top_facilities_by_visitors.length > 0"
                         :dataSource="insights.top_facilities_by_visitors"
                         :columns="topVisitorsColumns"
                         :pagination="false"
                         size="small"
                         class="mt-4"
+                        row-key="facility_name"
                     />
+                    <div v-else class="text-center py-6 text-gray-400">
+                        No visitor data available
+                    </div>
                 </a-card>
 
-                <a-card v-if="insights.top_facilities_by_tickets.length > 0">
+                <a-card>
                     <template #title>
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Top by Tickets</h3>
                     </template>
                     <a-table
+                        v-if="insights.top_facilities_by_tickets && insights.top_facilities_by_tickets.length > 0"
                         :dataSource="insights.top_facilities_by_tickets"
                         :columns="topTicketsColumns"
                         :pagination="false"
                         size="small"
                         class="mt-4"
+                        row-key="facility_name"
                     />
+                    <div v-else class="text-center py-6 text-gray-400">
+                        No ticket data available
+                    </div>
                 </a-card>
 
-                <a-card v-if="insights.top_facilities_by_bookings.length > 0">
+                <a-card>
                     <template #title>
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Top by Bookings</h3>
                     </template>
                     <a-table
+                        v-if="insights.top_facilities_by_bookings && insights.top_facilities_by_bookings.length > 0"
                         :dataSource="insights.top_facilities_by_bookings"
                         :columns="topBookingsColumns"
                         :pagination="false"
                         size="small"
                         class="mt-4"
+                        row-key="facility_name"
                     />
+                    <div v-else class="text-center py-6 text-gray-400">
+                        No booking data available
+                    </div>
                 </a-card>
             </div>
         </template>
@@ -130,7 +145,12 @@ const dateRange = ref<[Dayjs, Dayjs]>([
 ])
 
 const fetchInsights = () => {
-    if (!dateRange.value || dateRange.value.length !== 2) return
+    if (!dateRange.value || dateRange.value.length !== 2) {
+        const startDate = dayjs().subtract(6, 'month').format('YYYY-MM-DD')
+        const endDate = dayjs().format('YYYY-MM-DD')
+        store.fetchInsightsAction(startDate, endDate)
+        return
+    }
     const startDate = dateRange.value[0].format('YYYY-MM-DD')
     const endDate = dateRange.value[1].format('YYYY-MM-DD')
     store.fetchInsightsAction(startDate, endDate)

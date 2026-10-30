@@ -9,49 +9,51 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Tenants Card -->
             <a-card>
-                <a-statistic title="Total Tenants" :value="stats.total" :value-style="{ color: '#1677ff' }">
+                <a-statistic title="Total Tenants" :value="dashboardData.stats.total_tenants.count" :value-style="{ color: '#1677ff' }">
                     <template #prefix>
                         <TeamOutlined />
                     </template>
                 </a-statistic>
                 <div class="mt-2 text-xs text-gray-500">
-                    <span class="text-green-500">{{ stats.active }} active</span> ·
-                    <span class="text-orange-500">{{ stats.trial }} trial</span>
+                    <span class="text-green-500">{{ dashboardData.stats.total_tenants.active }} active</span> ·
+                    <span class="text-orange-500">{{ dashboardData.stats.total_tenants.trial }} trial</span>
                 </div>
             </a-card>
 
             <!-- Active Plans Card -->
             <a-card>
-                <a-statistic title="Active Plans" :value="planStats.total" :value-style="{ color: '#52c41a' }">
+                <a-statistic title="Active Plans" :value="dashboardData.stats.active_plans.count" :value-style="{ color: '#52c41a' }">
                     <template #prefix>
                         <CreditCardOutlined />
                     </template>
                 </a-statistic>
                 <div class="mt-2 text-xs text-gray-500">
-                    {{ planStats.subscribed }} subscriptions
+                    {{ dashboardData.stats.active_plans.subscriptions }} subscriptions
                 </div>
             </a-card>
 
             <!-- Total Modules Card -->
             <a-card>
-                <a-statistic title="Available Modules" :value="moduleStats.total" :value-style="{ color: '#722ed1' }">
+                <a-statistic title="Available Modules" :value="dashboardData.stats.available_modules.count" :value-style="{ color: '#722ed1' }">
                     <template #prefix>
                         <AppstoreOutlined />
                     </template>
                 </a-statistic>
                 <div class="mt-2 text-xs text-gray-500">
-                    {{ moduleStats.active }} enabled
+                    {{ dashboardData.stats.available_modules.enabled }} enabled
                 </div>
             </a-card>
 
-            <!-- Revenue Card -->
+            <!-- Total Users Card -->
             <a-card>
-                <a-statistic title="Monthly Revenue" :value="12450" :precision="2" prefix="₹"
-                    :value-style="{ color: '#eb2f96' }" />
+                <a-statistic title="Total Users" :value="dashboardData.stats.total_users"
+                    :value-style="{ color: '#eb2f96' }">
+                    <template #prefix>
+                        <UserOutlined />
+                    </template>
+                </a-statistic>
                 <div class="mt-2 text-xs text-gray-500">
-                    <span class="text-green-500">
-                        <ArrowUpOutlined /> 12%
-                    </span> vs last month
+                    Active across platform
                 </div>
             </a-card>
         </div>
@@ -148,7 +150,7 @@ import {
     TeamOutlined,
     CreditCardOutlined,
     AppstoreOutlined,
-    ArrowUpOutlined,
+    UserOutlined,
     ThunderboltOutlined,
     PlusOutlined,
     SettingOutlined
@@ -158,12 +160,8 @@ import { useTenantStore } from '../../../stores/tenant'
 const tenantStore = useTenantStore()
 const loading = computed(() => tenantStore.loading)
 
-const stats = computed(() => tenantStore.stats)
-const recentTenants = computed(() => tenantStore.tenants.slice(0, 5))
-
-// Mock plan and module stats
-const planStats = ref({ total: 4, subscribed: 12 })
-const moduleStats = ref({ total: 8, active: 6 })
+const dashboardData = computed(() => tenantStore.dashboardData)
+const recentTenants = computed(() => tenantStore.dashboardData.recent_tenants)
 
 const getStatusColor = (status: string) => {
     switch (status) {
@@ -185,6 +183,6 @@ const getAvatarColor = (status: string) => {
 
 onMounted(() => {
     tenantStore.fetchTenants()
-    tenantStore.fetchStats()
+    tenantStore.fetchDashboardData()
 })
 </script>

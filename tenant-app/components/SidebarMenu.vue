@@ -53,7 +53,7 @@
                     </a-sub-menu>
 
                     <!-- Single Item -->
-                    <a-menu-item v-else :key="module.key + '-item'" class="mb-1 rounded-md">
+                    <a-menu-item v-else :key="module.key" class="mb-1 rounded-md">
                         <template #icon>
                             <component :is="getIconComponent(module.icon)" class="text-lg" />
                         </template>
@@ -86,7 +86,10 @@ import {
     TeamOutlined,
     CalendarOutlined,
     AppstoreOutlined,
-    DashboardOutlined
+    DashboardOutlined,
+    PictureOutlined,
+    GlobalOutlined,
+    NotificationOutlined
 } from '@ant-design/icons-vue';
 
 const props = defineProps<{
@@ -116,7 +119,10 @@ const iconMap: Record<string, any> = {
     'SafetyCertificateOutlined': SafetyCertificateOutlined,
     'ShoppingCartOutlined': ShoppingCartOutlined,
     'AppstoreOutlined': AppstoreOutlined,
-    'DashboardOutlined': DashboardOutlined
+    'DashboardOutlined': DashboardOutlined,
+    'PictureOutlined': PictureOutlined,
+    'GlobalOutlined': GlobalOutlined,
+    'NotificationOutlined': NotificationOutlined
 };
 
 const getIconComponent = (iconName?: string) => {
@@ -256,7 +262,8 @@ onMounted(async () => {
     try {
         // Fetch modules configuration from "API"
         const modulesFromApi = await getTenantModules();
-        allModules.value = hydrateModules(modulesFromApi);
+        let hydrated = hydrateModules(modulesFromApi);
+        allModules.value = hydrated;
 
         // Fetch user's module access if not already loaded
         if (authStore.modules.length === 0) {
@@ -271,6 +278,9 @@ onMounted(async () => {
 
 // Update on mount and route change
 watch(() => route.path, updateMenuState, { immediate: true });
+
+// Recompute active state when modules finish loading
+watch(filteredModules, updateMenuState, { flush: 'post' });
 </script>
 
 <style scoped>

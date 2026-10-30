@@ -24,6 +24,25 @@ vi.mock("../composables/facilityService", () => ({
             next: null,
             previous: null,
         }),
+        getAllFacilities: vi.fn().mockResolvedValue({
+            facilities: [
+                {
+                    id: "1",
+                    name: "HQ Building",
+                    address: "123 Main St",
+                    status: "Active",
+                },
+                {
+                    id: "2",
+                    name: "Tech Park",
+                    address: "456 Tech Ave",
+                    status: "Active",
+                },
+            ],
+            count: 2,
+            next: null,
+            previous: null,
+        }),
         createFacility: vi
             .fn()
             .mockResolvedValue({ id: "3", name: "New Building" }),

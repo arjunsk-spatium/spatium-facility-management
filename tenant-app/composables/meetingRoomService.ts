@@ -153,11 +153,26 @@ const BOOKING_API_BASE = "/api/portal/bookings/bookings";
 const API_BASE = "/api/portal/meeting-rooms/rooms";
 
 export interface BookingListParams {
+    meeting_room?: string;
     meeting_room__facility?: string;
     company?: string;
     booking_date?: string;
+    booking_status?: string;
+    status?: string;
+    search?: string;
+    start_date?: string;
+    end_date?: string;
+    date_from?: string;
+    date_to?: string;
     page?: number;
     page_size?: number;
+}
+
+export interface RoomListParams {
+    page?: number;
+    page_size?: number;
+    search?: string;
+    facility_id?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -170,12 +185,29 @@ export interface PaginatedResponse<T> {
 export const useMeetingRoomService = () => {
     const { $api } = useNuxtApp();
 
-    const getRooms = async (): Promise<MeetingRoom[]> => {
-        const result = await $api<any>(API_BASE + "/");
+    const getRooms = async (params: RoomListParams = {}): Promise<{
+        rooms: MeetingRoom[];
+        count: number;
+        next: string | null;
+        previous: string | null;
+    }> => {
+        const queryParams = new URLSearchParams();
+        if (params.page) queryParams.append("page", params.page.toString());
+        if (params.page_size) queryParams.append("page_size", params.page_size.toString());
+        if (params.search) queryParams.append("search", params.search);
+        if (params.facility_id) queryParams.append("facility_id", params.facility_id);
+        
+        const queryString = queryParams.toString();
+        const result = await $api<any>(API_BASE + "/" + (queryString ? `?${queryString}` : ""));
         if (result.success) {
-            return result.data.results || [];
+            return {
+                rooms: result.data.results || [],
+                count: result.data.count || 0,
+                next: result.data.next || null,
+                previous: result.data.previous || null,
+            };
         }
-        return [];
+        return { rooms: [], count: 0, next: null, previous: null };
     };
 
     const getRoomById = async (
@@ -214,6 +246,11 @@ export const useMeetingRoomService = () => {
     ): Promise<PaginatedResponse<Booking>> => {
         const queryParams = new URLSearchParams();
         if (params) {
+            if (params.meeting_room)
+                queryParams.append(
+                    "meeting_room",
+                    params.meeting_room,
+                );
             if (params.meeting_room__facility)
                 queryParams.append(
                     "meeting_room__facility",
@@ -222,6 +259,20 @@ export const useMeetingRoomService = () => {
             if (params.company) queryParams.append("company", params.company);
             if (params.booking_date)
                 queryParams.append("booking_date", params.booking_date);
+            if (params.booking_status)
+                queryParams.append("booking_status", params.booking_status);
+            if (params.status)
+                queryParams.append("status", params.status);
+            if (params.search)
+                queryParams.append("search", params.search);
+            if (params.start_date)
+                queryParams.append("start_date", params.start_date);
+            if (params.end_date)
+                queryParams.append("end_date", params.end_date);
+            if (params.date_from)
+                queryParams.append("date_from", params.date_from);
+            if (params.date_to)
+                queryParams.append("date_to", params.date_to);
             if (params.page) queryParams.append("page", params.page.toString());
             if (params.page_size)
                 queryParams.append("page_size", params.page_size.toString());

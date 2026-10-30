@@ -7,7 +7,13 @@ vi.mock("../composables/userService", () => ({
     useUserService: () => ({
         getUserModules: vi
             .fn()
-            .mockResolvedValue({ modules: ["dashboard", "visitors", "companies"], permissions: [] }),
+            .mockResolvedValue({ modules: ["dashboard", "visitors", "companies"], permissions: ["dashboard:view", "visitor_sticker_print"] }),
+        getUserAssignedModules: vi
+            .fn()
+            .mockResolvedValue({
+                submodule_permissions: [],
+                feature_permissions: [{ feature_permission: "visitor_sticker_print" }]
+            }),
     }),
 }));
 
@@ -99,13 +105,30 @@ describe("Auth Store", () => {
             expect(store.modules).toEqual([]);
         });
 
-        it("fetchModules should populate modules array", async () => {
+        it("fetchModules should populate modules array and fetch feature permissions", async () => {
             const store = useAuthStore();
+            store.user = { id: "1", name: "User" };
+            
+            const fetchMock = vi.fn().mockImplementation((url) => {
+                if (url.includes('/api/portal/modules/user/?user_id=')) {
+                    return Promise.resolve({ data: { feature_permissions: [{ feature_permission: "visitor_sticker_print" }] } });
+                }
+                if (url.includes('/api/platform/modules/features/')) {
+                    return Promise.resolve({ data: [{ id: "visitor_sticker_print", key: "visitor_sticker_print" }] });
+                }
+                return Promise.resolve({ data: [] });
+            });
+            
+            vi.stubGlobal("useNuxtApp", () => ({ $api: fetchMock }));
+
             await store.fetchModules();
 
             expect(store.modules).toContain("dashboard");
             expect(store.modules).toContain("visitors");
             expect(store.modules).toContain("companies");
+            expect(store.permissions).toContain("visitor_sticker_print");
+            
+            vi.unstubAllGlobals();
         });
 
         it("fetchModules should set SPOC modules when user is SPOC", async () => {
@@ -120,7 +143,43 @@ describe("Auth Store", () => {
             expect(store.modules).toContain("spoc-visitors-insights");
             expect(store.modules).toContain("spoc-visitors-list");
             expect(store.modules).toContain("spoc-visitors-invite");
-            expect(store.permissions).toEqual([]);
+            expect(store.modules).toContain("spoc_bookings");
+            expect(store.permissions).toContain("meeting-rooms-bookings:view");
+            expect(store.permissions).toContain("spoc_bookings:view");
+        });
+
+        it("companyId getter should correctly return company id from user context", () => {
+            const store = useAuthStore();
+            expect(store.companyId).toBeNull();
+
+            store.user = { id: "1", company_id: "comp-1" };
+            expect(store.companyId).toBe("comp-1");
+
+            store.user = { id: "1", company: { id: "comp-2" } };
+            expect(store.companyId).toBe("comp-2");
+
+            store.user = { id: "1", company: "comp-3" };
+            expect(store.companyId).toBe("comp-3");
+        });
+
+        it("isSpoc should correctly identify SPOC users", () => {
+            const store = useAuthStore();
+            expect(store.isSpoc).toBe(false);
+
+            store.user = { id: "1", email: "user@test.com", is_spoc: true };
+            expect(store.isSpoc).toBe(true);
+
+            store.user = { id: "2", email: "user@test.com", role: "spoc" };
+            expect(store.isSpoc).toBe(true);
+
+            store.user = { id: "3", email: "user@test.com", apps: ["client_portal"] };
+            expect(store.isSpoc).toBe(true);
+
+            store.user = { id: "4", email: "regular@test.com" };
+            expect(store.isSpoc).toBe(false);
+
+            store.modules = ["spoc_dashboard"];
+            expect(store.isSpoc).toBe(true);
         });
     });
 });

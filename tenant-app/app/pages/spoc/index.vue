@@ -19,7 +19,7 @@
         <!-- Stats Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div
-                class="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
+                class="bg-white dark:bg-transparent rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
@@ -35,7 +35,7 @@
             </div>
 
             <div
-                class="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
+                class="bg-white dark:bg-transparent rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 flex items-center justify-center">
@@ -51,7 +51,7 @@
             </div>
 
             <div
-                class="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
+                class="bg-white dark:bg-transparent rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
@@ -67,7 +67,7 @@
             </div>
 
             <div
-                class="bg-white dark:bg-neutral-800 rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
+                class="bg-white dark:bg-transparent rounded-xl p-4 sm:p-6 border border-gray-100 dark:border-neutral-700">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center">
@@ -84,9 +84,9 @@
         </div>
 
         <!-- Quick Actions -->
-        <div class="bg-white dark:bg-neutral-800 rounded-xl border border-gray-100 dark:border-neutral-700 p-4 sm:p-6">
+        <div class="bg-white dark:bg-transparent rounded-xl border border-gray-100 dark:border-neutral-700 p-4 sm:p-6">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
                 <QuickActionCard title="Pre-register Visitor" description="Send invite link" to="/spoc/visitors/invite"
                     :icon="UserAddOutlined" icon-bg-class="bg-blue-50 dark:bg-blue-900/30"
                     icon-class="text-blue-600 dark:text-blue-400" />
@@ -105,7 +105,7 @@
 
         <!-- Recent Visitors -->
         <div
-            class="bg-white dark:bg-neutral-800 rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
+            class="bg-white dark:bg-transparent rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
             <div
                 class="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-neutral-700 flex justify-between items-center">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Visitors</h2>
@@ -137,15 +137,13 @@
                             <td class="px-4 sm:px-6 py-4">
                                 <div>
                                     <p class="font-medium text-gray-900 dark:text-white">{{ visitor.name }}</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ visitor.phone }}</p>
+                                    <p v-if="visitor.phone || visitor.phone_number" class="text-sm text-gray-500 dark:text-gray-400">{{ visitor.phone || visitor.phone_number }}</p>
                                 </div>
                             </td>
                             <td class="px-4 sm:px-6 py-4 text-sm text-gray-600 dark:text-gray-300 hidden sm:table-cell">
-                                {{
-                                    visitor.purpose }}</td>
+                                {{ visitor.purpose }}</td>
                             <td class="px-4 sm:px-6 py-4 text-sm text-gray-600 dark:text-gray-300 hidden md:table-cell">
-                                {{
-                                    visitor.hostName }}</td>
+                                {{ visitor.hostName || visitor.host || '-' }}</td>
                             <td class="px-4 sm:px-6 py-4">
                                 <span :class="getStatusClass(visitor.status)"
                                     class="px-2 py-1 text-xs font-medium rounded-full">
@@ -162,11 +160,68 @@
                 </table>
             </div>
         </div>
+
+        <!-- Credit Transaction History (only when credit system is enabled) -->
+        <div v-if="creditSystemEnabled"
+            class="bg-white dark:bg-transparent rounded-xl border border-gray-100 dark:border-neutral-700 overflow-hidden">
+            <div
+                class="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-neutral-700 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Credit Transaction History</h2>
+                <div v-if="walletSummary" class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Balance:</span>
+                    <span class="text-lg font-bold text-green-600">{{ (walletSummary.current_balance ?? 0).toLocaleString() }}</span>
+                </div>
+            </div>
+            <div v-if="walletLoading" class="flex justify-center py-12">
+                <a-spin size="large" />
+            </div>
+            <div v-else>
+                <a-table :dataSource="walletTransactions" :columns="walletColumns" size="small"
+                    :pagination="{ pageSize: 5 }" rowKey="id">
+                    <template #bodyCell="{ column, record }">
+                        <template v-if="column.key === 'transaction_type'">
+                            <a-tag :color="getTransactionTypeTag(record.transaction_type, record.credits).color">
+                                {{ getTransactionTypeTag(record.transaction_type, record.credits).label }}
+                            </a-tag>
+                        </template>
+                        <template v-if="column.key === 'credits'">
+                            <span
+                                :class="isPositiveTransaction(record) ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-red-500 dark:text-red-400 font-semibold'">
+                                {{ isPositiveTransaction(record) ? '+' : '-' }}{{ Math.abs(record.credits ?? 0).toLocaleString() }}
+                            </span>
+                        </template>
+                        <template v-if="column.key === 'balance_after'">
+                            <span class="font-medium">{{ (record.balance_after ?? 0).toLocaleString() }}</span>
+                        </template>
+                        <template v-if="column.key === 'reference_type'">
+                            <div>
+                                <span class="text-gray-700 dark:text-gray-200 text-xs font-medium">
+                                    {{ formatReferenceType(record.reference_type) }}
+                                </span>
+                                <div v-if="record.reference_id" class="text-[11px] text-gray-400 dark:text-gray-500 font-mono truncate max-w-xs" :title="record.reference_id">
+                                    Ref: {{ record.reference_id }}
+                                </div>
+                                <div v-if="record.metadata?.reason" class="text-xs text-gray-400 mt-0.5">
+                                    {{ record.metadata.reason }}
+                                </div>
+                                <div v-else-if="record.metadata?.source" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                                    Source: {{ record.metadata.source }}
+                                    <span v-if="record.metadata?.allocated"> · Allocated: {{ record.metadata.allocated.toLocaleString() }}</span>
+                                </div>
+                            </div>
+                        </template>
+                        <template v-if="column.key === 'created_at'">
+                            {{ formatDate(record.created_at) }}
+                        </template>
+                    </template>
+                </a-table>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
     PlusOutlined,
@@ -184,19 +239,104 @@ definePageMeta({
 })
 
 const store = useSpocStore()
-const { stats, visitors } = storeToRefs(store)
+const { stats, visitors, recentVisitors: storeRecentVisitors } = storeToRefs(store)
 
-const recentVisitors = computed(() => visitors.value.slice(0, 5))
+const recentVisitors = computed(() => {
+    if (storeRecentVisitors.value && storeRecentVisitors.value.length > 0) {
+        return storeRecentVisitors.value.slice(0, 5)
+    }
+    return visitors.value.slice(0, 5)
+})
+
+// --- Credit System ---
+const creditSystemEnabled = ref(false)
+const walletLoading = ref(false)
+const walletTransactions = ref<any[]>([])
+const walletSummary = ref<{ company_name: string; current_balance: number; total_transactions: number } | null>(null)
+
+const walletColumns = [
+    { title: 'Type', dataIndex: 'transaction_type', key: 'transaction_type', width: 90 },
+    { title: 'Credits', dataIndex: 'credits', key: 'credits', align: 'right' as const, width: 90 },
+    { title: 'Balance', dataIndex: 'balance_after', key: 'balance_after', align: 'right' as const, width: 90 },
+    { title: 'Reference', dataIndex: 'reference_type', key: 'reference_type' },
+    { title: 'Date', dataIndex: 'created_at', key: 'created_at', width: 140 },
+]
+
+const getTransactionTypeTag = (type: string, credits?: number) => {
+    const lower = (type || '').toLowerCase()
+    if (lower === 'credit') return { color: 'green', label: 'Credit' }
+    if (lower === 'debit') return { color: 'red', label: 'Debit' }
+    if (lower === 'adjustment') {
+        return { color: credits !== undefined && credits < 0 ? 'orange' : 'blue', label: 'Adjustment' }
+    }
+    if (lower === 'refund') return { color: 'cyan', label: 'Refund' }
+    return { color: 'default', label: type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Unknown' }
+}
+
+const isPositiveTransaction = (record: any) => {
+    if (typeof record.credits === 'number') {
+        return record.credits >= 0
+    }
+    return record.transaction_type?.toLowerCase() === 'credit'
+}
+
+const fetchCreditConfig = async () => {
+    try {
+        const { $api } = useNuxtApp()
+        const response = await $api<any>('/api/portal/visitors/public/tenant-config/')
+        if (response.success && response.data) {
+            creditSystemEnabled.value = response.data.credit_system_enabled ?? false
+        }
+    } catch (err) {
+        creditSystemEnabled.value = false
+    }
+}
+
+const fetchWalletTransactions = async () => {
+    walletLoading.value = true
+    try {
+        const { $api } = useNuxtApp()
+        const result = await $api<any>('/api/portal/users/client_portal/wallet-transactions/')
+        if (result.success && result.data) {
+            walletTransactions.value = result.data.transactions || []
+            walletSummary.value = {
+                company_name: result.data.company_name || '',
+                current_balance: result.data.current_balance ?? 0,
+                total_transactions: result.data.total_transactions ?? 0
+            }
+        }
+    } catch (err) {
+        console.error('Failed to fetch wallet transactions:', err)
+    } finally {
+        walletLoading.value = false
+    }
+}
+
+const formatReferenceType = (type: string) => {
+    if (!type || type === '--') return 'N/A'
+    return type
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+}
+
+const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '-'
+    return new Date(dateStr).toLocaleString(undefined, {
+        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    })
+}
 
 const getStatusClass = (status: string) => {
     const classes: Record<string, string> = {
-        'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-        'approved': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-        'checked_in': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400',
+        'approved': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400',
+        'checked_in': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400',
         'checked_out': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-        'rejected': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+        'rejected': 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'
     }
-    return classes[status] || classes['pending']
+    const key = status?.toLowerCase() || 'pending'
+    return classes[key] || classes['pending']
 }
 
 const getStatusLabel = (status: string) => {
@@ -207,13 +347,19 @@ const getStatusLabel = (status: string) => {
         'checked_out': 'Checked Out',
         'rejected': 'Rejected'
     }
-    return labels[status] || status
+    const key = status?.toLowerCase() || 'pending'
+    return labels[key] || status
 }
 
 onMounted(async () => {
     await Promise.all([
         store.fetchStats(),
-        store.fetchVisitors()
+        store.fetchVisitors(),
+        fetchCreditConfig()
     ])
+    // Only fetch wallet transactions if credit system is enabled
+    if (creditSystemEnabled.value) {
+        await fetchWalletTransactions()
+    }
 })
 </script>

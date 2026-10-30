@@ -36,6 +36,15 @@ export const useAuthStore = defineStore("auth", {
             state.modules.includes(module),
         hasPermission: (state) => (permission: string) =>
             state.permissions.includes(permission),
+        isSpoc: (state): boolean => {
+            if (!state.user && !state.modules.length) return false;
+            const user = state.user;
+            if (user?.is_spoc === true || user?.is_spoc === "true" || user?.is_spoc === 1) return true;
+            if (user?.role && String(user.role).toLowerCase() === "spoc") return true;
+            if (Array.isArray(user?.apps) && user.apps.some((app: string) => app.toLowerCase().replace(/\s/g, "_") === "client_portal")) return true;
+            if (state.modules.includes("spoc_dashboard")) return true;
+            return false;
+        },
         userFullName: (state) => {
             if (!state.user) return "";
             if (state.user.full_name) return state.user.full_name;
@@ -45,6 +54,14 @@ export const useAuthStore = defineStore("auth", {
             }
             if (state.user.username) return state.user.username;
             return state.user.email?.split("@")[0] || "User";
+        },
+        companyId: (state): string | null => {
+            const user = state.user;
+            if (!user) return null;
+            if (user.company_id) return String(user.company_id);
+            if (typeof user.company === 'object' && user.company?.id) return String(user.company.id);
+            if (typeof user.company === 'string' || typeof user.company === 'number') return String(user.company);
+            return null;
         },
     },
     actions: {
@@ -104,6 +121,13 @@ export const useAuthStore = defineStore("auth", {
                         // Keep legacy key for backward compatibility
                         localStorage.setItem("auth_token", this.token || "");
                     }
+
+                    // Automatically fetch and populate modules
+                    try {
+                        await this.fetchModules();
+                    } catch (e) {
+                        console.error("Error fetching modules after login", e);
+                    }
                 } else {
                     throw new Error(response.message || "Login failed");
                 }
@@ -117,14 +141,12 @@ export const useAuthStore = defineStore("auth", {
         async refreshAccessToken(): Promise<boolean> {
             // Prevent multiple simultaneous refresh attempts
             if (this.isRefreshing) {
-                console.log("[Auth] Already refreshing, waiting for existing refresh...");
                 // Wait for the existing refresh to complete
                 let waited = 0;
                 while (this.isRefreshing && waited < 5000) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                     waited += 100;
                 }
-                console.log("[Auth] After waiting, isRefreshing:", this.isRefreshing, "has token:", !!this.token);
                 return !!this.token;
             }
 
@@ -137,7 +159,6 @@ export const useAuthStore = defineStore("auth", {
             const config = useRuntimeConfig();
 
             try {
-                console.log("[Auth] Refreshing token...");
                 const response: any = await $fetch(
                     `${config.public.apiBaseUrl}/api/auth/token/refresh/`,
                     {
@@ -147,7 +168,6 @@ export const useAuthStore = defineStore("auth", {
                         },
                     },
                 );
-                console.log("[Auth] Refresh response:", response);
 
                 if (response.success && response.data) {
                     this.token = response.data.access;
@@ -163,7 +183,6 @@ export const useAuthStore = defineStore("auth", {
                         localStorage.setItem("auth_token", this.token || "");
                     }
 
-                    console.log("Token refreshed successfully");
                     return true;
                 }
 
@@ -200,24 +219,64 @@ export const useAuthStore = defineStore("auth", {
 
         async fetchModules() {
             // If user is SPOC, skip API call and use static SPOC modules
-            if (this.user?.is_spoc) {
+            if (this.isSpoc) {
                 this.modules = [
                     'spoc_dashboard',
                     'spoc_visitors',
                     'spoc-visitors-insights',
                     'spoc-visitors-list',
                     'spoc-visitors-invite',
-                    'spoc_employees'
+                    'spoc_employees',
+                    'spoc_bookings',
+                    'spoc_config'
                 ];
-                this.permissions = [];
+                this.permissions = [
+                    'meeting-rooms-bookings:view',
+                    'spoc_bookings:view'
+                ];
                 return;
             }
 
-            const { getUserModules } = useUserService();
+            const { getUserModules, getUserAssignedModules } = useUserService();
             try {
                 const { modules, permissions } = await getUserModules();
                 this.modules = modules;
                 this.permissions = permissions;
+                
+                // Fetch assigned features using user ID to ensure they are present
+                if (this.user?.id) {
+                    try {
+                        const { $api } = useNuxtApp()
+                        // Use $api directly since getUserAssignedModules might not be available or formats differently
+                        const response = await $api<any>(`/api/portal/modules/user/?user_id=${this.user.id}`);
+                        if (response?.data?.feature_permissions) {
+                            response.data.feature_permissions.forEach((fp: any) => {
+                                // Add both the ID and the potential string keys to be safe
+                                const featureId = fp.feature_permission || fp.feature || fp.id;
+                                if (featureId && !this.permissions.includes(featureId)) {
+                                    this.permissions.push(featureId);
+                                }
+                            });
+                        }
+                    } catch (fErr) {
+                        console.error("Failed to fetch feature permissions directly", fErr);
+                    }
+                }
+                
+                // Let's also fetch the platform features to map IDs to keys
+                try {
+                    const { $api } = useNuxtApp()
+                    const fRes = await $api<any>('/api/platform/modules/features/');
+                    if (fRes?.data) {
+                        fRes.data.forEach((f: any) => {
+                            if (this.permissions.includes(f.id) && !this.permissions.includes(f.key)) {
+                                this.permissions.push(f.key);
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.error("Failed to map feature keys", err);
+                }
             } catch (error) {
                 console.error("Failed to fetch modules", error);
                 this.modules = [];

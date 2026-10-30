@@ -10,6 +10,7 @@ interface ApiOptions {
     body?: any;
     headers?: Record<string, string>;
     responseType?: 'json' | 'blob' | 'text';
+    skipToken?: boolean;
 }
 
 // Type augmentation for Nuxt
@@ -30,10 +31,10 @@ export default defineNuxtPlugin(() => {
     const baseUrl = config.public.apiBaseUrl;
 
     // Get auth headers from localStorage
-    const getAuthHeaders = (): Record<string, string> => {
+    const getAuthHeaders = (skipToken?: boolean): Record<string, string> => {
         if (typeof window === "undefined") return {};
         const token = localStorage.getItem("access_token");
-        const headers: Record<string, string> = token
+        const headers: Record<string, string> = (token && !skipToken)
             ? { Authorization: `Bearer ${token}` }
             : {};
         // Inject tenant ID — prefer store, fall back to localStorage
@@ -78,8 +79,9 @@ export default defineNuxtPlugin(() => {
         endpoint: string,
         options: ApiOptions = {},
     ): Promise<T> => {
-        const { query, body, method = "GET", headers = {} } = options;
+        const { query, body, method = "GET", headers = {}, skipToken } = options;
         const url = buildUrl(endpoint, query);
+        const shouldSkipToken = skipToken || endpoint.includes("/api/portal/tenants/public/domain/");
 
         // Initial request
         const makeRequest = async (
@@ -110,35 +112,23 @@ export default defineNuxtPlugin(() => {
         };
 
         try {
-            let response = await makeRequest(getAuthHeaders());
-            console.log("[API] Initial response status:", response.status);
+            let response = await makeRequest(getAuthHeaders(shouldSkipToken));
 
             // Handle 401 - attempt token refresh
             if (response.status === 401) {
-                console.log("[API] Received 401, attempting token refresh...");
-
                 const authStore = useAuthStore();
                 const refreshSuccess = await authStore.refreshAccessToken();
-                console.log("[API] Refresh success:", refreshSuccess);
 
                 if (refreshSuccess) {
-                    console.log("[API] Token refreshed, retrying request...");
-                    const newToken = localStorage.getItem("access_token");
-                    console.log("[API] New token:", newToken ? "present" : "missing");
                     // Retry with new token
-                    response = await makeRequest(getAuthHeaders());
-                    console.log("[API] Retry response status:", response.status);
+                    response = await makeRequest(getAuthHeaders(shouldSkipToken));
 
                     // If retry also returns 401, refresh failed - throw error
                     if (response.status === 401) {
-                        console.log("[API] Retry also returned 401, logout required");
                         authStore.logout();
                         throw new Error("Authentication failed");
                     }
                 } else {
-                    console.log(
-                        "[API] Token refresh failed, redirecting to login...",
-                    );
                     authStore.logout();
                     throw new Error("Authentication failed");
                 }

@@ -3,6 +3,14 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CompanyListPage from '../../app/pages/companies/index.vue'
 import { createTestingPinia } from '@pinia/testing'
 
+vi.mock('../../stores/auth', () => ({
+    useAuthStore: vi.fn(() => ({
+        hasPermission: vi.fn(() => true),
+        hasModule: vi.fn(() => true),
+        permissions: []
+    }))
+}))
+
 describe('Company List Page', () => {
     it('should render list of companies', async () => {
         const wrapper = await mountSuspended(CompanyListPage, {
@@ -10,12 +18,25 @@ describe('Company List Page', () => {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
                     initialState: {
+                        allCompany: {
+                            companies: [
+                                { id: '1', name: 'Test Corp A', status: 'active', contacts: [{ contact_name: 'John Doe', email: 'john@test.com', phone: '123', address: '123 St' }] },
+                                { id: '2', name: 'Test Corp B', status: 'inactive', contacts: [{ contact_name: 'Jane Doe', email: 'jane@test.com', phone: '456', address: '456 St' }] }
+                            ],
+                            loading: false,
+                            count: 2,
+                            page: 1,
+                            pageSize: 10
+                        },
                         company: {
                             companies: [
-                                { id: '1', name: 'Test Corp A', spoc_name: 'John Doe', spoc_email: 'john@test.com', spoc_phone: '123', status: 'active' },
-                                { id: '2', name: 'Test Corp B', spoc_name: 'Jane Doe', spoc_email: 'jane@test.com', spoc_phone: '456', status: 'inactive' }
+                                { id: '1', name: 'Test Corp A', status: 'active', contacts: [{ contact_name: 'John Doe', email: 'john@test.com', phone: '123', address: '123 St' }] },
+                                { id: '2', name: 'Test Corp B', status: 'inactive', contacts: [{ contact_name: 'Jane Doe', email: 'jane@test.com', phone: '456', address: '456 St' }] }
                             ],
-                            loading: false
+                            loading: false,
+                            count: 2,
+                            page: 1,
+                            pageSize: 10
                         }
                     }
                 })]
@@ -31,7 +52,7 @@ describe('Company List Page', () => {
             global: {
                 plugins: [createTestingPinia({
                     createSpy: vi.fn,
-                    initialState: { company: { companies: [] } }
+                    initialState: { company: { companies: [], count: 0, page: 1, pageSize: 10 } }
                 })]
             }
         })

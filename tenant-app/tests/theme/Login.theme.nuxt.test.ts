@@ -78,7 +78,7 @@ describe('Login Page Theme Adaptation', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Acme Inc')
+    expect(wrapper.find('img[alt="Acme Inc"]').exists()).toBe(true)
   })
 
   it('should have dark mode classes on container', async () => {
@@ -133,7 +133,7 @@ describe('Login Page Theme Adaptation', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Spatium Hub')
+    expect(wrapper.text()).toContain('Nexspace Hub')
   })
 
   it('should have email and password inputs with proper labels', async () => {

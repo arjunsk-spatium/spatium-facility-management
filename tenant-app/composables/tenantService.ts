@@ -14,6 +14,8 @@ export interface TenantConfig {
     id: string;
     tenant: string;
     credit_system_enabled: boolean;
+    visitor_company_required: boolean;
+    visitor_email_required: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -26,7 +28,7 @@ export const useTenantService = () => {
         // Replace with real API call when tenant API is available
         return {
             id,
-            name: "Spatium Hub",
+            name: "Nexspace Hub",
             logoUrl: "",
             faviconUrl: "/favicon.ico",
             colors: {
@@ -61,6 +63,7 @@ export const useTenantService = () => {
             const response = await $api<any>("/api/portal/tenants/public/domain/", {
                 method: "POST",
                 body: { domain },
+                skipToken: true,
             });
 
             if (response && response.success && response.data) {
