@@ -1214,6 +1214,45 @@ export const useHelpdeskService = () => {
             }
         },
 
+        getAssignableRoles: async (): Promise<HelpdeskRole[]> => {
+            try {
+                const response = await $api<any>(
+                    "/api/portal/helpdesk/roles/assignable/",
+                    { method: "GET" },
+                );
+                if (response?.success === false || (response?.data && response.data.success === false)) {
+                    throw new Error(
+                        response.message ||
+                            response.data?.message ||
+                            "Failed to fetch assignable roles",
+                    );
+                }
+                let target = response;
+                if (target?.data?.data !== undefined) {
+                    target = target.data.data;
+                } else if (target?.data !== undefined) {
+                    target = target.data;
+                }
+
+                if (Array.isArray(target)) {
+                    return target;
+                }
+                if (Array.isArray(target?.results)) {
+                    return target.results;
+                }
+                if (Array.isArray(response?.results)) {
+                    return response.results;
+                }
+                if (Array.isArray(response)) {
+                    return response;
+                }
+                return [];
+            } catch (error) {
+                console.error("Error fetching assignable roles:", error);
+                throw error;
+            }
+        },
+
         getPriorities: async (): Promise<HelpdeskPriority[]> => {
             try {
                 const response = await $api<
