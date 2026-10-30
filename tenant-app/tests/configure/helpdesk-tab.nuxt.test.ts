@@ -53,7 +53,7 @@ vi.mock('../../composables/helpdeskService', () => ({
         getCategories: mockGetCategories,
         getSubCategories: mockGetSubCategories,
         getSubCategoriesPaginated: mockGetSubCategoriesPaginated,
-        getRoles: mockGetRoles,
+        getSystemRoles: mockGetRoles,
         getPriorities: mockGetPriorities,
         getAssignmentModes: mockGetAssignmentModes,
         createSubCategory: mockCreateSubCategory,

@@ -481,7 +481,7 @@ const handleCategoryFilterChange = () => {
 const fetchRoles = async () => {
     loadingRoles.value = true
     try {
-        roles.value = await service.getRoles()
+        roles.value = await service.getSystemRoles()
     } catch (error) {
         message.error('Failed to load roles')
     } finally {
