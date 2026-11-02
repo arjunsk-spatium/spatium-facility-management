@@ -53,7 +53,7 @@ vi.mock('../../composables/helpdeskService', () => ({
         getCategories: mockGetCategories,
         getSubCategories: mockGetSubCategories,
         getSubCategoriesPaginated: mockGetSubCategoriesPaginated,
-        getSystemRoles: mockGetRoles,
+        getAssignableRoles: mockGetRoles,
         getPriorities: mockGetPriorities,
         getAssignmentModes: mockGetAssignmentModes,
         createSubCategory: mockCreateSubCategory,
@@ -581,5 +581,88 @@ describe('HelpdeskTab Component', () => {
         expect(mockDeleteSubCategory).toHaveBeenCalledWith('subcat-1')
         expect(mockGetSubCategoriesPaginated).toHaveBeenCalled()
     })
-})
 
+    it('hides required_role for a Helpdesk Manual mode even when its id matches a hardcoded scope ladder id', async () => {
+        mockGetAssignmentModes.mockResolvedValue([
+            ...mockAssignmentModes,
+            { id: '00000000-0000-0000-0000-000000000302', name: 'Helpdesk Manual', key: 'helpdesk_manual', description: 'Helpdesk manual assignment', display_order: 4 }
+        ])
+        const wrapper = await mountSuspended(HelpdeskTab, {
+            props: {
+                canCreate: true,
+                canUpdate: true,
+                canDelete: true
+            }
+        })
+
+        ;(wrapper.vm as any).activeSubTab = 'subcategory'
+        await wrapper.vm.$nextTick()
+
+        const tables = wrapper.findAllComponents(ConfigTable)
+        const subcatTable = tables.find(t => t.props('title') === 'Subcategories')!
+
+        await subcatTable.vm.$emit('fieldChange', 'assignment_mode', 'mode-auto')
+        expect(subcatTable.props('fields').find((f: any) => f.name === 'required_role')).toBeDefined()
+
+        await subcatTable.vm.$emit('fieldChange', 'assignment_mode', '00000000-0000-0000-0000-000000000302')
+        expect(subcatTable.props('fields').find((f: any) => f.name === 'required_role')).toBeUndefined()
+    })
+
+    it('sends required_role as null when adding a subcategory with manual assignment mode', async () => {
+        mockCreateSubCategory.mockResolvedValue({ id: 'subcat-2', category: 'cat-1', name: 'Fans' })
+        const wrapper = await mountSuspended(HelpdeskTab, {
+            props: {
+                canCreate: true,
+                canUpdate: true,
+                canDelete: true
+            }
+        })
+
+        ;(wrapper.vm as any).activeSubTab = 'subcategory'
+        await wrapper.vm.$nextTick()
+
+        const tables = wrapper.findAllComponents(ConfigTable)
+        const subcatTable = tables.find(t => t.props('title') === 'Subcategories')!
+
+        await subcatTable.vm.$emit('add', {
+            parent_id: 'cat-1',
+            name: 'Fans',
+            assignment_mode: 'mode-manual',
+            required_role: 'role-1'
+        })
+
+        expect(mockCreateSubCategory).toHaveBeenCalledWith(expect.objectContaining({
+            assignment_mode: 'mode-manual',
+            required_role: null
+        }))
+    })
+
+    it('sends required_role as null when editing a subcategory to manual assignment mode', async () => {
+        mockUpdateSubCategory.mockResolvedValue({ ...mockSubcategories[0], assignment_mode: 'mode-manual' })
+        const wrapper = await mountSuspended(HelpdeskTab, {
+            props: {
+                canCreate: true,
+                canUpdate: true,
+                canDelete: true
+            }
+        })
+
+        ;(wrapper.vm as any).activeSubTab = 'subcategory'
+        await wrapper.vm.$nextTick()
+
+        const tables = wrapper.findAllComponents(ConfigTable)
+        const subcatTable = tables.find(t => t.props('title') === 'Subcategories')!
+
+        await subcatTable.vm.$emit('edit', mockSubcategories[0], {
+            parent_id: 'cat-1',
+            name: 'Lighting',
+            assignment_mode: 'mode-manual',
+            required_role: 'role-1'
+        })
+
+        expect(mockUpdateSubCategory).toHaveBeenCalledWith('subcat-1', expect.objectContaining({
+            assignment_mode: 'mode-manual',
+            required_role: null
+        }))
+    })
+})

@@ -3,6 +3,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import CompanyDetailsPage from '../../app/pages/companies/[id]/index.vue'
 import { createTestingPinia } from '@pinia/testing'
 import { useCompanyStore } from '../../stores/company'
+import { message } from 'ant-design-vue'
 
 describe('Company Details Page', () => {
     const mockCompany = {
@@ -109,5 +110,46 @@ describe('Company Details Page', () => {
         expect(wrapper.text()).toContain('Employee List')
         const tables = wrapper.findAllComponents({ name: 'ATable' })
         expect(tables.length).toBeGreaterThan(0)
+    })
+
+    it('should show the backend error message when QR code generation fails', async () => {
+        const errorSpy = vi.spyOn(message, 'error').mockImplementation(() => ({}) as any)
+        const wrapper = await mountSuspended(CompanyDetailsPage, {
+            route: {
+                params: { id: '1' }
+            },
+            global: {
+                plugins: [createTestingPinia({ createSpy: vi.fn })]
+            }
+        })
+        const store = useCompanyStore()
+        vi.mocked(store.generateCompanyQRCode).mockRejectedValueOnce(
+            Object.assign(new Error('HTTP 400'), { data: { message: 'Facility is not mapped to this company' } })
+        )
+
+        await (wrapper.vm as any).generateQR('fac-1', 'Tech Corp')
+
+        expect(store.generateCompanyQRCode).toHaveBeenCalledWith('1', 'Tech Corp', 'fac-1')
+        expect(errorSpy).toHaveBeenCalledWith('Facility is not mapped to this company')
+        errorSpy.mockRestore()
+    })
+
+    it('should call the store QR action and show success when QR code generation succeeds', async () => {
+        const successSpy = vi.spyOn(message, 'success').mockImplementation(() => ({}) as any)
+        const wrapper = await mountSuspended(CompanyDetailsPage, {
+            route: {
+                params: { id: '1' }
+            },
+            global: {
+                plugins: [createTestingPinia({ createSpy: vi.fn })]
+            }
+        })
+        const store = useCompanyStore()
+
+        await (wrapper.vm as any).generateQR('fac-1', 'Tech Corp')
+
+        expect(store.generateCompanyQRCode).toHaveBeenCalledWith('1', 'Tech Corp', 'fac-1')
+        expect(successSpy).toHaveBeenCalledWith('QR Code generated successfully')
+        successSpy.mockRestore()
     })
 })

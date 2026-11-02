@@ -384,7 +384,20 @@ const isScopeLadderAssignmentMode = (modeIdOrKey?: string) => {
     )
 }
 
+const isManualAssignmentMode = (modeIdOrKey?: string) => {
+    if (!modeIdOrKey) return false
+    const mode = assignmentModes.value.find(m => m.id === modeIdOrKey || m.key === modeIdOrKey)
+    if (mode) {
+        const key = mode.key?.toLowerCase() || ''
+        const name = mode.name?.toLowerCase() || ''
+        return key.includes('manual') || name.includes('manual')
+    }
+    return String(modeIdOrKey).toLowerCase().includes('manual')
+}
+
 const isRequiresRoleAssignmentMode = (modeIdOrKey?: string) => {
+    // Manual (e.g. Helpdesk Manual) never takes a role, even if its id matches a hardcoded auto/scope id
+    if (isManualAssignmentMode(modeIdOrKey)) return false
     return isAutoAssignmentMode(modeIdOrKey) || isScopeLadderAssignmentMode(modeIdOrKey)
 }
 
@@ -481,7 +494,7 @@ const handleCategoryFilterChange = () => {
 const fetchRoles = async () => {
     loadingRoles.value = true
     try {
-        roles.value = await service.getSystemRoles()
+        roles.value = await service.getAssignableRoles()
     } catch (error) {
         message.error('Failed to load roles')
     } finally {
@@ -633,7 +646,7 @@ const handleAddSubcategory = async (data: any) => {
             name: data.name,
             key: data.name.toLowerCase().replace(/\s+/g, '_'),
             default_priority: data.default_priority,
-            required_role: data.required_role,
+            required_role: isRequiresRoleAssignmentMode(data.assignment_mode) ? data.required_role : null,
             assignment_mode: data.assignment_mode,
             default_estimated_effort_min: data.default_estimated_effort_min ? Number(data.default_estimated_effort_min) : null,
             response_sla: data.response_sla || 120,
@@ -658,7 +671,7 @@ const handleEditSubcategory = async (record: HelpdeskSubCategory, data: any) => 
             name: data.name,
             key: record.key,
             default_priority: data.default_priority,
-            required_role: data.required_role,
+            required_role: isRequiresRoleAssignmentMode(data.assignment_mode) ? data.required_role : null,
             assignment_mode: data.assignment_mode,
             default_estimated_effort_min: data.default_estimated_effort_min ? Number(data.default_estimated_effort_min) : null,
             response_sla: data.response_sla,

@@ -32,6 +32,7 @@ export interface SpocEmployee {
     id: string
     name: string
     email: string
+    employee_id?: string | null
     phone?: string
     department?: string
     department_id?: string
@@ -381,6 +382,7 @@ export const useSpocStore = defineStore('spoc', {
                         id: u.id,
                         name: u.full_name || u.email?.split('@')[0] || 'Unknown',
                         email: u.email,
+                        employee_id: u.employee_id || '',
                         phone: u.phone_number,
                         department: u.department_name || u.department || '',
                         department_id: u.department_id || '',
@@ -558,6 +560,9 @@ export const useSpocStore = defineStore('spoc', {
                     department_id: data.department_id
                 }
 
+                if (data.employee_id) {
+                    body.employee_id = data.employee_id
+                }
                 if (data.gender) {
                     body.gender = data.gender
                 }
@@ -578,6 +583,7 @@ export const useSpocStore = defineStore('spoc', {
                         id: response.data.id || Date.now().toString(),
                         name: data.name || '',
                         email: data.email || '',
+                        employee_id: response.data.employee_id ?? data.employee_id ?? null,
                         phone: data.phone,
                         department: data.department,
                         department_id: data.department_id,
@@ -701,6 +707,9 @@ export const useSpocStore = defineStore('spoc', {
                     department_id: data.department_id
                 }
 
+                if (data.employee_id !== undefined) {
+                    body.employee_id = data.employee_id
+                }
                 if (data.gender !== undefined) {
                     body.gender = data.gender
                 }

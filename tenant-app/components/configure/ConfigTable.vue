@@ -224,6 +224,17 @@ watch(() => formData.value, (newVal) => {
     emit('fieldChange', newVal)
 }, { deep: true })
 
+// Clear values of fields that get hidden (e.g. required_role when assignment mode is set to manual)
+watch(() => props.fields?.map(f => f.name) ?? [], (newNames, oldNames) => {
+    oldNames
+        .filter(name => !newNames.includes(name))
+        .forEach(name => {
+            if (formData.value[name] !== undefined) {
+                formData.value[name] = undefined
+            }
+        })
+})
+
 // Methods
 const openAddModal = () => {
     isEditing.value = false

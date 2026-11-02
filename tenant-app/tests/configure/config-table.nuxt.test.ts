@@ -60,4 +60,27 @@ describe('ConfigTable Component', () => {
         expect(pagination.pageSize).toBe(25)
         expect(pagination.total).toBe(100)
     })
+
+    it('clears the value of a field when it is removed from fields', async () => {
+        const roleField = { name: 'required_role', label: 'Required Role', type: 'select' as const, options: [{ label: 'Technician', value: 'role-1' }] }
+        const modeField = { name: 'assignment_mode', label: 'Assignment Mode', type: 'select' as const, options: [] }
+
+        const wrapper = await mountSuspended(ConfigTable, {
+            props: {
+                title: 'Items',
+                columns,
+                data,
+                fields: [modeField, roleField]
+            }
+        })
+
+        const vm = wrapper.vm as any
+        vm.formData.assignment_mode = 'mode-auto'
+        vm.formData.required_role = 'role-1'
+
+        await wrapper.setProps({ fields: [modeField] })
+
+        expect(vm.formData.required_role).toBeUndefined()
+        expect(vm.formData.assignment_mode).toBe('mode-auto')
+    })
 })
