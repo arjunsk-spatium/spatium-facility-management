@@ -192,9 +192,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, EditOutlined, DeleteOutlined, BankOutlined } from '@ant-design/icons-vue'
-import UserFacilityAssignmentModal from '../../../components/UserFacilityAssignmentModal.vue'
-import { useUserService, type OperationalStaff } from '../../../composables/userService'
-import { useFacilityService, type Facility } from '../../../composables/facilityService'
+import UserFacilityAssignmentModal from '../../../../components/UserFacilityAssignmentModal.vue'
+import { useUserService, type OperationalStaff } from '../../../../composables/userService'
+import { useFacilityService, type Facility } from '../../../../composables/facilityService'
 
 definePageMeta({
     middleware: 'auth'

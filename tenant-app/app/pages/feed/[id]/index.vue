@@ -128,8 +128,8 @@ import {
     CalendarOutlined,
     LinkOutlined,
 } from '@ant-design/icons-vue'
-import { useAllCompanyStore } from '../../../stores/allCompany'
-import { useAllFacilityStore } from '../../../stores/allFacility'
+import { useAllCompanyStore } from '../../../../stores/allCompany'
+import { useAllFacilityStore } from '../../../../stores/allFacility'
 
 definePageMeta({ layout: 'default', middleware: ['auth'] })
 

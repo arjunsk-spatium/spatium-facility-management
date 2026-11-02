@@ -1134,10 +1134,11 @@ const deleteFacility = async (mappingId: string) => {
 const generateQR = async (facilityId: string, companyName: string) => {
     try {
         const companyId = route.params.id as string
-        await store.generateCompanyQRCodeAction(companyId, companyName, facilityId)
+        await store.generateCompanyQRCode(companyId, companyName, facilityId)
         message.success('QR Code generated successfully')
-    } catch (err) {
-        message.error('Failed to generate QR Code')
+    } catch (err: any) {
+        const errMsg = err?.data?.message || err?.data?.error?.message || err?.data?.error || err?.data?.detail || err?.message
+        message.error(typeof errMsg === 'string' && errMsg ? errMsg : 'Failed to generate QR Code')
     }
 }
 
