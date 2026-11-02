@@ -276,11 +276,11 @@ definePageMeta({
 
 const authStore = useAuthStore()
 const spocStore = useSpocStore()
-const roomStore = useMeetingRoomStore()
 const meetingRoomService = useMeetingRoomService()
 
 const { facilities } = storeToRefs(spocStore)
-const { rooms } = storeToRefs(roomStore)
+// SPOC rooms come from the client portal API, so they are kept local instead of in the shared meeting room store
+const rooms = ref<MeetingRoom[]>([])
 
 // State
 const bookings = ref<Booking[]>([])
@@ -405,7 +405,7 @@ const fetchBookings = async () => {
     loading.value = true
     try {
         const params = buildFilterParams()
-        const response = await meetingRoomService.getBookings(params)
+        const response = await meetingRoomService.getClientPortalBookings(params)
         bookings.value = response.results || []
         bookingsCount.value = response.count || 0
     } catch (err) {
@@ -415,6 +415,11 @@ const fetchBookings = async () => {
     } finally {
         loading.value = false
     }
+}
+
+const fetchRooms = async () => {
+    const response = await meetingRoomService.getClientPortalRooms({ page: 1, page_size: 100 })
+    rooms.value = response.rooms
 }
 
 const openBookingDetails = (booking: Booking) => {
@@ -430,7 +435,7 @@ const handleExport = async () => {
         params.page = 1
         params.page_size = bookingsCount.value || 1000
 
-        const response = await meetingRoomService.getBookings(params)
+        const response = await meetingRoomService.getClientPortalBookings(params)
         const exportList = response.results && response.results.length > 0 ? response.results : bookings.value
 
         if (!exportList || exportList.length === 0) {
@@ -472,7 +477,7 @@ onMounted(async () => {
     try {
         await Promise.all([
             spocStore.fetchFacilities(),
-            roomStore.fetchRooms({ page_size: 100 })
+            fetchRooms()
         ])
     } catch (err) {
         console.error('Failed to load facilities or rooms:', err)

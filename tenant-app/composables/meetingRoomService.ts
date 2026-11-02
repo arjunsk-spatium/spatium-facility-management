@@ -151,6 +151,9 @@ export interface MeetingRoomInsights {
 
 const BOOKING_API_BASE = "/api/portal/bookings/bookings";
 const API_BASE = "/api/portal/meeting-rooms/rooms";
+// Client portal (SPOC) endpoints
+const CLIENT_PORTAL_BOOKING_API_BASE = "/api/portal/bookings/client_portal/bookings";
+const CLIENT_PORTAL_ROOM_API_BASE = "/api/portal/meeting-rooms/client_portal/rooms";
 
 export interface BookingListParams {
     meeting_room?: string;
@@ -185,7 +188,7 @@ export interface PaginatedResponse<T> {
 export const useMeetingRoomService = () => {
     const { $api } = useNuxtApp();
 
-    const getRooms = async (params: RoomListParams = {}): Promise<{
+    const listRooms = async (base: string, params: RoomListParams = {}): Promise<{
         rooms: MeetingRoom[];
         count: number;
         next: string | null;
@@ -198,7 +201,7 @@ export const useMeetingRoomService = () => {
         if (params.facility_id) queryParams.append("facility_id", params.facility_id);
         
         const queryString = queryParams.toString();
-        const result = await $api<any>(API_BASE + "/" + (queryString ? `?${queryString}` : ""));
+        const result = await $api<any>(base + "/" + (queryString ? `?${queryString}` : ""));
         if (result.success) {
             return {
                 rooms: result.data.results || [],
@@ -209,6 +212,11 @@ export const useMeetingRoomService = () => {
         }
         return { rooms: [], count: 0, next: null, previous: null };
     };
+
+    const getRooms = (params: RoomListParams = {}) => listRooms(API_BASE, params);
+
+    const getClientPortalRooms = (params: RoomListParams = {}) =>
+        listRooms(CLIENT_PORTAL_ROOM_API_BASE, params);
 
     const getRoomById = async (
         id: string,
@@ -241,7 +249,8 @@ export const useMeetingRoomService = () => {
         return [];
     };
 
-    const getBookings = async (
+    const listBookings = async (
+        base: string,
         params?: BookingListParams,
     ): Promise<PaginatedResponse<Booking>> => {
         const queryParams = new URLSearchParams();
@@ -279,7 +288,7 @@ export const useMeetingRoomService = () => {
         }
         const queryString = queryParams.toString();
         const result = await $api<any>(
-            BOOKING_API_BASE + "/" + (queryString ? `?${queryString}` : ""),
+            base + "/" + (queryString ? `?${queryString}` : ""),
         );
         if (result.success) {
             return {
@@ -291,6 +300,12 @@ export const useMeetingRoomService = () => {
         }
         return { results: [], count: 0, next: null, previous: null };
     };
+
+    const getBookings = (params?: BookingListParams) =>
+        listBookings(BOOKING_API_BASE, params);
+
+    const getClientPortalBookings = (params?: BookingListParams) =>
+        listBookings(CLIENT_PORTAL_BOOKING_API_BASE, params);
 
     const getBookingById = async (id: string): Promise<Booking | undefined> => {
         const result = await $api<any>(BOOKING_API_BASE + "/" + id + "/");
@@ -443,9 +458,11 @@ export const useMeetingRoomService = () => {
 
     return {
         getRooms,
+        getClientPortalRooms,
         getRoomById,
         getTimeSlots,
         getBookings,
+        getClientPortalBookings,
         getBookingById,
         createBooking,
         createRoom,
