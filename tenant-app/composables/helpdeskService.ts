@@ -172,7 +172,7 @@ export interface CreateSubCategoryPayload {
     default_priority?: string;
     response_sla?: number;
     resolution_sla?: number;
-    required_role?: string;
+    required_role?: string | null;
     assignment_mode?: string;
     default_estimated_effort_min?: number | null;
 }

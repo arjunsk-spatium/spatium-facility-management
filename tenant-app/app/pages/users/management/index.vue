@@ -155,10 +155,10 @@ import {
     EditOutlined,
     DeleteOutlined
 } from '@ant-design/icons-vue'
-import { useUserService, type User } from '../../../composables/userService'
-import { useSidebar } from '../../../composables/useSidebar'
-import UserModuleAssignmentModal from '../../../components/UserModuleAssignmentModal.vue'
-import UserFacilityAssignmentModal from '../../../components/UserFacilityAssignmentModal.vue'
+import { useUserService, type User } from '../../../../composables/userService'
+import { useSidebar } from '../../../../composables/useSidebar'
+import UserModuleAssignmentModal from '../../../../components/UserModuleAssignmentModal.vue'
+import UserFacilityAssignmentModal from '../../../../components/UserFacilityAssignmentModal.vue'
 
 definePageMeta({
     middleware: 'auth'

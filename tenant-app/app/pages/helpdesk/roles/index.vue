@@ -303,12 +303,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, EditOutlined, DeleteOutlined, UsergroupAddOutlined } from '@ant-design/icons-vue'
-import ResponsiveDataView from '../../../components/ResponsiveDataView.vue'
-import WorkerLocationScopeModal from '../../../components/helpdesk/staff/WorkerLocationScopeModal.vue'
-import WorkerCapacityModal from '../../../components/helpdesk/staff/WorkerCapacityModal.vue'
-import { useHelpdeskService, type HelpdeskRole } from '../../../composables/helpdeskService'
-import { useUserService } from '../../../composables/userService'
-import { useAuthStore } from '../../../stores/auth'
+import ResponsiveDataView from '../../../../components/ResponsiveDataView.vue'
+import WorkerLocationScopeModal from '../../../../components/helpdesk/staff/WorkerLocationScopeModal.vue'
+import WorkerCapacityModal from '../../../../components/helpdesk/staff/WorkerCapacityModal.vue'
+import { useHelpdeskService, type HelpdeskRole } from '../../../../composables/helpdeskService'
+import { useUserService } from '../../../../composables/userService'
+import { useAuthStore } from '../../../../stores/auth'
 
 definePageMeta({
     middleware: 'auth'
