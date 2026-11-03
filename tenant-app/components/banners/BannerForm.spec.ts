@@ -68,7 +68,7 @@ describe('BannerForm.vue (tenant-app)', () => {
         expect(wrapper.text()).toContain('Claim Offer')
     })
 
-    it('renders the live mobile preview with initial or default content', async () => {
+    it('renders the live mobile preview without the banner title or description', async () => {
         const wrapper = mountComponent({
             initialValues: {
                 title: 'Exclusive Meeting Perk',
@@ -77,7 +77,9 @@ describe('BannerForm.vue (tenant-app)', () => {
         })
         await wrapper.vm.$nextTick()
         expect(wrapper.text()).toContain('Mobile Live Preview')
-        expect(wrapper.text()).toContain('Exclusive Meeting Perk')
-        expect(wrapper.text()).toContain('Enjoy 20% off all boardroom bookings')
+        const preview = wrapper.findComponent({ name: 'BannerMobilePreview' })
+        expect(preview.exists()).toBe(true)
+        expect(preview.text()).not.toContain('Exclusive Meeting Perk')
+        expect(preview.text()).not.toContain('Enjoy 20% off all boardroom bookings')
     })
 })

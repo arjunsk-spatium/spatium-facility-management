@@ -2,19 +2,22 @@
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start max-w-6xl mx-auto">
         <!-- Form Fields Column -->
         <div class="xl:col-span-7">
-            <a-form layout="vertical" :model="formState" @finish="handleSubmit">
+            <a-form layout="vertical" :model="formState" @finish="handleSubmit" @finish-failed="validateImage">
                 <!-- Title -->
-                <a-form-item label="Title" name="title" :rules="[{ required: true, message: 'Please enter a title' }]">
+                <a-form-item label="Title" name="title" :rules="[{ required: true, message: 'Please enter a title' }]"
+                    v-bind="serverFieldProps('title')">
                     <a-input v-model:value="formState.title" size="large" placeholder="e.g. Platform-wide Maintenance" />
                 </a-form-item>
 
                 <!-- Description -->
-                <a-form-item label="Description" name="description" :rules="[{ required: true, message: 'Please enter a description' }]">
+                <a-form-item label="Description" name="description" :rules="[{ required: true, message: 'Please enter a description' }]"
+                    v-bind="serverFieldProps('description')">
                     <a-textarea v-model:value="formState.description" :rows="4" placeholder="Describe the banner message" />
                 </a-form-item>
 
                 <!-- Category -->
-                <a-form-item label="Category" name="category" :rules="[{ required: true, message: 'Please select a category' }]">
+                <a-form-item label="Category" name="category" :rules="[{ required: true, message: 'Please select a category' }]"
+                    v-bind="serverFieldProps('category')">
                     <a-select v-model:value="formState.category" placeholder="Select category" size="large">
                         <a-select-option v-for="cat in categories" :key="cat.value" :value="cat.value">
                             {{ cat.label }}
@@ -23,7 +26,7 @@
                 </a-form-item>
 
                 <!-- Link -->
-                <a-form-item label="Link (Optional)" name="link">
+                <a-form-item label="Link (Optional)" name="link" v-bind="serverFieldProps('link')">
                     <a-input v-model:value="formState.link" placeholder="https://example.com" size="middle">
                         <template #prefix>
                             <LinkOutlined class="text-neutral-400" />
@@ -32,7 +35,7 @@
                 </a-form-item>
 
                 <!-- Button Text (Link Title) -->
-                <a-form-item label="Button Text (Link Title)" name="link_title"
+                <a-form-item label="Button Text (Link Title)" name="link_title" v-bind="serverFieldProps('link_title')"
                     extra="Label shown on the banner action button (e.g. Book Now, Learn More)">
                     <a-input v-model:value="formState.link_title" placeholder="e.g. Book Now" size="middle" :maxlength="50" />
                 </a-form-item>
@@ -40,11 +43,11 @@
                 <!-- Image Upload -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                        Banner Image <span class="text-xs font-normal text-neutral-500 dark:text-neutral-400">(Aspect ratio 16:9)</span>
+                        <span class="text-red-500 mr-1">*</span>Banner Image <span class="text-xs font-normal text-neutral-500 dark:text-neutral-400">(Aspect ratio 16:9)</span>
                     </label>
                     <div v-if="!imagePreview"
                         class="upload-zone"
-                        :class="{ 'upload-zone--dragover': isDragOver }"
+                        :class="{ 'upload-zone--dragover': isDragOver, 'upload-zone--error': !!imageError }"
                         @dragenter.prevent="isDragOver = true"
                         @dragleave.prevent="isDragOver = false"
                         @dragover.prevent
@@ -53,7 +56,7 @@
                         <div class="flex flex-col items-center gap-2 py-8 cursor-pointer" @click="fileInput?.click()">
                             <PictureOutlined class="text-3xl text-neutral-400" />
                             <span class="text-sm text-neutral-500">Click or drag an image here</span>
-                            <span class="text-xs text-neutral-400">Recommended aspect ratio: 16:9 (e.g. 1920×1080) &middot; Optional for create</span>
+                            <span class="text-xs text-neutral-400">Recommended aspect ratio: 16:9 (e.g. 1920×1080)</span>
                         </div>
                     </div>
                     <div v-else class="relative rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-700">
@@ -64,6 +67,7 @@
                             <CloseOutlined class="text-sm" />
                         </button>
                     </div>
+                    <p v-if="imageError" class="mt-1.5 text-sm text-red-500" data-testid="image-error">{{ imageError }}</p>
                     <p class="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">Recommended aspect ratio: 16:9 (e.g. 1920×1080)</p>
                 </div>
 
@@ -86,7 +90,7 @@
                 </div>
 
                 <!-- Tenant Selection -->
-                <a-form-item v-if="!formState.is_global" label="Tenants" name="tenant_ids"
+                <a-form-item v-if="!formState.is_global" label="Tenants" name="tenant_ids" v-bind="serverFieldProps('tenant')"
                     :rules="[{ required: true, message: 'Please select at least one tenant', type: 'array' }]">
                     <a-select v-model:value="formState.tenant_ids" mode="multiple" placeholder="Select tenants"
                         :loading="tenantsLoading" show-search option-filter-prop="label" size="large">
@@ -152,6 +156,8 @@ const props = defineProps<{
     loading?: boolean
     isEditing?: boolean
     initialValues?: BannerFormValues | null
+    // Field errors returned by the backend, keyed by API field name (e.g. { image: 'No file was submitted.' })
+    serverErrors?: Record<string, string>
 }>()
 
 const emit = defineEmits<{
@@ -173,6 +179,27 @@ const imagePreview = ref<string | null>(null)
 const imageFile = ref<File | null>(null)
 const isDragOver = ref(false)
 const imageChanged = ref(false)
+const imageError = ref('')
+const fieldErrors = ref<Record<string, string>>({})
+
+watch(() => props.serverErrors, (errors) => {
+    const { image, ...rest } = errors || {}
+    fieldErrors.value = rest
+    if (image) imageError.value = image
+}, { immediate: true })
+
+const serverFieldProps = (field: string) =>
+    fieldErrors.value[field]
+        ? { validateStatus: 'error' as const, help: fieldErrors.value[field] }
+        : {}
+
+const validateImage = () => {
+    if (!imagePreview.value) {
+        imageError.value = 'Please upload a banner image'
+        return false
+    }
+    return true
+}
 
 const tenants = computed(() => tenantStore.tenants)
 const tenantsLoading = computed(() => tenantStore.loading)
@@ -245,6 +272,7 @@ const handleDrop = (e: DragEvent) => {
 const setImage = (file: File) => {
     imageFile.value = file
     imageChanged.value = true
+    imageError.value = ''
     const reader = new FileReader()
     reader.onload = (e) => {
         imagePreview.value = e.target?.result as string
@@ -260,6 +288,9 @@ const clearImage = () => {
 }
 
 const handleSubmit = () => {
+    fieldErrors.value = {}
+    if (!validateImage()) return
+
     const payload: any = {
         title: formState.title,
         description: formState.description,
@@ -320,5 +351,9 @@ onMounted(() => {
 
 .upload-zone--dragover {
     @apply border-primary-400 bg-primary-50 dark:bg-primary-900/20;
+}
+
+.upload-zone--error {
+    @apply border-red-400;
 }
 </style>

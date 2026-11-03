@@ -74,8 +74,6 @@
                 <p class="text-xs text-neutral-500 mt-0.5">Real-time preview of how the banner appears in Spatium</p>
             </div>
             <BannerMobilePreview
-                :title="formState.title"
-                :description="formState.description"
                 :image-url="previewImageUrl"
                 :link="formState.link"
                 :link-title="formState.link_title"
