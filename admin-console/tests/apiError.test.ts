@@ -50,4 +50,24 @@ describe('parseApiError', () => {
 
         expect(parsed.message).toBe('Network request failed')
     })
+
+    it('shows the duplicate task error when creating privacy verification tasks', () => {
+        const error = fetchError({
+            success: false,
+            code: 'VALIDATION_ERROR',
+            message: "task_type: An active 'update_email' task already exists for this request.",
+            data: null,
+            error: {
+                type: 'VALIDATION',
+                fields: {
+                    task_type: [{ code: 'INVALID', message: "An active 'update_email' task already exists for this request." }],
+                },
+            },
+        }, '[POST] "https://staging-api.nexspace.app/api/platform/privacy/admin/tasks/": 400')
+
+        const parsed = parseApiError(error, 'Failed to create verification tasks')
+
+        expect(parsed.message).toBe("Task type: An active 'update_email' task already exists for this request.")
+        expect(parsed.message).not.toContain('[POST]')
+    })
 })

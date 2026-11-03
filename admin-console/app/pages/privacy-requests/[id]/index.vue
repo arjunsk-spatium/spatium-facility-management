@@ -205,6 +205,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { parseApiError } from '../../../composables/apiError'
 import {
     ArrowLeftOutlined,
     EyeOutlined,
@@ -302,6 +303,16 @@ const closeModal = () => {
     modalAction.value = ''
 }
 
+const actionErrorFallbacks: Record<string, string> = {
+    review: 'Failed to move request to review',
+    approve: 'Failed to approve request',
+    reject: 'Failed to reject request',
+    complete: 'Failed to complete request',
+    assign: 'Failed to assign request',
+    tasks: 'Failed to create verification tasks',
+    export: 'Failed to trigger export',
+}
+
 const handleModalOk = async () => {
     const id = route.params.id as string
 
@@ -346,7 +357,7 @@ const handleModalOk = async () => {
         }
         closeModal()
     } catch (err: any) {
-        message.error(err.message || 'Action failed')
+        message.error(parseApiError(err, actionErrorFallbacks[modalAction.value] || 'Action failed').message)
     }
 }
 
