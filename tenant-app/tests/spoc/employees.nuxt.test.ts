@@ -239,6 +239,8 @@ describe('SPOC Employees Page', () => {
 
             vm.newEmployee.name = 'Test User'
             vm.newEmployee.email = 'test@wrong.com'
+            vm.newEmployee.employeeId = 'EMP-1'
+            vm.newEmployee.date_of_birth = '1990-01-01'
             vm.showAddModal = true
 
             await vm.handleSaveEmployee()
@@ -273,6 +275,8 @@ describe('SPOC Employees Page', () => {
 
             vm.newEmployee.name = 'Short Phone'
             vm.newEmployee.email = 'short@company.com'
+            vm.newEmployee.employeeId = 'EMP-1'
+            vm.newEmployee.date_of_birth = '1990-01-01'
             vm.newEmployee.phone = '+911234'
 
             await vm.handleSaveEmployee()
@@ -298,6 +302,8 @@ describe('SPOC Employees Page', () => {
 
             vm.newEmployee.name = 'Future Joiner'
             vm.newEmployee.email = 'future@company.com'
+            vm.newEmployee.employeeId = 'EMP-1'
+            vm.newEmployee.date_of_birth = '1990-01-01'
             vm.newEmployee.date_of_joining = dayjs().add(1, 'month').format('YYYY-MM-DD')
 
             await vm.handleSaveEmployee()
@@ -326,6 +332,8 @@ describe('SPOC Employees Page', () => {
             vm.editingEmployee = { id: 'emp-1' }
             vm.newEmployee.name = 'Dup Phone'
             vm.newEmployee.email = 'dup@company.com'
+            vm.newEmployee.employeeId = 'EMP-1'
+            vm.newEmployee.date_of_birth = '1990-01-01'
             vm.newEmployee.phone = '+919876543210'
 
             await vm.handleSaveEmployee()
@@ -809,6 +817,8 @@ describe('SPOC Employees Page', () => {
 
             vm.newEmployee.name = 'Bob Ross'
             vm.newEmployee.email = 'bob@company.com'
+            vm.newEmployee.employeeId = 'EMP-1'
+            vm.newEmployee.date_of_birth = '1990-01-01'
             vm.newEmployee.gender = 'male'
             vm.newEmployee.date_of_joining = '2024-01-01'
             vm.newEmployee.date_of_birth = '1990-01-01'
@@ -866,6 +876,8 @@ describe('SPOC Employees Page', () => {
 
             vm.newEmployee.name = 'Young Employee'
             vm.newEmployee.email = 'young@company.com'
+            vm.newEmployee.employeeId = 'EMP-1'
+            vm.newEmployee.date_of_birth = '1990-01-01'
             // Born 10 years ago
             vm.newEmployee.date_of_birth = dayjs().subtract(10, 'year').format('YYYY-MM-DD')
 
@@ -927,6 +939,8 @@ describe('SPOC Employees Page', () => {
             vm.openAddModal()
             vm.newEmployee.name = 'Ananya M'
             vm.newEmployee.email = 'ananya.m@company.com'
+            vm.newEmployee.employeeId = 'EMP-1'
+            vm.newEmployee.date_of_birth = '1990-01-01'
             vm.newEmployee.employeeId = '  EMP-1001  '
 
             await vm.handleSaveEmployee()
@@ -939,7 +953,7 @@ describe('SPOC Employees Page', () => {
             const vm = wrapper.vm as any
             const spocStore = useSpocStore()
 
-            vm.handleEdit({ id: 'emp-1', name: 'Ananya M', email: 'ananya.m@company.com', employee_id: 'EMP-1001' })
+            vm.handleEdit({ id: 'emp-1', name: 'Ananya M', email: 'ananya.m@company.com', employee_id: 'EMP-1001', date_of_birth: '1990-01-01' })
             expect(vm.newEmployee.employeeId).toBe('EMP-1001')
 
             vm.newEmployee.employeeId = 'EMP-2002'
@@ -948,16 +962,45 @@ describe('SPOC Employees Page', () => {
             expect(spocStore.updateEmployee).toHaveBeenCalledWith('emp-1', expect.objectContaining({ employee_id: 'EMP-2002' }))
         })
 
-        it('sends employee_id as null when it is cleared while editing', async () => {
+        it('requires Employee ID when it is cleared while editing', async () => {
             const wrapper = await mountPage()
             const vm = wrapper.vm as any
             const spocStore = useSpocStore()
 
-            vm.handleEdit({ id: 'emp-1', name: 'Ananya M', email: 'ananya.m@company.com', employee_id: 'EMP-1001' })
-            vm.newEmployee.employeeId = ''
+            vm.handleEdit({ id: 'emp-1', name: 'Ananya M', email: 'ananya.m@company.com', employee_id: 'EMP-1001', date_of_birth: '1990-01-01' })
+            vm.newEmployee.employeeId = '   '
             await vm.handleSaveEmployee()
 
-            expect(spocStore.updateEmployee).toHaveBeenCalledWith('emp-1', expect.objectContaining({ employee_id: null }))
+            expect(vm.formErrors.employeeId).toBe('Employee ID is required')
+            expect(spocStore.updateEmployee).not.toHaveBeenCalled()
+        })
+
+        it('requires Date of Birth when adding an employee', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.openAddModal()
+            vm.newEmployee.name = 'Ananya M'
+            vm.newEmployee.email = 'ananya.m@company.com'
+            vm.newEmployee.employeeId = 'EMP-1001'
+            vm.newEmployee.date_of_birth = null
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.date_of_birth).toBe('Date of birth is required')
+            expect(spocStore.addEmployee).not.toHaveBeenCalled()
+        })
+
+        it('marks Employee ID and Date of Birth as required in the modal', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+
+            vm.openAddModal()
+            await wrapper.vm.$nextTick()
+
+            const requiredLabels = Array.from(document.body.querySelectorAll('.ant-form-item-required')).map(el => el.textContent?.trim())
+            expect(requiredLabels).toContain('Employee ID')
+            expect(requiredLabels).toContain('Date of Birth')
         })
 
         it('maps a server employee_id error to the Employee ID field', async () => {
@@ -975,6 +1018,8 @@ describe('SPOC Employees Page', () => {
             vm.openAddModal()
             vm.newEmployee.name = 'Ananya M'
             vm.newEmployee.email = 'ananya.m@company.com'
+            vm.newEmployee.employeeId = 'EMP-1'
+            vm.newEmployee.date_of_birth = '1990-01-01'
             vm.newEmployee.employeeId = 'EMP-1001'
             await vm.handleSaveEmployee()
 
