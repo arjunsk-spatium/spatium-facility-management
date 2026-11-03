@@ -25,6 +25,13 @@ const mountForm = (props = {}) => {
     })
 }
 
+// Simulates an uploaded image without waiting on FileReader
+const withImage = (wrapper: any) => {
+    const vm = wrapper.vm as any
+    vm.imageFile = new File(['img'], 'banner.png', { type: 'image/png' })
+    vm.imagePreview = 'data:image/png;base64,aW1n'
+}
+
 describe('BannerForm.vue', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
@@ -118,6 +125,7 @@ describe('BannerForm.vue', () => {
 
         await wrapper.vm.$nextTick()
 
+        withImage(wrapper)
         const form = wrapper.findComponent({ name: 'AForm' })
         await form.vm.$emit('finish')
         await wrapper.vm.$nextTick()
@@ -152,6 +160,7 @@ describe('BannerForm.vue', () => {
         expect(wrapper.text()).toContain('Button Text (Link Title)')
         expect(wrapper.text()).toContain('Shop Now')
 
+        withImage(wrapper)
         const form = wrapper.findComponent({ name: 'AForm' })
         await form.vm.$emit('finish')
         await wrapper.vm.$nextTick()
@@ -167,5 +176,90 @@ describe('BannerForm.vue', () => {
         await cancelButton?.trigger('click')
 
         expect(wrapper.emitted('cancel')).toBeTruthy()
+    })
+
+    describe('image validation and server errors', () => {
+        const values = {
+            title: 'New Banner',
+            description: 'Banner description',
+            category: 'announcement',
+            link: '',
+            is_active: true,
+            is_global: true,
+            image_url: null,
+        }
+
+        it('marks the banner image as required and no longer says it is optional', () => {
+            const wrapper = mountForm()
+
+            expect(wrapper.text()).not.toContain('Optional for create')
+            expect(wrapper.text()).toContain('*Banner Image')
+        })
+
+        it('blocks submit and shows an error under the upload when no image is selected', async () => {
+            const wrapper = mountForm({ initialValues: values })
+            await wrapper.vm.$nextTick()
+
+            const form = wrapper.findComponent({ name: 'AForm' })
+            await form.vm.$emit('finish')
+            await wrapper.vm.$nextTick()
+
+            expect(wrapper.emitted('submit')).toBeFalsy()
+            expect(wrapper.find('[data-testid="image-error"]').text()).toBe('Please upload a banner image')
+        })
+
+        it('also flags the missing image when other fields fail validation', async () => {
+            const wrapper = mountForm()
+
+            const form = wrapper.findComponent({ name: 'AForm' })
+            await form.vm.$emit('finishFailed')
+            await wrapper.vm.$nextTick()
+
+            expect(wrapper.find('[data-testid="image-error"]').text()).toBe('Please upload a banner image')
+        })
+
+        it('clears the image error once an image is chosen and allows submit', async () => {
+            const wrapper = mountForm({ initialValues: values })
+            await wrapper.vm.$nextTick()
+            const form = wrapper.findComponent({ name: 'AForm' })
+            await form.vm.$emit('finish')
+            await wrapper.vm.$nextTick()
+
+            ;(wrapper.vm as any).setImage(new File(['img'], 'banner.png', { type: 'image/png' }))
+            ;(wrapper.vm as any).imagePreview = 'data:image/png;base64,aW1n'
+            await wrapper.vm.$nextTick()
+            expect(wrapper.find('[data-testid="image-error"]').exists()).toBe(false)
+
+            await form.vm.$emit('finish')
+            expect(wrapper.emitted('submit')).toBeTruthy()
+            expect((wrapper.emitted('submit')![0][0] as any).image).toBeInstanceOf(File)
+        })
+
+        it('accepts the existing image when editing without uploading a new one', async () => {
+            const wrapper = mountForm({
+                isEditing: true,
+                initialValues: { ...values, image_url: 'https://example.com/banner.jpg' },
+            })
+            await wrapper.vm.$nextTick()
+
+            const form = wrapper.findComponent({ name: 'AForm' })
+            await form.vm.$emit('finish')
+
+            expect(wrapper.emitted('submit')).toBeTruthy()
+        })
+
+        it('shows a backend image error under the upload', async () => {
+            const wrapper = mountForm({ serverErrors: { image: 'No file was submitted.' } })
+            await wrapper.vm.$nextTick()
+
+            expect(wrapper.find('[data-testid="image-error"]').text()).toBe('No file was submitted.')
+        })
+
+        it('shows backend field errors under the matching form field', async () => {
+            const wrapper = mountForm({ serverErrors: { title: 'Banner with this title already exists.' } })
+            await wrapper.vm.$nextTick()
+
+            expect(wrapper.text()).toContain('Banner with this title already exists.')
+        })
     })
 })

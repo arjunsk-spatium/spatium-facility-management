@@ -20,6 +20,7 @@
             :submitting="submitting"
             :loading="loading"
             :initial-values="initialValues"
+            :server-errors="serverErrors"
             @submit="handleUpdate"
             @cancel="handleCancel" />
     </div>
@@ -31,6 +32,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { ArrowLeftOutlined } from '@ant-design/icons-vue'
 import BannerForm from '../../../components/banners/BannerForm.vue'
+import { parseApiError } from '../../../composables/apiError'
 
 definePageMeta({ layout: 'default' })
 
@@ -38,6 +40,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useBannerStore()
 const submitting = ref(false)
+const serverErrors = ref<Record<string, string>>({})
 
 const banner = computed(() => store.currentBanner)
 const loading = computed(() => store.loading)
@@ -62,12 +65,15 @@ const handleCancel = () => {
 
 const handleUpdate = async (payload: any) => {
     submitting.value = true
+    serverErrors.value = {}
     try {
         await store.updateBanner(route.params.id as string, payload)
         message.success('Banner updated successfully')
         router.push(`/banners/${route.params.id}`)
     } catch (error: any) {
-        message.error(error.message || 'Failed to update banner')
+        const parsed = parseApiError(error, 'Failed to update banner')
+        serverErrors.value = parsed.fields
+        message.error(parsed.message)
     } finally {
         submitting.value = false
     }

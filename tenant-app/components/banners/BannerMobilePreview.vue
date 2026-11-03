@@ -104,15 +104,9 @@
                                 class="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-white/15 blur-xl pointer-events-none">
                             </div>
 
-                            <!-- Left: Placeholder Title, Description, Button -->
+                            <!-- Left: Button -->
                             <div class="flex-1 min-w-0 pr-1 relative z-10">
-                                <h3 class="text-white font-bold text-sm leading-snug line-clamp-2">
-                                    {{ displayTitle }}
-                                </h3>
-                                <p class="text-blue-50 text-[11px] mt-1 line-clamp-2 leading-tight">
-                                    {{ displayDescription }}
-                                </p>
-                                <div class="mt-2.5">
+                                <div class="translate-y-10">
                                     <span
                                         class="inline-flex items-center px-3 py-1 bg-white text-[#1b449c] font-bold text-[11px] rounded-full shadow-sm">
                                         {{ buttonText }}
@@ -223,13 +217,7 @@
                 <div v-else class="w-full h-full flex items-center justify-between p-5 relative select-none"
                     style="background: linear-gradient(135deg, #5b7fc4 0%, #7e9bd3 50%, #9cb5e4 100%);">
                     <div class="flex-1 min-w-0 pr-3 relative z-10">
-                        <h3 class="text-white font-bold text-base sm:text-lg leading-tight line-clamp-2">
-                            {{ displayTitle }}
-                        </h3>
-                        <p class="text-blue-50 text-xs mt-1.5 line-clamp-2 leading-snug">
-                            {{ displayDescription }}
-                        </p>
-                        <div class="mt-3">
+                        <div class="translate-y-12">
                             <span
                                 class="inline-flex items-center px-4 py-1.5 bg-white text-[#1b449c] font-bold text-xs rounded-full shadow-sm">
                                 {{ buttonText }}
@@ -257,8 +245,6 @@ import { ref, computed } from 'vue'
 import { PictureOutlined, BankOutlined } from '@ant-design/icons-vue'
 
 interface Props {
-    title?: string
-    description?: string
     imageUrl?: string | null
     link?: string
     linkTitle?: string
@@ -268,8 +254,6 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    title: '',
-    description: '',
     imageUrl: null,
     link: '',
     linkTitle: '',
@@ -279,14 +263,6 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const previewMode = ref<'mobile' | 'card'>('mobile')
-
-const displayTitle = computed(() => {
-    return props.title.trim() || 'Book Meeting Rooms'
-})
-
-const displayDescription = computed(() => {
-    return props.description.trim() || 'Block the perfect meeting room in just a few taps'
-})
 
 const displayTenantName = computed(() => {
     return props.tenantName || 'Spatium Commercio'

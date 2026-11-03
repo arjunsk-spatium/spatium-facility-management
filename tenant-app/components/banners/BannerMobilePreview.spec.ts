@@ -17,23 +17,19 @@ describe('BannerMobilePreview.vue', () => {
         const wrapper = mountComponent()
         expect(wrapper.text()).toContain('Spatium Commercio')
         expect(wrapper.text()).toContain('Hi, Dafiya')
-        expect(wrapper.text()).toContain('Book Meeting Rooms')
-        expect(wrapper.text()).toContain('Block the perfect meeting room in just a few taps')
+        expect(wrapper.text()).not.toContain('Book Meeting Rooms')
+        expect(wrapper.text()).not.toContain('Block the perfect meeting room in just a few taps')
         expect(wrapper.text()).toContain('Book Now')
         expect(wrapper.text()).toContain('Quick Actions')
         expect(wrapper.text()).toContain('Bookings')
     })
 
-    it('updates title, description, and tenant in real-time when props change', () => {
+    it('updates tenant, user and category button in real-time when props change', () => {
         const wrapper = mountComponent({
-            title: 'Annual Fire Drill',
-            description: 'Mandatory drill tomorrow at 10 AM',
             tenantName: 'Acme Tower',
             userName: 'Alex',
             category: 'announcement',
         })
-        expect(wrapper.text()).toContain('Annual Fire Drill')
-        expect(wrapper.text()).toContain('Mandatory drill tomorrow at 10 AM')
         expect(wrapper.text()).toContain('Acme Tower')
         expect(wrapper.text()).toContain('Hi, Alex')
         expect(wrapper.text()).toContain('Learn More')
@@ -59,12 +55,13 @@ describe('BannerMobilePreview.vue', () => {
 
     it('switches between mobile view and card 16:9 view', async () => {
         const wrapper = mountComponent({
-            title: 'Conference Room Promo',
+            linkTitle: 'Claim Offer',
         })
         const cardViewBtn = wrapper.findAll('button').find(b => b.text().includes('Banner Card (16:9)'))
         await cardViewBtn?.trigger('click')
 
-        expect(wrapper.text()).toContain('Conference Room Promo')
+        expect(wrapper.text()).toContain('Claim Offer')
+        expect(wrapper.text()).not.toContain('Book Meeting Rooms')
         expect(wrapper.text()).toContain('Aspect ratio: 16:9')
     })
 })
