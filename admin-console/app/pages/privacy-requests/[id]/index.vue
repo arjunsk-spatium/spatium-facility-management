@@ -231,7 +231,10 @@ const terminalStatuses = ['rejected', 'completed', 'cancelled']
 const canReview = computed(() => request.value?.status === 'pending')
 const canApprove = computed(() => request.value?.status === 'under_review')
 const canReject = computed(() => request.value && !terminalStatuses.includes(request.value.status))
-const canComplete = computed(() => request.value && !terminalStatuses.includes(request.value.status))
+// Backend does not allow pending -> completed; the request must be reviewed / in progress first
+const canComplete = computed(() =>
+    !!request.value && request.value.status !== 'pending' && !terminalStatuses.includes(request.value.status)
+)
 const canCreateTasks = computed(() => request.value && !terminalStatuses.includes(request.value.status))
 const canExport = computed(() => request.value?.request_type === 'access')
 

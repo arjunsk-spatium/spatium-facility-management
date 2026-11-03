@@ -70,4 +70,19 @@ describe('parseApiError', () => {
         expect(parsed.message).toBe("Task type: An active 'update_email' task already exists for this request.")
         expect(parsed.message).not.toContain('[POST]')
     })
+
+    it('shows the status transition error when completing a pending privacy request', () => {
+        const message = "Cannot transition from 'pending' to 'completed'. Allowed transitions: under_review, in_progress, cancelled"
+        const error = fetchError({
+            success: false,
+            code: 'VALIDATION_ERROR',
+            message: `status: ${message}`,
+            data: null,
+            error: { type: 'VALIDATION', fields: { status: [{ code: 'INVALID', message }] } },
+        }, '[POST] "https://staging-api.nexspace.app/api/platform/privacy/admin/requests/f0af2ae3/complete/": 400')
+
+        const parsed = parseApiError(error, 'Failed to complete request')
+
+        expect(parsed.message).toBe(`Status: ${message}`)
+    })
 })

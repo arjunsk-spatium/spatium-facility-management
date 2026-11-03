@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import Antd from 'ant-design-vue'
 import BannerForm from './BannerForm.vue'
+import BannerMobilePreview from './BannerMobilePreview.vue'
 
 const mountForm = (props = {}) => {
     const pinia = createPinia()
@@ -261,5 +262,25 @@ describe('BannerForm.vue', () => {
 
             expect(wrapper.text()).toContain('Banner with this title already exists.')
         })
+    })
+
+    it('does not show the banner title or description in the live preview', async () => {
+        const wrapper = mountForm({
+            initialValues: {
+                title: 'Exclusive Meeting Perk',
+                description: 'Enjoy 20% off all boardroom bookings',
+                category: 'promotion',
+                link: '',
+                is_active: true,
+                is_global: true,
+                image_url: null,
+            },
+        })
+        await wrapper.vm.$nextTick()
+
+        const preview = wrapper.findComponent(BannerMobilePreview)
+        expect(preview.exists()).toBe(true)
+        expect(preview.text()).not.toContain('Exclusive Meeting Perk')
+        expect(preview.text()).not.toContain('Enjoy 20% off all boardroom bookings')
     })
 })
