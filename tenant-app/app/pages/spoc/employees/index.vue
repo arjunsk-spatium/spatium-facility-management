@@ -176,6 +176,7 @@
                 </a-form-item>
                 <a-form-item
                     label="Employee ID"
+                    required
                     :validate-status="formErrors.employeeId ? 'error' : ''"
                     :help="formErrors.employeeId"
                 >
@@ -238,6 +239,7 @@
                     </a-form-item>
                     <a-form-item
                         label="Date of Birth"
+                        required
                         :validate-status="formErrors.date_of_birth ? 'error' : ''"
                         :help="formErrors.date_of_birth"
                     >
@@ -633,6 +635,12 @@ const handleSaveEmployee = async () => {
         return
     }
 
+    if (!newEmployee.employeeId || !newEmployee.employeeId.trim()) {
+        formErrors.employeeId = 'Employee ID is required'
+        message.error('Employee ID is required')
+        return
+    }
+
     if (newEmployee.phone && !/^\+91\d{10}$/.test(newEmployee.phone)) {
         formErrors.phone = 'Please enter a valid 10-digit phone number'
         message.error('Please enter a valid 10-digit phone number')
@@ -645,7 +653,11 @@ const handleSaveEmployee = async () => {
         return
     }
 
-    if (newEmployee.date_of_birth) {
+    if (!newEmployee.date_of_birth) {
+        formErrors.date_of_birth = 'Date of birth is required'
+        message.error('Date of birth is required')
+        return
+    } else {
         const dob = dayjs(newEmployee.date_of_birth)
         if (!dob.isValid()) {
             formErrors.date_of_birth = 'Invalid date of birth'
