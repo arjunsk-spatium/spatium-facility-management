@@ -893,4 +893,92 @@ describe('SPOC Employees Page', () => {
             expect(dayjs(vm.defaultBirthDatePickerValue).year()).toBe(expectedYear)
         })
     })
+
+    describe('Employee ID field', () => {
+        const mountPage = async () => {
+            return await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+        }
+
+        it('shows an Employee ID input in the add employee modal', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+
+            vm.openAddModal()
+            await wrapper.vm.$nextTick()
+
+            expect(document.body.textContent).toContain('Employee ID')
+            expect(document.body.querySelector('input[placeholder="Employee ID"]')).not.toBeNull()
+        })
+
+        it('sends the trimmed employee_id when adding an employee', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.openAddModal()
+            vm.newEmployee.name = 'Ananya M'
+            vm.newEmployee.email = 'ananya.m@company.com'
+            vm.newEmployee.employeeId = '  EMP-1001  '
+
+            await vm.handleSaveEmployee()
+
+            expect(spocStore.addEmployee).toHaveBeenCalledWith(expect.objectContaining({ employee_id: 'EMP-1001' }))
+        })
+
+        it('prefills employee_id when editing and sends the updated value', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.handleEdit({ id: 'emp-1', name: 'Ananya M', email: 'ananya.m@company.com', employee_id: 'EMP-1001' })
+            expect(vm.newEmployee.employeeId).toBe('EMP-1001')
+
+            vm.newEmployee.employeeId = 'EMP-2002'
+            await vm.handleSaveEmployee()
+
+            expect(spocStore.updateEmployee).toHaveBeenCalledWith('emp-1', expect.objectContaining({ employee_id: 'EMP-2002' }))
+        })
+
+        it('sends employee_id as null when it is cleared while editing', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.handleEdit({ id: 'emp-1', name: 'Ananya M', email: 'ananya.m@company.com', employee_id: 'EMP-1001' })
+            vm.newEmployee.employeeId = ''
+            await vm.handleSaveEmployee()
+
+            expect(spocStore.updateEmployee).toHaveBeenCalledWith('emp-1', expect.objectContaining({ employee_id: null }))
+        })
+
+        it('maps a server employee_id error to the Employee ID field', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            const duplicateError: any = new Error('Failed to create user.')
+            duplicateError.data = {
+                success: false,
+                error: { fields: { employee_id: ['Employee ID already exists'] } }
+            }
+            vi.mocked(spocStore.addEmployee).mockRejectedValueOnce(duplicateError)
+
+            vm.openAddModal()
+            vm.newEmployee.name = 'Ananya M'
+            vm.newEmployee.email = 'ananya.m@company.com'
+            vm.newEmployee.employeeId = 'EMP-1001'
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.employeeId).toBe('Employee ID already exists')
+        })
+    })
 })

@@ -175,6 +175,13 @@
                     <a-input v-model:value="newEmployee.email" placeholder="employee@company.com" @input="clearFieldError('email')" />
                 </a-form-item>
                 <a-form-item
+                    label="Employee ID"
+                    :validate-status="formErrors.employeeId ? 'error' : ''"
+                    :help="formErrors.employeeId"
+                >
+                    <a-input v-model:value="newEmployee.employeeId" placeholder="Employee ID" @input="clearFieldError('employeeId')" />
+                </a-form-item>
+                <a-form-item
                     label="Phone"
                     :validate-status="formErrors.phone ? 'error' : ''"
                     :help="formErrors.phone"
@@ -485,6 +492,7 @@ const departments = ref<Department[]>([])
 const newEmployee = reactive({
     name: '',
     email: '',
+    employeeId: '',
     phone: '',
     departmentId: null as string | null,
     designation: '',
@@ -498,6 +506,7 @@ const newEmployee = reactive({
 const formErrors = reactive<Record<string, string>>({
     name: '',
     email: '',
+    employeeId: '',
     phone: '',
     departmentId: '',
     gender: '',
@@ -514,6 +523,7 @@ const clearFieldError = (field: string) => {
 const clearAllFormErrors = () => {
     formErrors.name = ''
     formErrors.email = ''
+    formErrors.employeeId = ''
     formErrors.phone = ''
     formErrors.departmentId = ''
     formErrors.gender = ''
@@ -535,6 +545,7 @@ const openAddModal = () => {
     editingEmployee.value = null
     newEmployee.name = ''
     newEmployee.email = ''
+    newEmployee.employeeId = ''
     newEmployee.phone = ''
     newEmployee.departmentId = null
     newEmployee.designation = ''
@@ -655,6 +666,7 @@ const handleSaveEmployee = async () => {
             await store.updateEmployee(editingEmployee.value.id, {
                 name: newEmployee.name,
                 email: newEmployee.email,
+                employee_id: newEmployee.employeeId.trim() || null,
                 phone: newEmployee.phone || undefined,
                 department: selectedDept?.name,
                 department_id: newEmployee.departmentId || undefined,
@@ -670,6 +682,7 @@ const handleSaveEmployee = async () => {
             await store.addEmployee({
                 name: newEmployee.name,
                 email: newEmployee.email,
+                employee_id: newEmployee.employeeId.trim() || undefined,
                 phone: newEmployee.phone || undefined,
                 department: selectedDept?.name,
                 department_id: newEmployee.departmentId || undefined,
@@ -686,6 +699,7 @@ const handleSaveEmployee = async () => {
         // Reset form
         newEmployee.name = ''
         newEmployee.email = ''
+        newEmployee.employeeId = ''
         newEmployee.phone = ''
         newEmployee.departmentId = null
         newEmployee.designation = ''
@@ -711,6 +725,7 @@ const handleSaveEmployee = async () => {
         const emailErr = firstMessage(fields.email)
         const nameErr = firstMessage(fields.full_name) || firstMessage(fields.name)
         const phoneErr = firstMessage(fields.phone_number) || firstMessage(fields.phone)
+        const employeeIdErr = firstMessage(fields.employee_id)
         const deptErr = firstMessage(fields.department_id)
         const genderErr = firstMessage(fields.gender)
         const dojErr = firstMessage(fields.date_of_joining)
@@ -719,6 +734,7 @@ const handleSaveEmployee = async () => {
         if (emailErr) formErrors.email = emailErr
         if (nameErr) formErrors.name = nameErr
         if (phoneErr) formErrors.phone = phoneErr
+        if (employeeIdErr) formErrors.employeeId = employeeIdErr
         if (deptErr) formErrors.departmentId = deptErr
         if (genderErr) formErrors.gender = genderErr
         if (dojErr) formErrors.date_of_joining = dojErr
@@ -735,6 +751,7 @@ const handleEdit = (employee: any) => {
     editingEmployee.value = employee
     newEmployee.name = employee.name
     newEmployee.email = employee.email
+    newEmployee.employeeId = employee.employee_id || ''
     newEmployee.phone = employee.phone || ''
     newEmployee.departmentId = employee.department_id || null
     newEmployee.designation = employee.designation || ''
