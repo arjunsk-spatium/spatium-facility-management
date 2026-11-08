@@ -722,7 +722,10 @@ export const useSpocStore = defineStore('spoc', {
 
                 if (typeof data.buildingPassEnabled === 'boolean') {
                     body.building_pass_enabled = data.buildingPassEnabled
-                } else if (data.role) {
+                }
+                // Only send app_name when a role is explicitly given (edit modal). The building pass
+                // toggle sends no role, so it must not touch app_name or it would reset SPOCs to hub.
+                if (data.role) {
                     body.app_name = data.role === 'SPOC' ? 'client_portal' : 'hub'
                 }
 
@@ -737,6 +740,8 @@ export const useSpocStore = defineStore('spoc', {
                         this.employees[index] = { ...this.employees[index], ...data }
                         return this.employees[index]
                     }
+                    // Not in the current list (e.g. an existing user from another app being added)
+                    return response.data
                 }
                 const error: any = new Error(response.message || 'Failed to update employee')
                 error.data = response

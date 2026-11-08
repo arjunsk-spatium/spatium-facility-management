@@ -1026,4 +1026,173 @@ describe('SPOC Employees Page', () => {
             expect(vm.formErrors.employeeId).toBe('Employee ID already exists')
         })
     })
+
+    describe('Phone number when editing', () => {
+        const mountPage = async () => {
+            return await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+        }
+
+        const existingEmployee = (phone: string) => ({
+            id: 'emp-1',
+            name: 'Arjun Sk',
+            email: 'arjun@company.com',
+            employee_id: 'SP045',
+            date_of_birth: '2003-11-22',
+            phone
+        })
+
+        it.each([
+            ['without country code', '8660532612'],
+            ['with country code but no plus', '918660532612'],
+            ['with spaces', '+91 86605 32612'],
+            ['with a dash', '+91-8660532612'],
+            ['already normalised', '+918660532612']
+        ])('saves an existing phone stored %s without a validation error', async (_label, phone) => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.handleEdit(existingEmployee(phone))
+            expect(vm.newEmployee.phone).toBe('+918660532612')
+
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.phone).toBe('')
+            expect(spocStore.updateEmployee).toHaveBeenCalledWith('emp-1', expect.objectContaining({ phone: '+918660532612' }))
+        })
+
+        it('still rejects an existing phone that is not 10 digits', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.handleEdit(existingEmployee('12345'))
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.phone).toBe('Please enter a valid 10-digit phone number')
+            expect(spocStore.updateEmployee).not.toHaveBeenCalled()
+        })
+
+        it('keeps an empty phone empty', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+
+            vm.handleEdit(existingEmployee(''))
+
+            expect(vm.newEmployee.phone).toBe('')
+        })
+    })
+
+    describe('Existing user in another app', () => {
+        const mountPage = async () => {
+            return await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+        }
+
+        const existingUserError = () => {
+            const err: any = new Error('Failed to create user.')
+            err.data = {
+                success: false,
+                code: 'USER_CREATION_ERROR',
+                error: {
+                    type: 'VALIDATION_ERROR',
+                    fields: {
+                        user_id: [{ code: 'EXISTS', message: '60b272c6-d250-4e4e-abf4-fd8f5948a8b5' }],
+                        email: [{ code: 'EXISTS', message: 'User already exists in another app.' }]
+                    }
+                }
+            }
+            return err
+        }
+
+        const fillForm = (vm: any, role: 'Employee' | 'SPOC') => {
+            vm.openAddModal()
+            vm.newEmployee.name = 'Ananya M'
+            vm.newEmployee.email = 'ananya.m@company.com'
+            vm.newEmployee.employeeId = 'EMP-1001'
+            vm.newEmployee.phone = '+919876543210'
+            vm.newEmployee.designation = 'Analyst'
+            vm.newEmployee.role = role
+            vm.newEmployee.gender = 'female'
+            vm.newEmployee.date_of_joining = '2024-01-15'
+            vm.newEmployee.date_of_birth = '1990-01-01'
+        }
+
+        it('asks for confirmation instead of showing an error when the email exists in another app', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+            vi.mocked(spocStore.addEmployee).mockRejectedValueOnce(existingUserError())
+
+            fillForm(vm, 'Employee')
+            await vm.handleSaveEmployee()
+
+            expect(vm.existingUserConfirmVisible).toBe(true)
+            expect(vm.existingUserId).toBe('60b272c6-d250-4e4e-abf4-fd8f5948a8b5')
+            expect(vm.existingUserMessage).toBe('User already exists in another app.')
+            expect(vm.formErrors.email).toBe('')
+            expect(spocStore.updateEmployee).not.toHaveBeenCalled()
+        })
+
+        it.each(['Employee', 'SPOC'] as const)('on confirm updates the existing user with all form fields as %s', async (role) => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+            vi.mocked(spocStore.addEmployee).mockRejectedValueOnce(existingUserError())
+            vi.mocked(spocStore.updateEmployee).mockResolvedValueOnce({} as any)
+
+            fillForm(vm, role)
+            await vm.handleSaveEmployee()
+            await vm.handleConfirmExistingUser()
+
+            expect(spocStore.updateEmployee).toHaveBeenCalledWith('60b272c6-d250-4e4e-abf4-fd8f5948a8b5', expect.objectContaining({
+                name: 'Ananya M',
+                email: 'ananya.m@company.com',
+                employee_id: 'EMP-1001',
+                phone: '+919876543210',
+                designation: 'Analyst',
+                role,
+                gender: 'female',
+                date_of_joining: '2024-01-15',
+                date_of_birth: '1990-01-01'
+            }))
+            const payload = vi.mocked(spocStore.updateEmployee).mock.calls[0]![1]
+            expect(payload).not.toHaveProperty('buildingPassEnabled')
+            expect(vm.existingUserConfirmVisible).toBe(false)
+            expect(vm.showAddModal).toBe(false)
+            expect(spocStore.fetchEmployees).toHaveBeenCalled()
+        })
+
+        it('keeps the form open when the confirm update fails', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+            vi.mocked(spocStore.addEmployee).mockRejectedValueOnce(existingUserError())
+            vi.mocked(spocStore.updateEmployee).mockRejectedValueOnce(new Error('Update failed'))
+
+            fillForm(vm, 'Employee')
+            await vm.handleSaveEmployee()
+            await vm.handleConfirmExistingUser()
+
+            expect(vm.showAddModal).toBe(true)
+            expect(vm.newEmployee.email).toBe('ananya.m@company.com')
+        })
+    })
 })
