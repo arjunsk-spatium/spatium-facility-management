@@ -740,6 +740,8 @@ export const useSpocStore = defineStore('spoc', {
                         this.employees[index] = { ...this.employees[index], ...data }
                         return this.employees[index]
                     }
+                    // Not in the current list (e.g. an existing user from another app being added)
+                    return response.data
                 }
                 const error: any = new Error(response.message || 'Failed to update employee')
                 error.data = response

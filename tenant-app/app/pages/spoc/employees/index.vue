@@ -261,6 +261,17 @@
             </a-form>
         </a-modal>
 
+        <!-- Existing user confirmation (email already belongs to a user in another app) -->
+        <a-modal v-model:open="existingUserConfirmVisible" title="User Already Exists" centered
+            ok-text="Add User" :confirm-loading="existingUserSaving" @ok="handleConfirmExistingUser"
+            data-testid="existing-user-modal">
+            <p>{{ existingUserMessage }}</p>
+            <p class="mt-2 text-neutral-500">
+                Do you want to add this person as {{ newEmployee.role === 'SPOC' ? 'a SPOC' : 'an employee' }}
+                with the details you entered?
+            </p>
+        </a-modal>
+
         <!-- Bulk Upload Modal -->
         <a-modal v-model:open="showBulkUploadModal" title="Bulk Upload Employees" centered
             :footer="null" @cancel="resetBulkUpload">
@@ -613,6 +624,80 @@ const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
+// Existing user flow: create fails with fields.user_id when the email already belongs to a
+// user in another app; on confirm we PATCH that user into this app with the form details.
+const existingUserConfirmVisible = ref(false)
+const existingUserSaving = ref(false)
+const existingUserId = ref('')
+const existingUserMessage = ref('')
+
+const getExistingUserError = (err: any): { userId: string; message?: string } | null => {
+    const fields = (err?.data || err)?.error?.fields || {}
+    const userIdError = Array.isArray(fields.user_id) ? fields.user_id[0] : fields.user_id
+    const userId = typeof userIdError === 'string' ? userIdError : userIdError?.message
+    if (!userId) return null
+    const emailError = Array.isArray(fields.email) ? fields.email[0] : fields.email
+    return { userId, message: typeof emailError === 'string' ? emailError : emailError?.message }
+}
+
+const buildEmployeePayload = () => {
+    const selectedDept = departments.value.find(d => d.id === newEmployee.departmentId)
+    return {
+        name: newEmployee.name,
+        email: newEmployee.email,
+        phone: newEmployee.phone || undefined,
+        department: selectedDept?.name,
+        department_id: newEmployee.departmentId || undefined,
+        designation: newEmployee.designation || undefined,
+        role: newEmployee.role,
+        gender: newEmployee.gender || undefined,
+        date_of_joining: newEmployee.date_of_joining || undefined,
+        date_of_birth: newEmployee.date_of_birth || undefined
+    }
+}
+
+const resetEmployeeForm = () => {
+    showAddModal.value = false
+    editingEmployee.value = null
+    newEmployee.name = ''
+    newEmployee.email = ''
+    newEmployee.employeeId = ''
+    newEmployee.phone = ''
+    newEmployee.departmentId = null
+    newEmployee.designation = ''
+    newEmployee.role = 'Employee'
+    newEmployee.gender = null
+    newEmployee.date_of_joining = null
+    newEmployee.date_of_birth = null
+    newEmployee.buildingPassEnabled = false
+    clearAllFormErrors()
+}
+
+const handleConfirmExistingUser = async () => {
+    existingUserSaving.value = true
+    try {
+        // PATCH /api/portal/users/client_portal/<id>/update/ with app_name from Type (client_portal | hub)
+        await store.updateEmployee(existingUserId.value, {
+            ...buildEmployeePayload(),
+            employee_id: newEmployee.employeeId.trim() || null
+        })
+        message.success('User added successfully')
+        existingUserConfirmVisible.value = false
+        resetEmployeeForm()
+        await store.fetchEmployees({
+            companyId: authStore.companyId || undefined,
+            search: searchQuery.value,
+            page: employeePage.value,
+            page_size: employeePageSize.value
+        })
+    } catch (err: any) {
+        const { sanitizeError } = useValidation()
+        message.error(sanitizeError(err) || 'Failed to add existing user')
+    } finally {
+        existingUserSaving.value = false
+    }
+}
+
 const handleSaveEmployee = async () => {
     clearAllFormErrors()
 
@@ -671,58 +756,31 @@ const handleSaveEmployee = async () => {
         }
     }
 
-    const selectedDept = departments.value.find(d => d.id === newEmployee.departmentId)
-
     try {
         if (editingEmployee.value) {
             await store.updateEmployee(editingEmployee.value.id, {
-                name: newEmployee.name,
-                email: newEmployee.email,
+                ...buildEmployeePayload(),
                 employee_id: newEmployee.employeeId.trim() || null,
-                phone: newEmployee.phone || undefined,
-                department: selectedDept?.name,
-                department_id: newEmployee.departmentId || undefined,
-                designation: newEmployee.designation || undefined,
-                role: newEmployee.role,
-                gender: newEmployee.gender || undefined,
-                date_of_joining: newEmployee.date_of_joining || undefined,
-                date_of_birth: newEmployee.date_of_birth || undefined,
                 buildingPassEnabled: newEmployee.buildingPassEnabled
             })
             message.success('Employee updated successfully')
         } else {
             await store.addEmployee({
-                name: newEmployee.name,
-                email: newEmployee.email,
-                employee_id: newEmployee.employeeId.trim() || undefined,
-                phone: newEmployee.phone || undefined,
-                department: selectedDept?.name,
-                department_id: newEmployee.departmentId || undefined,
-                designation: newEmployee.designation || undefined,
-                role: newEmployee.role,
-                gender: newEmployee.gender || undefined,
-                date_of_joining: newEmployee.date_of_joining || undefined,
-                date_of_birth: newEmployee.date_of_birth || undefined
+                ...buildEmployeePayload(),
+                employee_id: newEmployee.employeeId.trim() || undefined
             })
             message.success('Employee added successfully')
         }
-        showAddModal.value = false
-        editingEmployee.value = null
-        // Reset form
-        newEmployee.name = ''
-        newEmployee.email = ''
-        newEmployee.employeeId = ''
-        newEmployee.phone = ''
-        newEmployee.departmentId = null
-        newEmployee.designation = ''
-        newEmployee.role = 'Employee'
-        newEmployee.gender = null
-        newEmployee.date_of_joining = null
-        newEmployee.date_of_birth = null
-        newEmployee.buildingPassEnabled = false
-        clearAllFormErrors()
+        resetEmployeeForm()
     } catch (err: any) {
         const errData = err?.data || err
+        const existingUser = !editingEmployee.value ? getExistingUserError(err) : null
+        if (existingUser) {
+            existingUserId.value = existingUser.userId
+            existingUserMessage.value = existingUser.message || 'User already exists in another app.'
+            existingUserConfirmVisible.value = true
+            return
+        }
         // Backend may send field errors under either `fields` or `details`
         const fields = errData?.error?.fields || errData?.error?.details || {}
 

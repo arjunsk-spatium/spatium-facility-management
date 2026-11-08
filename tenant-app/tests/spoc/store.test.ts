@@ -748,6 +748,30 @@ describe('SPOC Store', () => {
     })
 
     describe('updateEmployee', () => {
+        it.each([['SPOC', 'client_portal'], ['Employee', 'hub']] as const)(
+            'updates an existing user that is not in the list (%s) and returns the response',
+            async (role, appName) => {
+                mockFetch.mockResolvedValue({
+                    ok: true,
+                    status: 200,
+                    json: async () => ({ success: true, data: { id: 'other-app-user', email: 'a@x.com' } })
+                })
+                const store = useSpocStore()
+                store.employees = []
+
+                const result = await store.updateEmployee('other-app-user', {
+                    name: 'Ananya', email: 'a@x.com', phone: '+919876543210', role
+                })
+
+                expect(result).toEqual({ id: 'other-app-user', email: 'a@x.com' })
+                const [url, init] = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]
+                expect(String(url)).toContain('/api/portal/users/client_portal/other-app-user/update/')
+                expect(init.method).toBe('PATCH')
+                const body = JSON.parse(init.body)
+                expect(body).toMatchObject({ app_name: appName, full_name: 'Ananya', email: 'a@x.com', phone_number: '+919876543210' })
+            }
+        )
+
         it('should omit app_name from request body when turning off building pass (buildingPassEnabled: false)', async () => {
             mockFetch.mockResolvedValue({
                 ok: true,
