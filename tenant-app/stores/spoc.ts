@@ -579,6 +579,25 @@ export const useSpocStore = defineStore('spoc', {
                 })
 
                 if (response.success && response.data) {
+                    // The backend's client_portal create forces app_name to 'client_portal' (which also
+                    // links 'hub'), so every new user becomes a SPOC. For an Employee, follow up with the
+                    // update endpoint, whose app_name='hub' removes 'client_portal' and keeps only 'hub'.
+                    if (appName === 'hub' && response.data.id) {
+                        try {
+                            await $api<any>(`/api/portal/users/client_portal/${response.data.id}/update/`, {
+                                method: 'PATCH',
+                                body: {
+                                    app_name: 'hub',
+                                    full_name: data.name,
+                                    email: data.email,
+                                    phone_number: data.phone
+                                }
+                            })
+                        } catch (roleErr) {
+                            console.warn('Employee created but could not be switched from SPOC to Employee', roleErr)
+                        }
+                    }
+
                     const newEmployee: SpocEmployee = {
                         id: response.data.id || Date.now().toString(),
                         name: data.name || '',

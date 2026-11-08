@@ -575,10 +575,11 @@ describe('SPOC Store', () => {
             expect(employee.date_of_joining).toBe('2025-02-01')
             expect(employee.date_of_birth).toBe('1996-08-14')
 
-            const lastCallBody = JSON.parse(mockFetch.mock.calls[mockFetch.mock.calls.length - 1][1].body)
-            expect(lastCallBody.gender).toBe('female')
-            expect(lastCallBody.date_of_joining).toBe('2025-02-01')
-            expect(lastCallBody.date_of_birth).toBe('1996-08-14')
+            const createCall = mockFetch.mock.calls.find((c: any[]) => String(c[0]).includes('/client_portal/create/'))
+            const createBody = JSON.parse(createCall[1].body)
+            expect(createBody.gender).toBe('female')
+            expect(createBody.date_of_joining).toBe('2025-02-01')
+            expect(createBody.date_of_birth).toBe('1996-08-14')
         })
 
         it('should handle USER_CREATION_ERROR with email domain mismatch on HTTP error', async () => {
@@ -893,21 +894,64 @@ describe('SPOC Store', () => {
     })
 
     describe('addEmployee app_name', () => {
+        const okResponse = () => ({
+            ok: true,
+            status: 200,
+            json: async () => ({ success: true, data: { id: 'emp-2' } })
+        })
+        const callsTo = (fragment: string) => mockFetch.mock.calls.filter((c: any[]) => String(c[0]).includes(fragment))
+
         it.each([
             ['Employee', 'hub'],
             ['SPOC', 'client_portal']
         ] as const)('should create a %s with app_name %s', async (role, appName) => {
-            mockFetch.mockResolvedValue({
-                ok: true,
-                status: 200,
-                json: async () => ({ success: true, data: { id: 'emp-2' } })
-            })
+            mockFetch.mockResolvedValue(okResponse())
             const store = useSpocStore()
 
             await store.addEmployee({ name: 'New Person', email: 'new@example.com', role, companyId: 'comp-1' })
 
-            const requestBody = JSON.parse(mockFetch.mock.calls[mockFetch.mock.calls.length - 1][1].body)
-            expect(requestBody.app_name).toBe(appName)
+            const [createCall] = callsTo('/client_portal/create/')
+            expect(JSON.parse(createCall[1].body).app_name).toBe(appName)
+        })
+
+        it('switches a new Employee to hub only, because the backend create forces client_portal', async () => {
+            mockFetch.mockResolvedValue(okResponse())
+            const store = useSpocStore()
+
+            await store.addEmployee({ name: 'New Person', email: 'new@example.com', phone: '+919876543210', role: 'Employee' })
+
+            const updateCalls = callsTo('/client_portal/emp-2/update/')
+            expect(updateCalls).toHaveLength(1)
+            expect(updateCalls[0][1].method).toBe('PATCH')
+            expect(JSON.parse(updateCalls[0][1].body)).toEqual({
+                app_name: 'hub',
+                full_name: 'New Person',
+                email: 'new@example.com',
+                phone_number: '+919876543210'
+            })
+        })
+
+        it('does not send the follow-up update for a SPOC', async () => {
+            mockFetch.mockResolvedValue(okResponse())
+            const store = useSpocStore()
+
+            await store.addEmployee({ name: 'New Person', email: 'new@example.com', role: 'SPOC' })
+
+            expect(callsTo('/update/')).toHaveLength(0)
+        })
+
+        it('still adds the employee when the follow-up update fails', async () => {
+            mockFetch
+                .mockResolvedValueOnce(okResponse())
+                .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({ success: false, message: 'boom' }) })
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+            const store = useSpocStore()
+
+            const created = await store.addEmployee({ name: 'New Person', email: 'new@example.com', role: 'Employee' })
+
+            expect(created.id).toBe('emp-2')
+            expect(store.employees.map(e => e.id)).toContain('emp-2')
+            warn.mockRestore()
         })
     })
 })
