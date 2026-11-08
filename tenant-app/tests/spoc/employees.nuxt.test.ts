@@ -1026,4 +1026,69 @@ describe('SPOC Employees Page', () => {
             expect(vm.formErrors.employeeId).toBe('Employee ID already exists')
         })
     })
+
+    describe('Phone number when editing', () => {
+        const mountPage = async () => {
+            return await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            spoc: { employees: [], loading: false }
+                        }
+                    })]
+                }
+            })
+        }
+
+        const existingEmployee = (phone: string) => ({
+            id: 'emp-1',
+            name: 'Arjun Sk',
+            email: 'arjun@company.com',
+            employee_id: 'SP045',
+            date_of_birth: '2003-11-22',
+            phone
+        })
+
+        it.each([
+            ['without country code', '8660532612'],
+            ['with country code but no plus', '918660532612'],
+            ['with spaces', '+91 86605 32612'],
+            ['with a dash', '+91-8660532612'],
+            ['already normalised', '+918660532612']
+        ])('saves an existing phone stored %s without a validation error', async (_label, phone) => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.handleEdit(existingEmployee(phone))
+            expect(vm.newEmployee.phone).toBe('+918660532612')
+
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.phone).toBe('')
+            expect(spocStore.updateEmployee).toHaveBeenCalledWith('emp-1', expect.objectContaining({ phone: '+918660532612' }))
+        })
+
+        it('still rejects an existing phone that is not 10 digits', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const spocStore = useSpocStore()
+
+            vm.handleEdit(existingEmployee('12345'))
+            await vm.handleSaveEmployee()
+
+            expect(vm.formErrors.phone).toBe('Please enter a valid 10-digit phone number')
+            expect(spocStore.updateEmployee).not.toHaveBeenCalled()
+        })
+
+        it('keeps an empty phone empty', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+
+            vm.handleEdit(existingEmployee(''))
+
+            expect(vm.newEmployee.phone).toBe('')
+        })
+    })
 })

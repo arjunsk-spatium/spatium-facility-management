@@ -758,13 +758,22 @@ const handleSaveEmployee = async () => {
     }
 }
 
+// Stored numbers may come back as '8660532612', '918660532612' or '+91 86605 32612';
+// PhoneInput (and the save validation) work with '+91' followed by 10 digits
+const toPhoneInputValue = (phone?: string | null) => {
+    const digits = (phone || '').replace(/\D/g, '')
+    if (!digits) return ''
+    const national = digits.length > 10 && digits.startsWith('91') ? digits.slice(2) : digits
+    return national.length === 10 ? `+91${national}` : (phone || '')
+}
+
 const handleEdit = (employee: any) => {
     clearAllFormErrors()
     editingEmployee.value = employee
     newEmployee.name = employee.name
     newEmployee.email = employee.email
     newEmployee.employeeId = employee.employee_id || ''
-    newEmployee.phone = employee.phone || ''
+    newEmployee.phone = toPhoneInputValue(employee.phone)
     newEmployee.departmentId = employee.department_id || null
     newEmployee.designation = employee.designation || ''
     newEmployee.role = employee.role || 'Employee'

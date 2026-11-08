@@ -11,14 +11,21 @@ describe('SPOC Store', () => {
         setActivePinia(createPinia());
         originalFetch = global.fetch;
         global.fetch = mockFetch;
-        
-        if (typeof window !== "undefined") {
-            localStorage.setItem("access_token", "fake-token");
-        }
+
+        // The nuxt test environment has no localStorage; the store and $api read the token from it
+        const storage = new Map<string, string>();
+        vi.stubGlobal('localStorage', {
+            getItem: (key: string) => storage.get(key) ?? null,
+            setItem: (key: string, value: string) => { storage.set(key, String(value)) },
+            removeItem: (key: string) => { storage.delete(key) },
+            clear: () => storage.clear()
+        });
+        localStorage.setItem("access_token", "fake-token");
     })
 
     afterEach(() => {
         global.fetch = originalFetch;
+        vi.unstubAllGlobals();
     });
 
     describe('Initial State', () => {
@@ -834,6 +841,49 @@ describe('SPOC Store', () => {
             
             expect(requestBody.full_name).toBe('John Updated')
             expect(requestBody.app_name).toBe('client_portal')
+        })
+
+        it.each([
+            ['Employee', 'hub'],
+            ['SPOC', 'client_portal']
+        ] as const)('should send app_name for role %s even when the edit modal also sends buildingPassEnabled', async (role, appName) => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({ success: true, data: { id: 'emp-1' } })
+            })
+            const store = useSpocStore()
+            store.employees = [{ id: 'emp-1', name: 'Ananya M', email: 'ananya@example.com', role: role === 'SPOC' ? 'Employee' : 'SPOC' }]
+
+            await store.updateEmployee('emp-1', {
+                name: 'Ananya M',
+                role,
+                buildingPassEnabled: true
+            })
+
+            const requestBody = JSON.parse(mockFetch.mock.calls[mockFetch.mock.calls.length - 1][1].body)
+            expect(requestBody.app_name).toBe(appName)
+            expect(requestBody.building_pass_enabled).toBe(true)
+            expect(store.employees[0].role).toBe(role)
+        })
+    })
+
+    describe('addEmployee app_name', () => {
+        it.each([
+            ['Employee', 'hub'],
+            ['SPOC', 'client_portal']
+        ] as const)('should create a %s with app_name %s', async (role, appName) => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({ success: true, data: { id: 'emp-2' } })
+            })
+            const store = useSpocStore()
+
+            await store.addEmployee({ name: 'New Person', email: 'new@example.com', role, companyId: 'comp-1' })
+
+            const requestBody = JSON.parse(mockFetch.mock.calls[mockFetch.mock.calls.length - 1][1].body)
+            expect(requestBody.app_name).toBe(appName)
         })
     })
 })

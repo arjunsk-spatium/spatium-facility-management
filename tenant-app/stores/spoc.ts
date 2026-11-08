@@ -722,7 +722,10 @@ export const useSpocStore = defineStore('spoc', {
 
                 if (typeof data.buildingPassEnabled === 'boolean') {
                     body.building_pass_enabled = data.buildingPassEnabled
-                } else if (data.role) {
+                }
+                // Only send app_name when a role is explicitly given (edit modal). The building pass
+                // toggle sends no role, so it must not touch app_name or it would reset SPOCs to hub.
+                if (data.role) {
                     body.app_name = data.role === 'SPOC' ? 'client_portal' : 'hub'
                 }
 
