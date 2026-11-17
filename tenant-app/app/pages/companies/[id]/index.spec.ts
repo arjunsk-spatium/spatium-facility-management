@@ -294,7 +294,7 @@ describe('CompanyDetails', () => {
 
             expect(mockApi).toHaveBeenCalledWith('/api/portal/users/org_portal/spoc-1/update/', expect.objectContaining({
                 method: 'PATCH',
-                body: expect.objectContaining({ full_name: 'Updated Spoc' })
+                body: expect.objectContaining({ full_name: 'Updated Spoc', app_name: 'client_portal' })
             }))
         })
 
@@ -385,6 +385,20 @@ describe('CompanyDetails', () => {
                 method: 'POST',
                 body: expect.objectContaining({ full_name: 'New Employee', app_name: 'hub' })
             }))
+        })
+
+        it('updates an existing employee with app_name hub', async () => {
+            wrapper.vm.openEditEmployeeModal({ id: 'emp-1', full_name: 'Original Emp', email: 'orig@emp.com', phone_number: '1111' })
+
+            wrapper.vm.employeeForm.full_name = 'Updated Emp'
+            await wrapper.vm.handleEmployeeOk()
+
+            expect(mockApi).toHaveBeenCalledWith('/api/portal/users/org_portal/emp-1/update/', expect.objectContaining({
+                method: 'PATCH',
+                body: expect.objectContaining({ full_name: 'Updated Emp', app_name: 'hub' })
+            }))
+            const [, init] = mockApi.mock.calls.find((c: any[]) => c[0] === '/api/portal/users/org_portal/emp-1/update/')
+            expect(init.body.app_name).not.toBe('org_portal')
         })
 
         it('shows existing user confirmation when employee user_id error is returned', async () => {

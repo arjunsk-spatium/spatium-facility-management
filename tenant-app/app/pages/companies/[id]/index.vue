@@ -879,7 +879,7 @@ const handleEmployeeOk = async () => {
                     phone_number: employeeForm.phone_number,
                     tenant_id: tenantId,
                     company_id: companyId,
-                    app_name: 'org_portal'
+                    app_name: 'hub'
                 }
             })
             message.success('Employee updated successfully')
@@ -978,7 +978,8 @@ const handleSpocOk = async () => {
                     full_name: spocForm.full_name,
                     email: spocForm.email,
                     phone_number: spocForm.phone_number,
-                    company_id: companyId
+                    company_id: companyId,
+                    app_name: 'client_portal'
                 }
             })
             message.success('SPOC updated successfully')
