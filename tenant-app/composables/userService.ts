@@ -235,30 +235,48 @@ export const useUserService = () => {
         return tenantModules
     }
 
+    const mapListUser = (u: any): User => ({
+        id: u.id,
+        name: u.full_name || '',
+        email: u.email || '',
+        phone: u.phone_number || '',
+        role: 'Staff',
+        modules: u.apps || [],
+        status: u.status,
+        apps: u.apps,
+        tenant_id: u.tenant_id,
+        company_id: u.company_id,
+        facility_id: u.facility_id,
+        createdAt: u.created_at
+    } as User)
+
     const getUsers = async (): Promise<User[]> => {
         try {
             const { $api } = useNuxtApp()
             const response = await $api<any>('/api/portal/users/org_portal/list/?app_name=org_portal')
             if (response?.data?.results) {
-                return response.data.results.map((u: any) => ({
-                    id: u.id,
-                    name: u.full_name || '',
-                    email: u.email || '',
-                    phone: u.phone_number || '',
-                    role: 'Staff',
-                    modules: u.apps || [],
-                    status: u.status,
-                    apps: u.apps,
-                    tenant_id: u.tenant_id,
-                    company_id: u.company_id,
-                    facility_id: u.facility_id,
-                    createdAt: u.created_at
-                }))
+                return response.data.results.map(mapListUser)
             }
             return []
         } catch (error) {
             console.error('Failed to fetch users:', error)
             return []
+        }
+    }
+
+    // One page of org_portal users, optionally filtered by the backend's `search` param.
+    // The backend paginates with page/page_size (max 100) and returns the total in count.
+    const getUsersPage = async (page = 1, pageSize = 10, search = ''): Promise<{ results: User[]; count: number }> => {
+        const { $api } = useNuxtApp()
+        const params = new URLSearchParams({ app_name: 'org_portal', page: String(page), page_size: String(pageSize) })
+        const term = search.trim()
+        if (term) params.set('search', term)
+        const response = await $api<any>(`/api/portal/users/org_portal/list/?${params.toString()}`)
+        const data = response?.data
+        const results = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
+        return {
+            results: results.map(mapListUser),
+            count: typeof data?.count === 'number' ? data.count : results.length
         }
     }
 
@@ -637,6 +655,7 @@ export const useUserService = () => {
         getUserModules,
         getTenantModules,
         getUsers,
+        getUsersPage,
         getUserById,
         createUser,
         updateUser,

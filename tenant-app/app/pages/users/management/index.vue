@@ -16,7 +16,7 @@
 
         <!-- Search -->
         <a-input-search v-model:value="searchQuery" placeholder="Search users by name or email..." allow-clear
-            class="max-w-md" />
+            class="max-w-md" @search="runSearch" />
 
         <!-- Loading State -->
         <div v-if="loading" class="flex justify-center py-12">
@@ -25,12 +25,12 @@
 
         <!-- User List -->
         <div v-else class="space-y-4">
-            <div v-if="filteredUsers.length === 0" class="text-center py-12 text-gray-500">
+            <div v-if="users.length === 0" class="text-center py-12 text-gray-500">
                 No users found.
             </div>
 
             <!-- User Cards -->
-            <div v-for="user in filteredUsers" :key="user.id" class="user-card">
+            <div v-for="user in users" :key="user.id" class="user-card">
                 <a-card>
                     <!-- User Header -->
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -106,6 +106,23 @@
                     </div>
                 </a-card>
             </div>
+
+            <!-- Pagination -->
+            <div v-if="totalUsers > 0" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2"
+                data-testid="users-pagination">
+                <span class="text-sm text-gray-500 dark:text-gray-400">
+                    Showing {{ rangeStart }}–{{ rangeEnd }} of {{ totalUsers }} users
+                </span>
+                <a-pagination
+                    :current="currentPage"
+                    :page-size="pageSize"
+                    :total="totalUsers"
+                    :page-size-options="['10', '20', '50', '100']"
+                    show-size-changer
+                    :size="isMobile ? 'small' : 'default'"
+                    @change="handlePageChange"
+                />
+            </div>
         </div>
 
         <!-- Module Management Modal -->
@@ -148,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { message } from 'ant-design-vue'
 import {
     PlusOutlined,
@@ -164,13 +181,16 @@ definePageMeta({
     middleware: 'auth'
 })
 
-const { getUsers, createUser, updateUser, deleteUser } = useUserService()
+const { getUsersPage, createUser, updateUser, deleteUser } = useUserService()
 const { isMobile } = useSidebar()
 
 // State
 const loading = ref(true)
 const users = ref<User[]>([])
 const searchQuery = ref('')
+const currentPage = ref(1)
+const pageSize = ref(10)
+const totalUsers = ref(0)
 
 // Module Modal
 const moduleModalVisible = ref(false)
@@ -194,26 +214,56 @@ const userForm = ref({
     phone: ''
 })
 
-// Computed
-const filteredUsers = computed(() => {
-    if (!searchQuery.value) return users.value
-    const query = searchQuery.value.toLowerCase()
-    return users.value.filter(u =>
-        u.name.toLowerCase().includes(query) ||
-        u.email.toLowerCase().includes(query)
-    )
-})
+
+const rangeStart = computed(() => totalUsers.value === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1)
+const rangeEnd = computed(() => Math.min(currentPage.value * pageSize.value, totalUsers.value))
 
 // Methods
 const fetchData = async () => {
     loading.value = true
     try {
-        users.value = await getUsers()
+        const { results, count } = await getUsersPage(currentPage.value, pageSize.value, searchQuery.value)
+        // A delete can empty the last page; step back to the new last page
+        const lastPage = Math.max(1, Math.ceil(count / pageSize.value))
+        if (results.length === 0 && count > 0 && currentPage.value > lastPage) {
+            currentPage.value = lastPage
+            return await fetchData()
+        }
+        users.value = results
+        totalUsers.value = count
     } catch (error) {
         message.error('Failed to load data')
     } finally {
         loading.value = false
     }
+}
+
+// Search runs on the backend (`search` param on the list API), always from page 1
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+const runSearch = () => {
+    if (searchTimer) clearTimeout(searchTimer)
+    searchTimer = null
+    currentPage.value = 1
+    return fetchData()
+}
+
+watch(searchQuery, () => {
+    if (searchTimer) clearTimeout(searchTimer)
+    searchTimer = setTimeout(runSearch, 400)
+})
+
+onBeforeUnmount(() => {
+    if (searchTimer) clearTimeout(searchTimer)
+})
+
+const handlePageChange = (page: number, newPageSize: number) => {
+    if (newPageSize && newPageSize !== pageSize.value) {
+        pageSize.value = newPageSize
+        page = 1
+    }
+    currentPage.value = page
+    fetchData()
 }
 
 // Module Modal Methods
@@ -270,12 +320,14 @@ const handleUserSubmit = async () => {
             }
             message.success('User updated successfully')
         } else {
-            const newUser = await createUser({
+            await createUser({
                 ...userForm.value,
                 modules: ['Hub']
             })
-            users.value.push(newUser)
             message.success('User created successfully')
+            // The list is newest-first, so show page 1 where the new user appears
+            currentPage.value = 1
+            await fetchData()
         }
         closeUserModal()
     } catch (err: any) {
@@ -304,8 +356,8 @@ const handleUserSubmit = async () => {
 const handleDeleteUser = async (userId: string) => {
     try {
         await deleteUser(userId)
-        users.value = users.value.filter(u => u.id !== userId)
         message.success('User deleted successfully')
+        await fetchData()
     } catch (error) {
         message.error('Failed to delete user')
     }
