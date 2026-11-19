@@ -32,13 +32,54 @@
 
                 <a-card>
                     <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Revenue</div>
-                    <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">₹{{ insights.summary.total_revenue.toLocaleString() }}</div>
+                    <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400" data-testid="total-revenue">
+                        {{ formatNumber(totalRevenue) }}
+                    </div>
+                    <div v-if="revenueSources.length" class="text-xs text-gray-400 mt-1" data-testid="total-revenue-sources">
+                        {{ revenueSources.map(source => source.label).join(' + ') }}
+                    </div>
                 </a-card>
 
                 <a-card>
                     <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">New (30 Days)</div>
                     <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ insights.summary.new_last_30_days }}</div>
                 </a-card>
+            </div>
+
+            <!-- Booking Insights -->
+            <div v-if="bookingInsights" data-testid="booking-insights">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Booking Insights</h2>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    <a-card>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Bookings</div>
+                        <div class="text-3xl font-bold text-gray-900 dark:text-white" data-testid="booking-total-bookings">
+                            {{ formatNumber(bookingInsights.total_bookings) }}
+                        </div>
+                    </a-card>
+
+                    <a-card>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Money on Bookings</div>
+                        <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400" data-testid="booking-money">
+                            ₹{{ formatNumber(bookingInsights.money_on_bookings) }}
+                        </div>
+                    </a-card>
+
+                    <a-card>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Credits Spent on Bookings</div>
+                        <div class="text-3xl font-bold text-amber-600 dark:text-amber-400" data-testid="booking-credits">
+                            {{ formatNumber(bookingInsights.credit_spent_on_bookings) }}
+                            <span class="text-base font-medium text-gray-500 dark:text-gray-400">credits</span>
+                        </div>
+                    </a-card>
+
+                    <a-card>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total</div>
+                        <div class="text-3xl font-bold text-green-600 dark:text-green-500" data-testid="booking-total">
+                            {{ formatNumber(bookingInsights.total) }}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">Money + credits</div>
+                    </a-card>
+                </div>
             </div>
 
             <!-- Charts Section -->
@@ -100,6 +141,23 @@ definePageMeta({
 
 const store = useCompanyStore()
 const insights = computed(() => store.insights)
+const bookingInsights = computed(() => insights.value?.booking_insights || null)
+const formatNumber = (value?: number | null) => Number(value || 0).toLocaleString('en-IN')
+
+// Total Revenue = sum of all revenue sources. Today the only source is bookings
+// (booking_insights.total, money + credits); add future sources to this list.
+const revenueSources = computed(() => {
+    const sources: Array<{ label: string; amount: number }> = []
+    if (bookingInsights.value) {
+        sources.push({ label: 'Bookings', amount: Number(bookingInsights.value.total) || 0 })
+    }
+    return sources
+})
+
+// Falls back to summary.total_revenue when the API sends no revenue sources
+const totalRevenue = computed(() => revenueSources.value.length
+    ? revenueSources.value.reduce((sum, source) => sum + source.amount, 0)
+    : Number(insights.value?.summary.total_revenue) || 0)
 const loading = computed(() => store.loading)
 const error = computed(() => store.error)
 
@@ -149,13 +207,41 @@ const statusChartData = computed(() => {
     }))
 })
 
+// Revenue Trend plots booking revenue (money + credits) per month from booking_revenue_trend,
+// matching the Total Revenue card. Older responses without it fall back to the wallet revenue_trend.
+const usesBookingRevenue = computed(() => Array.isArray(insights.value?.booking_revenue_trend))
+
 const revenueChartData = computed(() => {
     if (!insights.value) return []
-    return insights.value.revenue_trend.map(item => ({
+    if (usesBookingRevenue.value) {
+        return insights.value.booking_revenue_trend!.map(item => ({
+            month: item.month,
+            revenue: Number(item.total) || 0,
+            money: Number(item.money_on_bookings) || 0,
+            credits: Number(item.credit_spent_on_bookings) || 0,
+        }))
+    }
+    return (insights.value.revenue_trend || []).map(item => ({
         month: item.month,
         revenue: item.revenue,
     }))
 })
+
+// Booking totals mix rupees and credits, so they are shown without ₹
+const formatRevenueValue = (value: number) => usesBookingRevenue.value
+    ? formatNumber(value)
+    : `₹${Number(value || 0).toLocaleString('en-IN')}`
+
+const revenueTooltipItems = (datum: any) => {
+    if (!usesBookingRevenue.value) {
+        return [{ name: 'Revenue', value: formatRevenueValue(datum.revenue) }]
+    }
+    return [
+        { name: 'Money on bookings', value: `₹${formatNumber(datum.money)}` },
+        { name: 'Credits spent', value: `${formatNumber(datum.credits)} credits` },
+        { name: 'Total', value: formatNumber(datum.revenue) },
+    ]
+}
 
 const statusColors: Record<string, string> = {
     'Active': '#10b981',
@@ -234,7 +320,8 @@ const createRevenueChart = async () => {
         yField: 'revenue',
         smooth: true,
         autoFit: true,
-        padding: [10, 10, 30, 40],
+        // Wide left padding so ₹ labels like "₹16,000" aren't clipped
+        padding: [10, 10, 30, 72],
         point: {
             size: 5,
             shape: 'circle',
@@ -258,21 +345,24 @@ const createRevenueChart = async () => {
                 style: {
                     fill: '#666',
                 },
-                formatter: (v: string) => `₹${Number(v).toLocaleString()}`,
+                formatter: (v: string) => formatRevenueValue(Number(v)),
             },
             min: 0,
         },
         legend: {
             position: 'bottom',
             itemName: {
-                formatter: () => 'Revenue (₹)',
+                formatter: () => (usesBookingRevenue.value ? 'Booking revenue' : 'Revenue (₹)'),
             },
         },
         tooltip: {
             showCrosshairs: true,
             shared: true,
-            formatter: (datum: any) => {
-                return { name: datum.month, value: `₹${datum.revenue.toLocaleString()}` }
+            // One row per breakdown value (money, credits, total) for the hovered month
+            customItems: (items: any[]) => {
+                const first = items[0]
+                if (!first) return items
+                return revenueTooltipItems(first.data).map(row => ({ ...first, ...row }))
             },
         },
         animation: {

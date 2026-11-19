@@ -38,6 +38,22 @@ export interface CompanyInsights {
         company_name: string;
         ticket_count: number;
     }>;
+    // Meeting room bookings in the selected range (cancelled excluded).
+    // total = money_on_bookings + credit_spent_on_bookings added as raw numbers (rupees + credits).
+    // Monthly booking revenue over the selected range; total = money + credits (raw numbers)
+    booking_revenue_trend?: Array<{
+        month: string;
+        month_key: string;
+        money_on_bookings: number;
+        credit_spent_on_bookings: number;
+        total: number;
+    }>;
+    booking_insights?: {
+        total_bookings: number;
+        money_on_bookings: number;
+        credit_spent_on_bookings: number;
+        total: number;
+    };
 }
 
 export interface CompanyFacilityMapping {
