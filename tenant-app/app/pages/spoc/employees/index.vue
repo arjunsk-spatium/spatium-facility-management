@@ -958,7 +958,7 @@ const downloadSampleCsv = () => {
     // the SPA fallback and download HTML instead of CSV in some deployments
     const header = 'full_name,phone_number,email,department_slug,designation,type,employee_id,gender,date_of_birth,date_of_joining'
     const rows = [
-        'Test,9876543210,testuser@gmail.com,software-engineering,Software Engineer,Employee / SPOC,EMP123,male,1995-04-12,2024-06-01'
+        'Test,9876543210,testuser@gmail.com,software-engineering,Software Engineer,employee,EMP123,male,1995-04-12,2024-06-01'
     ]
     const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
     const url = window.URL.createObjectURL(blob)

@@ -374,7 +374,7 @@ describe('SPOC Employees Page', () => {
                 ])
                 const lines = text.trim().split('\n')
                 expect(lines).toHaveLength(2)
-                expect(lines[1]).toBe('Test,9876543210,testuser@gmail.com,software-engineering,Software Engineer,Employee / SPOC,EMP123,male,1995-04-12,2024-06-01')
+                expect(lines[1]).toBe('Test,9876543210,testuser@gmail.com,software-engineering,Software Engineer,employee,EMP123,male,1995-04-12,2024-06-01')
                 expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url')
             } finally {
                 URL.createObjectURL = originalCreate
