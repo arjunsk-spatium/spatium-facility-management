@@ -102,17 +102,18 @@ describe('Insights Page', () => {
             expect(wrapper.find('[data-testid="booking-total-bookings"]').text()).toBe('2')
             expect(wrapper.find('[data-testid="booking-money"]').text()).toBe('₹500')
             expect(wrapper.find('[data-testid="booking-credits"]').text().replace(/\s+/g, ' ')).toBe('5 credits')
-            expect(wrapper.find('[data-testid="booking-total"]').text()).toBe('505')
         })
 
-        it('does not put a rupee sign on the mixed money + credits total', async () => {
+        it('has no separate Total card', async () => {
             const wrapper = await mountWith({
                 ...createMockInsights(),
                 booking_insights: { total_bookings: 2, money_on_bookings: 500, credit_spent_on_bookings: 5, total: 505 }
             })
 
-            expect(wrapper.find('[data-testid="booking-total"]').text()).not.toContain('₹')
-            expect(wrapper.find('[data-testid="booking-insights"]').text()).toContain('Money + credits')
+            const section = wrapper.find('[data-testid="booking-insights"]')
+            expect(wrapper.find('[data-testid="booking-total"]').exists()).toBe(false)
+            expect(section.findAll('.ant-card')).toHaveLength(3)
+            expect(section.text()).not.toContain('Money + credits')
         })
 
         it('formats large numbers with Indian grouping', async () => {
@@ -123,7 +124,6 @@ describe('Insights Page', () => {
 
             expect(wrapper.find('[data-testid="booking-total-bookings"]').text()).toBe('1,250')
             expect(wrapper.find('[data-testid="booking-money"]').text()).toBe('₹1,50,000')
-            expect(wrapper.find('[data-testid="booking-total"]').text()).toBe('1,50,000')
         })
 
         it('hides the section when the API does not send booking_insights', async () => {
@@ -134,32 +134,32 @@ describe('Insights Page', () => {
         })
     })
 
-    describe('Total Revenue', () => {
-        const mountWith = (insights: any) => mountSuspended(InsightsPage, {
-            global: {
-                plugins: [createTestingPinia({
-                    createSpy: vi.fn,
-                    initialState: { company: { insights, loading: false } }
-                })]
-            }
-        })
-
-        it('shows the booking total instead of summary.total_revenue', async () => {
-            const wrapper = await mountWith({
-                ...createMockInsights({ total_revenue: 22000 }),
-                booking_insights: { total_bookings: 9, money_on_bookings: 110, credit_spent_on_bookings: 41, total: 151 }
+    describe('Summary cards', () => {
+        it('shows company counts and New (30 Days), with no Total Revenue card', async () => {
+            const wrapper = await mountSuspended(InsightsPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            company: {
+                                insights: {
+                                    ...createMockInsights({ total_revenue: 22000 }),
+                                    booking_insights: { total_bookings: 9, money_on_bookings: 110, credit_spent_on_bookings: 41, total: 151 }
+                                },
+                                loading: false
+                            }
+                        }
+                    })]
+                }
             })
 
-            expect(wrapper.find('[data-testid="total-revenue"]').text()).toBe('151')
-            expect(wrapper.find('[data-testid="total-revenue-sources"]').text()).toBe('Bookings')
-            expect(wrapper.find('[data-testid="total-revenue"]').text()).not.toContain('22,000')
-        })
-
-        it('falls back to summary.total_revenue when booking_insights is missing', async () => {
-            const wrapper = await mountWith(createMockInsights({ total_revenue: 22000 }))
-
-            expect(wrapper.find('[data-testid="total-revenue"]').text()).toBe('22,000')
-            expect(wrapper.find('[data-testid="total-revenue-sources"]').exists()).toBe(false)
+            expect(wrapper.text()).toContain('Total Companies')
+            expect(wrapper.text()).toContain('Active Companies')
+            expect(wrapper.text()).toContain('Inactive Companies')
+            expect(wrapper.text()).toContain('New (30 Days)')
+            expect(wrapper.text()).not.toContain('Total Revenue')
+            expect(wrapper.find('[data-testid="total-revenue"]').exists()).toBe(false)
+            expect(wrapper.text()).not.toContain('22,000')
         })
     })
 
