@@ -273,34 +273,50 @@
         </a-modal>
 
         <!-- Bulk Upload Modal -->
-        <a-modal v-model:open="showBulkUploadModal" title="Bulk Upload Employees" centered
+        <a-modal v-model:open="showBulkUploadModal" title="Bulk Employee Upload" centered
             :footer="null" @cancel="resetBulkUpload">
             <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">
-                        Upload a CSV file with employee data.
-                    </p>
-                    <a-button type="link" size="small" @click="downloadSampleCsv">
-                        <template #icon>
-                            <DownloadOutlined />
-                        </template>
-                        Sample CSV
-                    </a-button>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">
+                    Upload employee details using the provided Excel template.
+                </p>
+
+                <div data-testid="bulk-upload-instructions">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">Before uploading:</p>
+                    <ul class="list-disc pl-5 space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                        <li v-for="item in bulkUploadInstructions" :key="item">{{ item }}</li>
+                    </ul>
                 </div>
+
+                <div data-testid="bulk-upload-mandatory-fields">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">Mandatory fields:</p>
+                    <ul class="list-disc pl-5 space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                        <li v-for="field in bulkUploadMandatoryFields" :key="field.name">
+                            <code class="text-xs px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">{{ field.name }}</code>
+                            <span v-if="field.hint">&nbsp;({{ field.hint }})</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <a-button type="link" class="!px-0" @click="downloadSampleCsv">
+                    <template #icon>
+                        <DownloadOutlined />
+                    </template>
+                    Download Sample Template
+                </a-button>
 
                 <a-upload-dragger
                     v-model:fileList="bulkUploadFileList"
                     name="file"
                     :multiple="false"
                     :before-upload="handleBeforeUpload"
-                    accept=".csv"
+                    accept=".xlsx,.csv"
                     :max-count="1"
                 >
                     <p class="ant-upload-drag-icon">
-                        <InboxOutlined />
+                        <UploadOutlined />
                     </p>
-                    <p class="ant-upload-text">Click or drag a CSV file to this area</p>
-                    <p class="ant-upload-hint">Only .csv files are accepted. Maximum one file at a time.</p>
+                    <p class="ant-upload-text">Upload Employee Excel File</p>
+                    <p class="ant-upload-hint">Supported formats: XLSX, CSV</p>
                 </a-upload-dragger>
 
                 <div v-if="bulkUploadError" class="text-red-500 text-sm">
@@ -868,10 +884,33 @@ const handleBuildingPassToggle = async (employee: any, checked: boolean) => {
 }
 
 // Bulk upload handlers
+const bulkUploadInstructions = [
+    'Download and use the sample Excel template.',
+    'Do not modify the column headers.',
+    'Ensure all mandatory fields are completed.',
+    'Use the correct department slug from Configuration.',
+    'Follow the specified date format (YYYY-MM-DD).',
+    'Remove the sample record before uploading.'
+]
+
+// Matches REQUIRED_FIELDS in the backend bulk upload; gender and date_of_joining are optional
+const bulkUploadMandatoryFields = [
+    { name: 'full_name' },
+    { name: 'phone_number' },
+    { name: 'email' },
+    { name: 'department_slug', hint: 'get the slug from Configuration → Departments' },
+    { name: 'designation' },
+    { name: 'type', hint: 'employee / spoc' },
+    { name: 'employee_id' },
+    { name: 'date_of_birth' }
+]
+
+// The backend bulk upload accepts .xlsx and .csv
 const handleBeforeUpload = (file: File) => {
-    const isCsv = file.type === 'text/csv' || file.name.endsWith('.csv')
-    if (!isCsv) {
-        message.error('Only CSV files are allowed')
+    const name = file.name.toLowerCase()
+    const isSupported = name.endsWith('.xlsx') || name.endsWith('.csv')
+    if (!isSupported) {
+        message.error('Only XLSX or CSV files are allowed')
         return false
     }
     bulkUploadFile.value = file
@@ -881,7 +920,7 @@ const handleBeforeUpload = (file: File) => {
 
 const handleBulkUpload = async () => {
     if (!bulkUploadFile.value) {
-        message.error('Please select a CSV file')
+        message.error('Please select an XLSX or CSV file')
         return
     }
     bulkUploading.value = true
@@ -917,16 +956,15 @@ const refreshEmployees = () => {
 const downloadSampleCsv = () => {
     // Build the CSV client-side — linking to a static file can fall through to
     // the SPA fallback and download HTML instead of CSV in some deployments
-    const header = 'full_name,phone_number,email,department_slug,designation,app_name'
+    const header = 'full_name,phone_number,email,department_slug,designation,type,employee_id,gender,date_of_birth,date_of_joining'
     const rows = [
-        'John Doe,+91 9876543210,john.doe@company.com,engineering,SPOC,client_portal',
-        'Jane Smith,+91 8765432109,jane.smith@company.com,engineering,Sales Manager,hub'
+        'Test,9876543210,testuser@gmail.com,software-engineering,Software Engineer,employee,EMP123,male,1995-04-12,2024-06-01'
     ]
     const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'employees_sample.csv'
+    link.download = 'bulk_upload_employees.csv'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)

@@ -14,7 +14,7 @@
 
         <template v-else-if="insights">
             <!-- Summary Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
                 <a-card>
                     <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Companies</div>
                     <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ insights.summary.total_companies }}</div>
@@ -31,18 +31,50 @@
                 </a-card>
 
                 <a-card>
-                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Revenue</div>
-                    <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">₹{{ insights.summary.total_revenue.toLocaleString() }}</div>
-                </a-card>
-
-                <a-card>
                     <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">New (30 Days)</div>
                     <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ insights.summary.new_last_30_days }}</div>
                 </a-card>
             </div>
 
+            <!-- Booking Insights -->
+            <div v-if="bookingInsights" data-testid="booking-insights">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Booking Insights</h2>
+                <div :class="['grid grid-cols-1 sm:grid-cols-2 gap-6', hasCancelledCount ? 'lg:grid-cols-4' : 'lg:grid-cols-3']">
+                    <a-card>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Bookings</div>
+                        <div class="text-3xl font-bold text-gray-900 dark:text-white" data-testid="booking-total-bookings">
+                            {{ formatNumber(bookingInsights.total_bookings) }}
+                        </div>
+                        <div v-if="hasCancelledCount" class="text-xs text-gray-400 mt-1">Including cancelled</div>
+                    </a-card>
+
+                    <a-card v-if="hasCancelledCount">
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Cancelled Bookings</div>
+                        <div class="text-3xl font-bold text-red-600 dark:text-red-500" data-testid="booking-cancelled">
+                            {{ formatNumber(bookingInsights.cancelled_bookings) }}
+                        </div>
+                    </a-card>
+
+                    <a-card>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Money on Bookings</div>
+                        <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400" data-testid="booking-money">
+                            ₹{{ formatNumber(bookingInsights.money_on_bookings) }}
+                        </div>
+                    </a-card>
+
+                    <a-card>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Credits Spent on Bookings</div>
+                        <div class="text-3xl font-bold text-amber-600 dark:text-amber-400" data-testid="booking-credits">
+                            {{ formatNumber(bookingInsights.credit_spent_on_bookings) }}
+                            <span class="text-base font-medium text-gray-500 dark:text-gray-400">credits</span>
+                        </div>
+                    </a-card>
+
+                </div>
+            </div>
+
             <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 gap-6">
                 <a-card>
                     <template #title>
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Company Status Distribution</h3>
@@ -51,17 +83,6 @@
                         <div v-show="statusChartData.length > 0" ref="statusChartContainer" class="w-full h-full"></div>
                         <div v-if="statusChartData.length === 0" class="w-full h-full flex flex-col items-center justify-center text-gray-400">
                             <span>No company status data for this period</span>
-                        </div>
-                    </div>
-                </a-card>
-                <a-card>
-                    <template #title>
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Revenue Trend</h3>
-                    </template>
-                    <div class="h-64 mt-4 overflow-hidden">
-                        <div v-show="revenueChartData.length > 0" ref="revenueChartContainer" class="w-full h-full"></div>
-                        <div v-if="revenueChartData.length === 0" class="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                            <span>No revenue data for this period</span>
                         </div>
                     </div>
                 </a-card>
@@ -92,7 +113,7 @@
 import { onMounted, computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useCompanyStore } from '../../../stores/company'
-import { Column, Line } from '@antv/g2plot'
+import { Column } from '@antv/g2plot'
 
 definePageMeta({
     middleware: 'auth'
@@ -100,6 +121,12 @@ definePageMeta({
 
 const store = useCompanyStore()
 const insights = computed(() => store.insights)
+const bookingInsights = computed(() => insights.value?.booking_insights || null)
+const formatNumber = (value?: number | null) => Number(value || 0).toLocaleString('en-IN')
+
+// total_bookings from the API already includes cancelled bookings; cancelled_bookings is that subset
+const hasCancelledCount = computed(() => typeof bookingInsights.value?.cancelled_bookings === 'number')
+
 const loading = computed(() => store.loading)
 const error = computed(() => store.error)
 
@@ -124,9 +151,7 @@ const onDateChange = () => {
 }
 
 const statusChartContainer = ref<HTMLDivElement | null>(null)
-const revenueChartContainer = ref<HTMLDivElement | null>(null)
 let statusChartInstance: Column | null = null
-let revenueChartInstance: Line | null = null
 
 const topCompaniesColumns = [
     {
@@ -146,14 +171,6 @@ const statusChartData = computed(() => {
     return insights.value.status_distribution.map(item => ({
         status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
         count: item.count,
-    }))
-})
-
-const revenueChartData = computed(() => {
-    if (!insights.value) return []
-    return insights.value.revenue_trend.map(item => ({
-        month: item.month,
-        revenue: item.revenue,
     }))
 })
 
@@ -220,76 +237,9 @@ const createStatusChart = async () => {
     statusChartInstance.render()
 }
 
-const createRevenueChart = async () => {
-    await nextTick()
-    if (revenueChartInstance) {
-        revenueChartInstance.destroy()
-        revenueChartInstance = null
-    }
-    if (!revenueChartContainer.value || !revenueChartData.value.length) return
-
-    revenueChartInstance = new Line(revenueChartContainer.value, {
-        data: revenueChartData.value,
-        xField: 'month',
-        yField: 'revenue',
-        smooth: true,
-        autoFit: true,
-        padding: [10, 10, 30, 40],
-        point: {
-            size: 5,
-            shape: 'circle',
-        },
-        area: {
-            style: {
-                fill: 'l(270) 0:#ffffff 0.5:#3378ff 1:#3378ff',
-                fillOpacity: 0.2,
-            },
-        },
-        color: '#3378ff',
-        xAxis: {
-            label: {
-                style: {
-                    fill: '#666',
-                },
-            },
-        },
-        yAxis: {
-            label: {
-                style: {
-                    fill: '#666',
-                },
-                formatter: (v: string) => `₹${Number(v).toLocaleString()}`,
-            },
-            min: 0,
-        },
-        legend: {
-            position: 'bottom',
-            itemName: {
-                formatter: () => 'Revenue (₹)',
-            },
-        },
-        tooltip: {
-            showCrosshairs: true,
-            shared: true,
-            formatter: (datum: any) => {
-                return { name: datum.month, value: `₹${datum.revenue.toLocaleString()}` }
-            },
-        },
-        animation: {
-            appear: {
-                animation: 'wave-in',
-                duration: 2000,
-            },
-        },
-    })
-
-    revenueChartInstance.render()
-}
-
 watch([insights, loading], async () => {
     if (!loading.value) {
         await createStatusChart()
-        await createRevenueChart()
     }
 }, { immediate: true })
 
@@ -301,10 +251,6 @@ onBeforeUnmount(() => {
     if (statusChartInstance) {
         statusChartInstance.destroy()
         statusChartInstance = null
-    }
-    if (revenueChartInstance) {
-        revenueChartInstance.destroy()
-        revenueChartInstance = null
     }
 })
 </script>

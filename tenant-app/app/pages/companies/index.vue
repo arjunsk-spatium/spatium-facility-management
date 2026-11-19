@@ -15,7 +15,6 @@
         </div>
 
         <!-- Insights Section -->
-        <!-- Insights Section -->
         <div class="flex flex-wrap gap-4">
             <a-card class="flex-grow min-w-[160px]">
                 <a-statistic title="Total Companies" :value="stats.total" :value-style="{ color: '#3f8600' }">
@@ -37,9 +36,6 @@
                         <StopOutlined />
                     </template>
                 </a-statistic>
-            </a-card>
-            <a-card class="flex-grow min-w-[160px]">
-                <a-statistic title="Revenue" :value="9342" :precision="2" prefix="₹" />
             </a-card>
         </div>
 
@@ -69,6 +65,11 @@
                         {{ record.name }}
                     </NuxtLink>
                 </template>
+                <template v-if="column.key === 'status'">
+                    <a-tag :color="statusTag(record.status).color" class="!m-0" data-testid="company-status">
+                        {{ statusTag(record.status).label }}
+                    </a-tag>
+                </template>
                 <template v-if="column.key === 'action'">
                     <a-space>
                         <NuxtLink v-if="canUpdate" :to="`/companies/${record.id}/edit`">
@@ -91,10 +92,9 @@
                                 class="text-lg font-semibold text-primary-600 dark:text-primary-400">
                                 {{ company.name }}
                             </NuxtLink>
-                            <span
-                                class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full dark:bg-green-900 dark:text-green-100">
-                                {{ company.status === 'active' ? 'Active' : 'Inactive' }}
-                            </span>
+                            <a-tag :color="statusTag(company.status).color" class="!m-0">
+                                {{ statusTag(company.status).label }}
+                            </a-tag>
                         </div>
 
                         <!-- Details -->
@@ -239,6 +239,14 @@ const handleDelete = async (id: string) => {
     } catch (error) {
         message.error('Failed to delete company')
     }
+}
+
+// Status shown as a coloured tag: green for active, grey for inactive or anything else
+const statusTag = (status?: string | null) => {
+    const value = (status || '').toLowerCase()
+    if (value === 'active') return { color: 'green', label: 'Active' }
+    if (!value) return { color: 'default', label: '-' }
+    return { color: 'default', label: value.charAt(0).toUpperCase() + value.slice(1) }
 }
 
 const columns = [

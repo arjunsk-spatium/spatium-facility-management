@@ -60,4 +60,52 @@ describe('Company List Page', () => {
         // Look for text or link
         expect(wrapper.html()).toContain('Create')
     })
+
+    describe('Status column', () => {
+        const companies = [
+            { id: '1', name: 'Test Corp A', status: 'active', contacts: [] },
+            { id: '2', name: 'Test Corp B', status: 'inactive', contacts: [] }
+        ]
+        const mountList = () => mountSuspended(CompanyListPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        allCompany: { companies, loading: false, count: 2, page: 1, pageSize: 10 },
+                        company: { companies, loading: false, count: 2, page: 1, pageSize: 10 }
+                    }
+                })]
+            }
+        })
+
+        it('maps status to a coloured, capitalised tag', async () => {
+            const wrapper = await mountList()
+            const vm = wrapper.vm as any
+
+            expect(vm.statusTag('active')).toEqual({ color: 'green', label: 'Active' })
+            expect(vm.statusTag('ACTIVE')).toEqual({ color: 'green', label: 'Active' })
+            expect(vm.statusTag('inactive')).toEqual({ color: 'default', label: 'Inactive' })
+            expect(vm.statusTag('suspended')).toEqual({ color: 'default', label: 'Suspended' })
+            expect(vm.statusTag(null)).toEqual({ color: 'default', label: '-' })
+        })
+
+        it('shows company counts but no Revenue card', async () => {
+            const wrapper = await mountList()
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const titles = wrapper.findAll('.ant-statistic-title').map(t => t.text())
+            expect(titles).toEqual(['Total Companies', 'Active', 'Inactive'])
+            expect(wrapper.text()).not.toContain('9,342')
+        })
+
+        it('renders status as tags instead of plain text', async () => {
+            const wrapper = await mountList()
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            const tags = wrapper.findAll('.ant-tag').map(t => t.text())
+            expect(tags).toContain('Active')
+            expect(tags).toContain('Inactive')
+            expect(wrapper.text()).not.toMatch(/\binactive\b/)
+        })
+    })
 })
