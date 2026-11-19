@@ -366,9 +366,15 @@ describe('SPOC Employees Page', () => {
                     'email',
                     'department_slug',
                     'designation',
-                    'app_name'
+                    'type',
+                    'employee_id',
+                    'gender',
+                    'date_of_birth',
+                    'date_of_joining'
                 ])
-                expect(text).toContain('John Doe')
+                const lines = text.trim().split('\n')
+                expect(lines).toHaveLength(2)
+                expect(lines[1]).toBe('Test,9876543210,testuser@gmail.com,software-engineering,Software Engineer,Employee / SPOC,EMP123,male,1995-04-12,2024-06-01')
                 expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url')
             } finally {
                 URL.createObjectURL = originalCreate
@@ -1193,6 +1199,84 @@ describe('SPOC Employees Page', () => {
 
             expect(vm.showAddModal).toBe(true)
             expect(vm.newEmployee.email).toBe('ananya.m@company.com')
+        })
+    })
+
+    describe('Bulk upload instructions', () => {
+        const mountPage = async () => {
+            return await mountSuspended(SpocEmployeesPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: { spoc: { employees: [], loading: false } }
+                    })]
+                }
+            })
+        }
+
+        it('shows the before-uploading instructions and template link in the modal', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            vm.showBulkUploadModal = true
+            await wrapper.vm.$nextTick()
+
+            const text = document.body.textContent || ''
+            expect(text).toContain('Bulk Employee Upload')
+            expect(text).toContain('Upload employee details using the provided Excel template.')
+            expect(text).toContain('Before uploading:')
+            for (const item of [
+                'Download and use the sample Excel template.',
+                'Do not modify the column headers.',
+                'Ensure all mandatory fields are completed.',
+                'Use the correct department slug from Configuration.',
+                'Follow the specified date format (YYYY-MM-DD).',
+                'Remove the sample record before uploading.'
+            ]) {
+                expect(text).toContain(item)
+            }
+            expect(text).toContain('Download Sample Template')
+            expect(text).toContain('Upload Employee Excel File')
+            expect(text).toContain('Supported formats: XLSX, CSV')
+        })
+
+        it('lists the mandatory fields, with the allowed values for type', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            vm.showBulkUploadModal = true
+            await wrapper.vm.$nextTick()
+
+            const section = document.body.querySelector('[data-testid="bulk-upload-mandatory-fields"]')
+            expect(section).not.toBeNull()
+            const items = Array.from(section!.querySelectorAll('li')).map(li => li.textContent?.replace(/[\s\u00a0]+/g, ' ').trim())
+            expect(items).toEqual([
+                'full_name',
+                'phone_number',
+                'email',
+                'department_slug (get the slug from Configuration → Departments)',
+                'designation',
+                'type (employee / spoc)',
+                'employee_id',
+                'date_of_birth'
+            ])
+        })
+
+        it.each(['employees.xlsx', 'employees.csv', 'EMPLOYEES.XLSX'])('accepts %s', async (name) => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+            const file = new File(['x'], name)
+
+            vm.handleBeforeUpload(file)
+
+            expect(vm.bulkUploadFile).toStrictEqual(file)
+        })
+
+        it('rejects other file types', async () => {
+            const wrapper = await mountPage()
+            const vm = wrapper.vm as any
+
+            vm.handleBeforeUpload(new File(['x'], 'employees.pdf'))
+
+            expect(vm.bulkUploadFile).toBeNull()
         })
     })
 })

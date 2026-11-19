@@ -175,15 +175,26 @@
                         </a-select-option>
                     </a-select>
                 </a-form-item>
-                <template v-if="!editingStaffId">
-                    <a-form-item label="Username" required>
-                        <a-input v-model:value="staffForm.username" placeholder="Enter username" />
-                    </a-form-item>
-                    <a-form-item label="Password" required>
-                        <a-input-password v-model:value="staffForm.password" placeholder="Enter password" />
-                    </a-form-item>
-                </template>
+                <a-form-item label="Username" :required="!editingStaffId"
+                    :extra="editingStaffId ? 'Leave blank to keep the current username' : undefined">
+                    <a-input v-model:value="staffForm.username" placeholder="Enter username" autocomplete="off" />
+                </a-form-item>
+                <a-form-item label="Password" :required="!editingStaffId"
+                    :extra="editingStaffId ? 'Leave blank to keep the current password' : undefined">
+                    <a-input-password v-model:value="staffForm.password"
+                        :placeholder="editingStaffId ? 'Enter a new password' : 'Enter password'"
+                        autocomplete="new-password" />
+                </a-form-item>
             </a-form>
+        </a-modal>
+
+        <!-- Existing user confirmation (email already belongs to a user in another app) -->
+        <a-modal v-model:open="existingUserConfirmVisible" title="User Already Exists" centered
+            ok-text="Add to OpsTrack" :confirm-loading="existingUserSaving" @ok="handleConfirmExistingUser">
+            <p>{{ existingUserMessage }}</p>
+            <p class="mt-2 text-gray-500">
+                Do you want to add this person as operational staff with the details you entered?
+            </p>
         </a-modal>
     </div>
 </template>
@@ -511,6 +522,63 @@ const openEditStaffModal = async (record: OperationalStaff | any) => {
     }
 }
 
+// Existing user flow: opstrack create fails with fields.user_id when the email already belongs to a
+// user in another app; on confirm we PATCH that user into opstrack with the form details.
+const existingUserConfirmVisible = ref(false)
+const existingUserSaving = ref(false)
+const existingUserId = ref('')
+const existingUserMessage = ref('')
+
+const getExistingUserError = (err: any): { userId: string; message?: string } | null => {
+    const fields = err?.data?.error?.fields || {}
+    const first = (v: any) => (Array.isArray(v) ? v[0] : v)
+    const userIdError = first(fields.user_id)
+    const userId = typeof userIdError === 'string' ? userIdError : userIdError?.message
+    if (!userId) return null
+    const emailError = first(fields.email)
+    return { userId, message: typeof emailError === 'string' ? emailError : emailError?.message }
+}
+
+const saveFacilities = async (staffId: string) => {
+    await assignUserFacilities(staffId, {
+        facility_ids: staffForm.value.is_all_facilities ? [] : staffForm.value.facility_ids,
+        is_all_facilities: staffForm.value.is_all_facilities
+    })
+}
+
+const handleConfirmExistingUser = async () => {
+    existingUserSaving.value = true
+    try {
+        const userId = existingUserId.value
+        const primaryFacilityId = staffForm.value.facility_ids?.[0]
+        // PATCH /api/portal/users/opstrack/<id>/update/ links the user to opstrack with
+        // the same fields the create call sends
+        await updateOperationalStaff(userId, {
+            app_name: 'opstrack',
+            full_name: staffForm.value.full_name,
+            email: staffForm.value.email,
+            phone_number: staffForm.value.phone_number,
+            username: staffForm.value.username,
+            password: staffForm.value.password,
+            ...(primaryFacilityId && { facility_id: primaryFacilityId }),
+            ...(staffForm.value.role_id && { role_id: staffForm.value.role_id })
+        } as any)
+        await saveFacilities(userId)
+        message.success('Operational staff added successfully')
+        existingUserConfirmVisible.value = false
+        isModalOpen.value = false
+        await fetchStaff()
+    } catch (e: any) {
+        const fields = e?.data?.error?.fields
+        const firstKey = fields ? Object.keys(fields)[0] : undefined
+        const fieldMsg = firstKey ? fields[firstKey]?.[0]?.message : undefined
+        const errorMsg = fieldMsg || e?.data?.message || e?.message
+        message.error(typeof errorMsg === 'string' ? errorMsg : 'Failed to add existing user')
+    } finally {
+        existingUserSaving.value = false
+    }
+}
+
 const handleSubmit = async () => {
     if (!staffForm.value.full_name || !staffForm.value.email) {
         message.error('Please fill in full name and email')
@@ -528,13 +596,17 @@ const handleSubmit = async () => {
         const primaryFacilityId = staffForm.value.facility_ids?.[0]
 
         if (staffId) {
+            // username/password are optional on edit: a blank password keeps the current one
+            const username = staffForm.value.username?.trim()
             await updateOperationalStaff(staffId, {
                 full_name: staffForm.value.full_name,
                 email: staffForm.value.email,
                 phone_number: staffForm.value.phone_number,
+                ...(username && { username }),
+                ...(staffForm.value.password && { password: staffForm.value.password }),
                 ...(primaryFacilityId && { facility_id: primaryFacilityId }),
                 ...(staffForm.value.role_id && { role_id: staffForm.value.role_id })
-            })
+            } as any)
             message.success('Operational staff updated successfully')
         } else {
             const createdStaff = await createOperationalStaff({
@@ -552,15 +624,19 @@ const handleSubmit = async () => {
 
         // Save multiple facilities via org_portal facilities API
         if (staffId) {
-            await assignUserFacilities(staffId, {
-                facility_ids: staffForm.value.is_all_facilities ? [] : staffForm.value.facility_ids,
-                is_all_facilities: staffForm.value.is_all_facilities
-            })
+            await saveFacilities(staffId)
         }
 
         isModalOpen.value = false
         await fetchStaff()
     } catch (e: any) {
+        const existingUser = !editingStaffId.value ? getExistingUserError(e) : null
+        if (existingUser) {
+            existingUserId.value = existingUser.userId
+            existingUserMessage.value = existingUser.message || 'User already exists in another app.'
+            existingUserConfirmVisible.value = true
+            return
+        }
         console.error('Failed to save operational staff:', e)
         let errorMsg = e?.data?.message || e?.data?.error?.message || e?.data?.error
         if (!errorMsg && e?.data?.error?.fields) {

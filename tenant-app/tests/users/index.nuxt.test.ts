@@ -14,7 +14,12 @@ const mockStaff = [
     { id: 's2', full_name: 'Bob Operator', email: 'bob@example.com', phone_number: '0987654321', username: 'bob', status: 'active' }
 ]
 
-const { mockGetUsersPage } = vi.hoisted(() => ({ mockGetUsersPage: vi.fn() }))
+const { mockGetUsersPage, mockCreateOpsStaff, mockUpdateOpsStaff, mockAssignFacilities } = vi.hoisted(() => ({
+    mockGetUsersPage: vi.fn(),
+    mockCreateOpsStaff: vi.fn(),
+    mockUpdateOpsStaff: vi.fn(),
+    mockAssignFacilities: vi.fn()
+}))
 
 vi.mock('../../composables/userService', () => ({
     useUserService: () => ({
@@ -24,11 +29,11 @@ vi.mock('../../composables/userService', () => ({
         updateUser: vi.fn(),
         deleteUser: vi.fn(),
         getOperationalStaff: vi.fn().mockResolvedValue({ results: mockStaff, count: 2 }),
-        createOperationalStaff: vi.fn().mockResolvedValue({ id: 's3' }),
-        updateOperationalStaff: vi.fn().mockResolvedValue({ id: 's1' }),
+        createOperationalStaff: mockCreateOpsStaff,
+        updateOperationalStaff: mockUpdateOpsStaff,
         deleteOperationalStaff: vi.fn().mockResolvedValue({ success: true }),
         getUserFacilities: vi.fn().mockResolvedValue({ facility_ids: [], is_all_facilities: false }),
-        assignUserFacilities: vi.fn().mockResolvedValue({ success: true })
+        assignUserFacilities: mockAssignFacilities
     })
 }))
 
@@ -40,6 +45,9 @@ vi.mock('../../composables/facilityService', () => ({
 }))
 
 beforeEach(() => {
+    mockCreateOpsStaff.mockReset().mockResolvedValue({ id: 's3' })
+    mockUpdateOpsStaff.mockReset().mockResolvedValue({ id: 's1' })
+    mockAssignFacilities.mockReset().mockResolvedValue({ success: true })
     mockGetUsersPage.mockReset()
     mockGetUsersPage.mockResolvedValue({ results: mockUsers, count: mockUsers.length })
 })
@@ -263,5 +271,181 @@ describe('Operational Staff Page', () => {
 
         expect(vm.displayedStaff.length).toBe(1)
         expect(vm.displayedStaff[0].full_name).toBe('Alice Worker')
+    })
+})
+
+describe('Operational Staff: email already used in another app', () => {
+    const existingUserId = '60b272c6-d250-4e4e-abf4-fd8f5948a8b5'
+    const existingUserError = () => {
+        const err: any = new Error('Failed to create OpsTrack user.')
+        err.data = {
+            success: false,
+            code: 'OPSTRACK_USER_CREATION_ERROR',
+            error: {
+                type: 'VALIDATION_ERROR',
+                fields: {
+                    email: [{ code: 'INVALID', message: 'Email exists and it has already these many apps: Hub' }],
+                    user_id: [{ code: 'INVALID', message: existingUserId }]
+                }
+            }
+        }
+        return err
+    }
+
+    const mountOpsPage = async () => {
+        const wrapper = await mountSuspended(OperationalStaffPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: { auth: { modules: ['users-operational'] } }
+                })]
+            }
+        })
+        await new Promise(resolve => setTimeout(resolve, 0))
+        return wrapper
+    }
+
+    const fillForm = (vm: any) => {
+        vm.openAddStaffModal()
+        vm.staffForm.full_name = 'Ravi Kumar'
+        vm.staffForm.email = 'ravi@example.com'
+        vm.staffForm.phone_number = '+919876543210'
+        vm.staffForm.username = 'ravi'
+        vm.staffForm.password = 'Secret@123'
+        vm.staffForm.role_id = 'role-1'
+        vm.staffForm.facility_ids = ['fac-1', 'fac-2']
+        vm.staffForm.is_all_facilities = false
+    }
+
+    it('asks for confirmation instead of showing an error', async () => {
+        mockCreateOpsStaff.mockRejectedValueOnce(existingUserError())
+        const wrapper = await mountOpsPage()
+        const vm = wrapper.vm as any
+
+        fillForm(vm)
+        await vm.handleSubmit()
+
+        expect(vm.existingUserConfirmVisible).toBe(true)
+        expect(vm.existingUserId).toBe(existingUserId)
+        expect(vm.existingUserMessage).toBe('Email exists and it has already these many apps: Hub')
+        expect(vm.isModalOpen).toBe(true)
+        expect(mockUpdateOpsStaff).not.toHaveBeenCalled()
+    })
+
+    it('on confirm PATCHes the existing user with app_name opstrack and every create field', async () => {
+        mockCreateOpsStaff.mockRejectedValueOnce(existingUserError())
+        const wrapper = await mountOpsPage()
+        const vm = wrapper.vm as any
+
+        fillForm(vm)
+        await vm.handleSubmit()
+        await vm.handleConfirmExistingUser()
+
+        expect(mockUpdateOpsStaff).toHaveBeenCalledWith(existingUserId, {
+            app_name: 'opstrack',
+            full_name: 'Ravi Kumar',
+            email: 'ravi@example.com',
+            phone_number: '+919876543210',
+            username: 'ravi',
+            password: 'Secret@123',
+            facility_id: 'fac-1',
+            role_id: 'role-1'
+        })
+        expect(mockAssignFacilities).toHaveBeenCalledWith(existingUserId, {
+            facility_ids: ['fac-1', 'fac-2'],
+            is_all_facilities: false
+        })
+        expect(vm.existingUserConfirmVisible).toBe(false)
+        expect(vm.isModalOpen).toBe(false)
+    })
+
+    it('keeps the form open when the confirm update fails', async () => {
+        mockCreateOpsStaff.mockRejectedValueOnce(existingUserError())
+        mockUpdateOpsStaff.mockRejectedValueOnce(new Error('Update failed'))
+        const wrapper = await mountOpsPage()
+        const vm = wrapper.vm as any
+
+        fillForm(vm)
+        await vm.handleSubmit()
+        await vm.handleConfirmExistingUser()
+
+        expect(vm.isModalOpen).toBe(true)
+        expect(mockAssignFacilities).not.toHaveBeenCalled()
+    })
+
+    it('still shows a normal error for other create failures', async () => {
+        const err: any = new Error('Username is already taken within this tenant.')
+        err.data = { error: { fields: { username: [{ message: 'Username is already taken within this tenant.' }] } } }
+        mockCreateOpsStaff.mockRejectedValueOnce(err)
+        const wrapper = await mountOpsPage()
+        const vm = wrapper.vm as any
+
+        fillForm(vm)
+        await vm.handleSubmit()
+
+        expect(vm.existingUserConfirmVisible).toBe(false)
+        expect(mockUpdateOpsStaff).not.toHaveBeenCalled()
+    })
+})
+
+describe('Operational Staff: editing username and password', () => {
+    const mountOpsPage = async () => {
+        const wrapper = await mountSuspended(OperationalStaffPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: { auth: { modules: ['users-operational'] } }
+                })]
+            }
+        })
+        await new Promise(resolve => setTimeout(resolve, 0))
+        return wrapper
+    }
+
+    const openEdit = async (vm: any) => {
+        await vm.openEditStaffModal({ id: 's1', full_name: 'Alice Worker', email: 'alice@example.com', phone_number: '1234567890', username: 'alice', status: 'active' })
+        await new Promise(resolve => setTimeout(resolve, 0))
+    }
+
+    it('shows username and password fields in the edit modal, prefilled with the current username', async () => {
+        const wrapper = await mountOpsPage()
+        const vm = wrapper.vm as any
+        await openEdit(vm)
+
+        expect(vm.staffForm.username).toBe('alice')
+        expect(vm.staffForm.password).toBe('')
+        const labels = Array.from(document.body.querySelectorAll('.ant-modal .ant-form-item-label')).map(el => el.textContent?.trim())
+        expect(labels).toContain('Username')
+        expect(labels).toContain('Password')
+        expect(document.body.textContent).toContain('Leave blank to keep the current password')
+    })
+
+    it('sends the new username and password when changed', async () => {
+        const wrapper = await mountOpsPage()
+        const vm = wrapper.vm as any
+        await openEdit(vm)
+
+        vm.staffForm.username = 'alice.w'
+        vm.staffForm.password = 'NewPass@123'
+        await vm.handleSubmit()
+
+        expect(mockUpdateOpsStaff).toHaveBeenCalledWith('s1', expect.objectContaining({
+            username: 'alice.w',
+            password: 'NewPass@123'
+        }))
+    })
+
+    it('does not send a password when it is left blank, and does not require one', async () => {
+        const wrapper = await mountOpsPage()
+        const vm = wrapper.vm as any
+        await openEdit(vm)
+
+        await vm.handleSubmit()
+
+        expect(mockUpdateOpsStaff).toHaveBeenCalledTimes(1)
+        const payload = mockUpdateOpsStaff.mock.calls[0]![1]
+        expect(payload).not.toHaveProperty('password')
+        expect(payload.username).toBe('alice')
+        expect(mockCreateOpsStaff).not.toHaveBeenCalled()
     })
 })
