@@ -104,6 +104,42 @@ describe('Insights Page', () => {
             expect(wrapper.find('[data-testid="booking-credits"]').text().replace(/\s+/g, ' ')).toBe('5 credits')
         })
 
+        it('shows the API response as Total Bookings (incl. cancelled), Cancelled, Money and Credits', async () => {
+            const wrapper = await mountWith({
+                ...createMockInsights(),
+                booking_insights: { total_bookings: 3, cancelled_bookings: 1, money_on_bookings: 500, credit_spent_on_bookings: 5, total: 505 }
+            })
+
+            // total_bookings already includes the cancelled one, so it is shown as-is (not 3 + 1)
+            expect(wrapper.find('[data-testid="booking-total-bookings"]').text()).toBe('3')
+            expect(wrapper.find('[data-testid="booking-cancelled"]').text()).toBe('1')
+            expect(wrapper.find('[data-testid="booking-money"]').text()).toBe('₹500')
+            expect(wrapper.find('[data-testid="booking-credits"]').text().replace(/\s+/g, ' ')).toBe('5 credits')
+            expect(wrapper.find('[data-testid="booking-insights"]').text()).toContain('Including cancelled')
+            expect(wrapper.find('[data-testid="booking-insights"]').findAll('.ant-card')).toHaveLength(4)
+        })
+
+        it('shows a zero cancelled count when the API sends 0', async () => {
+            const wrapper = await mountWith({
+                ...createMockInsights(),
+                booking_insights: { total_bookings: 9, cancelled_bookings: 0, money_on_bookings: 110, credit_spent_on_bookings: 41, total: 151 }
+            })
+
+            expect(wrapper.find('[data-testid="booking-total-bookings"]').text()).toBe('9')
+            expect(wrapper.find('[data-testid="booking-cancelled"]').text()).toBe('0')
+        })
+
+        it('hides the Cancelled card until the API sends cancelled_bookings', async () => {
+            const wrapper = await mountWith({
+                ...createMockInsights(),
+                booking_insights: { total_bookings: 9, money_on_bookings: 110, credit_spent_on_bookings: 41, total: 151 }
+            })
+
+            expect(wrapper.find('[data-testid="booking-total-bookings"]').text()).toBe('9')
+            expect(wrapper.find('[data-testid="booking-cancelled"]').exists()).toBe(false)
+            expect(wrapper.find('[data-testid="booking-insights"]').text()).not.toContain('Including cancelled')
+        })
+
         it('has no separate Total card', async () => {
             const wrapper = await mountWith({
                 ...createMockInsights(),
@@ -163,70 +199,32 @@ describe('Insights Page', () => {
         })
     })
 
-    describe('Revenue Trend chart', () => {
-        const bookingRevenueTrend = [
-            { month: 'Apr 2026', month_key: '2026-04-01', money_on_bookings: 0, credit_spent_on_bookings: 0, total: 0 },
-            { month: 'Jun 2026', month_key: '2026-06-01', money_on_bookings: 500, credit_spent_on_bookings: 5, total: 505 },
-            { month: 'Oct 2026', month_key: '2026-10-01', money_on_bookings: 1000, credit_spent_on_bookings: 0, total: 1000 }
-        ]
-        const mountWith = (insights: any) => mountSuspended(InsightsPage, {
-            global: {
-                plugins: [createTestingPinia({
-                    createSpy: vi.fn,
-                    initialState: { company: { insights, loading: false } }
-                })]
-            }
-        })
-        // The page builds the chart when insights change; with fixed store state, build it directly
-        const buildChart = async (wrapper: any) => {
+    describe('Charts', () => {
+        it('shows Company Status Distribution and no Revenue Trend chart', async () => {
+            vi.mocked(Line).mockClear()
+            const wrapper = await mountSuspended(InsightsPage, {
+                global: {
+                    plugins: [createTestingPinia({
+                        createSpy: vi.fn,
+                        initialState: {
+                            company: {
+                                insights: {
+                                    ...createMockInsights(),
+                                    booking_revenue_trend: [
+                                        { month: 'Oct 2026', month_key: '2026-10-01', money_on_bookings: 1000, credit_spent_on_bookings: 0, total: 1000 }
+                                    ]
+                                },
+                                loading: false
+                            }
+                        }
+                    })]
+                }
+            })
             await new Promise(resolve => setTimeout(resolve, 0))
-            await (wrapper.vm as any).createRevenueChart()
-        }
-        const lastLineOptions = () => {
-            const calls = vi.mocked(Line).mock.calls
-            return calls[calls.length - 1]![1] as any
-        }
 
-        it('plots booking_revenue_trend totals instead of the wallet revenue_trend', async () => {
-            vi.mocked(Line).mockClear()
-            const wrapper = await mountWith({ ...createMockInsights(), booking_revenue_trend: bookingRevenueTrend })
-            await buildChart(wrapper)
-            const vm = wrapper.vm as any
-
-            expect(vm.revenueChartData).toEqual([
-                { month: 'Apr 2026', revenue: 0, money: 0, credits: 0 },
-                { month: 'Jun 2026', revenue: 505, money: 500, credits: 5 },
-                { month: 'Oct 2026', revenue: 1000, money: 1000, credits: 0 }
-            ])
-            expect(lastLineOptions().data.map((d: any) => d.revenue)).toEqual([0, 505, 1000])
-        })
-
-        it('labels the axis without ₹ and breaks the tooltip into money, credits and total', async () => {
-            vi.mocked(Line).mockClear()
-            const wrapper = await mountWith({ ...createMockInsights(), booking_revenue_trend: bookingRevenueTrend })
-            await buildChart(wrapper)
-            const options = lastLineOptions()
-
-            expect(options.yAxis.label.formatter('1000')).toBe('1,000')
-            const rows = options.tooltip.customItems([{ name: 'x', value: 'y', data: { month: 'Jun 2026', revenue: 505, money: 500, credits: 5 } }])
-            expect(rows.map((r: any) => [r.name, r.value])).toEqual([
-                ['Money on bookings', '₹500'],
-                ['Credits spent', '5 credits'],
-                ['Total', '505']
-            ])
-        })
-
-        it('falls back to the wallet revenue_trend with ₹ when booking_revenue_trend is missing', async () => {
-            vi.mocked(Line).mockClear()
-            const wrapper = await mountWith(createMockInsights())
-            await buildChart(wrapper)
-            const vm = wrapper.vm as any
-
-            expect(vm.revenueChartData).toEqual([
-                { month: 'Jan 2026', revenue: 10000 },
-                { month: 'Feb 2026', revenue: 15000 }
-            ])
-            expect(lastLineOptions().yAxis.label.formatter('15000')).toBe('₹15,000')
+            expect(wrapper.text()).toContain('Company Status Distribution')
+            expect(wrapper.text()).not.toContain('Revenue Trend')
+            expect(Line).not.toHaveBeenCalled()
         })
     })
 })

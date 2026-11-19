@@ -49,7 +49,11 @@ export interface CompanyInsights {
         total: number;
     }>;
     booking_insights?: {
+        // Every booking in the range, cancelled ones included
         total_bookings: number;
+        // Cancelled bookings in the same range (already part of total_bookings).
+        // money_on_bookings / credit_spent_on_bookings exclude cancelled bookings.
+        cancelled_bookings?: number;
         money_on_bookings: number;
         credit_spent_on_bookings: number;
         total: number;

@@ -39,11 +39,19 @@
             <!-- Booking Insights -->
             <div v-if="bookingInsights" data-testid="booking-insights">
                 <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Booking Insights</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div :class="['grid grid-cols-1 sm:grid-cols-2 gap-6', hasCancelledCount ? 'lg:grid-cols-4' : 'lg:grid-cols-3']">
                     <a-card>
                         <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Bookings</div>
                         <div class="text-3xl font-bold text-gray-900 dark:text-white" data-testid="booking-total-bookings">
                             {{ formatNumber(bookingInsights.total_bookings) }}
+                        </div>
+                        <div v-if="hasCancelledCount" class="text-xs text-gray-400 mt-1">Including cancelled</div>
+                    </a-card>
+
+                    <a-card v-if="hasCancelledCount">
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Cancelled Bookings</div>
+                        <div class="text-3xl font-bold text-red-600 dark:text-red-500" data-testid="booking-cancelled">
+                            {{ formatNumber(bookingInsights.cancelled_bookings) }}
                         </div>
                     </a-card>
 
@@ -66,7 +74,7 @@
             </div>
 
             <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 gap-6">
                 <a-card>
                     <template #title>
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Company Status Distribution</h3>
@@ -75,17 +83,6 @@
                         <div v-show="statusChartData.length > 0" ref="statusChartContainer" class="w-full h-full"></div>
                         <div v-if="statusChartData.length === 0" class="w-full h-full flex flex-col items-center justify-center text-gray-400">
                             <span>No company status data for this period</span>
-                        </div>
-                    </div>
-                </a-card>
-                <a-card>
-                    <template #title>
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Revenue Trend</h3>
-                    </template>
-                    <div class="h-64 mt-4 overflow-hidden">
-                        <div v-show="revenueChartData.length > 0" ref="revenueChartContainer" class="w-full h-full"></div>
-                        <div v-if="revenueChartData.length === 0" class="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                            <span>No revenue data for this period</span>
                         </div>
                     </div>
                 </a-card>
@@ -116,7 +113,7 @@
 import { onMounted, computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useCompanyStore } from '../../../stores/company'
-import { Column, Line } from '@antv/g2plot'
+import { Column } from '@antv/g2plot'
 
 definePageMeta({
     middleware: 'auth'
@@ -126,6 +123,9 @@ const store = useCompanyStore()
 const insights = computed(() => store.insights)
 const bookingInsights = computed(() => insights.value?.booking_insights || null)
 const formatNumber = (value?: number | null) => Number(value || 0).toLocaleString('en-IN')
+
+// total_bookings from the API already includes cancelled bookings; cancelled_bookings is that subset
+const hasCancelledCount = computed(() => typeof bookingInsights.value?.cancelled_bookings === 'number')
 
 const loading = computed(() => store.loading)
 const error = computed(() => store.error)
@@ -151,9 +151,7 @@ const onDateChange = () => {
 }
 
 const statusChartContainer = ref<HTMLDivElement | null>(null)
-const revenueChartContainer = ref<HTMLDivElement | null>(null)
 let statusChartInstance: Column | null = null
-let revenueChartInstance: Line | null = null
 
 const topCompaniesColumns = [
     {
@@ -175,42 +173,6 @@ const statusChartData = computed(() => {
         count: item.count,
     }))
 })
-
-// Revenue Trend plots booking revenue (money + credits) per month from booking_revenue_trend,
-// matching the Booking Insights cards. Older responses without it fall back to the wallet revenue_trend.
-const usesBookingRevenue = computed(() => Array.isArray(insights.value?.booking_revenue_trend))
-
-const revenueChartData = computed(() => {
-    if (!insights.value) return []
-    if (usesBookingRevenue.value) {
-        return insights.value.booking_revenue_trend!.map(item => ({
-            month: item.month,
-            revenue: Number(item.total) || 0,
-            money: Number(item.money_on_bookings) || 0,
-            credits: Number(item.credit_spent_on_bookings) || 0,
-        }))
-    }
-    return (insights.value.revenue_trend || []).map(item => ({
-        month: item.month,
-        revenue: item.revenue,
-    }))
-})
-
-// Booking totals mix rupees and credits, so they are shown without ₹
-const formatRevenueValue = (value: number) => usesBookingRevenue.value
-    ? formatNumber(value)
-    : `₹${Number(value || 0).toLocaleString('en-IN')}`
-
-const revenueTooltipItems = (datum: any) => {
-    if (!usesBookingRevenue.value) {
-        return [{ name: 'Revenue', value: formatRevenueValue(datum.revenue) }]
-    }
-    return [
-        { name: 'Money on bookings', value: `₹${formatNumber(datum.money)}` },
-        { name: 'Credits spent', value: `${formatNumber(datum.credits)} credits` },
-        { name: 'Total', value: formatNumber(datum.revenue) },
-    ]
-}
 
 const statusColors: Record<string, string> = {
     'Active': '#10b981',
@@ -275,80 +237,9 @@ const createStatusChart = async () => {
     statusChartInstance.render()
 }
 
-const createRevenueChart = async () => {
-    await nextTick()
-    if (revenueChartInstance) {
-        revenueChartInstance.destroy()
-        revenueChartInstance = null
-    }
-    if (!revenueChartContainer.value || !revenueChartData.value.length) return
-
-    revenueChartInstance = new Line(revenueChartContainer.value, {
-        data: revenueChartData.value,
-        xField: 'month',
-        yField: 'revenue',
-        smooth: true,
-        autoFit: true,
-        // Wide left padding so ₹ labels like "₹16,000" aren't clipped
-        padding: [10, 10, 30, 72],
-        point: {
-            size: 5,
-            shape: 'circle',
-        },
-        area: {
-            style: {
-                fill: 'l(270) 0:#ffffff 0.5:#3378ff 1:#3378ff',
-                fillOpacity: 0.2,
-            },
-        },
-        color: '#3378ff',
-        xAxis: {
-            label: {
-                style: {
-                    fill: '#666',
-                },
-            },
-        },
-        yAxis: {
-            label: {
-                style: {
-                    fill: '#666',
-                },
-                formatter: (v: string) => formatRevenueValue(Number(v)),
-            },
-            min: 0,
-        },
-        legend: {
-            position: 'bottom',
-            itemName: {
-                formatter: () => (usesBookingRevenue.value ? 'Booking revenue' : 'Revenue (₹)'),
-            },
-        },
-        tooltip: {
-            showCrosshairs: true,
-            shared: true,
-            // One row per breakdown value (money, credits, total) for the hovered month
-            customItems: (items: any[]) => {
-                const first = items[0]
-                if (!first) return items
-                return revenueTooltipItems(first.data).map(row => ({ ...first, ...row }))
-            },
-        },
-        animation: {
-            appear: {
-                animation: 'wave-in',
-                duration: 2000,
-            },
-        },
-    })
-
-    revenueChartInstance.render()
-}
-
 watch([insights, loading], async () => {
     if (!loading.value) {
         await createStatusChart()
-        await createRevenueChart()
     }
 }, { immediate: true })
 
@@ -360,10 +251,6 @@ onBeforeUnmount(() => {
     if (statusChartInstance) {
         statusChartInstance.destroy()
         statusChartInstance = null
-    }
-    if (revenueChartInstance) {
-        revenueChartInstance.destroy()
-        revenueChartInstance = null
     }
 })
 </script>
