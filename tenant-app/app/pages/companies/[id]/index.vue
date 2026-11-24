@@ -152,6 +152,50 @@
                             </a-table>
                         </a-card>
 
+                        <!-- Booking History -->
+                        <a-card data-testid="booking-history-card">
+                            <template #title>
+                                <span class="font-semibold text-lg text-gray-900 dark:text-gray-100">Booking
+                                    History</span>
+                            </template>
+                            <a-table :dataSource="bookings" :columns="bookingColumns" :loading="bookingsLoading"
+                                :pagination="{
+                                    current: bookingPage,
+                                    pageSize: bookingPageSize,
+                                    total: bookingTotal,
+                                    showSizeChanger: true,
+                                    pageSizeOptions: ['10', '20', '50', '100'],
+                                    showTotal: (total: number) => `Total ${total} bookings`
+                                }" @change="handleBookingTableChange" rowKey="id" size="small"
+                                :scroll="{ x: 820 }">
+                                <template #bodyCell="{ column, record }">
+                                    <template v-if="column.key === 'booking_date'">
+                                        {{ formatBookingDate(record.booking_date) }}
+                                    </template>
+                                    <template v-else-if="column.key === 'time'">
+                                        {{ formatBookingTime(record.start_time) }} - {{ formatBookingTime(record.end_time) }}
+                                    </template>
+                                    <template v-else-if="column.key === 'meeting_room_name'">
+                                        {{ record.meeting_room_name || '-' }}
+                                    </template>
+                                    <template v-else-if="column.key === 'user_name'">
+                                        {{ record.user_name || '-' }}
+                                    </template>
+                                    <template v-else-if="column.key === 'credits_used'">
+                                        {{ record.credits_used ? record.credits_used.toLocaleString() : '-' }}
+                                    </template>
+                                    <template v-else-if="column.key === 'amount_charged'">
+                                        {{ formatAmount(record.amount_charged) }}
+                                    </template>
+                                    <template v-else-if="column.key === 'booking_status'">
+                                        <a-tag :color="getBookingStatusTag(record.booking_status).color">
+                                            {{ getBookingStatusTag(record.booking_status).label }}
+                                        </a-tag>
+                                    </template>
+                                </template>
+                            </a-table>
+                        </a-card>
+
                         <!-- Visitors List -->
                         <a-card :loading="visitorsLoading">
                             <template #title>
@@ -561,6 +605,84 @@ const isPositiveTransaction = (record: any) => {
         return record.credits >= 0
     }
     return record.transaction_type?.toLowerCase() === 'credit'
+}
+
+// Booking history (server-side paginated)
+const bookings = ref<any[]>([])
+const bookingsLoading = ref(false)
+const bookingPage = ref(1)
+const bookingPageSize = ref(10)
+const bookingTotal = ref(0)
+const bookingColumns = [
+    { title: 'Booking ID', dataIndex: 'booking_id', key: 'booking_id', width: 130 },
+    { title: 'Date', dataIndex: 'booking_date', key: 'booking_date', width: 110 },
+    { title: 'Time', key: 'time', width: 150 },
+    { title: 'Room', dataIndex: 'meeting_room_name', key: 'meeting_room_name' },
+    { title: 'Booked By', dataIndex: 'user_name', key: 'user_name' },
+    { title: 'Credits', dataIndex: 'credits_used', key: 'credits_used', width: 80 },
+    { title: 'Price', dataIndex: 'amount_charged', key: 'amount_charged', width: 90 },
+    { title: 'Status', dataIndex: 'booking_status', key: 'booking_status', width: 110 },
+]
+
+const fetchBookings = async () => {
+    const companyId = route.params.id as string
+    bookingsLoading.value = true
+    try {
+        const params = new URLSearchParams({
+            company_id: companyId,
+            page: String(bookingPage.value),
+            page_size: String(bookingPageSize.value),
+        })
+        const result = await $api<any>(`/api/portal/bookings/bookings/?${params.toString()}`)
+        if (result.success && result.data) {
+            const list = Array.isArray(result.data) ? result.data : (result.data.results || [])
+            bookings.value = list
+            bookingTotal.value = Array.isArray(result.data) ? list.length : (result.data.count ?? list.length)
+        }
+    } catch (err) {
+        console.error('Failed to fetch bookings:', err)
+        bookings.value = []
+        bookingTotal.value = 0
+    } finally {
+        bookingsLoading.value = false
+    }
+}
+
+const handleBookingTableChange = (pagination: any) => {
+    const newSize = pagination.pageSize ?? bookingPageSize.value
+    bookingPage.value = newSize !== bookingPageSize.value ? 1 : (pagination.current ?? 1)
+    bookingPageSize.value = newSize
+    fetchBookings()
+}
+
+const formatBookingDate = (dateStr: string | null) => {
+    if (!dateStr) return '-'
+    const [y, m, d] = dateStr.split('-')
+    return y && m && d ? `${d}/${m}/${y}` : dateStr // DD/MM/YYYY
+}
+
+const formatBookingTime = (time: string | null) => {
+    if (!time) return '-'
+    const [h, m] = time.split(':').map(Number)
+    if (h === undefined || isNaN(h)) return time
+    const period = h >= 12 ? 'PM' : 'AM'
+    return `${h % 12 || 12}:${String(m ?? 0).padStart(2, '0')} ${period}`
+}
+
+const formatAmount = (amount: string | number | null) => {
+    if (amount === null || amount === undefined || amount === '') return '-'
+    const n = Number(amount)
+    return isNaN(n) ? '-' : `₹${n.toLocaleString('en-IN')}`
+}
+
+const getBookingStatusTag = (status: string) => {
+    const s = (status || '').toUpperCase()
+    if (s === 'CONFIRMED') return { color: 'green', label: 'Confirmed' }
+    if (s === 'CANCELLED') return { color: 'red', label: 'Cancelled' }
+    if (s === 'COMPLETED') return { color: 'blue', label: 'Completed' }
+    if (s === 'INPROGRESS') return { color: 'processing', label: 'In Progress' }
+    if (s === 'PENDING') return { color: 'orange', label: 'Pending' }
+    return { color: 'default', label: status || '-' }
 }
 
 
@@ -1197,6 +1319,7 @@ onMounted(async () => {
         await fetchEmployees()
         await fetchSpocs()
         await fetchVisitors()
+        fetchBookings()
         // Check if credit system is enabled, then fetch wallet
         await fetchCreditConfig()
         if (creditSystemEnabled.value) {

@@ -34,8 +34,11 @@ export interface CompanyInsights {
         revenue: number;
         growth_percentage: number | null;
     }>;
+    // Backend sends the company name as `name` (company_name kept for older responses)
     top_companies_by_tickets: Array<{
-        company_name: string;
+        company_id?: string | null;
+        name?: string | null;
+        company_name?: string | null;
         ticket_count: number;
     }>;
     // Meeting room bookings in the selected range (cancelled excluded).

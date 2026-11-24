@@ -96,6 +96,7 @@
                 <a-table
                     :dataSource="insights.top_companies_by_tickets"
                     :columns="topCompaniesColumns"
+                    :row-key="(record: any, index: number) => record.company_id || index"
                     :pagination="false"
                     size="small"
                     class="mt-4"
@@ -156,8 +157,9 @@ let statusChartInstance: Column | null = null
 const topCompaniesColumns = [
     {
         title: 'Company',
-        dataIndex: 'company_name',
-        key: 'company_name',
+        key: 'company',
+        // API sends `name`; fall back to `company_name` for older responses
+        customRender: ({ record }: { record: any }) => record.name || record.company_name || '-',
     },
     {
         title: 'Tickets',

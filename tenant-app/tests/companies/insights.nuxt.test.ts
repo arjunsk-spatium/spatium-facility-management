@@ -227,4 +227,43 @@ describe('Insights Page', () => {
             expect(Line).not.toHaveBeenCalled()
         })
     })
+
+    describe('Top Companies by Tickets', () => {
+        const mountWith = (top: any[]) => mountSuspended(InsightsPage, {
+            global: {
+                plugins: [createTestingPinia({
+                    createSpy: vi.fn,
+                    initialState: {
+                        company: { insights: { ...createMockInsights(), top_companies_by_tickets: top }, loading: false }
+                    }
+                })]
+            }
+        })
+        const rows = (wrapper: any) => wrapper.findAll('.ant-table-tbody tr.ant-table-row')
+            .map((tr: any) => tr.findAll('td').map((td: any) => td.text()))
+
+        it('shows the company name from the `name` field the API sends', async () => {
+            const wrapper = await mountWith([
+                { company_id: 'c1', name: 'Spatium Offices', ticket_count: 18 },
+                { company_id: 'c2', name: 'Acme Corp', ticket_count: 9 }
+            ])
+
+            expect(rows(wrapper)).toEqual([
+                ['Spatium Offices', '18'],
+                ['Acme Corp', '9']
+            ])
+        })
+
+        it('falls back to company_name, then to a dash', async () => {
+            const wrapper = await mountWith([
+                { company_id: 'c1', company_name: 'Legacy Co', ticket_count: 7 },
+                { company_id: 'c2', name: null, ticket_count: 6 }
+            ])
+
+            expect(rows(wrapper)).toEqual([
+                ['Legacy Co', '7'],
+                ['-', '6']
+            ])
+        })
+    })
 })
